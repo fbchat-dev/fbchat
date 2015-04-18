@@ -6,12 +6,26 @@ Core components for fbchat
 """
 
 
+import re
+import json
+import random
 import requests
-import time
+
+from time import time
+from uuid import uuid1
+from random import random
 from bs4 import BeautifulSoup as bs
+
+from .utils import *
 
 CHROME = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36"
 SAFARI = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/601.1.10 (KHTML, like Gecko) Version/8.0.5 Safari/601.1.10"
+
+def now():
+    return int(time())
+
+def get_json(text):
+    return json.loads(re.sub(r"for.*(.*;.*;.*).*;", '', text.decode("unicode-escape").encode("utf-8")))
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -51,13 +65,19 @@ class Client(object):
             'Connection' : 'keep-alive',
         }
 
-        self.console("Logging in...")
+        self._console("Logging in...")
 
         if not self.login():
             raise Exception("id or password is wrong")
 
-    def console(self, msg):
+    def _console(self, msg):
         if self.debug: print(msg)
+
+    def _get(self, url, query=None, timeout=30):
+        return self._session.get(url, headers=self._header, params=query, timeout=timeout)
+
+    def _post(self, url, query=None, timeout=30):
+        return self._session.post(url, headers=self._header, data=query, timeout=timeout)
 
     def login(self):
         if not (self.email and self.password):
@@ -71,22 +91,66 @@ class Client(object):
 
         r = self._post("https://m.facebook.com/login.php?login_attempt=1", data)
 
-        if 'expires' in r.headers.keys():
+        if 'home' in r.url:
+            self.client_id = hex(int(random()*2147483648))[2:]
+            self.start_time = now()
+            self.user_id = self._session.cookies['c_user']
+            self.user_channel = "p_" + self.user_id
+            self.ttstamp = ''
+
+            r = self._get('https://www.facebook.com/')
+            self.rev = int(r.text.split('"revision":',1)[1].split(",",1)[0])
+
+            soup = bs(r.text)
+            fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
+
+            for i in fb_dtsg:
+                self.ttstamp += str(ord(i))
+            self.ttstamp += '2'
+
+            self.form = {
+                'channel' : self.user_channel,
+                'seq' : '0',
+                'partition' : '-2',
+                'clientid' : self.client_id,
+                'viewer_uid' : self.user_id,
+                'uid' : self.user_id,
+                'state' : 'active',
+                'format' : 'json',
+                'idle' : 0,
+                'cap' : '8'
+            }
+
+            self.prev = now()
+            self.tmp_prev = now()
+            self.last_sync = now()
+            self.req_counter = 1;
+
             return True
         else:
             return False
 
-    def _get(self, url, query=None, timeout=30):
-        return self._session.get(url, headers=self._header, params=query, timeout=timeout)
-
-    def _post(self, url, query=None, timeout=30):
-        return self._session.post(url, headers=self._header, data=query, timeout=timeout)
-
     def listen(self):
         pass
 
-    def getUserId(self):
-        pass
+    def getUserId(self, name):
+        payload = {
+            'value' : name.lower(),
+            'viewer' : self.user_id,
+            'rsp' : "search",
+            'context' : "search",
+            'path' : "/home.php",
+            'request_id' : str(uuid1()),
+            '__user' : self.user_id,
+            '__a' : '1',
+            '__req' : str_base(self.req_counter, 36),
+            '__rev' : self.rev,
+        }
+        self.req_counter += 1
+
+        r = self._get("https://www.facebook.com/ajax/typeahead/search.php", payload)
+        self.j = get_json(r.text)
+        self.r = r
 
     def sendMessage(self):
         pass
