@@ -17,10 +17,6 @@ with open('README.rst') as f:
     readme_content = f.read().strip()
 
 
-with open('LICENSE.txt') as f:
-    license_content = f.read().strip()
-
-
 version = None
 author = None
 email = None
@@ -42,8 +38,12 @@ setup(
     name='fbchat',
     author=author,
     author_email=email,
+    license='BSD License',
+    keywords=["facebook chat fbchat"],
+    description="Facebook Chat (Messenger) for Python",
+    long_description=readme_content,
     classifiers=[
-        'Development Status :: 1 - Planning',
+        'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
@@ -60,15 +60,11 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python',
-        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
-        'Topic :: Multimedia :: Graphics :: Presentation',
         'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+        'Topic :: Communications :: Chat',
     ],
-    description="Facebook Chat (Messenger) for Python",
-    keywords=["facebook chat fbchat"],
     include_package_data=True,
-    license=license_content,
-    long_description=readme_content,
     packages=['fbchat'],
     install_requires=[
         'requests',

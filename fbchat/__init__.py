@@ -8,7 +8,7 @@ Facebook Chat (Messenger) for Python
 from .client import *
 
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __author__ = 'Taehoon Kim'
 __email__ = 'carpedm20@gmail.com'
 __source__ = 'https://github.com/carpedm20/fbchat/'

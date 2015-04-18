@@ -1,3 +1,9 @@
+def now():
+    return int(time())
+
+def get_json(text):
+    return json.loads(re.sub(r"for.*(.*;.*;.*).*;", '', text.decode("unicode-escape").encode("utf-8")))
+
 def digit_to_char(digit):
     if digit < 10:
         return str(digit)
@@ -10,3 +16,4 @@ def str_base(number,base):
     if d > 0:
         return str_base(d, base) + digit_to_char(m)
     return digit_to_char(m)
+
