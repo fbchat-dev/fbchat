@@ -5,7 +5,7 @@ Facebook Chat (Messenger) for Python
 """
 
 
-from .core import *
+from .client import *
 
 
 __version__ = '0.0.1'

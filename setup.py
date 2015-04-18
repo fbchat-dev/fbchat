@@ -71,7 +71,8 @@ setup(
     long_description=readme_content,
     packages=['fbchat'],
     install_requires=[
-        'requests'
+        'requests',
+        'bs4'
     ],
     url=source,
     version=version,
