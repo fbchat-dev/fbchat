@@ -14,7 +14,7 @@ fbchat
 .. image:: https://pypip.in/license/fbchat/badge.svg?style=flat
     :target: https://pypi.python.org/pypi/fbchat
 
-Facebook Chat(`Messenger <https://www.messenger.com/>`__) for Python.
+Facebook Chat (`Messenger <https://www.messenger.com/>`__) for Python.
 
 Installation
 ============

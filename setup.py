@@ -43,7 +43,7 @@ setup(
     author=author,
     author_email=email,
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 1 - Planning',
         'Intended Audience :: Developers',
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
@@ -64,7 +64,7 @@ setup(
         'Topic :: Multimedia :: Graphics :: Presentation',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    description="Facebook Chat(Messenger) for Python",
+    description="Facebook Chat (Messenger) for Python",
     keywords=["facebook chat fbchat"],
     include_package_data=True,
     license=license_content,

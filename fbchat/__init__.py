@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 """
-Facebook Chat(Messenger) for Python
+Facebook Chat (Messenger) for Python
 """
 
 
