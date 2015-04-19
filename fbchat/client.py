@@ -1,10 +1,14 @@
 # -*- coding: UTF-8 -*-
 
-
 """
-Core components for fbchat
-"""
+    fbchat
+    ~~~~~~
 
+    Facebook Chat (Messenger) for Python
+
+    :copyright: (c) 2015 by Taehoon Kim.
+    :license: BSD, see LICENSE for more details.
+"""
 
 import re
 import json
