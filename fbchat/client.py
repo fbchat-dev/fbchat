@@ -10,20 +10,12 @@
     :license: BSD, see LICENSE for more details.
 """
 
-import re
-import json
-import random
 import requests
-
-from time import time
 from uuid import uuid1
-from random import random
+from random import random, choice
 from bs4 import BeautifulSoup as bs
 
 from .utils import *
-
-CHROME = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36"
-SAFARI = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/601.1.10 (KHTML, like Gecko) Version/8.0.5 Safari/601.1.10"
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -53,7 +45,7 @@ class Client(object):
         self._session = requests.session()
 
         if not user_agent:
-            user_agent = CHROME
+            user_agent = choice(USER_AGENTS)
 
         self._header = {
             'Content-Type' : 'application/x-www-form-urlencoded',

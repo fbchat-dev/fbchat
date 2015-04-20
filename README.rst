@@ -14,15 +14,9 @@ fbchat
 .. image:: https://pypip.in/license/fbchat/badge.svg?style=flat
     :target: https://pypi.python.org/pypi/fbchat
 
-Facebook Chat (`Messenger <https://www.messenger.com/>`__) for Python. No XMPP or API key is needed. Just use your ID and PASSWORD.
+Facebook Chat (`Messenger <https://www.messenger.com/>`__) for Python. This project was inspired by `facebook-chat-api <https://github.com/Schmavery/facebook-chat-api>`__.
 
-This project was inspired by `facebook-chat-api <https://github.com/Schmavery/facebook-chat-api>`__.
-
-
-Documentation
-=============
-
-
+**No XMPP or API key is needed**. Just use your ID and PASSWORD.
 
 
 Installation
