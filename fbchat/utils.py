@@ -12,10 +12,10 @@ USER_AGENTS = [
 ]
 
 def now():
-    return int(time())
+    return int(time()*1000)
 
 def get_json(text):
-    return json.loads(re.sub(r"for.*(.*;.*;.*).*;", '', text.decode("unicode-escape").encode("utf-8")))
+    return json.loads(re.sub(r"for.*(.*;.*;.*).*;", '', text.decode("unicode-escape").encode('utf-8')))
 
 def digit_to_char(digit):
     if digit < 10:

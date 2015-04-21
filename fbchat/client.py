@@ -13,9 +13,11 @@
 import requests
 from uuid import uuid1
 from random import random, choice
+from datetime import datetime
 from bs4 import BeautifulSoup as bs
 
 from .utils import *
+from .models import *
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -43,6 +45,7 @@ class Client(object):
         self.password = password
         self.debug = debug
         self._session = requests.session()
+        self.req_counter = 1;
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -64,9 +67,11 @@ class Client(object):
         if self.debug: print(msg)
 
     def _get(self, url, query=None, timeout=30):
+        self.req_counter += 1
         return self._session.get(url, headers=self._header, params=query, timeout=timeout)
 
     def _post(self, url, query=None, timeout=30):
+        self.req_counter += 1
         return self._session.post(url, headers=self._header, data=query, timeout=timeout)
 
     def login(self):
@@ -80,21 +85,23 @@ class Client(object):
         data['login'] = 'Log In'
 
         r = self._post("https://m.facebook.com/login.php?login_attempt=1", data)
+        self.r = r
 
         if 'home' in r.url:
             self.client_id = hex(int(random()*2147483648))[2:]
             self.start_time = now()
-            self.user_id = self._session.cookies['c_user']
-            self.user_channel = "p_" + self.user_id
+            self.uid = int(self._session.cookies['c_user'])
+            self.user_channel = "p_" + str(self.uid)
             self.ttstamp = ''
 
-            r = self._get('https://www.facebook.com/')
-            self.rev = int(r.text.split('"revision":',1)[1].split(",",1)[0])
+            #r = self._get('https://www.facebook.com/')
+            #self.rev = int(r.text.split('"revision":',1)[1].split(",",1)[0])
+            self.rev = int(random()*100000)
 
             soup = bs(r.text)
-            fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
+            self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
 
-            for i in fb_dtsg:
+            for i in self.fb_dtsg:
                 self.ttstamp += str(ord(i))
             self.ttstamp += '2'
 
@@ -103,8 +110,8 @@ class Client(object):
                 'seq' : '0',
                 'partition' : '-2',
                 'clientid' : self.client_id,
-                'viewer_uid' : self.user_id,
-                'uid' : self.user_id,
+                'viewer_uid' : self.uid,
+                'uid' : self.uid,
                 'state' : 'active',
                 'format' : 'json',
                 'idle' : 0,
@@ -114,7 +121,6 @@ class Client(object):
             self.prev = now()
             self.tmp_prev = now()
             self.last_sync = now()
-            self.req_counter = 1;
 
             return True
         else:
@@ -123,27 +129,77 @@ class Client(object):
     def listen(self):
         pass
 
-    def getUserId(self, name):
+    def getUsers(self, name):
         payload = {
             'value' : name.lower(),
-            'viewer' : self.user_id,
+            'viewer' : self.uid,
             'rsp' : "search",
             'context' : "search",
             'path' : "/home.php",
             'request_id' : str(uuid1()),
-            '__user' : self.user_id,
+            '__user' : self.uid,
             '__a' : '1',
             '__req' : str_base(self.req_counter, 36),
             '__rev' : self.rev,
         }
-        self.req_counter += 1
 
         r = self._get("https://www.facebook.com/ajax/typeahead/search.php", payload)
-        self.j = get_json(r.text)
+        self.j = j = get_json(r.text)
         self.r = r
 
-    def sendMessage(self):
-        pass
+        users = []
+        for entry in j['payload']['entries']:
+            if entry['type'] == 'user':
+                users.append(User(entry))
+        return users
+
+    def sendMessage(self, message, thread_id):
+        timestamp = now()
+        date = datetime.now()
+        form = {
+            'client' : 'mercury',
+            'fb_dtsg' : self.fb_dtsg,
+            'ttstamp' : self.ttstamp,
+            '__user' : self.uid,
+            '__req' : str_base(self.req_counter, 36),
+            '__rev' : self.rev,
+            'message_batch[0][action_type]' : 'ma-type:user-generated-message',
+            'message_batch[0][author]' : 'fbid:' + str(self.uid),
+            'message_batch[0][specific_to_list][0]' : 'fbid:' + str(thread_id),
+            'message_batch[0][specific_to_list][1]' : 'fbid:' + str(self.uid),
+            'message_batch[0][timestamp]' : timestamp,
+            'message_batch[0][timestamp_absolute]' : 'Today',
+            'message_batch[0][timestamp_relative]' : str(date.hour) + ":" + str(date.minute).zfill(2),
+            'message_batch[0][timestamp_time_passed]' : '0',
+            'message_batch[0][is_unread]' : False,
+            'message_batch[0][is_cleared]' : False,
+            'message_batch[0][is_forward]' : False,
+            'message_batch[0][is_filtered_content]' : False,
+            'message_batch[0][is_spoof_warning]' : False,
+            'message_batch[0][source]' : 'source:chat:web',
+            'message_batch[0][source_tags][0]' : 'source:chat',
+            'message_batch[0][body]' : message,
+            'message_batch[0][html_body]' : False,
+            'message_batch[0][ui_push_phase]' : 'V3',
+            'message_batch[0][status]' : '0',
+            'message_batch[0][message_id]' : self.generateMessageID(),
+            'message_batch[0][manual_retry_cnt]' : '0',
+            'message_batch[0][thread_fbid]' : thread_id,
+            'message_batch[0][has_attachment]' : False
+        }
+        print form
+
+        r = self._post("https://www.facebook.com/ajax/mercury/send_messages.php", form)
+        print r
+        self.r = r
+        self.j = get_json(r.text)
+
+    def generateMessageID(self, client_id=None):
+        if not client_id:
+            client_id = self.client_id
+        k = now()
+        l = int(random() * 4294967295)
+        return ("<%s:%s-%s@mail.projektitan.com>" % (k, l, client_id));
 
     def sendSticker(self):
         pass
