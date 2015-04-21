@@ -94,9 +94,9 @@ class Client(object):
             self.user_channel = "p_" + str(self.uid)
             self.ttstamp = ''
 
-            #r = self._get('https://www.facebook.com/')
-            #self.rev = int(r.text.split('"revision":',1)[1].split(",",1)[0])
-            self.rev = int(random()*100000)
+            r = self._get('https://www.facebook.com/')
+            self.rev = int(r.text.split('"revision":',1)[1].split(",",1)[0])
+            #self.rev = int(random()*100000)
 
             soup = bs(r.text)
             self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
@@ -137,8 +137,8 @@ class Client(object):
             'context' : "search",
             'path' : "/home.php",
             'request_id' : str(uuid1()),
-            '__user' : self.uid,
             '__a' : '1',
+            '__user' : self.uid,
             '__req' : str_base(self.req_counter, 36),
             '__rev' : self.rev,
         }
@@ -156,10 +156,11 @@ class Client(object):
     def sendMessage(self, message, thread_id):
         timestamp = now()
         date = datetime.now()
-        form = {
+        data = {
             'client' : 'mercury',
             'fb_dtsg' : self.fb_dtsg,
             'ttstamp' : self.ttstamp,
+            '__a' : '1',
             '__user' : self.uid,
             '__req' : str_base(self.req_counter, 36),
             '__rev' : self.rev,
@@ -182,24 +183,34 @@ class Client(object):
             'message_batch[0][html_body]' : False,
             'message_batch[0][ui_push_phase]' : 'V3',
             'message_batch[0][status]' : '0',
-            'message_batch[0][message_id]' : self.generateMessageID(),
+            'message_batch[0][message_id]' : generateMessageID(self.client_id),
             'message_batch[0][manual_retry_cnt]' : '0',
             'message_batch[0][thread_fbid]' : thread_id,
             'message_batch[0][has_attachment]' : False
         }
-        print form
 
         r = self._post("https://www.facebook.com/ajax/mercury/send_messages.php", form)
-        print r
-        self.r = r
-        self.j = get_json(r.text)
+        return r.ok
 
-    def generateMessageID(self, client_id=None):
-        if not client_id:
-            client_id = self.client_id
-        k = now()
-        l = int(random() * 4294967295)
-        return ("<%s:%s-%s@mail.projektitan.com>" % (k, l, client_id));
+    def getThreadList(self, start, end):
+        timestamp = now()
+        date = datetime.now()
+        data = {
+            'client' : 'web_messenger',
+            'fb_dtsg' : self.fb_dtsg,
+            'ttstamp' : self.ttstamp,
+            '__a' : '1',
+            '__user' : self.uid,
+            '__req' : str_base(self.req_counter, 36),
+            '__rev' : self.rev,
+            'inbox[offset]' : start,
+            'inbox[limit]' : end,
+        }
+        print data
+
+        r = self._post("https://www.facebook.com/ajax/mercury/threadlist_info.php", data)
+        self.r = r
+        return r.ok
 
     def sendSticker(self):
         pass

@@ -30,3 +30,8 @@ def str_base(number,base):
         return str_base(d, base) + digit_to_char(m)
     return digit_to_char(m)
 
+def generateMessageID(client_id=None):
+    k = now()
+    l = int(random() * 4294967295)
+    return ("<%s:%s-%s@mail.projektitan.com>" % (k, l, client_id));
+
