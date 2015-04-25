@@ -63,6 +63,10 @@ class Client(object):
         if not self.login():
             raise Exception("id or password is wrong")
 
+        self.threads = []
+        self.threads = []
+        self.data = data
+
     def _console(self, msg):
         if self.debug: print(msg)
 
@@ -192,7 +196,10 @@ class Client(object):
         r = self._post("https://www.facebook.com/ajax/mercury/send_messages.php", form)
         return r.ok
 
-    def getThreadList(self, start, end):
+    def getThreadList(self, start, end=None):
+        if not end:
+            end = start + 20
+
         timestamp = now()
         date = datetime.now()
         data = {
@@ -206,11 +213,18 @@ class Client(object):
             'inbox[offset]' : start,
             'inbox[limit]' : end,
         }
-        print data
 
         r = self._post("https://www.facebook.com/ajax/mercury/threadlist_info.php", data)
-        self.r = r
-        return r.ok
+        if not r.ok:
+            return None
+
+        j = get_json(r.text)
+
+        for thread in j['payload']['threads']:
+            t = Thread(thread)
+            self.threads.append(t)
+
+        return self.threads
 
     def sendSticker(self):
         pass
