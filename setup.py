@@ -68,7 +68,7 @@ setup(
     packages=['fbchat'],
     install_requires=[
         'requests',
-        'bs4'
+        'beautifulsoup4'
     ],
     url=source,
     version=version,
