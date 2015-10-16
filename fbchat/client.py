@@ -65,7 +65,7 @@ class Client(object):
 
         self.threads = []
         self.threads = []
-        self.data = data
+		
 
     def _console(self, msg):
         if self.debug: print(msg)
@@ -150,12 +150,12 @@ class Client(object):
         r = self._get("https://www.facebook.com/ajax/typeahead/search.php", payload)
         self.j = j = get_json(r.text)
         self.r = r
-
+		
         users = []
         for entry in j['payload']['entries']:
             if entry['type'] == 'user':
                 users.append(User(entry))
-        return users
+        return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
     def sendMessage(self, message, thread_id):
         timestamp = now()
@@ -193,7 +193,7 @@ class Client(object):
             'message_batch[0][has_attachment]' : False
         }
 
-        r = self._post("https://www.facebook.com/ajax/mercury/send_messages.php", form)
+        r = self._post("https://www.facebook.com/ajax/mercury/send_messages.php", data)
         return r.ok
 
     def getThreadList(self, start, end=None):
