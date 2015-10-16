@@ -15,7 +15,7 @@ def now():
     return int(time()*1000)
 
 def get_json(text):
-    return json.loads(re.sub(r"for.*(;;).*;", '', text.decode("unicode-escape"), 1)) # have bug !!! AttributeError: 'str' object has no attribute 'decode'
+	return json.loads(re.sub(r"for.*(.*;.*;.*).*;", '', text.encode('utf-8').decode("unicode-escape"), 1))
 
 def digit_to_char(digit):
     if digit < 10:
@@ -34,4 +34,3 @@ def generateMessageID(client_id=None):
     k = now()
     l = int(random() * 4294967295)
     return ("<%s:%s-%s@mail.projektitan.com>" % (k, l, client_id));
-
