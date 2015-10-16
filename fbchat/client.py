@@ -65,7 +65,7 @@ class Client(object):
 
         self.threads = []
         self.threads = []
-        self.data = data
+        #self.data = data
 
     def _console(self, msg):
         if self.debug: print(msg)
