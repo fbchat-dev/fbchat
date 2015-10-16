@@ -15,7 +15,7 @@ def now():
     return int(time()*1000)
 
 def get_json(text):
-    return json.loads(re.sub(r"for.*(;;).*;", '', text.decode("unicode-escape").encode('utf-8'), 1))
+    return json.loads(re.sub(r"for.*(;;).*;", '', text.decode("unicode-escape").encode('utf-8'), 1)) # have bug !!! AttributeError: 'str' object has no attribute 'decode'
 
 def digit_to_char(digit):
     if digit < 10:
