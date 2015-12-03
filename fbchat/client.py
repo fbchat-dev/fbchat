@@ -83,7 +83,7 @@ class Client(object):
             raise Exception("id and password or config is needed")
 
         soup = bs(self._get("https://m.facebook.com/").text)
-        data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value'))
+        data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
         data['email'] = self.email
         data['pass'] = self.password
         data['login'] = 'Log In'
@@ -221,7 +221,7 @@ class Client(object):
         j = get_json(r.text)
 
         for thread in j['payload']['threads']:
-            t = Thread(thread)
+            t = Thread(**thread)
             self.threads.append(t)
 
         return self.threads
