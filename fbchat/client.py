@@ -101,7 +101,7 @@ class Client(object):
             self.rev = int(r.text.split('"revision":',1)[1].split(",",1)[0])
             #self.rev = int(random()*100000)
 
-            soup = bs(r.text)
+            soup = bs(r.text, "lxml")
             self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
 
             for i in self.fb_dtsg:
