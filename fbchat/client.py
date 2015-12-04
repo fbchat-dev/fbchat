@@ -64,7 +64,6 @@ class Client(object):
             raise Exception("id or password is wrong")
 
         self.threads = []
-        self.threads = []
 		
 
     def _console(self, msg):
@@ -220,9 +219,21 @@ class Client(object):
 
         j = get_json(r.text)
 
+        # Get names for people
+        participants={}
+        for participant in j['payload']['participants']:
+            participants[participant["fbid"]] = participant["name"]
+
+        # Prevent duplicates in self.threads
+        threadIDs=[getattr(x, "thread_id") for x in self.threads]
         for thread in j['payload']['threads']:
-            t = Thread(**thread)
-            self.threads.append(t)
+            if thread["thread_id"] not in threadIDs:
+                try:
+                    thread["other_user_name"] = participants[int(thread["other_user_fbid"])]
+                except:
+                    thread["other_user_name"] = ""
+                t = Thread(**thread)
+                self.threads.append(t)
 
         return self.threads
 
