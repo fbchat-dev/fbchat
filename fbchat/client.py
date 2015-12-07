@@ -81,7 +81,7 @@ class Client(object):
         if not (self.email and self.password):
             raise Exception("id and password or config is needed")
 
-        soup = bs(self._get("https://m.facebook.com/").text)
+        soup = bs(self._get("https://m.facebook.com/").text, "lxml")
         data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
         data['email'] = self.email
         data['pass'] = self.password
@@ -101,7 +101,7 @@ class Client(object):
             self.rev = int(r.text.split('"revision":',1)[1].split(",",1)[0])
             #self.rev = int(random()*100000)
 
-            soup = bs(r.text)
+            soup = bs(r.text, "lxml")
             self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
 
             for i in self.fb_dtsg:
