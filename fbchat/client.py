@@ -214,7 +214,7 @@ class Client(object):
         }
 
         r = self._post("https://www.facebook.com/ajax/mercury/threadlist_info.php", data)
-        if not r.ok:
+        if not r.ok or len(r.text) == 0:
             return None
 
         j = get_json(r.text)
