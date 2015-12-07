@@ -19,6 +19,12 @@ from bs4 import BeautifulSoup as bs
 from .utils import *
 from .models import *
 
+# URLs
+LoginURL   ="https://m.facebook.com/login.php?login_attempt=1"
+SearchURL  ="https://www.facebook.com/ajax/typeahead/search.php"
+SendURL    ="https://www.facebook.com/ajax/mercury/send_messages.php"
+MessagesURL="https://www.facebook.com/ajax/mercury/threadlist_info.php"
+
 class Client(object):
     """A client for the Facebook Chat (Messenger).
 
@@ -87,7 +93,7 @@ class Client(object):
         data['pass'] = self.password
         data['login'] = 'Log In'
 
-        r = self._post("https://m.facebook.com/login.php?login_attempt=1", data)
+        r = self._post(LoginURL, data)
         self.r = r
 
         if 'home' in r.url:
@@ -146,7 +152,7 @@ class Client(object):
             '__rev' : self.rev,
         }
 
-        r = self._get("https://www.facebook.com/ajax/typeahead/search.php", payload)
+        r = self._get(SearchURL, payload)
         self.j = j = get_json(r.text)
         self.r = r
 		
@@ -192,8 +198,9 @@ class Client(object):
             'message_batch[0][has_attachment]' : False
         }
 
-        r = self._post("https://www.facebook.com/ajax/mercury/send_messages.php", data)
+        r = self._post(SendURL, data)
         return r.ok
+
 
     def getThreadList(self, start, end=None):
         if not end:
@@ -213,7 +220,7 @@ class Client(object):
             'inbox[limit]' : end,
         }
 
-        r = self._post("https://www.facebook.com/ajax/mercury/threadlist_info.php", data)
+        r = self._post(MessagesURL, data)
         if not r.ok or len(r.text) == 0:
             return None
 
