@@ -154,6 +154,10 @@ class Client(object):
         pass
 
     def getUsers(self, name):
+        """Find and get user by his/her name
+
+        :param name: name of a person
+        """
         payload = {
             'value' : name.lower(),
             'viewer' : self.uid,
@@ -174,6 +178,11 @@ class Client(object):
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
     def sendMessage(self, message, thread_id):
+        """Send a message with given thread id
+
+        :param message: a text that you want to send
+        :param thread_id: a thread id that you want to send a message
+        """
         timestamp = now()
         date = datetime.now()
         data = {
@@ -211,6 +220,11 @@ class Client(object):
 
 
     def getThreadList(self, start, end=None):
+        """Get thread list of your facebook account.
+
+        :param start: the start index of a thread
+        :param end: (optional) the last index of a thread
+        """
         if not end:
             end = start + 20
 
