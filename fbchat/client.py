@@ -52,6 +52,7 @@ class Client(object):
         self.debug = debug
         self._session = requests.session()
         self.req_counter = 1;
+        self.payloadDefault={}
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -70,17 +71,35 @@ class Client(object):
             raise Exception("id or password is wrong")
 
         self.threads = []
-		
 
     def _console(self, msg):
         if self.debug: print(msg)
 
+    def _setttstamp(self):
+        for i in self.fb_dtsg:
+            self.ttstamp += str(ord(i))
+        self.ttstamp += '2'
+
+    def _generatePayload(self, query):
+        if query:
+            payload=self.payloadDefault.copy()
+            payload.update(query)
+            payload['__req'] = str_base(self.req_counter, 36)
+        else:
+            payload = None
+        self.req_counter+=1
+        return payload
+
     def _get(self, url, query=None, timeout=30):
-        self.req_counter += 1
-        return self._session.get(url, headers=self._header, params=query, timeout=timeout)
+        payload=self._generatePayload(query)
+        return self._session.get(url, headers=self._header, params=payload, timeout=timeout)
 
     def _post(self, url, query=None, timeout=30):
-        self.req_counter += 1
+        payload=self._generatePayload(query)
+        return self._session.post(url, headers=self._header, data=payload, timeout=timeout)
+
+    def _cleanPost(self, url, query=None, timeout=30):
+        self.req_counter+=1
         return self._session.post(url, headers=self._header, data=query, timeout=timeout)
 
     def login(self):
@@ -93,8 +112,7 @@ class Client(object):
         data['pass'] = self.password
         data['login'] = 'Log In'
 
-        r = self._post(LoginURL, data)
-        self.r = r
+        r = self._cleanPost(LoginURL, data)
 
         if 'home' in r.url:
             self.client_id = hex(int(random()*2147483648))[2:]
@@ -104,15 +122,12 @@ class Client(object):
             self.ttstamp = ''
 
             r = self._get('https://www.facebook.com/')
-            self.rev = int(r.text.split('"revision":',1)[1].split(",",1)[0])
-            #self.rev = int(random()*100000)
+            self.payloadDefault['__rev']= int(r.text.split('"revision":',1)[1].split(",",1)[0])
+            self.payloadDefault['__user']= self.uid
 
             soup = bs(r.text, "lxml")
             self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
-
-            for i in self.fb_dtsg:
-                self.ttstamp += str(ord(i))
-            self.ttstamp += '2'
+            self._setttstamp()
 
             self.form = {
                 'channel' : self.user_channel,
@@ -147,14 +162,10 @@ class Client(object):
             'path' : "/home.php",
             'request_id' : str(uuid1()),
             '__a' : '1',
-            '__user' : self.uid,
-            '__req' : str_base(self.req_counter, 36),
-            '__rev' : self.rev,
         }
 
         r = self._get(SearchURL, payload)
         self.j = j = get_json(r.text)
-        self.r = r
 		
         users = []
         for entry in j['payload']['entries']:
@@ -170,9 +181,6 @@ class Client(object):
             'fb_dtsg' : self.fb_dtsg,
             'ttstamp' : self.ttstamp,
             '__a' : '1',
-            '__user' : self.uid,
-            '__req' : str_base(self.req_counter, 36),
-            '__rev' : self.rev,
             'message_batch[0][action_type]' : 'ma-type:user-generated-message',
             'message_batch[0][author]' : 'fbid:' + str(self.uid),
             'message_batch[0][specific_to_list][0]' : 'fbid:' + str(thread_id),
@@ -213,9 +221,6 @@ class Client(object):
             'fb_dtsg' : self.fb_dtsg,
             'ttstamp' : self.ttstamp,
             '__a' : '1',
-            '__user' : self.uid,
-            '__req' : str_base(self.req_counter, 36),
-            '__rev' : self.rev,
             'inbox[offset]' : start,
             'inbox[limit]' : end,
         }
