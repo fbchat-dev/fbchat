@@ -19,6 +19,12 @@ from bs4 import BeautifulSoup as bs
 from .utils import *
 from .models import *
 
+# URLs
+LoginURL   ="https://m.facebook.com/login.php?login_attempt=1"
+SearchURL  ="https://www.facebook.com/ajax/typeahead/search.php"
+SendURL    ="https://www.facebook.com/ajax/mercury/send_messages.php"
+MessagesURL="https://www.facebook.com/ajax/mercury/threadlist_info.php"
+
 class Client(object):
     """A client for the Facebook Chat (Messenger).
 
@@ -46,6 +52,7 @@ class Client(object):
         self.debug = debug
         self._session = requests.session()
         self.req_counter = 1;
+        self.payloadDefault={}
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -64,32 +71,48 @@ class Client(object):
             raise Exception("id or password is wrong")
 
         self.threads = []
-        self.threads = []
-		
 
     def _console(self, msg):
         if self.debug: print(msg)
 
+    def _setttstamp(self):
+        for i in self.fb_dtsg:
+            self.ttstamp += str(ord(i))
+        self.ttstamp += '2'
+
+    def _generatePayload(self, query):
+        if query:
+            payload=self.payloadDefault.copy()
+            payload.update(query)
+            payload['__req'] = str_base(self.req_counter, 36)
+        else:
+            payload = None
+        self.req_counter+=1
+        return payload
+
     def _get(self, url, query=None, timeout=30):
-        self.req_counter += 1
-        return self._session.get(url, headers=self._header, params=query, timeout=timeout)
+        payload=self._generatePayload(query)
+        return self._session.get(url, headers=self._header, params=payload, timeout=timeout)
 
     def _post(self, url, query=None, timeout=30):
-        self.req_counter += 1
+        payload=self._generatePayload(query)
+        return self._session.post(url, headers=self._header, data=payload, timeout=timeout)
+
+    def _cleanPost(self, url, query=None, timeout=30):
+        self.req_counter+=1
         return self._session.post(url, headers=self._header, data=query, timeout=timeout)
 
     def login(self):
         if not (self.email and self.password):
             raise Exception("id and password or config is needed")
 
-        soup = bs(self._get("https://m.facebook.com/").text)
+        soup = bs(self._get("https://m.facebook.com/").text, "lxml")
         data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
         data['email'] = self.email
         data['pass'] = self.password
         data['login'] = 'Log In'
 
-        r = self._post("https://m.facebook.com/login.php?login_attempt=1", data)
-        self.r = r
+        r = self._cleanPost(LoginURL, data)
 
         if 'home' in r.url:
             self.client_id = hex(int(random()*2147483648))[2:]
@@ -99,15 +122,12 @@ class Client(object):
             self.ttstamp = ''
 
             r = self._get('https://www.facebook.com/')
-            self.rev = int(r.text.split('"revision":',1)[1].split(",",1)[0])
-            #self.rev = int(random()*100000)
+            self.payloadDefault['__rev']= int(r.text.split('"revision":',1)[1].split(",",1)[0])
+            self.payloadDefault['__user']= self.uid
 
-            soup = bs(r.text)
+            soup = bs(r.text, "lxml")
             self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
-
-            for i in self.fb_dtsg:
-                self.ttstamp += str(ord(i))
-            self.ttstamp += '2'
+            self._setttstamp()
 
             self.form = {
                 'channel' : self.user_channel,
@@ -146,14 +166,10 @@ class Client(object):
             'path' : "/home.php",
             'request_id' : str(uuid1()),
             '__a' : '1',
-            '__user' : self.uid,
-            '__req' : str_base(self.req_counter, 36),
-            '__rev' : self.rev,
         }
 
-        r = self._get("https://www.facebook.com/ajax/typeahead/search.php", payload)
+        r = self._get(SearchURL, payload)
         self.j = j = get_json(r.text)
-        self.r = r
 		
         users = []
         for entry in j['payload']['entries']:
@@ -174,9 +190,6 @@ class Client(object):
             'fb_dtsg' : self.fb_dtsg,
             'ttstamp' : self.ttstamp,
             '__a' : '1',
-            '__user' : self.uid,
-            '__req' : str_base(self.req_counter, 36),
-            '__rev' : self.rev,
             'message_batch[0][action_type]' : 'ma-type:user-generated-message',
             'message_batch[0][author]' : 'fbid:' + str(self.uid),
             'message_batch[0][specific_to_list][0]' : 'fbid:' + str(thread_id),
@@ -202,8 +215,9 @@ class Client(object):
             'message_batch[0][has_attachment]' : False
         }
 
-        r = self._post("https://www.facebook.com/ajax/mercury/send_messages.php", data)
+        r = self._post(SendURL, data)
         return r.ok
+
 
     def getThreadList(self, start, end=None):
         """Get thread list of your facebook account.
@@ -221,22 +235,31 @@ class Client(object):
             'fb_dtsg' : self.fb_dtsg,
             'ttstamp' : self.ttstamp,
             '__a' : '1',
-            '__user' : self.uid,
-            '__req' : str_base(self.req_counter, 36),
-            '__rev' : self.rev,
             'inbox[offset]' : start,
             'inbox[limit]' : end,
         }
 
-        r = self._post("https://www.facebook.com/ajax/mercury/threadlist_info.php", data)
-        if not r.ok:
+        r = self._post(MessagesURL, data)
+        if not r.ok or len(r.text) == 0:
             return None
 
         j = get_json(r.text)
 
+        # Get names for people
+        participants={}
+        for participant in j['payload']['participants']:
+            participants[participant["fbid"]] = participant["name"]
+
+        # Prevent duplicates in self.threads
+        threadIDs=[getattr(x, "thread_id") for x in self.threads]
         for thread in j['payload']['threads']:
-            t = Thread(**thread)
-            self.threads.append(t)
+            if thread["thread_id"] not in threadIDs:
+                try:
+                    thread["other_user_name"] = participants[int(thread["other_user_fbid"])]
+                except:
+                    thread["other_user_name"] = ""
+                t = Thread(**thread)
+                self.threads.append(t)
 
         return self.threads
 
