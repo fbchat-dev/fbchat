@@ -53,6 +53,7 @@ class Client(object):
         self._session = requests.session()
         self.req_counter = 1;
         self.payloadDefault={}
+        self.client = 'mercury'
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -122,12 +123,15 @@ class Client(object):
             self.ttstamp = ''
 
             r = self._get('https://www.facebook.com/')
-            self.payloadDefault['__rev']= int(r.text.split('"revision":',1)[1].split(",",1)[0])
-            self.payloadDefault['__user']= self.uid
-
             soup = bs(r.text, "lxml")
             self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
             self._setttstamp()
+            # Set default payload
+            self.payloadDefault['__rev']= int(r.text.split('"revision":',1)[1].split(",",1)[0])
+            self.payloadDefault['__user']= self.uid
+            self.payloadDefault['__a']= '1'
+            self.payloadDefault['ttstamp']= self.ttstamp
+            self.payloadDefault['fb_dtsg']= self.fb_dtsg
 
             self.form = {
                 'channel' : self.user_channel,
@@ -165,7 +169,6 @@ class Client(object):
             'context' : "search",
             'path' : "/home.php",
             'request_id' : str(uuid1()),
-            '__a' : '1',
         }
 
         r = self._get(SearchURL, payload)
@@ -186,10 +189,7 @@ class Client(object):
         timestamp = now()
         date = datetime.now()
         data = {
-            'client' : 'mercury',
-            'fb_dtsg' : self.fb_dtsg,
-            'ttstamp' : self.ttstamp,
-            '__a' : '1',
+            'client' : self.client,
             'message_batch[0][action_type]' : 'ma-type:user-generated-message',
             'message_batch[0][author]' : 'fbid:' + str(self.uid),
             'message_batch[0][specific_to_list][0]' : 'fbid:' + str(thread_id),
@@ -225,16 +225,13 @@ class Client(object):
         :param start: the start index of a thread
         :param end: (optional) the last index of a thread
         """
-        if not end:
-            end = start + 20
+        if not end: end = start + 20
+        if end <= start: end=start+end
 
         timestamp = now()
         date = datetime.now()
         data = {
-            'client' : 'web_messenger',
-            'fb_dtsg' : self.fb_dtsg,
-            'ttstamp' : self.ttstamp,
-            '__a' : '1',
+            'client' : self.client,
             'inbox[offset]' : start,
             'inbox[limit]' : end,
         }
