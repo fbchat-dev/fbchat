@@ -53,6 +53,7 @@ class Client(object):
         self._session = requests.session()
         self.req_counter = 1;
         self.payloadDefault={}
+        self.client = 'mercury'
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -188,7 +189,7 @@ class Client(object):
         timestamp = now()
         date = datetime.now()
         data = {
-            'client' : 'mercury',
+            'client' : self.client,
             'message_batch[0][action_type]' : 'ma-type:user-generated-message',
             'message_batch[0][author]' : 'fbid:' + str(self.uid),
             'message_batch[0][specific_to_list][0]' : 'fbid:' + str(thread_id),
@@ -224,13 +225,13 @@ class Client(object):
         :param start: the start index of a thread
         :param end: (optional) the last index of a thread
         """
-        if not end:
-            end = start + 20
+        if not end: end = start + 20
+        if end <= start: end=start+end
 
         timestamp = now()
         date = datetime.now()
         data = {
-            'client' : 'web_messenger',
+            'client' : self.client,
             'inbox[offset]' : start,
             'inbox[limit]' : end,
         }
