@@ -25,3 +25,7 @@ class User(Base):
 class Thread():
     def __init__(self, **entries): 
         self.__dict__.update(entries)
+
+class Message():
+    def __init__(self, **entries):
+        self.__dict__.update(entries)
