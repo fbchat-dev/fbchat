@@ -23,7 +23,10 @@ from .models import *
 LoginURL   ="https://m.facebook.com/login.php?login_attempt=1"
 SearchURL  ="https://www.facebook.com/ajax/typeahead/search.php"
 SendURL    ="https://www.facebook.com/ajax/mercury/send_messages.php"
-MessagesURL="https://www.facebook.com/ajax/mercury/threadlist_info.php"
+ThreadsURL ="https://www.facebook.com/ajax/mercury/threadlist_info.php"
+MessagesURL="https://www.facebook.com/ajax/mercury/thread_info.php"
+BaseURL    ="https://www.facebook.com"
+MobileURL  ="https://m.facebook.com/"
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -60,8 +63,8 @@ class Client(object):
 
         self._header = {
             'Content-Type' : 'application/x-www-form-urlencoded',
-            'Referer' : 'https://www.facebook.com/',
-            'Origin' : 'https://www.facebook.com',
+            'Referer' : BaseURL,
+            'Origin' : BaseURL,
             'User-Agent' : user_agent,
             'Connection' : 'keep-alive',
         }
@@ -82,6 +85,10 @@ class Client(object):
         self.ttstamp += '2'
 
     def _generatePayload(self, query):
+        '''
+        Adds the following defaults to the payload:
+          __rev, __user, __a, ttstamp, fb_dtsg, __req
+        '''
         if query:
             payload=self.payloadDefault.copy()
             payload.update(query)
@@ -107,7 +114,7 @@ class Client(object):
         if not (self.email and self.password):
             raise Exception("id and password or config is needed")
 
-        soup = bs(self._get("https://m.facebook.com/").text, "lxml")
+        soup = bs(self._get(MobileURL).text, "lxml")
         data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
         data['email'] = self.email
         data['pass'] = self.password
@@ -122,7 +129,7 @@ class Client(object):
             self.user_channel = "p_" + str(self.uid)
             self.ttstamp = ''
 
-            r = self._get('https://www.facebook.com/')
+            r = self._get(BaseURL)
             soup = bs(r.text, "lxml")
             self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
             self._setttstamp()
@@ -219,6 +226,32 @@ class Client(object):
         return r.ok
 
 
+    def getThreadInfo(self, userID, start, end=None):
+        """Get the info of one Thread
+
+        :param userID: ID of the user you want the messages from
+        :param start: the start index of a thread
+        :param end: (optional) the last index of a thread
+        """
+        if not end: end = start + 20
+        if end <= start: end=start+end
+
+        data={}
+        data['messages[user_ids][%s][offset]'%userID]=    start
+        data['messages[user_ids][%s][limit]'%userID]=     end
+        data['messages[user_ids][%s][timestamp]'%userID]= now()
+
+        r = self._post(MessagesURL, query=data)
+        if not r.ok or len(r.text) == 0:
+            return None
+
+        j = get_json(r.text)
+        messages=[]
+        for message in j['payload']['actions']:
+            messages.append(Message(**message))
+        return list(reversed(messages))
+
+
     def getThreadList(self, start, end=None):
         """Get thread list of your facebook account.
 
@@ -236,7 +269,7 @@ class Client(object):
             'inbox[limit]' : end,
         }
 
-        r = self._post(MessagesURL, data)
+        r = self._post(ThreadsURL, data)
         if not r.ok or len(r.text) == 0:
             return None
 
