@@ -20,13 +20,17 @@ from .utils import *
 from .models import *
 
 # URLs
-LoginURL   ="https://m.facebook.com/login.php?login_attempt=1"
-SearchURL  ="https://www.facebook.com/ajax/typeahead/search.php"
-SendURL    ="https://www.facebook.com/ajax/mercury/send_messages.php"
-ThreadsURL ="https://www.facebook.com/ajax/mercury/threadlist_info.php"
-MessagesURL="https://www.facebook.com/ajax/mercury/thread_info.php"
-BaseURL    ="https://www.facebook.com"
-MobileURL  ="https://m.facebook.com/"
+LoginURL     ="https://m.facebook.com/login.php?login_attempt=1"
+SearchURL    ="https://www.facebook.com/ajax/typeahead/search.php"
+SendURL      ="https://www.facebook.com/ajax/mercury/send_messages.php"
+ThreadsURL   ="https://www.facebook.com/ajax/mercury/threadlist_info.php"
+ThreadSyncURL="https://www.facebook.com/ajax/mercury/thread_sync.php"
+MessagesURL  ="https://www.facebook.com/ajax/mercury/thread_info.php"
+ReadStatusURL="https://www.facebook.com/ajax/mercury/change_read_status.php"
+DeliveredURL ="https://www.facebook.com/ajax/mercury/delivery_receipts.php"
+MarkSeenURL  ="https://www.facebook.com/ajax/mercury/mark_seen.php"
+BaseURL      ="https://www.facebook.com"
+MobileURL    ="https://m.facebook.com/"
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -246,6 +250,8 @@ class Client(object):
             return None
 
         j = get_json(r.text)
+        if not j['payload']:
+            return None
         messages=[]
         for message in j['payload']['actions']:
             messages.append(Message(**message))
@@ -293,8 +299,43 @@ class Client(object):
 
         return self.threads
 
+
+    def getUnread(self):
+        form = {
+            'client': 'mercury_sync',
+            'folders[0]': 'inbox',
+            'last_action_timestamp': now() - 60*1000
+            #'last_action_timestamp': 0
+        }
+        r = self._post(ThreadSyncURL, form)
+        if not r.ok or len(r.text) == 0:
+            return None
+
+        j = get_json(r.text)
+        result = {
+            "message_counts": j['payload']['message_counts'],
+            "unseen_threads": j['payload']['unseen_thread_ids']}
+        return result
+
+
     def sendSticker(self):
         pass
 
-    def markAsRead(self):
-        pass
+    def markAsDelivered(self, userID, threadID):
+        data={"message_ids[0]": threadID}
+        data["thread_ids[%s][0]"%userID] = threadID
+        r = self._post(DeliveredURL, data)
+        return r.ok
+
+    def markAsRead(self, userID):
+        data={
+            "watermarkTimestamp": now(),
+            "shouldSendReadReceipt": True}
+        data["ids[%s]"%userID] = True
+        r = self._post(ReadStatusURL, data)
+        return r.ok
+
+    def markAsSeen(self):
+        r = self._post(MarkSeenURL, {"seen_timestamp": 0})
+        return r.ok
+
