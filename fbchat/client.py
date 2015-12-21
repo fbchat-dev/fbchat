@@ -26,6 +26,7 @@ SendURL      ="https://www.facebook.com/ajax/mercury/send_messages.php"
 ThreadsURL   ="https://www.facebook.com/ajax/mercury/threadlist_info.php"
 ThreadSyncURL="https://www.facebook.com/ajax/mercury/thread_sync.php"
 MessagesURL  ="https://www.facebook.com/ajax/mercury/thread_info.php"
+UnreadURL    ="https://www.facebook.com/ajax/mercury/unread_threads.php"
 ReadStatusURL="https://www.facebook.com/ajax/mercury/change_read_status.php"
 DeliveredURL ="https://www.facebook.com/ajax/mercury/delivery_receipts.php"
 MarkSeenURL  ="https://www.facebook.com/ajax/mercury/mark_seen.php"
@@ -61,6 +62,7 @@ class Client(object):
         self.req_counter = 1;
         self.payloadDefault={}
         self.client = 'mercury'
+        self.lastSeen = 0
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -93,12 +95,9 @@ class Client(object):
         Adds the following defaults to the payload:
           __rev, __user, __a, ttstamp, fb_dtsg, __req
         '''
-        if query:
-            payload=self.payloadDefault.copy()
-            payload.update(query)
-            payload['__req'] = str_base(self.req_counter, 36)
-        else:
-            payload = None
+        payload=self.payloadDefault.copy()
+        if query: payload.update(query)
+        payload['__req'] = str_base(self.req_counter, 36)
         self.req_counter+=1
         return payload
 
@@ -165,9 +164,6 @@ class Client(object):
         else:
             return False
 
-    def listen(self):
-        pass
-
     def getUsers(self, name):
         """Find and get user by his/her name
 
@@ -189,7 +185,7 @@ class Client(object):
         for entry in j['payload']['entries']:
             if entry['type'] == 'user':
                 users.append(User(entry))
-        return users # have bug TypeError: __repr__ returned non-string (type bytes)
+        return users
 
     def sendMessage(self, message, thread_id):
         """Send a message with given thread id
@@ -267,8 +263,6 @@ class Client(object):
         if not end: end = start + 20
         if end <= start: end=start+end
 
-        timestamp = now()
-        date = datetime.now()
         data = {
             'client' : self.client,
             'inbox[offset]' : start,
@@ -280,6 +274,9 @@ class Client(object):
             return None
 
         j = get_json(r.text)
+
+        if not "participants" in j['payload']:
+            return []
 
         # Get names for people
         participants={}
@@ -299,14 +296,28 @@ class Client(object):
 
         return self.threads
 
-
     def getUnread(self):
+        data = {
+            'client': self.client,
+            'folders[0]': 'inbox'
+        }
+        r = self._post(UnreadURL, data)
+        if not r.ok or len(r.text) == 0:
+            return None
+
+        j = get_json(r.text)
+        try:
+            return j['payload']['unread_thread_ids']
+        except:
+            return []
+
+    def getUnseen(self):
         form = {
             'client': 'mercury_sync',
             'folders[0]': 'inbox',
-            'last_action_timestamp': now() - 60*1000
-            #'last_action_timestamp': 0
+            'last_action_timestamp': self.lastSeen
         }
+        self.lastSeen = now()
         r = self._post(ThreadSyncURL, form)
         if not r.ok or len(r.text) == 0:
             return None
@@ -316,7 +327,6 @@ class Client(object):
             "message_counts": j['payload']['message_counts'],
             "unseen_threads": j['payload']['unseen_thread_ids']}
         return result
-
 
     def sendSticker(self):
         pass
