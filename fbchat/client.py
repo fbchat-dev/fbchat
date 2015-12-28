@@ -18,6 +18,7 @@ from bs4 import BeautifulSoup as bs
 
 from .utils import *
 from .models import *
+from .stickers import *
 
 # URLs
 LoginURL     ="https://m.facebook.com/login.php?login_attempt=1"
@@ -26,7 +27,6 @@ SendURL      ="https://www.facebook.com/ajax/mercury/send_messages.php"
 ThreadsURL   ="https://www.facebook.com/ajax/mercury/threadlist_info.php"
 ThreadSyncURL="https://www.facebook.com/ajax/mercury/thread_sync.php"
 MessagesURL  ="https://www.facebook.com/ajax/mercury/thread_info.php"
-UnreadURL    ="https://www.facebook.com/ajax/mercury/unread_threads.php"
 ReadStatusURL="https://www.facebook.com/ajax/mercury/change_read_status.php"
 DeliveredURL ="https://www.facebook.com/ajax/mercury/delivery_receipts.php"
 MarkSeenURL  ="https://www.facebook.com/ajax/mercury/mark_seen.php"
@@ -59,10 +59,11 @@ class Client(object):
         self.password = password
         self.debug = debug
         self._session = requests.session()
-        self.req_counter = 1;
+        self.req_counter = 1
+        self.seq = "0"
         self.payloadDefault={}
         self.client = 'mercury'
-        self.lastSeen = 0
+        self.listening = False
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -96,8 +97,10 @@ class Client(object):
           __rev, __user, __a, ttstamp, fb_dtsg, __req
         '''
         payload=self.payloadDefault.copy()
-        if query: payload.update(query)
+        if query:
+            payload.update(query)
         payload['__req'] = str_base(self.req_counter, 36)
+        payload['seq'] = self.seq
         self.req_counter+=1
         return payload
 
@@ -145,7 +148,6 @@ class Client(object):
 
             self.form = {
                 'channel' : self.user_channel,
-                'seq' : '0',
                 'partition' : '-2',
                 'clientid' : self.client_id,
                 'viewer_uid' : self.uid,
@@ -163,6 +165,9 @@ class Client(object):
             return True
         else:
             return False
+
+    def listen(self):
+        pass
 
     def getUsers(self, name):
         """Find and get user by his/her name
@@ -185,13 +190,14 @@ class Client(object):
         for entry in j['payload']['entries']:
             if entry['type'] == 'user':
                 users.append(User(entry))
-        return users
+        return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
-    def sendMessage(self, message, thread_id):
+    def send(self, thread_id, message=None, like=None):
         """Send a message with given thread id
 
-        :param message: a text that you want to send
         :param thread_id: a thread id that you want to send a message
+        :param message: a text that you want to send
+        :param like: size of the like sticker you want to send
         """
         timestamp = now()
         date = datetime.now()
@@ -221,10 +227,16 @@ class Client(object):
             'message_batch[0][thread_fbid]' : thread_id,
             'message_batch[0][has_attachment]' : False
         }
-
+        if like:
+            try:
+                sticker = LIKES[like.lower()]
+            except KeyError:
+                # if user doesn't enter l or m or s, then use the large one
+                sticker = LIKES['l']
+            data["message_batch[0][sticker_id]"] = sticker
+            
         r = self._post(SendURL, data)
         return r.ok
-
 
     def getThreadInfo(self, userID, start, end=None):
         """Get the info of one Thread
@@ -263,6 +275,8 @@ class Client(object):
         if not end: end = start + 20
         if end <= start: end=start+end
 
+        timestamp = now()
+        date = datetime.now()
         data = {
             'client' : self.client,
             'inbox[offset]' : start,
@@ -275,13 +289,13 @@ class Client(object):
 
         j = get_json(r.text)
 
-        if not "participants" in j['payload']:
-            return []
-
         # Get names for people
         participants={}
-        for participant in j['payload']['participants']:
-            participants[participant["fbid"]] = participant["name"]
+        try:
+            for participant in j['payload']['participants']:
+                participants[participant["fbid"]] = participant["name"]
+        except Exception as e:
+          print(j)
 
         # Prevent duplicates in self.threads
         threadIDs=[getattr(x, "thread_id") for x in self.threads]
@@ -296,28 +310,14 @@ class Client(object):
 
         return self.threads
 
+
     def getUnread(self):
-        data = {
-            'client': self.client,
-            'folders[0]': 'inbox'
-        }
-        r = self._post(UnreadURL, data)
-        if not r.ok or len(r.text) == 0:
-            return None
-
-        j = get_json(r.text)
-        try:
-            return j['payload']['unread_thread_ids']
-        except:
-            return []
-
-    def getUnseen(self):
         form = {
             'client': 'mercury_sync',
             'folders[0]': 'inbox',
-            'last_action_timestamp': self.lastSeen
+            'last_action_timestamp': now() - 60*1000
+            #'last_action_timestamp': 0
         }
-        self.lastSeen = now()
         r = self._post(ThreadSyncURL, form)
         if not r.ok or len(r.text) == 0:
             return None
@@ -327,9 +327,6 @@ class Client(object):
             "message_counts": j['payload']['message_counts'],
             "unseen_threads": j['payload']['unseen_thread_ids']}
         return result
-
-    def sendSticker(self):
-        pass
 
     def markAsDelivered(self, userID, threadID):
         data={"message_ids[0]": threadID}
