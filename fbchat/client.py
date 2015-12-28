@@ -32,6 +32,8 @@ DeliveredURL ="https://www.facebook.com/ajax/mercury/delivery_receipts.php"
 MarkSeenURL  ="https://www.facebook.com/ajax/mercury/mark_seen.php"
 BaseURL      ="https://www.facebook.com"
 MobileURL    ="https://m.facebook.com/"
+StickyURL    ="https://0-edge-chat.facebook.com/pull"
+PingURL      ="https://0-channel-proxy-06-ash2.facebook.com/active_ping"
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -346,3 +348,97 @@ class Client(object):
         r = self._post(MarkSeenURL, {"seen_timestamp": 0})
         return r.ok
 
+
+    def ping(self, sticky):
+        data={
+            'channel': self.user_channel,
+            'clientid': self.client_id,
+            'partition': -2,
+            'cap': 0,
+            'uid': self.uid,
+            'sticky': sticky,
+            'viewer_uid': self.uid
+        }
+        r = self._get(PingURL, data)
+        return r.ok
+
+
+    def _getSticky(self):
+        '''
+        Call pull api to get sticky and pool parameter,
+        newer api needs these parameter to work.
+        '''
+        data={ "msgs_recv": 0 }
+
+        r = self._get(StickyURL, data)
+        j = get_json(r.text)
+
+        if 'lb_info' not in j:
+            raise Exception('Get sticky pool error')
+
+        sticky = j['lb_info']['sticky']
+        pool = j['lb_info']['pool']
+        return sticky, pool
+
+
+    def _pullMessage(self, sticky, pool):
+        '''
+        Call pull api with seq value to get message data.
+        '''
+        data={
+            "msgs_recv": 0,
+            "sticky_token":sticky,
+            "sticky_pool":pool
+        }
+
+        r = self._get(StickyURL, data)
+        j = get_json(r.text)
+
+        self.seq = j.get('seq', '0')
+        return j
+
+
+    def _getMessage(self, content):
+        '''
+        Get message and author name from content.
+        May contains multiple messages in the content.
+        '''
+        if 'ms' not in content:
+            return
+
+        for m in content['ms']:
+            if m.get('type') not in ['m_messaging', 'messaging']:
+                continue
+            # look in 'message'
+            try:
+                mid =   m['message']['mid']
+                message=m['message']['body']
+                fbid =  m['message']['sender_fbid']
+                name =  m['message']['sender_name']
+                yield mid, fbid, name, message, m
+            except:
+                pass
+
+
+    def listen(self, markAlive=True):
+        self.listening = True
+        sticky, pool = self._getSticky()
+
+        if self.debug:
+            print("Listening...")
+
+        while self.listening:
+            try:
+                if markAlive: self.ping(sticky)
+                try:
+                    content = self._pullMessage(sticky, pool)
+                except requests.exceptions.RequestException as e:
+                    continue
+                # iterate through each message in response
+                for mid, fbid, name, message, meta in self._getMessage(content):
+                    self.on_message(mid, fbid, name, message, meta)
+            except KeyboardInterrupt:
+                break
+
+    def on_message(self, mid, author_id, author_name, message, metadata):
+        print("%s said: %s"%(author_name, message))
