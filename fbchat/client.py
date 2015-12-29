@@ -405,7 +405,6 @@ class Client(object):
         '''
         if 'ms' not in content:
             return
-
         for m in content['ms']:
             if m.get('type') not in ['m_messaging', 'messaging']:
                 continue
@@ -441,4 +440,6 @@ class Client(object):
                 break
 
     def on_message(self, mid, author_id, author_name, message, metadata):
+        self.markAsDelivered(fbid, mid)
+        self.markAsRead(fbid)
         print("%s said: %s"%(author_name, message))
