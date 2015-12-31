@@ -201,6 +201,9 @@ class Client(object):
         :param message: a text that you want to send
         :param like: size of the like sticker you want to send
         """
+        # sanatize data:
+        if message:
+            message=message.encode("unicode-escape").decode("utf-8")
         timestamp = now()
         date = datetime.now()
         data = {
@@ -398,7 +401,7 @@ class Client(object):
         return j
 
 
-    def _getMessage(self, content):
+    def _parseMessage(self, content):
         '''
         Get message and author name from content.
         May contains multiple messages in the content.
@@ -406,18 +409,31 @@ class Client(object):
         if 'ms' not in content:
             return
         for m in content['ms']:
-            if m.get('type') not in ['m_messaging', 'messaging']:
-                continue
-            # look in 'message'
-            try:
-                mid =   m['message']['mid']
-                message=m['message']['body']
-                fbid =  m['message']['sender_fbid']
-                name =  m['message']['sender_name']
-                yield mid, fbid, name, message, m
-            except:
-                pass
-
+            if m['type'] in ['m_messaging', 'messaging']:
+                try:
+                    mid =   m['message']['mid']
+                    message=m['message']['body']
+                    fbid =  m['message']['sender_fbid']
+                    name =  m['message']['sender_name']
+                    self.on_message(mid, fbid, name, message, m)
+                except:
+                    pass
+            elif m['type'] in ['typ']:
+                try:
+                    fbid =  m["from"]
+                    self.on_typing(fbid)
+                except:
+                    pass
+            elif m['type'] in ['m_read_receipt']:
+                try:
+                    author = m['author']
+                    reader = m['reader']
+                    time   = m['time']
+                    self.on_read(author, reader, time)
+                except:
+                    pass
+            else:
+              print(m)
 
     def listen(self, markAlive=True):
         self.listening = True
@@ -431,15 +447,21 @@ class Client(object):
                 if markAlive: self.ping(sticky)
                 try:
                     content = self._pullMessage(sticky, pool)
+                    self._parseMessage(content)
                 except requests.exceptions.RequestException as e:
                     continue
-                # iterate through each message in response
-                for mid, fbid, name, message, meta in self._getMessage(content):
-                    self.on_message(mid, fbid, name, message, meta)
             except KeyboardInterrupt:
                 break
+            except requests.exceptions.Timeout:
+              pass
 
     def on_message(self, mid, author_id, author_name, message, metadata):
-        self.markAsDelivered(fbid, mid)
-        self.markAsRead(fbid)
+        self.markAsDelivered(author_id, mid)
+        self.markAsRead(author_id)
         print("%s said: %s"%(author_name, message))
+
+    def on_typing(self, author_id):
+        pass
+
+    def on_read(self, author, reader, time):
+        pass
