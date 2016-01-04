@@ -201,9 +201,7 @@ class Client(object):
         :param message: a text that you want to send
         :param like: size of the like sticker you want to send
         """
-        # sanatize data:
-        if message:
-            message=message.encode("unicode-escape").decode("utf-8")
+
         timestamp = now()
         date = datetime.now()
         data = {
