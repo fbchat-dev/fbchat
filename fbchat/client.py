@@ -237,7 +237,6 @@ class Client(object):
                 # if user doesn't enter l or m or s, then use the large one
                 sticker = LIKES['l']
             data["message_batch[0][sticker_id]"] = sticker
-            
         r = self._post(SendURL, data)
         return r.ok
 
@@ -407,31 +406,32 @@ class Client(object):
         if 'ms' not in content:
             return
         for m in content['ms']:
-            if m['type'] in ['m_messaging', 'messaging']:
-                try:
-                    mid =   m['message']['mid']
-                    message=m['message']['body']
-                    fbid =  m['message']['sender_fbid']
-                    name =  m['message']['sender_name']
-                    self.on_message(mid, fbid, name, message, m)
-                except:
-                    pass
-            elif m['type'] in ['typ']:
-                try:
-                    fbid =  m["from"]
-                    self.on_typing(fbid)
-                except:
-                    pass
-            elif m['type'] in ['m_read_receipt']:
-                try:
-                    author = m['author']
-                    reader = m['reader']
-                    time   = m['time']
-                    self.on_read(author, reader, time)
-                except:
-                    pass
-            else:
-              print(m)
+            try:
+                if m['type'] in ['m_messaging', 'messaging']:
+                    if m['event'] in ['deliver']:
+                        mid =   m['message']['mid']
+                        message=m['message']['body']
+                        fbid =  m['message']['sender_fbid']
+                        name =  m['message']['sender_name']
+                        self.on_message(mid, fbid, name, message, m)
+                elif m['type'] in ['typ']:
+                    self.on_typing(m["from"])
+                elif m['type'] in ['m_read_receipt']:
+                    self.on_read(m['realtime_viewer_fbid'], m['reader'], m['time'])
+                elif m['type'] in ['inbox']:
+                    viewer = m['realtime_viewer_fbid']
+                    unseen = m['unseen']
+                    unread = m['unread']
+                    other_unseen = m['other_unseen']
+                    other_unread = m['other_unread']
+                    timestamp = m['seen_timestamp']
+                    self.on_inbox(viewer, unseen, unread, other_unseen, other_unread, timestamp)
+                elif m['type'] in ['qprimer']:
+                    self.on_qprimer(m['made'])
+                else:
+                    print(m)
+            except Exception as e:
+                self.on_message_error(e, m)
 
     def listen(self, markAlive=True):
         self.listening = True
@@ -445,7 +445,7 @@ class Client(object):
                 if markAlive: self.ping(sticky)
                 try:
                     content = self._pullMessage(sticky, pool)
-                    self._parseMessage(content)
+                    if content: self._parseMessage(content)
                 except requests.exceptions.RequestException as e:
                     continue
             except KeyboardInterrupt:
@@ -462,4 +462,14 @@ class Client(object):
         pass
 
     def on_read(self, author, reader, time):
+        pass
+
+    def on_inbox(self, viewer, unseen, unread, other_unseen, other_unread, timestamp):
+        pass
+
+    def on_message_error(self, exception, message):
+        print("Exception: ")
+        print(exception)
+
+    def on_qprimer(self, timestamp):
         pass
