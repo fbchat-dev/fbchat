@@ -88,11 +88,6 @@ class Client(object):
     def _console(self, msg):
         if self.debug: print(msg)
 
-    def _setttstamp(self):
-        for i in self.fb_dtsg:
-            self.ttstamp += str(ord(i))
-        self.ttstamp += '2'
-
     def _generatePayload(self, query):
         '''
         Adds the following defaults to the payload:
@@ -135,30 +130,24 @@ class Client(object):
             self.start_time = now()
             self.uid = int(self._session.cookies['c_user'])
             self.user_channel = "p_" + str(self.uid)
-            self.ttstamp = ''
 
             r = self._get(BaseURL)
             soup = bs(r.text, "lxml")
-            self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
-            self._setttstamp()
+            fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
+
+            def _setttstamp(self):
+                ttstamp = ''
+                for i in fb_dtsg:
+                    ttstamp += str(ord(i))
+                ttstamp += '2'
+
+            self.ttstamp = _setttstamp(fb_dtsg)
             # Set default payload
             self.payloadDefault['__rev']= int(r.text.split('"revision":',1)[1].split(",",1)[0])
             self.payloadDefault['__user']= self.uid
             self.payloadDefault['__a']= '1'
             self.payloadDefault['ttstamp']= self.ttstamp
-            self.payloadDefault['fb_dtsg']= self.fb_dtsg
-
-            self.form = {
-                'channel' : self.user_channel,
-                'partition' : '-2',
-                'clientid' : self.client_id,
-                'viewer_uid' : self.uid,
-                'uid' : self.uid,
-                'state' : 'active',
-                'format' : 'json',
-                'idle' : 0,
-                'cap' : '8'
-            }
+            self.payloadDefault['fb_dtsg']= fb_dtsg
 
             self.prev = now()
             self.tmp_prev = now()
@@ -187,7 +176,7 @@ class Client(object):
 
         r = self._get(SearchURL, payload)
         self.j = j = get_json(r.text)
-		
+
         users = []
         for entry in j['payload']['entries']:
             if entry['type'] == 'user':
