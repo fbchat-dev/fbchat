@@ -21,7 +21,7 @@ Simple:
 Example
 =======
 
-.. code-block:: console
+.. code-block:: python
 
     import fbchat
 
@@ -37,7 +37,7 @@ Sending a Message
     friend = friends[0]
     sent = client.send(friend.uid, "Your Message")
     if sent:
-        print("Message sent successfully")
+        print("Message sent successfully!")
 
 
 Getting last messages sent
@@ -46,8 +46,7 @@ Getting last messages sent
 .. code-block:: python
     
     last_messages = client.getThreadInfo(friend.uid,0)
-    # messages come in reversed order
-    last_messages.reverse()
+    last_messages.reverse()  # messages come in reversed order
     
     for message in last_messages:
         print(message.body)
