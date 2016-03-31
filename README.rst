@@ -21,11 +21,35 @@ Simple:
 Example
 =======
 
-.. code-block:: console
+.. code-block:: python
 
     import fbchat
 
     client = fbchat.Client("YOUR_ID", "YOUR_PASSWORD")
+
+
+Sending a Message
+=================
+
+.. code-block:: python
+    
+    friends = client.getUsers("FRIEND'S NAME")  # return a list of names
+    friend = friends[0]
+    sent = client.send(friend.uid, "Your Message")
+    if sent:
+        print("Message sent successfully!")
+
+
+Getting last messages sent
+==========================
+
+.. code-block:: python
+    
+    last_messages = client.getThreadInfo(friend.uid,0)
+    last_messages.reverse()  # messages come in reversed order
+    
+    for message in last_messages:
+        print(message.body)
 
 
 Authors
