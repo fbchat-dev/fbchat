@@ -194,7 +194,7 @@ class Client(object):
                 users.append(User(entry))
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
-    def send(self, thread_id, message=None, like=None):
+    def send(self, thread_id, message=None, group_thread=False, like=None):
         """Send a message with given thread id
 
         :param thread_id: a thread id that you want to send a message
@@ -230,6 +230,9 @@ class Client(object):
             'message_batch[0][thread_fbid]' : thread_id,
             'message_batch[0][has_attachment]' : False
         }
+        if not group_thread:
+            data["message_batch[0][other_user_fbid]"] = thread_id
+			
         if like:
             try:
                 sticker = LIKES[like.lower()]
