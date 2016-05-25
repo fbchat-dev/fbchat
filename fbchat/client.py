@@ -98,12 +98,12 @@ class Client(object):
         Adds the following defaults to the payload:
           __rev, __user, __a, ttstamp, fb_dtsg, __req
         '''
-        payload=self.payloadDefault.copy()
+        payload = self.payloadDefault.copy()
         if query:
             payload.update(query)
         payload['__req'] = str_base(self.req_counter, 36)
         payload['seq'] = self.seq
-        self.req_counter+=1
+        self.req_counter += 1
         return payload
 
     def _get(self, url, query=None, timeout=30):
@@ -115,7 +115,7 @@ class Client(object):
         return self._session.post(url, headers=self._header, data=payload, timeout=timeout)
 
     def _cleanPost(self, url, query=None, timeout=30):
-        self.req_counter+=1
+        self.req_counter += 1
         return self._session.post(url, headers=self._header, data=query, timeout=timeout)
 
     def login(self):
@@ -142,11 +142,11 @@ class Client(object):
             self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
             self._setttstamp()
             # Set default payload
-            self.payloadDefault['__rev']= int(r.text.split('"revision":',1)[1].split(",",1)[0])
-            self.payloadDefault['__user']= self.uid
-            self.payloadDefault['__a']= '1'
-            self.payloadDefault['ttstamp']= self.ttstamp
-            self.payloadDefault['fb_dtsg']= self.fb_dtsg
+            self.payloadDefault['__rev'] = int(r.text.split('"revision":',1)[1].split(",",1)[0])
+            self.payloadDefault['__user'] = self.uid
+            self.payloadDefault['__a'] = '1'
+            self.payloadDefault['ttstamp'] = self.ttstamp
+            self.payloadDefault['fb_dtsg'] = self.fb_dtsg
 
             self.form = {
                 'channel' : self.user_channel,
@@ -176,6 +176,7 @@ class Client(object):
 
         :param name: name of a person
         """
+
         payload = {
             'value' : name.lower(),
             'viewer' : self.uid,
@@ -187,7 +188,7 @@ class Client(object):
 
         r = self._get(SearchURL, payload)
         self.j = j = get_json(r.text)
-		
+
         users = []
         for entry in j['payload']['entries']:
             if entry['type'] == 'user':
@@ -230,6 +231,7 @@ class Client(object):
             'message_batch[0][thread_fbid]' : thread_id,
             'message_batch[0][has_attachment]' : False
         }
+
         if like:
             try:
                 sticker = LIKES[like.lower()]
@@ -237,8 +239,10 @@ class Client(object):
                 # if user doesn't enter l or m or s, then use the large one
                 sticker = LIKES['l']
             data["message_batch[0][sticker_id]"] = sticker
+
         r = self._post(SendURL, data)
         return r.ok
+
 
     def getThreadInfo(self, userID, start, end=None):
         """Get the info of one Thread
@@ -247,13 +251,14 @@ class Client(object):
         :param start: the start index of a thread
         :param end: (optional) the last index of a thread
         """
-        if not end: end = start + 20
-        if end <= start: end=start+end
 
-        data={}
-        data['messages[user_ids][%s][offset]'%userID]=    start
-        data['messages[user_ids][%s][limit]'%userID]=     end
-        data['messages[user_ids][%s][timestamp]'%userID]= now()
+        if not end: end = start + 20
+        if end <= start: end = start + end
+
+        data = {}
+        data['messages[user_ids][%s][offset]'%userID] =    start
+        data['messages[user_ids][%s][limit]'%userID] =     end
+        data['messages[user_ids][%s][timestamp]'%userID] = now()
 
         r = self._post(MessagesURL, query=data)
         if not r.ok or len(r.text) == 0:
@@ -262,7 +267,8 @@ class Client(object):
         j = get_json(r.text)
         if not j['payload']:
             return None
-        messages=[]
+
+        messages = []
         for message in j['payload']['actions']:
             messages.append(Message(**message))
         return list(reversed(messages))
@@ -274,8 +280,9 @@ class Client(object):
         :param start: the start index of a thread
         :param end: (optional) the last index of a thread
         """
+
         if not end: end = start + 20
-        if end <= start: end=start+end
+        if end <= start: end = start + end
 
         timestamp = now()
         date = datetime.now()
@@ -292,15 +299,15 @@ class Client(object):
         j = get_json(r.text)
 
         # Get names for people
-        participants={}
+        participants = {}
         try:
             for participant in j['payload']['participants']:
                 participants[participant["fbid"]] = participant["name"]
         except Exception as e:
-          print(j)
+            print(j)
 
         # Prevent duplicates in self.threads
-        threadIDs=[getattr(x, "thread_id") for x in self.threads]
+        threadIDs = [getattr(x, "thread_id") for x in self.threads]
         for thread in j['payload']['threads']:
             if thread["thread_id"] not in threadIDs:
                 try:
@@ -320,6 +327,7 @@ class Client(object):
             'last_action_timestamp': now() - 60*1000
             #'last_action_timestamp': 0
         }
+
         r = self._post(ThreadSyncURL, form)
         if not r.ok or len(r.text) == 0:
             return None
@@ -327,22 +335,25 @@ class Client(object):
         j = get_json(r.text)
         result = {
             "message_counts": j['payload']['message_counts'],
-            "unseen_threads": j['payload']['unseen_thread_ids']}
+            "unseen_threads": j['payload']['unseen_thread_ids']
+        }
         return result
 
     def markAsDelivered(self, userID, threadID):
-        data={"message_ids[0]": threadID}
+        data = {"message_ids[0]": threadID}
         data["thread_ids[%s][0]"%userID] = threadID
         r = self._post(DeliveredURL, data)
         return r.ok
 
     def markAsRead(self, userID):
-        data={
+        data = {
             "watermarkTimestamp": now(),
-            "shouldSendReadReceipt": True}
+            "shouldSendReadReceipt": True
+        }
         data["ids[%s]"%userID] = True
         r = self._post(ReadStatusURL, data)
         return r.ok
+
 
     def markAsSeen(self):
         r = self._post(MarkSeenURL, {"seen_timestamp": 0})
@@ -350,7 +361,7 @@ class Client(object):
 
 
     def ping(self, sticky):
-        data={
+        data = {
             'channel': self.user_channel,
             'clientid': self.client_id,
             'partition': -2,
@@ -368,7 +379,8 @@ class Client(object):
         Call pull api to get sticky and pool parameter,
         newer api needs these parameter to work.
         '''
-        data={ "msgs_recv": 0 }
+
+        data = {"msgs_recv": 0}
 
         r = self._get(StickyURL, data)
         j = get_json(r.text)
@@ -385,10 +397,11 @@ class Client(object):
         '''
         Call pull api with seq value to get message data.
         '''
-        data={
+
+        data = {
             "msgs_recv": 0,
-            "sticky_token":sticky,
-            "sticky_pool":pool
+            "sticky_token": sticky,
+            "sticky_pool": pool
         }
 
         r = self._get(StickyURL, data)
@@ -403,16 +416,16 @@ class Client(object):
         Get message and author name from content.
         May contains multiple messages in the content.
         '''
-        if 'ms' not in content:
-            return
+
+        if 'ms' not in content: return
         for m in content['ms']:
             try:
                 if m['type'] in ['m_messaging', 'messaging']:
                     if m['event'] in ['deliver']:
-                        mid =   m['message']['mid']
-                        message=m['message']['body']
-                        fbid =  m['message']['sender_fbid']
-                        name =  m['message']['sender_name']
+                        mid =     m['message']['mid']
+                        message = m['message']['body']
+                        fbid =    m['message']['sender_fbid']
+                        name =    m['message']['sender_name']
                         self.on_message(mid, fbid, name, message, m)
                 elif m['type'] in ['typ']:
                     self.on_typing(m["from"])
@@ -432,6 +445,7 @@ class Client(object):
                     print(m)
             except Exception as e:
                 self.on_message_error(e, m)
+
 
     def listen(self, markAlive=True):
         self.listening = True
@@ -453,23 +467,29 @@ class Client(object):
             except requests.exceptions.Timeout:
               pass
 
+
     def on_message(self, mid, author_id, author_name, message, metadata):
         self.markAsDelivered(author_id, mid)
         self.markAsRead(author_id)
         print("%s said: %s"%(author_name, message))
 
+
     def on_typing(self, author_id):
         pass
+
 
     def on_read(self, author, reader, time):
         pass
 
+
     def on_inbox(self, viewer, unseen, unread, other_unseen, other_unread, timestamp):
         pass
+
 
     def on_message_error(self, exception, message):
         print("Exception: ")
         print(exception)
+
 
     def on_qprimer(self, timestamp):
         pass
