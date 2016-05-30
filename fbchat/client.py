@@ -449,9 +449,9 @@ class Client(object):
                     fbid =    m['delta']['messageMetadata']['threadKey']['otherUserFbId']
                     name =    None
                     self.on_message(mid, fbid, name, message, m)
-
                 else:
-                    print(m)
+                    if self.debug:
+                        print(m)
             except Exception as e:
                 self.on_message_error(e, m)
 
