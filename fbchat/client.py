@@ -444,11 +444,12 @@ class Client(object):
                 elif m['type'] in ['qprimer']:
                     self.on_qprimer(m.get('made'))
                 elif m['type'] in ['delta']:
-                    mid =     m['delta']['messageMetadata']['messageId']
-                    message = m['delta']['body']
-                    fbid =    m['delta']['messageMetadata']['threadKey']['otherUserFbId']
-                    name =    None
-                    self.on_message(mid, fbid, name, message, m)
+                    if 'messageMetadata' in m['delta']:
+                        mid =     m['delta']['messageMetadata']['messageId']
+                        message = m['delta']['body']
+                        fbid =    m['delta']['messageMetadata']['threadKey']['otherUserFbId']
+                        name =    None
+                        self.on_message(mid, fbid, name, message, m)
                 else:
                     if self.debug:
                         print(m)
