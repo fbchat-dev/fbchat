@@ -6,7 +6,8 @@
 
     Facebook Chat (Messenger) for Python
 
-    :copyright: (c) 2015 by Taehoon Kim.
+    :copyright: (c) 2015      by Taehoon Kim.
+    :copyright: (c) 2015-2016 by PidgeyL.
     :license: BSD, see LICENSE for more details.
 """
 
@@ -195,7 +196,7 @@ class Client(object):
                 users.append(User(entry))
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
-    def send(self, thread_id, message=None, like=None):
+    def send(self, user_id, message=None, like=None):
         """Send a message with given thread id
 
         :param thread_id: a thread id that you want to send a message
@@ -209,7 +210,7 @@ class Client(object):
             'client' : self.client,
             'message_batch[0][action_type]' : 'ma-type:user-generated-message',
             'message_batch[0][author]' : 'fbid:' + str(self.uid),
-            'message_batch[0][specific_to_list][0]' : 'fbid:' + str(thread_id),
+            'message_batch[0][specific_to_list][0]' : 'fbid:' + str(user_id),
             'message_batch[0][specific_to_list][1]' : 'fbid:' + str(self.uid),
             'message_batch[0][timestamp]' : timestamp,
             'message_batch[0][timestamp_absolute]' : 'Today',
@@ -228,8 +229,9 @@ class Client(object):
             'message_batch[0][status]' : '0',
             'message_batch[0][message_id]' : generateMessageID(self.client_id),
             'message_batch[0][manual_retry_cnt]' : '0',
-            'message_batch[0][thread_fbid]' : thread_id,
-            'message_batch[0][has_attachment]' : False
+            'message_batch[0][thread_fbid]' : None,
+            'message_batch[0][has_attachment]' : False,
+            'message_batch[0][other_user_fbid]' : user_id
         }
 
         if like:
@@ -428,21 +430,29 @@ class Client(object):
                         name =    m['message']['sender_name']
                         self.on_message(mid, fbid, name, message, m)
                 elif m['type'] in ['typ']:
-                    self.on_typing(m["from"])
+                    self.on_typing(m.get("from"))
                 elif m['type'] in ['m_read_receipt']:
-                    self.on_read(m['realtime_viewer_fbid'], m['reader'], m['time'])
+                    self.on_read(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
                 elif m['type'] in ['inbox']:
-                    viewer = m['realtime_viewer_fbid']
-                    unseen = m['unseen']
-                    unread = m['unread']
-                    other_unseen = m['other_unseen']
-                    other_unread = m['other_unread']
-                    timestamp = m['seen_timestamp']
+                    viewer = m.get('realtime_viewer_fbid')
+                    unseen = m.get('unseen')
+                    unread = m.get('unread')
+                    other_unseen = m.get('other_unseen')
+                    other_unread = m.get('other_unread')
+                    timestamp = m.get('seen_timestamp')
                     self.on_inbox(viewer, unseen, unread, other_unseen, other_unread, timestamp)
                 elif m['type'] in ['qprimer']:
-                    self.on_qprimer(m['made'])
+                    self.on_qprimer(m.get('made'))
+                elif m['type'] in ['delta']:
+                    if 'messageMetadata' in m['delta']:
+                        mid =     m['delta']['messageMetadata']['messageId']
+                        message = m['delta']['body']
+                        fbid =    m['delta']['messageMetadata']['threadKey']['otherUserFbId']
+                        name =    None
+                        self.on_message(mid, fbid, name, message, m)
                 else:
-                    print(m)
+                    if self.debug:
+                        print(m)
             except Exception as e:
                 self.on_message_error(e, m)
 
