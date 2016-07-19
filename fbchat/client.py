@@ -196,13 +196,21 @@ class Client(object):
                 users.append(User(entry))
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
-    def send(self, user_id, message=None, like=None):
+    def send(self, recipient_id, message=None, message_type='user', like=None):
         """Send a message with given thread id
 
-        :param thread_id: a thread id that you want to send a message
+        :param recipient_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
+        :param message_type: determines if the recipient_id is for user or thread
         :param like: size of the like sticker you want to send
         """
+
+        if message_type.lower() == 'group':
+            thread_id = recipient_id
+            user_id = None
+        else:
+            thread_id = None
+            user_id = recipient_id
 
         timestamp = now()
         date = datetime.now()
@@ -210,7 +218,7 @@ class Client(object):
             'client' : self.client,
             'message_batch[0][action_type]' : 'ma-type:user-generated-message',
             'message_batch[0][author]' : 'fbid:' + str(self.uid),
-            'message_batch[0][specific_to_list][0]' : 'fbid:' + str(user_id),
+            'message_batch[0][specific_to_list][0]' : 'fbid:' + str(recipient_id),
             'message_batch[0][specific_to_list][1]' : 'fbid:' + str(self.uid),
             'message_batch[0][timestamp]' : timestamp,
             'message_batch[0][timestamp_absolute]' : 'Today',
@@ -229,7 +237,7 @@ class Client(object):
             'message_batch[0][status]' : '0',
             'message_batch[0][message_id]' : generateMessageID(self.client_id),
             'message_batch[0][manual_retry_cnt]' : '0',
-            'message_batch[0][thread_fbid]' : None,
+            'message_batch[0][thread_fbid]' : thread_id,
             'message_batch[0][has_attachment]' : False,
             'message_batch[0][other_user_fbid]' : user_id
         }
