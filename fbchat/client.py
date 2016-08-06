@@ -411,7 +411,8 @@ class Client(object):
         data = {
             "msgs_recv": 0,
             "sticky_token": sticky,
-            "sticky_pool": pool
+            "sticky_pool": pool,
+            "clientid": self.client_id,
         }
 
         r = self._get(StickyURL, data)
