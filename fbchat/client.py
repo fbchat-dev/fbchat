@@ -411,7 +411,8 @@ class Client(object):
         data = {
             "msgs_recv": 0,
             "sticky_token": sticky,
-            "sticky_pool": pool
+            "sticky_pool": pool,
+            "clientid": self.client_id,
         }
 
         r = self._get(StickyURL, data)
@@ -487,24 +488,39 @@ class Client(object):
 
 
     def on_message(self, mid, author_id, author_name, message, metadata):
+        '''
+        subclass Client and override this method to add custom behavior on event
+        '''
         self.markAsDelivered(author_id, mid)
         self.markAsRead(author_id)
         print("%s said: %s"%(author_name, message))
 
 
     def on_typing(self, author_id):
+        '''
+        subclass Client and override this method to add custom behavior on event
+        '''
         pass
 
 
     def on_read(self, author, reader, time):
+        '''
+        subclass Client and override this method to add custom behavior on event
+        '''
         pass
 
 
     def on_inbox(self, viewer, unseen, unread, other_unseen, other_unread, timestamp):
+        '''
+        subclass Client and override this method to add custom behavior on event
+        '''
         pass
 
 
     def on_message_error(self, exception, message):
+        '''
+        subclass Client and override this method to add custom behavior on event
+        '''
         print("Exception: ")
         print(exception)
 
