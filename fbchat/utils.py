@@ -34,3 +34,14 @@ def generateMessageID(client_id=None):
     k = now()
     l = int(random() * 4294967295)
     return ("<%s:%s-%s@mail.projektitan.com>" % (k, l, client_id));
+
+def getSignatureID():
+    return hex(int(random() * 2147483648))
+
+def generateOfflineThreadingID() :
+    ret = now()
+    value = int(random() * 4294967295);
+    string = ("0000000000000000000000" + bin(value))[-22:]
+    msgs = bin(ret) + string
+    return str(int(msgs,2))
+

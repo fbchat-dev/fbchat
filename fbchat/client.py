@@ -18,7 +18,7 @@ from random import random, choice
 from datetime import datetime
 from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
-
+import math
 from .utils import *
 from .models import *
 from .stickers import *
@@ -26,7 +26,8 @@ from .stickers import *
 # URLs
 LoginURL     ="https://m.facebook.com/login.php?login_attempt=1"
 SearchURL    ="https://www.facebook.com/ajax/typeahead/search.php"
-SendURL      ="https://www.facebook.com/ajax/mercury/send_messages.php"
+# SendURL      ="https://www.facebook.com/ajax/mercury/send_messages.php"
+SendURL      ="https://www.facebook.com/messaging/send/"
 ThreadsURL   ="https://www.facebook.com/ajax/mercury/threadlist_info.php"
 ThreadSyncURL="https://www.facebook.com/ajax/mercury/thread_sync.php"
 MessagesURL  ="https://www.facebook.com/ajax/mercury/thread_info.php"
@@ -221,37 +222,74 @@ class Client(object):
         else:
             thread_id = None
             user_id = recipient_id
-
+        # messageAndOTID=generateMessageID(self.client_id)
+        messageAndOTID=generateOfflineThreadingID()
         timestamp = now()
         date = datetime.now()
         data = {
-            'client' : self.client,
-            'message_batch[0][action_type]' : 'ma-type:user-generated-message',
-            'message_batch[0][author]' : 'fbid:' + str(self.uid),
-            'message_batch[0][specific_to_list][0]' : 'fbid:' + str(recipient_id),
-            'message_batch[0][specific_to_list][1]' : 'fbid:' + str(self.uid),
-            'message_batch[0][timestamp]' : timestamp,
-            'message_batch[0][timestamp_absolute]' : 'Today',
-            'message_batch[0][timestamp_relative]' : str(date.hour) + ":" + str(date.minute).zfill(2),
-            'message_batch[0][timestamp_time_passed]' : '0',
-            'message_batch[0][is_unread]' : False,
-            'message_batch[0][is_cleared]' : False,
-            'message_batch[0][is_forward]' : False,
-            'message_batch[0][is_filtered_content]' : False,
-            'message_batch[0][is_spoof_warning]' : False,
-            'message_batch[0][source]' : 'source:chat:web',
-            'message_batch[0][source_tags][0]' : 'source:chat',
-            'message_batch[0][body]' : message,
-            'message_batch[0][html_body]' : False,
-            'message_batch[0][ui_push_phase]' : 'V3',
-            'message_batch[0][status]' : '0',
-            'message_batch[0][message_id]' : generateMessageID(self.client_id),
-            'message_batch[0][manual_retry_cnt]' : '0',
-            'message_batch[0][thread_fbid]' : thread_id,
-            'message_batch[0][has_attachment]' : image_id != None,
-            'message_batch[0][other_user_fbid]' : user_id
+            # 'message_batch[0][action_type]' : 'ma-type:user-generated-message',
+            # 'message_batch[0][author]' : 'fbid:' + str(self.uid),
+            # 'message_batch[0][specific_to_list][0]' : 'fbid:' + str(recipient_id),
+            # 'message_batch[0][specific_to_list][1]' : 'fbid:' + str(self.uid),
+            # 'message_batch[0][timestamp]' : timestamp,
+            # 'message_batch[0][timestamp_absolute]' : 'Today',
+            # 'message_batch[0][timestamp_relative]' : str(date.hour) + ":" + str(date.minute).zfill(2),
+            # 'message_batch[0][timestamp_time_passed]' : '0',
+            # 'message_batch[0][is_unread]' : False,
+            # 'message_batch[0][is_cleared]' : False,
+            # 'message_batch[0][is_forward]' : False,
+            # 'message_batch[0][is_filtered_content]' : False,
+            # 'message_batch[0][is_spoof_warning]' : False,
+            # 'message_batch[0][source]' : 'source:chat:web',
+            # 'message_batch[0][source_tags][0]' : 'source:chat',
+            # 'message_batch[0][body]' : message,
+            # 'message_batch[0][html_body]' : False,
+            # 'message_batch[0][ui_push_phase]' : 'V3',
+            # 'message_batch[0][status]' : '0',
+            # 'message_batch[0][message_id]' : generateMessageID(self.client_id),
+            # 'message_batch[0][manual_retry_cnt]' : '0',
+            # 'message_batch[0][thread_fbid]' : thread_id,
+            # 'message_batch[0][has_attachment]' : image_id != None,
+            # 'message_batch[0][other_user_fbid]' : user_id
+            'client': self.client,
+            'action_type' : 'ma-type:user-generated-message',
+            'author' : 'fbid:' + str(self.uid),
+            'timestamp' : timestamp,
+            'timestamp_absolute' : 'Today',
+            'timestamp_relative' : str(date.hour) + ":" + str(date.minute).zfill(2),
+            'timestamp_time_passed' : '0',
+            'is_unread' : False,
+            'is_cleared' : False,
+            'is_forward' : False,
+            'is_filtered_content' : False,
+            'is_filtered_content_bh': False,
+            'is_filtered_content_account': False,
+            'is_filtered_content_quasar': False,
+            'is_filtered_content_invalid_app': False,
+            'is_spoof_warning' : False,
+            'source' : 'source:chat:web',
+            'source_tags[0]' : 'source:chat',
+            'body' : message,
+            'html_body' : False,
+            'ui_push_phase' : 'V3',
+            'status' : '0',
+            'offline_threading_id':messageAndOTID,
+            'message_id' : messageAndOTID,
+            'threading_id':generateMessageID(self.client_id),
+            'ephemeral_ttl_mode:': '0',
+            'manual_retry_cnt' : '0',
+            'signatureID' : getSignatureID(),
+            'has_attachment' : image_id != None,
+            'other_user_fbid' : recipient_id,
+            'specific_to_list[0]' : 'fbid:' + str(recipient_id),
+            'specific_to_list[1]' : 'fbid:' + str(self.uid),            
+
         }
+
+
         
+
+
         if image_id:
             data['message_batch[0][image_ids][0]'] = image_id
 
@@ -264,6 +302,10 @@ class Client(object):
             data["message_batch[0][sticker_id]"] = sticker
 
         r = self._post(SendURL, data)
+        if self.debug:
+            print r
+            for k,v in data.iteritems():
+                print k,':',v
         return r.ok
 
     def sendRemoteImage(self, recipient_id, message=None, message_type='user', image=''):
