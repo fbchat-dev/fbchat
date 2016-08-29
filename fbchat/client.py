@@ -18,7 +18,6 @@ from random import random, choice
 from datetime import datetime
 from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
-import math
 from .utils import *
 from .models import *
 from .stickers import *
@@ -222,35 +221,11 @@ class Client(object):
         else:
             thread_id = None
             user_id = recipient_id
-        # messageAndOTID=generateMessageID(self.client_id)
+
         messageAndOTID=generateOfflineThreadingID()
         timestamp = now()
         date = datetime.now()
         data = {
-            # 'message_batch[0][action_type]' : 'ma-type:user-generated-message',
-            # 'message_batch[0][author]' : 'fbid:' + str(self.uid),
-            # 'message_batch[0][specific_to_list][0]' : 'fbid:' + str(recipient_id),
-            # 'message_batch[0][specific_to_list][1]' : 'fbid:' + str(self.uid),
-            # 'message_batch[0][timestamp]' : timestamp,
-            # 'message_batch[0][timestamp_absolute]' : 'Today',
-            # 'message_batch[0][timestamp_relative]' : str(date.hour) + ":" + str(date.minute).zfill(2),
-            # 'message_batch[0][timestamp_time_passed]' : '0',
-            # 'message_batch[0][is_unread]' : False,
-            # 'message_batch[0][is_cleared]' : False,
-            # 'message_batch[0][is_forward]' : False,
-            # 'message_batch[0][is_filtered_content]' : False,
-            # 'message_batch[0][is_spoof_warning]' : False,
-            # 'message_batch[0][source]' : 'source:chat:web',
-            # 'message_batch[0][source_tags][0]' : 'source:chat',
-            # 'message_batch[0][body]' : message,
-            # 'message_batch[0][html_body]' : False,
-            # 'message_batch[0][ui_push_phase]' : 'V3',
-            # 'message_batch[0][status]' : '0',
-            # 'message_batch[0][message_id]' : generateMessageID(self.client_id),
-            # 'message_batch[0][manual_retry_cnt]' : '0',
-            # 'message_batch[0][thread_fbid]' : thread_id,
-            # 'message_batch[0][has_attachment]' : image_id != None,
-            # 'message_batch[0][other_user_fbid]' : user_id
             'client': self.client,
             'action_type' : 'ma-type:user-generated-message',
             'author' : 'fbid:' + str(self.uid),
