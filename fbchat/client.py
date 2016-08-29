@@ -277,6 +277,7 @@ class Client(object):
             data["message_batch[0][sticker_id]"] = sticker
 
         r = self._post(SendURL, data)
+
         if self.debug:
             print r
             for k,v in data.iteritems():
@@ -519,7 +520,7 @@ class Client(object):
                     if 'messageMetadata' in m['delta']:
                         mid =     m['delta']['messageMetadata']['messageId']
                         message = m['delta']['body']
-                        fbid =    m['delta']['messageMetadata']['threadKey']['otherUserFbId']
+                        fbid =    m['delta']['messageMetadata']['actorFbId']
                         name =    None
                         self.on_message(mid, fbid, name, message, m)
                 else:
