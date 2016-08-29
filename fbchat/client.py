@@ -549,7 +549,7 @@ class Client(object):
               pass
     
     def getUserInfo(self,*user_ids):
-        """Get user info from id.
+        """Get user info from id. Unordered.
 
         :param user_ids: one or more user id(s) to query 
         """
@@ -557,7 +557,11 @@ class Client(object):
         data = {"ids[{}]".format(i):user_id for i,user_id in enumerate(user_ids)}
         r = self._post(UserInfoURL, data)
         info = get_json(r.text)
-        return [details for profile,details in info['payload']['profiles'].iteritems()]
+        full_data= [details for profile,details in info['payload']['profiles'].iteritems()]
+        if len(full_data)==1:
+            full_data=full_data[0]
+        return full_data
+
 
 
 
