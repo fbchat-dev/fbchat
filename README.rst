@@ -40,6 +40,18 @@ Sending a Message
         print("Message sent successfully!")
 
 
+Getting user info from user id
+==============================
+
+.. code-block:: python
+
+    friend1 = client.getUsers('<friend name 1>')[0]
+    friend2 = client.getUsers('<friend name 2>')[0]
+    friend1_info = client.getUserInfo(friend1.uid) # returns dict with details
+    both_info = client.getUserInfo(friend1.uid,friend2.uid) # query both together, returns list of dicts
+    friend1_name = friend1_info['name'] 
+
+
 Getting last messages sent
 ==========================
 
