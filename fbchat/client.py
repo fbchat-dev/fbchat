@@ -548,18 +548,16 @@ class Client(object):
             except requests.exceptions.Timeout:
               pass
     
-    def getUserInfo(self,user_ids):
+    def getUserInfo(self,*user_ids):
         """Get user info from id.
 
-        :param user_ids: list of or one user id(s) to query 
+        :param user_ids: one or more user id(s) to query 
         """
         
-        if type(user_ids) != list:
-            user_ids=[user_ids]
-
         data = {"ids[{}]".format(i):user_id for i,user_id in enumerate(user_ids)}
         r = self._post(UserInfoURL, data)
-        return get_json(r.text)
+        info = get_json(r.text)
+        return [details for profile,details in info['payload']['profiles'].iteritems()]
 
 
 
