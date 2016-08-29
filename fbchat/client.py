@@ -279,9 +279,8 @@ class Client(object):
         r = self._post(SendURL, data)
 
         if self.debug:
-            print r
-            for k,v in data.iteritems():
-                print k,':',v
+            print(r)
+            print(data)
         return r.ok
 
     def sendRemoteImage(self, recipient_id, message=None, message_type='user', image=''):
