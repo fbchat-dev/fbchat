@@ -25,7 +25,6 @@ from .stickers import *
 # URLs
 LoginURL     ="https://m.facebook.com/login.php?login_attempt=1"
 SearchURL    ="https://www.facebook.com/ajax/typeahead/search.php"
-# SendURL      ="https://www.facebook.com/ajax/mercury/send_messages.php"
 SendURL      ="https://www.facebook.com/messaging/send/"
 ThreadsURL   ="https://www.facebook.com/ajax/mercury/threadlist_info.php"
 ThreadSyncURL="https://www.facebook.com/ajax/mercury/thread_sync.php"
@@ -38,7 +37,7 @@ MobileURL    ="https://m.facebook.com/"
 StickyURL    ="https://0-edge-chat.facebook.com/pull"
 PingURL      ="https://0-channel-proxy-06-ash2.facebook.com/active_ping"
 UploadURL    ="https://upload.facebook.com/ajax/mercury/upload.php"
-
+UserInfoURL  ="https://www.facebook.com/chat/user_info/"
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -548,6 +547,21 @@ class Client(object):
                 break
             except requests.exceptions.Timeout:
               pass
+    
+    def getUserInfo(self,user_ids):
+        """Get user info from id.
+
+        :param user_ids: list of or one user id(s) to query 
+        """
+        
+        if type(user_ids) != list:
+            user_ids=[user_ids]
+
+        data = {"ids[{}]".format(i):user_id for i,user_id in enumerate(user_ids)}
+        r = self._post(UserInfoURL, data)
+        return get_json(r.text)
+
+
 
 
     def on_message(self, mid, author_id, author_name, message, metadata):
