@@ -38,6 +38,10 @@ Sending a Message
     sent = client.send(friend.uid, "Your Message")
     if sent:
         print("Message sent successfully!")
+    # IMAGES
+    client.sendLocalImage(friend.uid,message='<message text>',image='<path/to/image/file>') # send local image
+    imgurl = "http://i.imgur.com/LDQ2ITV.jpg"
+    client.sendRemoteImage(friend.uid,message='<message text>', image=imgurl) # send image from image url
 
 
 Getting user info from user id
@@ -86,7 +90,7 @@ Example Echobot
             if str(author_id) != str(self.uid):
                 self.send(author_id,message)
     
-    bot=EchoBot("<email>", "<password>")
+    bot = EchoBot("<email>", "<password>")
     bot.listen()
 
 
