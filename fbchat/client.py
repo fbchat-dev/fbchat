@@ -21,7 +21,7 @@ from mimetypes import guess_type
 from .utils import *
 from .models import *
 from .stickers import *
-
+import time
 # URLs
 LoginURL     ="https://m.facebook.com/login.php?login_attempt=1"
 SearchURL    ="https://www.facebook.com/ajax/typeahead/search.php"
@@ -47,7 +47,7 @@ class Client(object):
 
     """
 
-    def __init__(self, email, password, debug=True, user_agent=None):
+    def __init__(self, email, password, debug=True, user_agent=None , max_retries=5):
         """A client for the Facebook Chat (Messenger).
 
         :param email: Facebook `email` or `id` or `phone number`
@@ -84,8 +84,17 @@ class Client(object):
 
         self._console("Logging in...")
 
-        if not self.login():
-            raise Exception("id or password is wrong")
+        for i in range(1,max_retries+1):
+            if not self.login():
+                self._console("Attempt #{} failed{}".format(i,{True:', retrying'}.get(i<5,'')))
+                time.sleep(1)
+                continue
+            else:
+                self._console("login successful")
+                break
+        else:
+            raise Exception("login failed. Check id/password")
+
 
         self.threads = []
 
