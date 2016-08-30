@@ -265,7 +265,7 @@ class Client(object):
 
 
         if image_id:
-            data['message_batch[0][image_ids][0]'] = image_id
+            data['image_ids[0]'] = image_id
 
         if like:
             try:
@@ -273,7 +273,7 @@ class Client(object):
             except KeyError:
                 # if user doesn't enter l or m or s, then use the large one
                 sticker = LIKES['l']
-            data["message_batch[0][sticker_id]"] = sticker
+            data["sticker_id"] = sticker
 
         r = self._post(SendURL, data)
 
