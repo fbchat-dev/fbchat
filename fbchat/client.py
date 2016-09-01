@@ -566,7 +566,7 @@ class Client(object):
         data = {"ids[{}]".format(i):user_id for i,user_id in enumerate(user_ids)}
         r = self._post(UserInfoURL, data)
         info = get_json(r.text)
-        full_data= [details for profile,details in info['payload']['profiles'].iteritems()]
+        full_data= [details for profile,details in info['payload']['profiles'].items()]
         if len(full_data)==1:
             full_data=full_data[0]
         return full_data
