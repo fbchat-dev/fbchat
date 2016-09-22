@@ -22,6 +22,7 @@ from .utils import *
 from .models import *
 from .stickers import *
 import time
+import sys
 # URLs
 LoginURL     ="https://m.facebook.com/login.php?login_attempt=1"
 SearchURL    ="https://www.facebook.com/ajax/typeahead/search.php"
@@ -526,7 +527,7 @@ class Client(object):
                 elif m['type'] in ['delta']:
                     if 'messageMetadata' in m['delta']:
                         mid =     m['delta']['messageMetadata']['messageId']
-                        message = m['delta']['body']
+                        message = m['delta'].get('body','')
                         fbid =    m['delta']['messageMetadata']['actorFbId']
                         name =    None
                         self.on_message(mid, fbid, name, message, m)
@@ -534,7 +535,8 @@ class Client(object):
                     if self.debug:
                         print(m)
             except Exception as e:
-                self.on_message_error(e, m)
+                # ex_type, ex, tb = sys.exc_info()
+                self.on_message_error(sys.exc_info(), m)
 
 
     def listen(self, markAlive=True):
