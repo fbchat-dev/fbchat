@@ -18,15 +18,14 @@ from random import random, choice
 from datetime import datetime
 from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
-
 from .utils import *
 from .models import *
 from .stickers import *
-
+import time
 # URLs
 LoginURL     ="https://m.facebook.com/login.php?login_attempt=1"
 SearchURL    ="https://www.facebook.com/ajax/typeahead/search.php"
-SendURL      ="https://www.facebook.com/ajax/mercury/send_messages.php"
+SendURL      ="https://www.facebook.com/messaging/send/"
 ThreadsURL   ="https://www.facebook.com/ajax/mercury/threadlist_info.php"
 ThreadSyncURL="https://www.facebook.com/ajax/mercury/thread_sync.php"
 MessagesURL  ="https://www.facebook.com/ajax/mercury/thread_info.php"
@@ -38,7 +37,7 @@ MobileURL    ="https://m.facebook.com/"
 StickyURL    ="https://0-edge-chat.facebook.com/pull"
 PingURL      ="https://0-channel-proxy-06-ash2.facebook.com/active_ping"
 UploadURL    ="https://upload.facebook.com/ajax/mercury/upload.php"
-
+UserInfoURL  ="https://www.facebook.com/chat/user_info/"
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -48,7 +47,7 @@ class Client(object):
 
     """
 
-    def __init__(self, email, password, debug=True, user_agent=None):
+    def __init__(self, email, password, debug=True, user_agent=None , max_retries=5):
         """A client for the Facebook Chat (Messenger).
 
         :param email: Facebook `email` or `id` or `phone number`
@@ -85,8 +84,17 @@ class Client(object):
 
         self._console("Logging in...")
 
-        if not self.login():
-            raise Exception("id or password is wrong")
+        for i in range(1,max_retries+1):
+            if not self.login():
+                self._console("Attempt #{} failed{}".format(i,{True:', retrying'}.get(i<5,'')))
+                time.sleep(1)
+                continue
+            else:
+                self._console("login successful")
+                break
+        else:
+            raise Exception("login failed. Check id/password")
+
 
         self.threads = []
 
@@ -222,38 +230,51 @@ class Client(object):
             thread_id = None
             user_id = recipient_id
 
+        messageAndOTID=generateOfflineThreadingID()
         timestamp = now()
         date = datetime.now()
         data = {
-            'client' : self.client,
-            'message_batch[0][action_type]' : 'ma-type:user-generated-message',
-            'message_batch[0][author]' : 'fbid:' + str(self.uid),
-            'message_batch[0][specific_to_list][0]' : 'fbid:' + str(recipient_id),
-            'message_batch[0][specific_to_list][1]' : 'fbid:' + str(self.uid),
-            'message_batch[0][timestamp]' : timestamp,
-            'message_batch[0][timestamp_absolute]' : 'Today',
-            'message_batch[0][timestamp_relative]' : str(date.hour) + ":" + str(date.minute).zfill(2),
-            'message_batch[0][timestamp_time_passed]' : '0',
-            'message_batch[0][is_unread]' : False,
-            'message_batch[0][is_cleared]' : False,
-            'message_batch[0][is_forward]' : False,
-            'message_batch[0][is_filtered_content]' : False,
-            'message_batch[0][is_spoof_warning]' : False,
-            'message_batch[0][source]' : 'source:chat:web',
-            'message_batch[0][source_tags][0]' : 'source:chat',
-            'message_batch[0][body]' : message,
-            'message_batch[0][html_body]' : False,
-            'message_batch[0][ui_push_phase]' : 'V3',
-            'message_batch[0][status]' : '0',
-            'message_batch[0][message_id]' : generateMessageID(self.client_id),
-            'message_batch[0][manual_retry_cnt]' : '0',
-            'message_batch[0][thread_fbid]' : thread_id,
-            'message_batch[0][has_attachment]' : image_id != None,
-            'message_batch[0][other_user_fbid]' : user_id
+            'client': self.client,
+            'action_type' : 'ma-type:user-generated-message',
+            'author' : 'fbid:' + str(self.uid),
+            'timestamp' : timestamp,
+            'timestamp_absolute' : 'Today',
+            'timestamp_relative' : str(date.hour) + ":" + str(date.minute).zfill(2),
+            'timestamp_time_passed' : '0',
+            'is_unread' : False,
+            'is_cleared' : False,
+            'is_forward' : False,
+            'is_filtered_content' : False,
+            'is_filtered_content_bh': False,
+            'is_filtered_content_account': False,
+            'is_filtered_content_quasar': False,
+            'is_filtered_content_invalid_app': False,
+            'is_spoof_warning' : False,
+            'source' : 'source:chat:web',
+            'source_tags[0]' : 'source:chat',
+            'body' : message,
+            'html_body' : False,
+            'ui_push_phase' : 'V3',
+            'status' : '0',
+            'offline_threading_id':messageAndOTID,
+            'message_id' : messageAndOTID,
+            'threading_id':generateMessageID(self.client_id),
+            'ephemeral_ttl_mode:': '0',
+            'manual_retry_cnt' : '0',
+            'signatureID' : getSignatureID(),
+            'has_attachment' : image_id != None,
+            'other_user_fbid' : recipient_id,
+            'specific_to_list[0]' : 'fbid:' + str(recipient_id),
+            'specific_to_list[1]' : 'fbid:' + str(self.uid),            
+
         }
+
+
         
+
+
         if image_id:
-            data['message_batch[0][image_ids][0]'] = image_id
+            data['image_ids[0]'] = image_id
 
         if like:
             try:
@@ -261,9 +282,13 @@ class Client(object):
             except KeyError:
                 # if user doesn't enter l or m or s, then use the large one
                 sticker = LIKES['l']
-            data["message_batch[0][sticker_id]"] = sticker
+            data["sticker_id"] = sticker
 
         r = self._post(SendURL, data)
+
+        if self.debug:
+            print(r)
+            print(data)
         return r.ok
 
     def sendRemoteImage(self, recipient_id, message=None, message_type='user', image=''):
@@ -502,7 +527,7 @@ class Client(object):
                     if 'messageMetadata' in m['delta']:
                         mid =     m['delta']['messageMetadata']['messageId']
                         message = m['delta']['body']
-                        fbid =    m['delta']['messageMetadata']['threadKey']['otherUserFbId']
+                        fbid =    m['delta']['messageMetadata']['actorFbId']
                         name =    None
                         self.on_message(mid, fbid, name, message, m)
                 else:
@@ -531,6 +556,23 @@ class Client(object):
                 break
             except requests.exceptions.Timeout:
               pass
+    
+    def getUserInfo(self,*user_ids):
+        """Get user info from id. Unordered.
+
+        :param user_ids: one or more user id(s) to query 
+        """
+        
+        data = {"ids[{}]".format(i):user_id for i,user_id in enumerate(user_ids)}
+        r = self._post(UserInfoURL, data)
+        info = get_json(r.text)
+        full_data= [details for profile,details in info['payload']['profiles'].items()]
+        if len(full_data)==1:
+            full_data=full_data[0]
+        return full_data
+
+
+
 
 
     def on_message(self, mid, author_id, author_name, message, metadata):
