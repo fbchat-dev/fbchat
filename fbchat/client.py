@@ -39,6 +39,7 @@ StickyURL    ="https://0-edge-chat.facebook.com/pull"
 PingURL      ="https://0-channel-proxy-06-ash2.facebook.com/active_ping"
 UploadURL    ="https://upload.facebook.com/ajax/mercury/upload.php"
 UserInfoURL  ="https://www.facebook.com/chat/user_info/"
+ConnectURL   ="https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -441,6 +442,19 @@ class Client(object):
         r = self._post(MarkSeenURL, {"seen_timestamp": 0})
         return r.ok
 
+    def friend_connect(self, friend_id):
+        data = {
+            "to_friend": friend_id,
+            "action": "confirm"
+        }
+
+        r = self._post(ConnectURL, data)
+
+        if self.debug:
+            print(r)
+            print(data)
+        return r.ok
+
 
     def ping(self, sticky):
         data = {
@@ -531,6 +545,9 @@ class Client(object):
                         fbid =    m['delta']['messageMetadata']['actorFbId']
                         name =    None
                         self.on_message(mid, fbid, name, message, m)
+                elif m['type'] in ['jewel_requests_add']:
+                        from_id = m['from']
+                        self.on_friend_request(from_id)
                 else:
                     if self.debug:
                         print(m)
@@ -584,6 +601,13 @@ class Client(object):
         self.markAsDelivered(author_id, mid)
         self.markAsRead(author_id)
         print("%s said: %s"%(author_name, message))
+
+
+   def on_friend_request(self, from_id):
+       '''
+       subclass Client and override this method to add custom behavior on event
+       '''
+       print("friend request from %s"%from_id)
 
 
     def on_typing(self, author_id):
