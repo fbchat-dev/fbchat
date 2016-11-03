@@ -462,7 +462,11 @@ class Client(object):
         newer api needs these parameter to work.
         '''
 
-        data = {"msgs_recv": 0}
+        data = {
+            "msgs_recv": 0,
+            "channel": self.user_channel,
+            "clientid": self.client_id
+        }
 
         r = self._get(StickyURL, data)
         j = get_json(r.text)
