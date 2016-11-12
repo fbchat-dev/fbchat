@@ -39,6 +39,7 @@ StickyURL    ="https://0-edge-chat.facebook.com/pull"
 PingURL      ="https://0-channel-proxy-06-ash2.facebook.com/active_ping"
 UploadURL    ="https://upload.facebook.com/ajax/mercury/upload.php"
 UserInfoURL  ="https://www.facebook.com/chat/user_info/"
+RemoveUserURL="https://www.facebook.com/chat/remove_participants/"
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -574,6 +575,24 @@ class Client(object):
         return full_data
 
 
+    def remove_user_from_chat(self, threadID, userID):
+        """Remove user (userID) from group chat (threadID)
+        
+        :param threadID: group chat id
+        :param userID: user id to remove from chat
+        """
+        
+        data = {
+            "uid" : userID,
+            "tid" : threadID
+        }
+        
+        r = self._post(RemoveUserURL, data)
+
+        self._console(r)
+        self._console(data)
+
+        return r.ok
 
 
 
