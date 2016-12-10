@@ -595,6 +595,52 @@ class Client(object):
         return r.ok
 
 
+    def changeThreadTitle(self, threadID, newTitle):
+        """Change title of a group conversation
+        
+        :param threadID: group chat id
+        :param newTitle: new group chat title
+        """
+        
+        messageAndOTID = generateOfflineThreadingID()
+        timestamp = now()
+        date = datetime.now()
+        data = {
+            'client' : self.client,
+            'action_type' : 'ma-type:log-message',
+            'author' : 'fbid:' + str(self.uid),
+            'thread_id' : '',
+            'author_email' : '',
+            'coordinates' : '',
+            'timestamp' : timestamp,
+            'timestamp_absolute' : 'Today',
+            'timestamp_relative' : str(date.hour) + ":" + str(date.minute).zfill(2),
+            'timestamp_time_passed' : '0',
+            'is_unread' : False,
+            'is_cleared' : False,
+            'is_forward' : False,
+            'is_filtered_content' : False,
+            'is_spoof_warning' : False,
+            'source' : 'source:chat:web',
+            'source_tags[0]' : 'source:chat',
+            'status' : '0',
+            'offline_threading_id' : messageAndOTID,
+            'message_id' : messageAndOTID,
+            'threading_id': generateMessageID(self.client_id),
+            'manual_retry_cnt' : '0',
+            'thread_fbid' : threadID,
+            'log_message_data[name]' : newTitle,
+            'log_message_type' : 'log:thread-name'
+        }
+
+        r = self._post(SendURL, data)
+
+        self._console(r)
+        self._console(data)
+
+        return r.ok
+
+
 
     def on_message(self, mid, author_id, author_name, message, metadata):
         '''
