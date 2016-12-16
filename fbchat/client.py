@@ -518,7 +518,7 @@ class Client(object):
                         name =    m['message']['sender_name']
                         self.on_message(mid, fbid, name, message, m)
                 elif m['type'] in ['typ']:
-                    self.on_typing(m.get("from"))
+                    self.on_typing(m.get("from"), m)
                 elif m['type'] in ['m_read_receipt']:
                     self.on_read(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
                 elif m['type'] in ['inbox']:
@@ -593,7 +593,7 @@ class Client(object):
         print("%s said: %s"%(author_name, message))
 
 
-    def on_typing(self, author_id):
+    def on_typing(self, author_id, metadata=None):
         '''
         subclass Client and override this method to add custom behavior on event
         '''
