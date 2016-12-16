@@ -131,12 +131,12 @@ class Client(object):
     def _cleanPost(self, url, query=None, timeout=30):
         self.req_counter += 1
         return self._session.post(url, headers=self._header, data=query, timeout=timeout)
-        
+
     def _postFile(self, url, files=None, timeout=30):
         payload=self._generatePayload(None)
         return self._session.post(url, data=payload, timeout=timeout, files=files)
-        
-        
+
+
     def login(self):
         if not (self.email and self.password):
             raise Exception("id and password or config is needed")
@@ -266,12 +266,12 @@ class Client(object):
             'has_attachment' : image_id != None,
             'other_user_fbid' : recipient_id,
             'specific_to_list[0]' : 'fbid:' + str(recipient_id),
-            'specific_to_list[1]' : 'fbid:' + str(self.uid),            
+            'specific_to_list[1]' : 'fbid:' + str(self.uid),
 
         }
 
 
-        
+
 
 
         if image_id:
@@ -294,7 +294,7 @@ class Client(object):
 
     def sendRemoteImage(self, recipient_id, message=None, message_type='user', image=''):
         """Send an image from a URL
-        
+
         :param recipient_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
         :param message_type: determines if the recipient_id is for user or thread
@@ -304,10 +304,10 @@ class Client(object):
         remote_image = requests.get(image).content
         image_id = self.uploadImage({'file': (image, remote_image, mimetype)})
         return self.send(recipient_id, message, message_type, None, image_id)
-        
+
     def sendLocalImage(self, recipient_id, message=None, message_type='user', image=''):
         """Send an image from a file path
-        
+
         :param recipient_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
         :param message_type: determines if the recipient_id is for user or thread
@@ -316,16 +316,18 @@ class Client(object):
         mimetype = guess_type(image)[0]
         image_id = self.uploadImage({'file': (image, open(image), mimetype)})
         return self.send(recipient_id, message, message_type, None, image_id)
-        
+
     def uploadImage(self, image):
         """Upload an image and get the image_id for sending in a message
-        
+
         :param image: a tuple of (file name, data, mime type) to upload to facebook
         """
         r = self._postFile(UploadURL, image)
+        if isinstance(r._content, str) is False:
+            r._content = r._content.decode("utf-8")
         # Strip the start and parse out the returned image_id
         return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
-        
+
     def getThreadInfo(self, userID, start, end=None):
         """Get the info of one Thread
 
@@ -562,13 +564,13 @@ class Client(object):
                 break
             except requests.exceptions.Timeout:
               pass
-    
+
     def getUserInfo(self,*user_ids):
         """Get user info from id. Unordered.
 
-        :param user_ids: one or more user id(s) to query 
+        :param user_ids: one or more user id(s) to query
         """
-        
+
         data = {"ids[{}]".format(i):user_id for i,user_id in enumerate(user_ids)}
         r = self._post(UserInfoURL, data)
         info = get_json(r.text)
