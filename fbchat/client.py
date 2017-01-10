@@ -98,6 +98,8 @@ class Client(object):
 
 
         self.threads = []
+        self.pending_threads = []
+        self.archived_threads = []
 
     def _console(self, msg):
         if self.debug: print(msg)
@@ -359,22 +361,30 @@ class Client(object):
         return list(reversed(messages))
 
 
-    def getThreadList(self, start, end=None):
+    def getThreadList(self, start, end=None, thread_type='inbox'):
         """Get thread list of your facebook account.
 
         :param start: the start index of a thread
         :param end: (optional) the last index of a thread
+        :param thread_type: (optional) "inbox", "pending", "archived"
         """
 
         if not end: end = start + 20
         if end <= start: end = start + end
 
+        if thread_type in ['inbox', 'pending', 'archived']:
+            if thread_type == 'archived':
+                thread_type = 'action:archived'
+        else:
+            raise ValueError('thread_type must be "inbox", "pending" or "archived"')
+
+
         timestamp = now()
         date = datetime.now()
         data = {
             'client' : self.client,
-            'inbox[offset]' : start,
-            'inbox[limit]' : end,
+            thread_type + '[offset]' : start,
+            thread_type + '[limit]' : end,
         }
 
         r = self._post(ThreadsURL, data)
@@ -391,18 +401,26 @@ class Client(object):
         except Exception as e:
             print(j)
 
-        # Prevent duplicates in self.threads
-        threadIDs = [getattr(x, "thread_id") for x in self.threads]
-        for thread in j['payload']['threads']:
-            if thread["thread_id"] not in threadIDs:
-                try:
-                    thread["other_user_name"] = participants[int(thread["other_user_fbid"])]
-                except:
-                    thread["other_user_name"] = ""
-                t = Thread(**thread)
-                self.threads.append(t)
+        threads_map = {
+                'inbox': self.threads,
+                'pending': self.pending_threads,
+                'action:archived': self.archived_threads
+        }
+        
+        # only get threads if any in this thread_type
+        if 'threads' in j['payload']:
+            # Prevent duplicates in self.threads
+            threadIDs = [getattr(x, "thread_id") for x in threads_map[thread_type]]
+            for thread in j['payload']['threads']:
+                if thread["thread_id"] not in threadIDs:
+                    try:
+                        thread["other_user_name"] = participants[int(thread["other_user_fbid"])]
+                    except:
+                        thread["other_user_name"] = ""
+                    t = Thread(**thread)
+                    threads_map[thread_type].append(t)
 
-        return self.threads
+        return threads_map[thread_type]
 
 
     def getUnread(self):
