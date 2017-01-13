@@ -97,10 +97,6 @@ class Client(object):
             raise Exception("login failed. Check id/password")
 
 
-        self.threads = []
-        self.pending_threads = []
-        self.archived_threads = []
-
     def _console(self, msg):
         if self.debug: print(msg)
 
@@ -401,16 +397,11 @@ class Client(object):
         except Exception as e:
             print(j)
 
-        threads_map = {
-                'inbox': self.threads,
-                'pending': self.pending_threads,
-                'action:archived': self.archived_threads
-        }
-        
+        threads = []
         # only get threads if any in this thread_type
         if 'threads' in j['payload']:
             # Prevent duplicates in self.threads
-            threadIDs = [getattr(x, "thread_id") for x in threads_map[thread_type]]
+            threadIDs = [getattr(x, "thread_id") for x in threads]
             for thread in j['payload']['threads']:
                 if thread["thread_id"] not in threadIDs:
                     try:
@@ -418,9 +409,9 @@ class Client(object):
                     except:
                         thread["other_user_name"] = ""
                     t = Thread(**thread)
-                    threads_map[thread_type].append(t)
+                    threads.append(t)
 
-        return threads_map[thread_type]
+        return threads
 
 
     def getUnread(self):
