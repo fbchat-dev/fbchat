@@ -392,8 +392,9 @@ class Client(object):
         # Get names for people
         participants = {}
         try:
-            for participant in j['payload']['participants']:
-                participants[participant["fbid"]] = participant["name"]
+            if 'participants' in j['payload']:
+                for participant in j['payload']['participants']:
+                    participants[participant["fbid"]] = participant["name"]
         except Exception as e:
             print(j)
 
