@@ -281,7 +281,8 @@ class Client(object):
             'manual_retry_cnt' : '0',
             'signatureID' : getSignatureID(),
             'has_attachment' : image_id != None,
-            'other_user_fbid' : recipient_id,
+            'other_user_fbid' : user_id,
+            'thread_fbid': thread_id,
             'specific_to_list[0]' : 'fbid:' + str(recipient_id),
             'specific_to_list[1]' : 'fbid:' + str(self.uid),
 
