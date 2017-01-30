@@ -39,6 +39,7 @@ StickyURL    ="https://0-edge-chat.facebook.com/pull"
 PingURL      ="https://0-channel-proxy-06-ash2.facebook.com/active_ping"
 UploadURL    ="https://upload.facebook.com/ajax/mercury/upload.php"
 UserInfoURL  ="https://www.facebook.com/chat/user_info/"
+LogoutURL    ="https://www.facebook.com/logout.php"
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -159,6 +160,7 @@ class Client(object):
             r = self._get(BaseURL)
             soup = bs(r.text, "lxml")
             self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
+            self.fb_h = soup.find("input", {'name':'h'})['value']
             self._setttstamp()
             # Set default payload
             self.payloadDefault['__rev'] = int(r.text.split('"revision":',1)[1].split(",",1)[0])
@@ -186,6 +188,19 @@ class Client(object):
             return True
         else:
             return False
+
+    def logout(self, timeout=30):
+        data = {}
+        data['ref'] = "mb"
+        data['h'] = self.fb_h
+        payload=self._generatePayload(data)
+        r = self._session.get(LogoutURL, headers=self._header, params=payload, timeout=timeout)
+        # reset value
+        self.payloadDefault={}
+        self._session = requests.session()
+        self.req_counter = 1
+        self.seq = "0"
+        return r
 
     def listen(self):
         pass
