@@ -13,7 +13,9 @@
 
 import requests
 import json
+import logging
 from uuid import uuid1
+import warnings
 from random import random, choice
 from datetime import datetime
 from bs4 import BeautifulSoup as bs
@@ -42,6 +44,9 @@ UserInfoURL  ="https://www.facebook.com/chat/user_info/"
 ConnectURL   ="https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
 RemoveUserURL="https://www.facebook.com/chat/remove_participants/"
 LogoutURL    ="https://www.facebook.com/logout.php"
+
+# Log settings
+log = logging.getLogger("client")
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -86,15 +91,28 @@ class Client(object):
             'Connection' : 'keep-alive',
         }
 
-        self._console("Logging in...")
+        # Configure the logger differently based on the 'debug' parameter
+        if debug:
+            logging_level = logging.DEBUG
+        else:
+            logging_level = logging.WARNING
+
+        # Creates the console handler
+        handler = logging.StreamHandler()
+        handler.setLevel(logging_level)
+        log.addHandler(handler)
+        log.setLevel(logging.DEBUG)
+
+        # Logging in
+        log.info("Logging in...")
 
         for i in range(1,max_retries+1):
             if not self.login():
-                self._console("Attempt #{} failed{}".format(i,{True:', retrying'}.get(i<5,'')))
+                log.warning("Attempt #{} failed{}".format(i,{True:', retrying'}.get(i<5,'')))
                 time.sleep(1)
                 continue
             else:
-                self._console("login successful")
+                log.info("Login successful")
                 break
         else:
             raise Exception("login failed. Check id/password")
@@ -103,7 +121,23 @@ class Client(object):
         self.threads = []
 
     def _console(self, msg):
-        if self.debug: print(msg)
+        """Assumes an INFO level and log it.
+
+        This method shouldn't be used anymore.
+        Use the log itself:
+        >>> import logging
+        >>> from fbchat.client import Client, log
+        >>> log.setLevel(logging.DEBUG)
+
+        You can do the same thing by addint the 'debug' argument:
+        >>> from fbchat import Client
+        >>> client = Client("...", "...", debug=True)
+
+        """
+        warnings.warn(
+                "Client._console shouldn't be used.  Use 'log.<level>'",
+                DeprecationWarning)
+        if self.debug: log.info(msg)
 
     def _setttstamp(self):
         for i in self.fb_dtsg:
@@ -305,9 +339,8 @@ class Client(object):
 
         r = self._post(SendURL, data)
 
-        if self.debug:
-            print(r)
-            print(data)
+        log.debug("Sending {}".format(r))
+        log.debug("With data {}".format(data))
         return r.ok
 
     def sendRemoteImage(self, recipient_id, message=None, message_type='user', image=''):
@@ -412,7 +445,7 @@ class Client(object):
             for participant in j['payload']['participants']:
                 participants[participant["fbid"]] = participant["name"]
         except Exception as e:
-            print(j)
+            log.warning(str(j))
 
         # Prevent duplicates in self.threads
         threadIDs = [getattr(x, "thread_id") for x in self.threads]
@@ -544,6 +577,8 @@ class Client(object):
         '''
 
         if 'ms' not in content: return
+
+        log.debug("Received {}".format(content["ms"]))
         for m in content['ms']:
             try:
                 if m['type'] in ['m_messaging', 'messaging']:
@@ -578,8 +613,7 @@ class Client(object):
                         from_id = m['from']
                         self.on_friend_request(from_id)
                 else:
-                    if self.debug:
-                        print(m)
+                    log.debug("Unknwon type {}".format(m))
             except Exception as e:
                 # ex_type, ex, tb = sys.exc_info()
                 self.on_message_error(sys.exc_info(), m)
@@ -589,9 +623,7 @@ class Client(object):
         self.listening = True
         sticky, pool = self._getSticky()
 
-        if self.debug:
-            print("Listening...")
-
+        log.info("Listening...")
         while self.listening:
             try:
                 if markAlive: self.ping(sticky)
@@ -693,7 +725,7 @@ class Client(object):
         '''
         self.markAsDelivered(author_id, mid)
         self.markAsRead(author_id)
-        print("%s said: %s"%(author_name, message))
+        log.info("%s said: %s"%(author_name, message))
 
 
    def on_friend_request(self, from_id):
@@ -728,8 +760,7 @@ class Client(object):
         '''
         subclass Client and override this method to add custom behavior on event
         '''
-        print("Exception: ")
-        print(exception)
+        log.warning("Exception:\n{}".format(exception))
 
 
     def on_qprimer(self, timestamp):
