@@ -728,7 +728,7 @@ class Client(object):
         log.info("%s said: %s"%(author_name, message))
 
 
-   def on_friend_request(self, from_id):
+    def on_friend_request(self, from_id):
        '''
        subclass Client and override this method to add custom behavior on event
        '''
