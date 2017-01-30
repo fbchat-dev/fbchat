@@ -321,10 +321,10 @@ class Client(object):
             'specific_to_list[1]' : 'fbid:' + str(self.uid),
 
         }
-
-
-
-
+        if message_type.lower() == 'group':
+            data["thread_fbid"] = recipient_id 
+        else:
+            data["other_user_fbid"] = recipient_id
 
         if image_id:
             data['image_ids[0]'] = image_id
