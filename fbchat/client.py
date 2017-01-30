@@ -40,6 +40,8 @@ PingURL      ="https://0-channel-proxy-06-ash2.facebook.com/active_ping"
 UploadURL    ="https://upload.facebook.com/ajax/mercury/upload.php"
 UserInfoURL  ="https://www.facebook.com/chat/user_info/"
 ConnectURL   ="https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
+RemoveUserURL="https://www.facebook.com/chat/remove_participants/"
+LogoutURL    ="https://www.facebook.com/logout.php"
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -132,12 +134,12 @@ class Client(object):
     def _cleanPost(self, url, query=None, timeout=30):
         self.req_counter += 1
         return self._session.post(url, headers=self._header, data=query, timeout=timeout)
-        
+
     def _postFile(self, url, files=None, timeout=30):
         payload=self._generatePayload(None)
         return self._session.post(url, data=payload, timeout=timeout, files=files)
-        
-        
+
+
     def login(self):
         if not (self.email and self.password):
             raise Exception("id and password or config is needed")
@@ -160,6 +162,7 @@ class Client(object):
             r = self._get(BaseURL)
             soup = bs(r.text, "lxml")
             self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
+            self.fb_h = soup.find("input", {'name':'h'})['value']
             self._setttstamp()
             # Set default payload
             self.payloadDefault['__rev'] = int(r.text.split('"revision":',1)[1].split(",",1)[0])
@@ -187,6 +190,19 @@ class Client(object):
             return True
         else:
             return False
+
+    def logout(self, timeout=30):
+        data = {}
+        data['ref'] = "mb"
+        data['h'] = self.fb_h
+        payload=self._generatePayload(data)
+        r = self._session.get(LogoutURL, headers=self._header, params=payload, timeout=timeout)
+        # reset value
+        self.payloadDefault={}
+        self._session = requests.session()
+        self.req_counter = 1
+        self.seq = "0"
+        return r
 
     def listen(self):
         pass
@@ -267,12 +283,12 @@ class Client(object):
             'has_attachment' : image_id != None,
             'other_user_fbid' : recipient_id,
             'specific_to_list[0]' : 'fbid:' + str(recipient_id),
-            'specific_to_list[1]' : 'fbid:' + str(self.uid),            
+            'specific_to_list[1]' : 'fbid:' + str(self.uid),
 
         }
 
 
-        
+
 
 
         if image_id:
@@ -295,7 +311,7 @@ class Client(object):
 
     def sendRemoteImage(self, recipient_id, message=None, message_type='user', image=''):
         """Send an image from a URL
-        
+
         :param recipient_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
         :param message_type: determines if the recipient_id is for user or thread
@@ -305,10 +321,10 @@ class Client(object):
         remote_image = requests.get(image).content
         image_id = self.uploadImage({'file': (image, remote_image, mimetype)})
         return self.send(recipient_id, message, message_type, None, image_id)
-        
+
     def sendLocalImage(self, recipient_id, message=None, message_type='user', image=''):
         """Send an image from a file path
-        
+
         :param recipient_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
         :param message_type: determines if the recipient_id is for user or thread
@@ -317,31 +333,39 @@ class Client(object):
         mimetype = guess_type(image)[0]
         image_id = self.uploadImage({'file': (image, open(image), mimetype)})
         return self.send(recipient_id, message, message_type, None, image_id)
-        
+
     def uploadImage(self, image):
         """Upload an image and get the image_id for sending in a message
-        
+
         :param image: a tuple of (file name, data, mime type) to upload to facebook
         """
         r = self._postFile(UploadURL, image)
+        if isinstance(r._content, str) is False:
+            r._content = r._content.decode("utf-8")
         # Strip the start and parse out the returned image_id
         return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
         
-    def getThreadInfo(self, userID, start, end=None):
+    def getThreadInfo(self, userID, start, end=None, thread_type='user'):
         """Get the info of one Thread
 
         :param userID: ID of the user you want the messages from
         :param start: the start index of a thread
         :param end: (optional) the last index of a thread
+        :param thread_type: (optional) change from 'user' for group threads
         """
 
         if not end: end = start + 20
         if end <= start: end = start + end
 
         data = {}
-        data['messages[user_ids][%s][offset]'%userID] =    start
-        data['messages[user_ids][%s][limit]'%userID] =     end
-        data['messages[user_ids][%s][timestamp]'%userID] = now()
+        if thread_type == 'user':
+            key = 'user_ids'
+        else:
+            key = 'thread_fbids'
+
+        data['messages[{}][{}][offset]'.format(key, userID)] =    start
+        data['messages[{}][{}][limit]'.format(key, userID)] =     end
+        data['messages[{}][{}][timestamp]'.format(key, userID)] = now()
 
         r = self._post(MessagesURL, query=data)
         if not r.ok or len(r.text) == 0:
@@ -476,7 +500,11 @@ class Client(object):
         newer api needs these parameter to work.
         '''
 
-        data = {"msgs_recv": 0}
+        data = {
+            "msgs_recv": 0,
+            "channel": self.user_channel,
+            "clientid": self.client_id
+        }
 
         r = self._get(StickyURL, data)
         j = get_json(r.text)
@@ -575,13 +603,13 @@ class Client(object):
                 break
             except requests.exceptions.Timeout:
               pass
-    
+
     def getUserInfo(self,*user_ids):
         """Get user info from id. Unordered.
 
-        :param user_ids: one or more user id(s) to query 
+        :param user_ids: one or more user id(s) to query
         """
-        
+
         data = {"ids[{}]".format(i):user_id for i,user_id in enumerate(user_ids)}
         r = self._post(UserInfoURL, data)
         info = get_json(r.text)
@@ -591,6 +619,70 @@ class Client(object):
         return full_data
 
 
+    def remove_user_from_chat(self, threadID, userID):
+        """Remove user (userID) from group chat (threadID)
+        
+        :param threadID: group chat id
+        :param userID: user id to remove from chat
+        """
+        
+        data = {
+            "uid" : userID,
+            "tid" : threadID
+        }
+        
+        r = self._post(RemoveUserURL, data)
+
+        self._console(r)
+        self._console(data)
+
+        return r.ok
+
+
+    def changeThreadTitle(self, threadID, newTitle):
+        """Change title of a group conversation
+        
+        :param threadID: group chat id
+        :param newTitle: new group chat title
+        """
+        
+        messageAndOTID = generateOfflineThreadingID()
+        timestamp = now()
+        date = datetime.now()
+        data = {
+            'client' : self.client,
+            'action_type' : 'ma-type:log-message',
+            'author' : 'fbid:' + str(self.uid),
+            'thread_id' : '',
+            'author_email' : '',
+            'coordinates' : '',
+            'timestamp' : timestamp,
+            'timestamp_absolute' : 'Today',
+            'timestamp_relative' : str(date.hour) + ":" + str(date.minute).zfill(2),
+            'timestamp_time_passed' : '0',
+            'is_unread' : False,
+            'is_cleared' : False,
+            'is_forward' : False,
+            'is_filtered_content' : False,
+            'is_spoof_warning' : False,
+            'source' : 'source:chat:web',
+            'source_tags[0]' : 'source:chat',
+            'status' : '0',
+            'offline_threading_id' : messageAndOTID,
+            'message_id' : messageAndOTID,
+            'threading_id': generateMessageID(self.client_id),
+            'manual_retry_cnt' : '0',
+            'thread_fbid' : threadID,
+            'log_message_data[name]' : newTitle,
+            'log_message_type' : 'log:thread-name'
+        }
+
+        r = self._post(SendURL, data)
+
+        self._console(r)
+        self._console(data)
+
+        return r.ok
 
 
 
