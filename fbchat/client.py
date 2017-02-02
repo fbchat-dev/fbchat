@@ -44,6 +44,7 @@ UserInfoURL  ="https://www.facebook.com/chat/user_info/"
 ConnectURL   ="https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
 RemoveUserURL="https://www.facebook.com/chat/remove_participants/"
 LogoutURL    ="https://www.facebook.com/logout.php"
+facebookEncoding = 'UTF-8'
 
 # Log settings
 log = logging.getLogger("client")
@@ -564,6 +565,7 @@ class Client(object):
         }
 
         r = self._get(StickyURL, data)
+        r.encoding = facebookEncoding
         j = get_json(r.text)
 
         self.seq = j.get('seq', '0')
