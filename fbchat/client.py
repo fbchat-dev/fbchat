@@ -44,6 +44,7 @@ UserInfoURL  ="https://www.facebook.com/chat/user_info/"
 ConnectURL   ="https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
 RemoveUserURL="https://www.facebook.com/chat/remove_participants/"
 LogoutURL    ="https://www.facebook.com/logout.php"
+facebookEncoding = 'UTF-8'
 
 # Log settings
 log = logging.getLogger("client")
@@ -375,7 +376,7 @@ class Client(object):
         """
         r = self._postFile(UploadURL, image)
         if isinstance(r._content, str) is False:
-            r._content = r._content.decode("utf-8")
+            r._content = r._content.decode(facebookEncoding)
         # Strip the start and parse out the returned image_id
         return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
         
@@ -564,6 +565,7 @@ class Client(object):
         }
 
         r = self._get(StickyURL, data)
+        r.encoding = facebookEncoding
         j = get_json(r.text)
 
         self.seq = j.get('seq', '0')
