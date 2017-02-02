@@ -376,7 +376,7 @@ class Client(object):
         """
         r = self._postFile(UploadURL, image)
         if isinstance(r._content, str) is False:
-            r._content = r._content.decode("utf-8")
+            r._content = r._content.decode(facebookEncoding)
         # Strip the start and parse out the returned image_id
         return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
         
