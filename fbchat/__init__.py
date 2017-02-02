@@ -15,7 +15,7 @@ from .client import *
 
 
 __copyright__ = 'Copyright 2015 by Taehoon Kim'
-__version__ = '0.6.0'
+__version__ = '0.6.1'
 __license__ = 'BSD'
 __author__ = 'Taehoon Kim; Moreels Pieter-Jan'
 __email__ = 'carpedm20@gmail.com'
