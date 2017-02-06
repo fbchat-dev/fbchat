@@ -189,6 +189,36 @@ class Client(object):
         payload=self._generatePayload(None)
         return self._session.post(url, data=payload, timeout=timeout, files=files)
 
+    def saveSession(self, sessionfile):
+        """Dumps the session cookies to (sessionfile).
+        WILL OVERWRITE ANY EXISTING FILE
+        
+        :param sessionfile: location of saved session file
+        """
+        
+        log.info('Saving session')
+        with open(sessionfile, 'w') as f:
+            # Grab cookies from current session, and save them as JSON
+            f.write(json.dumps(self._session.cookies.get_dict(), ensure_ascii=False))
+
+    def loadSession(self, sessionfile):
+        """Loads session cookies from (sessionfile)
+        
+        :param sessionfile: location of saved session file
+        """
+        
+        log.info('Loading session')
+        with open(sessionfile, 'r') as f:
+            try:
+                j = json.load(f)
+                if not j or 'c_user' not in j:
+                    return False
+                # Load cookies into current session
+                self._session.cookies = requests.cookies.merge_cookies(self._session.cookies, j)
+                return True
+            except Exception as e:
+                raise Exception('Invalid json in {}, or bad merging of cookies'.format(sessionfile))
+
 
     def login(self):
         if not (self.email and self.password):
