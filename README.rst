@@ -102,7 +102,7 @@ Saving session
     client.saveSession(sessionfile)
 
 
-Saving session
+Loading session
 ==========================
 
 .. code-block:: python
