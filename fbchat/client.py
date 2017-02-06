@@ -145,7 +145,7 @@ class Client(object):
         >>> from fbchat.client import Client, log
         >>> log.setLevel(logging.DEBUG)
 
-        You can do the same thing by addint the 'debug' argument:
+        You can do the same thing by adding the 'debug' argument:
         >>> from fbchat import Client
         >>> client = Client("...", "...", debug=True)
 
