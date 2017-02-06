@@ -413,10 +413,21 @@ class Client(object):
             data["sticker_id"] = sticker
 
         r = self._post(SendURL, data)
+        
+        if not r.ok:
+            return False
+        
+        if isinstance(r._content, str) is False:
+            r._content = r._content.decode(facebookEncoding)
+        j = get_json(r._content)
+        if 'error' in j:
+            # 'errorDescription' is in the users own language!
+            log.warning('Error #{} when sending message: {}'.format(j['error'], j['errorDescription']))
+            return False
 
         log.debug("Sending {}".format(r))
         log.debug("With data {}".format(data))
-        return r.ok
+        return True
 
     def sendRemoteImage(self, recipient_id, message=None, message_type='user', image=''):
         """Send an image from a URL
