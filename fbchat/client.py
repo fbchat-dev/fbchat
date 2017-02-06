@@ -45,6 +45,7 @@ ConnectURL   ="https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
 RemoveUserURL="https://www.facebook.com/chat/remove_participants/"
 LogoutURL    ="https://www.facebook.com/logout.php"
 AllUsersURL  ="https://www.facebook.com/chat/user_info_all"
+SaveDeviceURL="https://m.facebook.com/login/save-device/cancel/"
 facebookEncoding = 'UTF-8'
 
 # Log settings
@@ -181,6 +182,9 @@ class Client(object):
         payload=self._generatePayload(query)
         return self._session.post(url, headers=self._header, data=payload, timeout=timeout)
 
+    def _cleanGet(self, url, query=None, timeout=30):
+        return self._session.get(url, headers=self._header, params=query, timeout=timeout)
+
     def _cleanPost(self, url, query=None, timeout=30):
         self.req_counter += 1
         return self._session.post(url, headers=self._header, data=query, timeout=timeout)
@@ -201,6 +205,10 @@ class Client(object):
         data['login'] = 'Log In'
 
         r = self._cleanPost(LoginURL, data)
+        
+        # Sometimes Facebook tries to show the user a "Save Device" dialog
+        if 'save-device' in r.url:
+            r = self._cleanGet(SaveDeviceURL)
 
         if 'home' in r.url:
             self.client_id = hex(int(random()*2147483648))[2:]
