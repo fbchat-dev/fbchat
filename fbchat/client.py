@@ -44,6 +44,7 @@ UserInfoURL  ="https://www.facebook.com/chat/user_info/"
 ConnectURL   ="https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
 RemoveUserURL="https://www.facebook.com/chat/remove_participants/"
 LogoutURL    ="https://www.facebook.com/logout.php"
+AllUsersURL  ="https://www.facebook.com/chat/user_info_all"
 facebookEncoding = 'UTF-8'
 
 # Log settings
@@ -80,6 +81,20 @@ class Client(object):
         self.payloadDefault={}
         self.client = 'mercury'
         self.listening = False
+        self.GENDERS = {
+            0: 'unknown',
+            1: 'female_singular',
+            2: 'male_singular',
+            3: 'female_singular_guess',
+            4: 'male_singular_guess',
+            5: 'mixed',
+            6: 'neuter_singular',
+            7: 'unknown_singular',
+            8: 'female_plural',
+            9: 'male_plural',
+            10: 'neuter_plural',
+            11: 'unknown_plural',
+        }
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -241,6 +256,65 @@ class Client(object):
 
     def listen(self):
         pass
+
+    def _adapt_user_in_chat_to_user_model(self, user_in_chat):
+
+        ''' Adapts user info from chat to User model acceptable initial dict
+        
+        :param user_in_chat: user info from chat
+
+
+        'dir': None,
+        'mThumbSrcSmall': None,
+        'is_friend': False,
+        'is_nonfriend_messenger_contact': True,
+        'alternateName': '',
+        'i18nGender': 16777216,
+        'vanity': '',
+        'type': 'friend',
+        'searchTokens': ['Voznesenskij', 'Sergej'],
+        'thumbSrc': 'https://fb-s-b-a.akamaihd.net/h-ak-xfa1/v/t1.0-1/c9.0.32.32/p32x32/10354686_10150004552801856_220367501106153455_n.jpg?oh=71a87d76d4e4d17615a20c43fb8dbb47&oe=59118CE4&__gda__=1493753268_ae75cef40e9785398e744259ccffd7ff',
+        'mThumbSrcLarge': None,
+        'firstName': 'Sergej',
+        'name': 'Sergej Voznesenskij',
+        'uri': 'https://www.facebook.com/profile.php?id=100014812758264',
+        'id': '100014812758264',
+        'gender': 2
+        
+
+        '''
+
+        return {
+            'type': 'user',
+            'uid': user_in_chat['id'],
+            'photo': user_in_chat['thumbSrc'],
+            'path': user_in_chat['uri'],
+            'text': user_in_chat['name'],
+            'score': '',
+            'data': user_in_chat,
+        }
+
+    def getAllUsers(self):
+        """ Gets all users from chat with info included """
+
+        data = {
+            'viewer': self.uid,
+        }
+        r = self._post(AllUsersURL, query=data)
+        if not r.ok or len(r.text) == 0:
+            return None
+        j = get_json(r.text)
+        if not j['payload']:
+            return None
+        payload = j['payload']
+        users = []
+
+        for k in payload.keys(): 
+            user = self._adapt_user_in_chat_to_user_model(payload[k])
+            users.append(User(user))
+
+        return users
+
 
     def getUsers(self, name):
         """Find and get user by his/her name
