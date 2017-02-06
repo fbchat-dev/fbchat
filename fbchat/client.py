@@ -58,7 +58,7 @@ class Client(object):
 
     """
 
-    def __init__(self, email, password, debug=True, user_agent=None , max_retries=5):
+    def __init__(self, email, password, debug=True, user_agent=None , max_retries=5, do_login=True):
         """A client for the Facebook Chat (Messenger).
 
         :param email: Facebook `email` or `id` or `phone number`
@@ -69,11 +69,9 @@ class Client(object):
 
         """
 
-        if not (email and password):
+        if do_login and not (email and password):
             raise Exception("id and password or config is needed")
 
-        self.email = email
-        self.password = password
         self.debug = debug
         self._session = requests.session()
         self.req_counter = 1
@@ -118,21 +116,9 @@ class Client(object):
         handler.setLevel(logging_level)
         log.addHandler(handler)
         log.setLevel(logging.DEBUG)
-
-        # Logging in
-        log.info("Logging in...")
-
-        for i in range(1,max_retries+1):
-            if not self.login():
-                log.warning("Attempt #{} failed{}".format(i,{True:', retrying'}.get(i<5,'')))
-                time.sleep(1)
-                continue
-            else:
-                log.info("Login successful")
-                break
-        else:
-            raise Exception("login failed. Check id/password")
-
+        
+        if do_login:
+            self.login(email, password, max_retries)
 
         self.threads = []
 
@@ -189,6 +175,62 @@ class Client(object):
         payload=self._generatePayload(None)
         return self._session.post(url, data=payload, timeout=timeout, files=files)
 
+    def _post_login(self):
+        self.payloadDefault = {}
+        self.client_id = hex(int(random()*2147483648))[2:]
+        self.start_time = now()
+        self.uid = int(self._session.cookies['c_user'])
+        self.user_channel = "p_" + str(self.uid)
+        self.ttstamp = ''
+
+        r = self._get(BaseURL)
+        soup = bs(r.text, "lxml")
+        log.debug(r.text)
+        log.debug(r.url)
+        self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
+        self.fb_h = soup.find("input", {'name':'h'})['value']
+        self._setttstamp()
+        # Set default payload
+        self.payloadDefault['__rev'] = int(r.text.split('"revision":',1)[1].split(",",1)[0])
+        self.payloadDefault['__user'] = self.uid
+        self.payloadDefault['__a'] = '1'
+        self.payloadDefault['ttstamp'] = self.ttstamp
+        self.payloadDefault['fb_dtsg'] = self.fb_dtsg
+
+        self.form = {
+            'channel' : self.user_channel,
+            'partition' : '-2',
+            'clientid' : self.client_id,
+            'viewer_uid' : self.uid,
+            'uid' : self.uid,
+            'state' : 'active',
+            'format' : 'json',
+            'idle' : 0,
+            'cap' : '8'
+        }
+
+        self.prev = now()
+        self.tmp_prev = now()
+        self.last_sync = now()
+
+    def _login(self):
+        if not (self.email and self.password):
+            raise Exception("id and password or config is needed")
+
+        soup = bs(self._get(MobileURL).text, "lxml")
+        data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
+        data['email'] = self.email
+        data['pass'] = self.password
+        data['login'] = 'Log In'
+
+        r = self._cleanPost(LoginURL, data)
+
+        if 'home' in r.url:
+            self._post_login()
+            return True
+        else:
+            return False
+
     def saveSession(self, sessionfile):
         """Dumps the session cookies to (sessionfile).
         WILL OVERWRITE ANY EXISTING FILE
@@ -215,61 +257,28 @@ class Client(object):
                     return False
                 # Load cookies into current session
                 self._session.cookies = requests.cookies.merge_cookies(self._session.cookies, j)
+                self._post_login()
                 return True
             except Exception as e:
                 raise Exception('Invalid json in {}, or bad merging of cookies'.format(sessionfile))
 
+    def login(self, email, password, max_retries=5):
+        # Logging in
+        log.info("Logging in...")
+        
+        self.email = email
+        self.password = password
 
-    def login(self):
-        if not (self.email and self.password):
-            raise Exception("id and password or config is needed")
-
-        soup = bs(self._get(MobileURL).text, "lxml")
-        data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
-        data['email'] = self.email
-        data['pass'] = self.password
-        data['login'] = 'Log In'
-
-        r = self._cleanPost(LoginURL, data)
-
-        if 'home' in r.url:
-            self.client_id = hex(int(random()*2147483648))[2:]
-            self.start_time = now()
-            self.uid = int(self._session.cookies['c_user'])
-            self.user_channel = "p_" + str(self.uid)
-            self.ttstamp = ''
-
-            r = self._get(BaseURL)
-            soup = bs(r.text, "lxml")
-            self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
-            self.fb_h = soup.find("input", {'name':'h'})['value']
-            self._setttstamp()
-            # Set default payload
-            self.payloadDefault['__rev'] = int(r.text.split('"revision":',1)[1].split(",",1)[0])
-            self.payloadDefault['__user'] = self.uid
-            self.payloadDefault['__a'] = '1'
-            self.payloadDefault['ttstamp'] = self.ttstamp
-            self.payloadDefault['fb_dtsg'] = self.fb_dtsg
-
-            self.form = {
-                'channel' : self.user_channel,
-                'partition' : '-2',
-                'clientid' : self.client_id,
-                'viewer_uid' : self.uid,
-                'uid' : self.uid,
-                'state' : 'active',
-                'format' : 'json',
-                'idle' : 0,
-                'cap' : '8'
-            }
-
-            self.prev = now()
-            self.tmp_prev = now()
-            self.last_sync = now()
-
-            return True
+        for i in range(1,max_retries+1):
+            if not self._login():
+                log.warning("Attempt #{} failed{}".format(i,{True:', retrying'}.get(i<5,'')))
+                time.sleep(1)
+                continue
+            else:
+                log.info("Login successful")
+                break
         else:
-            return False
+            raise Exception("login failed. Check id/password")
 
     def logout(self, timeout=30):
         data = {}
