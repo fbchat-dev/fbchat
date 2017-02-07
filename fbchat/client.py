@@ -498,7 +498,7 @@ class Client(object):
         :param image: path to a local image to send
         """
         mimetype = guess_type(image)[0]
-        image_id = self.uploadImage({'file': (image, open(image), mimetype)})
+        image_id = self.uploadImage({'file': (image, open(image, 'rb'), mimetype)})
         return self.send(recipient_id, message, message_type, None, image_id)
 
     def uploadImage(self, image):
