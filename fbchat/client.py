@@ -45,6 +45,7 @@ ConnectURL   ="https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
 RemoveUserURL="https://www.facebook.com/chat/remove_participants/"
 LogoutURL    ="https://www.facebook.com/logout.php"
 AllUsersURL  ="https://www.facebook.com/chat/user_info_all"
+SaveDeviceURL="https://m.facebook.com/login/save-device/cancel/"
 facebookEncoding = 'UTF-8'
 
 # Log settings
@@ -167,6 +168,9 @@ class Client(object):
         payload=self._generatePayload(query)
         return self._session.post(url, headers=self._header, data=payload, timeout=timeout)
 
+    def _cleanGet(self, url, query=None, timeout=30):
+        return self._session.get(url, headers=self._header, params=query, timeout=timeout)
+
     def _cleanPost(self, url, query=None, timeout=30):
         self.req_counter += 1
         return self._session.post(url, headers=self._header, data=query, timeout=timeout)
@@ -224,6 +228,10 @@ class Client(object):
         data['login'] = 'Log In'
 
         r = self._cleanPost(LoginURL, data)
+        
+        # Sometimes Facebook tries to show the user a "Save Device" dialog
+        if 'save-device' in r.url:
+            r = self._cleanGet(SaveDeviceURL)
 
         if 'home' in r.url:
             self._post_login()
@@ -379,7 +387,7 @@ class Client(object):
                 users.append(User(entry))
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
-    def send(self, recipient_id, message=None, message_type='user', like=None, image_id=None):
+    def send(self, recipient_id, message=None, message_type='user', like=None, image_id=None, add_user_ids=None):
         """Send a message with given thread id
 
         :param recipient_id: the user id or thread id that you want to send a message to
@@ -387,21 +395,14 @@ class Client(object):
         :param message_type: determines if the recipient_id is for user or thread
         :param like: size of the like sticker you want to send
         :param image_id: id for the image to send, gotten from the UploadURL
+        :param add_user_ids: a list of user ids to add to a chat
         """
-
-        if message_type.lower() == 'group':
-            thread_id = recipient_id
-            user_id = None
-        else:
-            thread_id = None
-            user_id = recipient_id
 
         messageAndOTID=generateOfflineThreadingID()
         timestamp = now()
         date = datetime.now()
         data = {
             'client': self.client,
-            'action_type' : 'ma-type:user-generated-message',
             'author' : 'fbid:' + str(self.uid),
             'timestamp' : timestamp,
             'timestamp_absolute' : 'Today',
@@ -418,7 +419,6 @@ class Client(object):
             'is_spoof_warning' : False,
             'source' : 'source:chat:web',
             'source_tags[0]' : 'source:chat',
-            'body' : message,
             'html_body' : False,
             'ui_push_phase' : 'V3',
             'status' : '0',
@@ -427,18 +427,26 @@ class Client(object):
             'threading_id':generateMessageID(self.client_id),
             'ephemeral_ttl_mode:': '0',
             'manual_retry_cnt' : '0',
-            'signatureID' : getSignatureID(),
-            'has_attachment' : image_id != None,
-            'other_user_fbid' : user_id,
-            'thread_fbid': thread_id,
-            'specific_to_list[0]' : 'fbid:' + str(recipient_id),
-            'specific_to_list[1]' : 'fbid:' + str(self.uid),
-
+            'signatureID' : getSignatureID()
         }
+        
         if message_type.lower() == 'group':
             data["thread_fbid"] = recipient_id 
         else:
             data["other_user_fbid"] = recipient_id
+        
+        if add_user_ids:
+            data['action_type'] = 'ma-type:log-message'
+            # It's possible to add multiple users
+            for i, add_user_id in enumerate(add_user_ids):
+                data['log_message_data[added_participants][' + str(i) + ']'] = "fbid:" + str(add_user_id)
+            data['log_message_type'] = 'log:subscribe'
+        else:
+            data['action_type'] = 'ma-type:user-generated-message'
+            data['body'] = message
+            data['has_attachment'] = image_id != None
+            data['specific_to_list[0]'] = 'fbid:' + str(recipient_id)
+            data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
 
         if image_id:
             data['image_ids[0]'] = image_id
@@ -452,10 +460,21 @@ class Client(object):
             data["sticker_id"] = sticker
 
         r = self._post(SendURL, data)
+        
+        if not r.ok:
+            return False
+        
+        if isinstance(r._content, str) is False:
+            r._content = r._content.decode(facebookEncoding)
+        j = get_json(r._content)
+        if 'error' in j:
+            # 'errorDescription' is in the users own language!
+            log.warning('Error #{} when sending message: {}'.format(j['error'], j['errorDescription']))
+            return False
 
         log.debug("Sending {}".format(r))
         log.debug("With data {}".format(data))
-        return r.ok
+        return True
 
     def sendRemoteImage(self, recipient_id, message=None, message_type='user', image=''):
         """Send an image from a URL
@@ -718,17 +737,35 @@ class Client(object):
                 elif m['type'] in ['qprimer']:
                     self.on_qprimer(m.get('made'))
                 elif m['type'] in ['delta']:
-                    if 'messageMetadata' in m['delta']:
+                    if 'leftParticipantFbId' in m['delta']:
+                        user_id = m['delta']['leftParticipantFbId']
+                        actor_id = m['delta']['messageMetadata']['actorFbId']
+                        thread_id = m['delta']['messageMetadata']['threadKey']['threadFbId']
+                        self.on_person_removed(user_id, actor_id, thread_id)
+                    elif 'addedParticipants' in m['delta']:
+                        user_ids = [x['userFbId'] for x in m['delta']['addedParticipants']]
+                        actor_id = m['delta']['messageMetadata']['actorFbId']
+                        thread_id = m['delta']['messageMetadata']['threadKey']['threadFbId']
+                        self.on_people_added(user_ids, actor_id, thread_id)
+                    elif 'messageMetadata' in m['delta']:
+                        recipient_id = 0
+                        thread_type = None
+                        if 'threadKey' in m['delta']['messageMetadata']:
+                            if 'threadFbId' in m['delta']['messageMetadata']['threadKey']:
+                                recipient_id = m['delta']['messageMetadata']['threadKey']['threadFbId']
+                                thread_type = 'group'
+                            elif 'otherUserFbId' in m['delta']['messageMetadata']['threadKey']:
+                                recipient_id = m['delta']['messageMetadata']['threadKey']['otherUserFbId']
+                                thread_type = 'user'
                         mid =     m['delta']['messageMetadata']['messageId']
                         message = m['delta'].get('body','')
                         fbid =    m['delta']['messageMetadata']['actorFbId']
-                        name =    None
-                        self.on_message(mid, fbid, name, message, m)
+                        self.on_message(mid, fbid, message, m, recipient_id, thread_type)
                 elif m['type'] in ['jewel_requests_add']:
                         from_id = m['from']
                         self.on_friend_request(from_id)
                 else:
-                    log.debug("Unknwon type {}".format(m))
+                    log.debug("Unknown type {}".format(m))
             except Exception as e:
                 # ex_type, ex, tb = sys.exc_info()
                 self.on_message_error(sys.exc_info(), m)
@@ -786,6 +823,14 @@ class Client(object):
 
         return r.ok
 
+    def add_users_to_chat(self, threadID, userID):
+        """Add user (userID) to group chat (threadID)
+        
+        :param threadID: group chat id
+        :param userID: user id to add to chat
+        """
+        
+        return self.send(threadID, message_type='group', add_user_ids=[userID])
 
     def changeThreadTitle(self, threadID, newTitle):
         """Change title of a group conversation
@@ -833,6 +878,14 @@ class Client(object):
         return r.ok
 
 
+    def on_message(self, mid, author_id, message, metadata, recipient_id, thread_type):
+        '''
+        subclass Client and override this method to add custom behavior on event
+        
+        This version of on_message recieves recipient_id and thread_type. For backwards compatability, this data is sent directly to the old on_message.
+        '''
+        self.on_message(mid, author_id, None, message, metadata)
+
 
     def on_message(self, mid, author_id, author_name, message, metadata):
         '''
@@ -847,7 +900,7 @@ class Client(object):
        '''
        subclass Client and override this method to add custom behavior on event
        '''
-       print("friend request from %s"%from_id)
+       log.info("friend request from %s"%from_id)
 
 
     def on_typing(self, author_id):
@@ -862,6 +915,20 @@ class Client(object):
         subclass Client and override this method to add custom behavior on event
         '''
         pass
+
+
+    def on_people_added(self, user_ids, actor_id, thread_id):
+        '''
+        subclass Client and override this method to add custom behavior on event
+        '''
+        log.info("User(s) {} was added to {} by {}".format(repr(user_ids), thread_id, actor_id))
+
+
+    def on_person_removed(self, user_id, actor_id, thread_id):
+        '''
+        subclass Client and override this method to add custom behavior on event
+        '''
+        log.info("User {} was removed from {} by {}".format(user_id, thread_id, actor_id))
 
 
     def on_inbox(self, viewer, unseen, unread, other_unseen, other_unread, timestamp):
