@@ -94,6 +94,22 @@ Example Echobot
     bot.listen()
 
 
+Saving session
+==========================
+
+.. code-block:: python
+    
+    client.saveSession(sessionfile)
+
+
+Loading session
+==========================
+
+.. code-block:: python
+    
+    client = fbchat.Client(None, None, do_login=False)
+    client.loadSession(sessionfile)
+
 
 Authors
 =======
