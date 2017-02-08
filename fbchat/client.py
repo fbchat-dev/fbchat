@@ -498,7 +498,7 @@ class Client(object):
         :param image: path to a local image to send
         """
         mimetype = guess_type(image)[0]
-        image_id = self.uploadImage({'file': (image, open(image), mimetype)})
+        image_id = self.uploadImage({'file': (image, open(image, 'rb'), mimetype)})
         return self.send(recipient_id, message, message_type, None, image_id)
 
     def uploadImage(self, image):
@@ -760,7 +760,7 @@ class Client(object):
                         mid =     m['delta']['messageMetadata']['messageId']
                         message = m['delta'].get('body','')
                         fbid =    m['delta']['messageMetadata']['actorFbId']
-                        self.on_message(mid, fbid, message, m, recipient_id, thread_type)
+                        self.on_message_new(mid, fbid, message, m, recipient_id, thread_type)
                 elif m['type'] in ['jewel_requests_add']:
                         from_id = m['from']
                         self.on_friend_request(from_id)
@@ -878,7 +878,7 @@ class Client(object):
         return r.ok
 
 
-    def on_message(self, mid, author_id, message, metadata, recipient_id, thread_type):
+    def on_message_new(self, mid, author_id, message, metadata, recipient_id, thread_type):
         '''
         subclass Client and override this method to add custom behavior on event
         
