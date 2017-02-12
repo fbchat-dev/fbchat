@@ -760,7 +760,7 @@ class Client(object):
                         mid =     m['delta']['messageMetadata']['messageId']
                         message = m['delta'].get('body','')
                         fbid =    m['delta']['messageMetadata']['actorFbId']
-                        self.on_message_new(mid, fbid, message, m, recipient_id, thread_type)
+                        self.on_message_new(self, mid, fbid, message, m, recipient_id, thread_type)
                 elif m['type'] in ['jewel_requests_add']:
                         from_id = m['from']
                         self.on_friend_request(from_id)
