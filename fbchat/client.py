@@ -512,25 +512,27 @@ class Client(object):
         # Strip the start and parse out the returned image_id
         return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
         
-    def getThreadInfo(self, userID, start, length=20, thread_type='user'):
+    def getThreadInfo(self, userID, last_n=20, start=None, thread_type='user'):
         """Get the info of one Thread
 
         :param userID: ID of the user you want the messages from
-        :param start: the start index of a thread
-        :param length: (optional) number of retrieved messages from start
+        :param last_n: (optional) number of retrieved messages from start
+        :param start: (optional) the start index of a thread (Deprecated)
         :param thread_type: (optional) change from 'user' for group threads
         """
         
-        assert length > 0, 'length must be positive integer, got %d' % length
-
+        assert last_n > 0, 'length must be positive integer, got %d' % last_n
+        assert start is None, '`start` is deprecated, always 0 offset querry is returned'
         data = {}
         if thread_type == 'user':
             key = 'user_ids'
         else:
             key = 'thread_fbids'
-
-        data['messages[{}][{}][offset]'.format(key, userID)] =    start
-        data['messages[{}][{}][limit]'.format(key, userID)] =     length
+        assert 
+        # deprecated
+        # `start` doesn't matter, always returns from the last
+        # data['messages[{}][{}][offset]'.format(key, userID)] = start
+        data['messages[{}][{}][limit]'.format(key, userID)] = last_n
         data['messages[{}][{}][timestamp]'.format(key, userID)] = now()
 
         r = self._post(MessagesURL, query=data)
@@ -553,10 +555,14 @@ class Client(object):
         :param start: the start index of a thread
         :param end: (optional) the last index of a thread
         """
-
-        if not end: end = start + 20
-        if end <= start: end = start + end
-
+        
+        # deprecated
+        # end does not limit the length of the returned threads
+        # if not end: end = start + 20
+        # if end <= start: end = start + end
+        
+        assert end is None, 'end is deprecated'
+        
         timestamp = now()
         date = datetime.now()
         data = {
