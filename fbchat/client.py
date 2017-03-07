@@ -512,17 +512,16 @@ class Client(object):
         # Strip the start and parse out the returned image_id
         return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
         
-    def getThreadInfo(self, userID, start, end=None, thread_type='user'):
+    def getThreadInfo(self, userID, start, length=20, thread_type='user'):
         """Get the info of one Thread
 
         :param userID: ID of the user you want the messages from
         :param start: the start index of a thread
-        :param end: (optional) the last index of a thread
+        :param length: (optional) number of retrieved messages from start
         :param thread_type: (optional) change from 'user' for group threads
         """
-
-        if not end: end = start + 20
-        if end <= start: end = start + end
+        
+        assert(length > 0, 'length must be positive integer, got %d'%length)
 
         data = {}
         if thread_type == 'user':
@@ -531,7 +530,7 @@ class Client(object):
             key = 'thread_fbids'
 
         data['messages[{}][{}][offset]'.format(key, userID)] =    start
-        data['messages[{}][{}][limit]'.format(key, userID)] =     end
+        data['messages[{}][{}][limit]'.format(key, userID)] =     length
         data['messages[{}][{}][timestamp]'.format(key, userID)] = now()
 
         r = self._post(MessagesURL, query=data)
