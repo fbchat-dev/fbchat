@@ -521,7 +521,7 @@ class Client(object):
         :param thread_type: (optional) change from 'user' for group threads
         """
         
-        assert(length > 0, 'length must be positive integer, got %d'%length)
+        assert length > 0, 'length must be positive integer, got %d'%length
 
         data = {}
         if thread_type == 'user':
