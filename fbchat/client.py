@@ -789,13 +789,24 @@ class Client(object):
             except requests.exceptions.Timeout:
               pass
 
-    def getUserInfo(self,*user_ids):
+    def getUserInfo(self, *user_ids):
         """Get user info from id. Unordered.
 
         :param user_ids: one or more user id(s) to query
         """
 
-        data = {"ids[{}]".format(i):user_id for i,user_id in enumerate(user_ids)}
+        def fbidStrip(_fbid):
+            # Stripping of `fbid:` from author_id
+            if type(_fbid) == int: 
+                return _fbid
+            
+            if type(_fbid) == str and 'fbid:' in _fbid:
+                return int(_fbid[5:])
+        
+        user_ids = [fbidStrip(uid) for uid in user_ids]
+        
+
+        data = {"ids[{}]".format(i):uid for i,uid in enumerate(user_ids)}
         r = self._post(UserInfoURL, data)
         info = get_json(r.text)
         full_data= [details for profile,details in info['payload']['profiles'].items()]
