@@ -561,7 +561,7 @@ class Client(object):
         # if not end: end = start + 20
         # if end <= start: end = start + end
         
-        assert end is None, 'end is deprecated'
+        assert end is None, '`end` is deprecated, always return last 20 threads'
         
         timestamp = now()
         date = datetime.now()
