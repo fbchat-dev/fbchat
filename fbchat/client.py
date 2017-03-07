@@ -528,7 +528,7 @@ class Client(object):
             key = 'user_ids'
         else:
             key = 'thread_fbids'
-        assert 
+
         # deprecated
         # `start` doesn't matter, always returns from the last
         # data['messages[{}][{}][offset]'.format(key, userID)] = start
