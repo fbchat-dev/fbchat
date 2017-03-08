@@ -550,26 +550,21 @@ class Client(object):
         return list(reversed(messages))
 
 
-    def getThreadList(self, start, end=None):
+    def getThreadList(self, start, length=20):
         """Get thread list of your facebook account.
 
         :param start: the start index of a thread
         :param end: (optional) the last index of a thread
         """
         
-        # deprecated
-        # end does not limit the length of the returned threads
-        # if not end: end = start + 20
-        # if end <= start: end = start + end
-        
-        assert end is None, '`end` is deprecated, always return last 20 threads'
+        assert length < 21, '`length` is deprecated, max. last 20 threads are returned'
         
         timestamp = now()
         date = datetime.now()
         data = {
             'client' : self.client,
             'inbox[offset]' : start,
-            'inbox[limit]' : 19,
+            'inbox[limit]' : length,
         }
 
         r = self._post(ThreadsURL, data)
