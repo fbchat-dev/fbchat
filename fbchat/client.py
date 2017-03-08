@@ -532,6 +532,7 @@ class Client(object):
         # deprecated
         # `start` doesn't matter, always returns from the last
         # data['messages[{}][{}][offset]'.format(key, userID)] = start
+        data['messages[{}][{}][offset]'.format(key, userID)] = 0
         data['messages[{}][{}][limit]'.format(key, userID)] = last_n
         data['messages[{}][{}][timestamp]'.format(key, userID)] = now()
 
@@ -568,7 +569,7 @@ class Client(object):
         data = {
             'client' : self.client,
             'inbox[offset]' : start,
-            'inbox[limit]' : end,
+            'inbox[limit]' : 19,
         }
 
         r = self._post(ThreadsURL, data)
