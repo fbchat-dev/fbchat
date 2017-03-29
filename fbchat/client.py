@@ -512,26 +512,28 @@ class Client(object):
         # Strip the start and parse out the returned image_id
         return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
         
-    def getThreadInfo(self, userID, start, end=None, thread_type='user'):
+    def getThreadInfo(self, userID, last_n=20, start=None, thread_type='user'):
         """Get the info of one Thread
 
         :param userID: ID of the user you want the messages from
-        :param start: the start index of a thread
-        :param end: (optional) the last index of a thread
+        :param last_n: (optional) number of retrieved messages from start
+        :param start: (optional) the start index of a thread (Deprecated)
         :param thread_type: (optional) change from 'user' for group threads
         """
-
-        if not end: end = start + 20
-        if end <= start: end = start + end
-
+        
+        assert last_n > 0, 'length must be positive integer, got %d' % last_n
+        assert start is None, '`start` is deprecated, always 0 offset querry is returned'
         data = {}
         if thread_type == 'user':
             key = 'user_ids'
         else:
             key = 'thread_fbids'
 
-        data['messages[{}][{}][offset]'.format(key, userID)] =    start
-        data['messages[{}][{}][limit]'.format(key, userID)] =     end
+        # deprecated
+        # `start` doesn't matter, always returns from the last
+        # data['messages[{}][{}][offset]'.format(key, userID)] = start
+        data['messages[{}][{}][offset]'.format(key, userID)] = 0
+        data['messages[{}][{}][limit]'.format(key, userID)] = last_n
         data['messages[{}][{}][timestamp]'.format(key, userID)] = now()
 
         r = self._post(MessagesURL, query=data)
@@ -548,22 +550,21 @@ class Client(object):
         return list(reversed(messages))
 
 
-    def getThreadList(self, start, end=None):
+    def getThreadList(self, start, length=20):
         """Get thread list of your facebook account.
 
         :param start: the start index of a thread
         :param end: (optional) the last index of a thread
         """
-
-        if not end: end = start + 20
-        if end <= start: end = start + end
-
+        
+        assert length < 21, '`length` is deprecated, max. last 20 threads are returned'
+        
         timestamp = now()
         date = datetime.now()
         data = {
             'client' : self.client,
             'inbox[offset]' : start,
-            'inbox[limit]' : end,
+            'inbox[limit]' : length,
         }
 
         r = self._post(ThreadsURL, data)
@@ -789,13 +790,24 @@ class Client(object):
             except requests.exceptions.Timeout:
               pass
 
-    def getUserInfo(self,*user_ids):
+    def getUserInfo(self, *user_ids):
         """Get user info from id. Unordered.
 
         :param user_ids: one or more user id(s) to query
         """
 
-        data = {"ids[{}]".format(i):user_id for i,user_id in enumerate(user_ids)}
+        def fbidStrip(_fbid):
+            # Stripping of `fbid:` from author_id
+            if type(_fbid) == int: 
+                return _fbid
+            
+            if type(_fbid) == str and 'fbid:' in _fbid:
+                return int(_fbid[5:])
+        
+        user_ids = [fbidStrip(uid) for uid in user_ids]
+        
+
+        data = {"ids[{}]".format(i):uid for i,uid in enumerate(user_ids)}
         r = self._post(UserInfoURL, data)
         info = get_json(r.text)
         full_data= [details for profile,details in info['payload']['profiles'].items()]
