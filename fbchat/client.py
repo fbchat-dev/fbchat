@@ -356,8 +356,12 @@ class Client(object):
         payload = j['payload']
         users = []
 
-        for k in payload.keys(): 
-            user = self._adapt_user_in_chat_to_user_model(payload[k])
+        for k in payload.keys():
+            try:
+                user = self._adapt_user_in_chat_to_user_model(payload[k])
+            except KeyError:
+                continue
+
             users.append(User(user))
 
         return users
