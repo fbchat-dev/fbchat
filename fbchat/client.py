@@ -333,7 +333,7 @@ class Client(object):
         for i in range(1,max_retries+1):
             if not self._login():
                 log.warning("Attempt #{} failed{}".format(i,{True:', retrying'}.get(i<5,'')))
-                time.sleep(1000)
+                time.sleep(1)
                 continue
             else:
                 log.info("Login successful")
