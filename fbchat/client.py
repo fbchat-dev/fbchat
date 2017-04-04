@@ -75,6 +75,7 @@ class Client(object):
             raise Exception("id and password or config is needed")
 
         self.debug = debug
+        self.sticky, self.pool = (None, None)
         self._session = requests.session()
         self.req_counter = 1
         self.seq = "0"
@@ -830,23 +831,44 @@ class Client(object):
                 self.on_message_error(sys.exc_info(), m)
 
 
-    def listen(self, markAlive=True):
+    def start_listening(self):
+        """Start listening from an external event loop."""
         self.listening = True
-        sticky, pool = self._getSticky()
+        self.sticky, self.pool = self._getSticky()
+
+
+    def do_one_listen(self, markAlive=True):
+        """Does one cycle of the listening loop.
+        This method is only useful if you want to control fbchat from an
+        external event loop."""
+        try:
+            if markAlive: self.ping(self.sticky)
+            try:
+                content = self._pullMessage(self.sticky, self.pool)
+                if content: self._parseMessage(content)
+            except requests.exceptions.RequestException as e:
+                pass
+        except KeyboardInterrupt:
+            self.listening = False
+        except requests.exceptions.Timeout:
+            pass
+
+
+    def stop_listening(self):
+        """Cleans up the variables from start_listening."""
+        self.listening = False
+        self.sticky, self.pool = (None, None)
+
+
+    def listen(self, markAlive=True):
+        self.start_listening()
 
         log.info("Listening...")
         while self.listening:
-            try:
-                if markAlive: self.ping(sticky)
-                try:
-                    content = self._pullMessage(sticky, pool)
-                    if content: self._parseMessage(content)
-                except requests.exceptions.RequestException as e:
-                    continue
-            except KeyboardInterrupt:
-                break
-            except requests.exceptions.Timeout:
-              pass
+            self.do_one_listen(markAlive)
+
+        self.stop_listening()
+
 
     def getUserInfo(self, *user_ids):
         """Get user info from id. Unordered.
