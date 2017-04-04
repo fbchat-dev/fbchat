@@ -272,7 +272,7 @@ class Client(object):
             return r
         
         del(data['name_action_selected'])
-        log.info(data.values()) #At this stage, we have dtsg, nh, submit[Continue]
+        log.info('Starting Facebook checkup flow') #At this stage, we have dtsg, nh, submit[Continue]
         r = self._cleanPost(CheckpointURL, data)
 
         if 'home' in r.url:
