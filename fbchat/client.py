@@ -46,6 +46,7 @@ RemoveUserURL="https://www.facebook.com/chat/remove_participants/"
 LogoutURL    ="https://www.facebook.com/logout.php"
 AllUsersURL  ="https://www.facebook.com/chat/user_info_all"
 SaveDeviceURL="https://m.facebook.com/login/save-device/cancel/"
+CheckpointURL="https://m.facebook.com/login/checkpoint/"
 facebookEncoding = 'UTF-8'
 
 # Log settings
@@ -229,6 +230,10 @@ class Client(object):
 
         r = self._cleanPost(LoginURL, data)
         
+        # Usually, 'Checkpoint' will refer to 2FA
+        if 'checkpoint' in r.url and 'Enter Security Code to Continue' in r.text:
+            r = self._2FA(r)
+
         # Sometimes Facebook tries to show the user a "Save Device" dialog
         if 'save-device' in r.url:
             r = self._cleanGet(SaveDeviceURL)
@@ -238,7 +243,56 @@ class Client(object):
             return True
         else:
             return False
+    
+    def _2FA(self,r):
+        soup = bs(r.text, "lxml")
+        data = dict()
+        s = raw_input('Please enter your 2FA code --> ')
+        data['approvals_code'] = s
+        data['fb_dtsg'] = soup.find("input", {'name':'fb_dtsg'})['value']
+        data['nh'] = soup.find("input", {'name':'nh'})['value']
+        data['submit[Submit Code]'] = 'Submit Code'
+        data['codes_submitted'] = 0
+        log.info('Submitting 2FA code')
+        r = self._cleanPost(CheckpointURL, data)
 
+        if 'home' in r.url:
+            return r
+        
+        del(data['approvals_code'])
+        del(data['submit[Submit Code]'])
+        del(data['codes_submitted'])
+      
+        data['name_action_selected'] = 'save_device'
+        data['submit[Continue]'] = 'Continue'
+        log.info('Saving browser') #At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
+        r = self._cleanPost(CheckpointURL, data)
+
+        if 'home' in r.url:
+            return r
+        
+        del(data['name_action_selected'])
+        log.info('Starting Facebook checkup flow') #At this stage, we have dtsg, nh, submit[Continue]
+        r = self._cleanPost(CheckpointURL, data)
+
+        if 'home' in r.url:
+            return r
+        
+        del(data['submit[Continue]'])
+        data['submit[This was me]'] = 'This Was Me'
+        log.info('Verifying login attempt') #At this stage, we have dtsg, nh, submit[This was me]
+        r = self._cleanPost(CheckpointURL, data)
+
+        if 'home' in r.url:
+            return r
+        
+        del(data['submit[This was me]'])
+        data['submit[Continue]'] = 'Continue'
+        data['name_action_selected'] = 'save_device'
+        log.info('Saving device again') #At this stage, we have dtsg, nh, submit[Continue], name_action_selected
+        r = self._cleanPost(CheckpointURL, data)
+        return r
+        
     def saveSession(self, sessionfile):
         """Dumps the session cookies to (sessionfile).
         WILL OVERWRITE ANY EXISTING FILE
