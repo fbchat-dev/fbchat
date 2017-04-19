@@ -46,6 +46,7 @@ RemoveUserURL="https://www.facebook.com/chat/remove_participants/"
 LogoutURL    ="https://www.facebook.com/logout.php"
 AllUsersURL  ="https://www.facebook.com/chat/user_info_all"
 SaveDeviceURL="https://m.facebook.com/login/save-device/cancel/"
+CheckpointURL="https://m.facebook.com/login/checkpoint/"
 facebookEncoding = 'UTF-8'
 
 # Log settings
@@ -74,6 +75,7 @@ class Client(object):
             raise Exception("id and password or config is needed")
 
         self.debug = debug
+        self.sticky, self.pool = (None, None)
         self._session = requests.session()
         self.req_counter = 1
         self.seq = "0"
@@ -229,6 +231,10 @@ class Client(object):
 
         r = self._cleanPost(LoginURL, data)
         
+        # Usually, 'Checkpoint' will refer to 2FA
+        if 'checkpoint' in r.url and 'Enter Security Code to Continue' in r.text:
+            r = self._2FA(r)
+
         # Sometimes Facebook tries to show the user a "Save Device" dialog
         if 'save-device' in r.url:
             r = self._cleanGet(SaveDeviceURL)
@@ -238,7 +244,56 @@ class Client(object):
             return True
         else:
             return False
+    
+    def _2FA(self,r):
+        soup = bs(r.text, "lxml")
+        data = dict()
+        s = raw_input('Please enter your 2FA code --> ')
+        data['approvals_code'] = s
+        data['fb_dtsg'] = soup.find("input", {'name':'fb_dtsg'})['value']
+        data['nh'] = soup.find("input", {'name':'nh'})['value']
+        data['submit[Submit Code]'] = 'Submit Code'
+        data['codes_submitted'] = 0
+        log.info('Submitting 2FA code')
+        r = self._cleanPost(CheckpointURL, data)
 
+        if 'home' in r.url:
+            return r
+        
+        del(data['approvals_code'])
+        del(data['submit[Submit Code]'])
+        del(data['codes_submitted'])
+      
+        data['name_action_selected'] = 'save_device'
+        data['submit[Continue]'] = 'Continue'
+        log.info('Saving browser') #At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
+        r = self._cleanPost(CheckpointURL, data)
+
+        if 'home' in r.url:
+            return r
+        
+        del(data['name_action_selected'])
+        log.info('Starting Facebook checkup flow') #At this stage, we have dtsg, nh, submit[Continue]
+        r = self._cleanPost(CheckpointURL, data)
+
+        if 'home' in r.url:
+            return r
+        
+        del(data['submit[Continue]'])
+        data['submit[This was me]'] = 'This Was Me'
+        log.info('Verifying login attempt') #At this stage, we have dtsg, nh, submit[This was me]
+        r = self._cleanPost(CheckpointURL, data)
+
+        if 'home' in r.url:
+            return r
+        
+        del(data['submit[This was me]'])
+        data['submit[Continue]'] = 'Continue'
+        data['name_action_selected'] = 'save_device'
+        log.info('Saving device again') #At this stage, we have dtsg, nh, submit[Continue], name_action_selected
+        r = self._cleanPost(CheckpointURL, data)
+        return r
+        
     def saveSession(self, sessionfile):
         """Dumps the session cookies to (sessionfile).
         WILL OVERWRITE ANY EXISTING FILE
@@ -356,8 +411,12 @@ class Client(object):
         payload = j['payload']
         users = []
 
-        for k in payload.keys(): 
-            user = self._adapt_user_in_chat_to_user_model(payload[k])
+        for k in payload.keys():
+            try:
+                user = self._adapt_user_in_chat_to_user_model(payload[k])
+            except KeyError:
+                continue
+
             users.append(User(user))
 
         return users
@@ -512,26 +571,28 @@ class Client(object):
         # Strip the start and parse out the returned image_id
         return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
         
-    def getThreadInfo(self, userID, start, end=None, thread_type='user'):
+    def getThreadInfo(self, userID, last_n=20, start=None, thread_type='user'):
         """Get the info of one Thread
 
         :param userID: ID of the user you want the messages from
-        :param start: the start index of a thread
-        :param end: (optional) the last index of a thread
+        :param last_n: (optional) number of retrieved messages from start
+        :param start: (optional) the start index of a thread (Deprecated)
         :param thread_type: (optional) change from 'user' for group threads
         """
-
-        if not end: end = start + 20
-        if end <= start: end = start + end
-
+        
+        assert last_n > 0, 'length must be positive integer, got %d' % last_n
+        assert start is None, '`start` is deprecated, always 0 offset querry is returned'
         data = {}
         if thread_type == 'user':
             key = 'user_ids'
         else:
             key = 'thread_fbids'
 
-        data['messages[{}][{}][offset]'.format(key, userID)] =    start
-        data['messages[{}][{}][limit]'.format(key, userID)] =     end
+        # deprecated
+        # `start` doesn't matter, always returns from the last
+        # data['messages[{}][{}][offset]'.format(key, userID)] = start
+        data['messages[{}][{}][offset]'.format(key, userID)] = 0
+        data['messages[{}][{}][limit]'.format(key, userID)] = last_n
         data['messages[{}][{}][timestamp]'.format(key, userID)] = now()
 
         r = self._post(MessagesURL, query=data)
@@ -548,22 +609,21 @@ class Client(object):
         return list(reversed(messages))
 
 
-    def getThreadList(self, start, end=None):
+    def getThreadList(self, start, length=20):
         """Get thread list of your facebook account.
 
         :param start: the start index of a thread
         :param end: (optional) the last index of a thread
         """
-
-        if not end: end = start + 20
-        if end <= start: end = start + end
-
+        
+        assert length < 21, '`length` is deprecated, max. last 20 threads are returned'
+        
         timestamp = now()
         date = datetime.now()
         data = {
             'client' : self.client,
             'inbox[offset]' : start,
-            'inbox[limit]' : end,
+            'inbox[limit]' : length,
         }
 
         r = self._post(ThreadsURL, data)
@@ -771,31 +831,63 @@ class Client(object):
                 self.on_message_error(sys.exc_info(), m)
 
 
-    def listen(self, markAlive=True):
+    def start_listening(self):
+        """Start listening from an external event loop."""
         self.listening = True
-        sticky, pool = self._getSticky()
+        self.sticky, self.pool = self._getSticky()
+
+
+    def do_one_listen(self, markAlive=True):
+        """Does one cycle of the listening loop.
+        This method is only useful if you want to control fbchat from an
+        external event loop."""
+        try:
+            if markAlive: self.ping(self.sticky)
+            try:
+                content = self._pullMessage(self.sticky, self.pool)
+                if content: self._parseMessage(content)
+            except requests.exceptions.RequestException as e:
+                pass
+        except KeyboardInterrupt:
+            self.listening = False
+        except requests.exceptions.Timeout:
+            pass
+
+
+    def stop_listening(self):
+        """Cleans up the variables from start_listening."""
+        self.listening = False
+        self.sticky, self.pool = (None, None)
+
+
+    def listen(self, markAlive=True):
+        self.start_listening()
 
         log.info("Listening...")
         while self.listening:
-            try:
-                if markAlive: self.ping(sticky)
-                try:
-                    content = self._pullMessage(sticky, pool)
-                    if content: self._parseMessage(content)
-                except requests.exceptions.RequestException as e:
-                    continue
-            except KeyboardInterrupt:
-                break
-            except requests.exceptions.Timeout:
-              pass
+            self.do_one_listen(markAlive)
 
-    def getUserInfo(self,*user_ids):
+        self.stop_listening()
+
+
+    def getUserInfo(self, *user_ids):
         """Get user info from id. Unordered.
 
         :param user_ids: one or more user id(s) to query
         """
 
-        data = {"ids[{}]".format(i):user_id for i,user_id in enumerate(user_ids)}
+        def fbidStrip(_fbid):
+            # Stripping of `fbid:` from author_id
+            if type(_fbid) == int: 
+                return _fbid
+            
+            if type(_fbid) == str and 'fbid:' in _fbid:
+                return int(_fbid[5:])
+        
+        user_ids = [fbidStrip(uid) for uid in user_ids]
+        
+
+        data = {"ids[{}]".format(i):uid for i,uid in enumerate(user_ids)}
         r = self._post(UserInfoURL, data)
         info = get_json(r.text)
         full_data= [details for profile,details in info['payload']['profiles'].items()]
