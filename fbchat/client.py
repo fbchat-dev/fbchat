@@ -59,7 +59,7 @@ class Client(object):
     documentation for the API.
     """
 
-    def __init__(self, email, password, debug=True, user_agent=None, max_retries=5, do_login=True):
+    def __init__(self, email, password, debug=True, info_log=True, user_agent=None, max_retries=5, do_login=True):
         """A client for the Facebook Chat (Messenger).
 
         :param email: Facebook `email` or `id` or `phone number`
@@ -70,8 +70,9 @@ class Client(object):
         """
 
         if do_login and not (email and password):
-            raise Exception("id and password or config is needed")
+            raise Exception("Email and password not found.")
 
+        self.is_def_recipient_set = False
         self.debug = debug
         self.sticky, self.pool = (None, None)
         self._session = requests.session()
@@ -109,6 +110,8 @@ class Client(object):
         # Configure the logger differently based on the 'debug' parameter
         if debug:
             logging_level = logging.DEBUG
+        elif info_log:
+            logging_level = logging.INFO
         else:
             logging_level = logging.WARNING
 
@@ -139,7 +142,7 @@ class Client(object):
         warnings.warn(
                 "Client._console shouldn't be used.  Use 'log.<level>'",
                 DeprecationWarning)
-        if self.debug: log.info(msg)
+        log.debug(msg)
 
     def _setttstamp(self):
         for i in self.fb_dtsg:
@@ -217,7 +220,7 @@ class Client(object):
 
     def _login(self):
         if not (self.email and self.password):
-            raise Exception("id and password or config is needed")
+            raise Exception("Email and password not found.")
 
         soup = bs(self._get(MobileURL).text, "lxml")
         data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
@@ -241,16 +244,24 @@ class Client(object):
         else:
             return False
 
-    def _2FA(self,r):
+    def _2FA(self, r):
         soup = bs(r.text, "lxml")
         data = dict()
+
+        # Python 3 does not have raw_input, whereas Python 2 has and it's more secure
+        try:
+            input = raw_input
+        except NameError:
+            pass
+
         s = input('Please enter your 2FA code --> ')
         data['approvals_code'] = s
         data['fb_dtsg'] = soup.find("input", {'name':'fb_dtsg'})['value']
         data['nh'] = soup.find("input", {'name':'nh'})['value']
         data['submit[Submit Code]'] = 'Submit Code'
         data['codes_submitted'] = 0
-        log.info('Submitting 2FA code')
+        log.info('Submitting 2FA code.')
+
         r = self._cleanPost(CheckpointURL, data)
 
         if 'home' in r.url:
@@ -262,14 +273,14 @@ class Client(object):
 
         data['name_action_selected'] = 'save_device'
         data['submit[Continue]'] = 'Continue'
-        log.info('Saving browser')  # At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
+        log.info('Saving browser.')  # At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
         r = self._cleanPost(CheckpointURL, data)
 
         if 'home' in r.url:
             return r
 
         del(data['name_action_selected'])
-        log.info('Starting Facebook checkup flow')  # At this stage, we have dtsg, nh, submit[Continue]
+        log.info('Starting Facebook checkup flow.')  # At this stage, we have dtsg, nh, submit[Continue]
         r = self._cleanPost(CheckpointURL, data)
 
         if 'home' in r.url:
@@ -277,7 +288,7 @@ class Client(object):
 
         del(data['submit[Continue]'])
         data['submit[This was me]'] = 'This Was Me'
-        log.info('Verifying login attempt')  # At this stage, we have dtsg, nh, submit[This was me]
+        log.info('Verifying login attempt.')  # At this stage, we have dtsg, nh, submit[This was me]
         r = self._cleanPost(CheckpointURL, data)
 
         if 'home' in r.url:
@@ -286,7 +297,7 @@ class Client(object):
         del(data['submit[This was me]'])
         data['submit[Continue]'] = 'Continue'
         data['name_action_selected'] = 'save_device'
-        log.info('Saving device again')  # At this stage, we have dtsg, nh, submit[Continue], name_action_selected
+        log.info('Saving device again.')  # At this stage, we have dtsg, nh, submit[Continue], name_action_selected
         r = self._cleanPost(CheckpointURL, data)
         return r
 
@@ -334,15 +345,17 @@ class Client(object):
                 time.sleep(1)
                 continue
             else:
-                log.info("Login successful")
+                log.info("Login successful.")
                 break
         else:
-            raise Exception("login failed. Check id/password")
+            raise Exception("Login failed. Check email/password.")
 
     def logout(self, timeout=30):
-        data = {}
-        data['ref'] = "mb"
-        data['h'] = self.fb_h
+        data = {
+            'ref': "mb",
+            'h': self.fb_h
+        }
+
         payload=self._generatePayload(data)
         r = self._session.get(LogoutURL, headers=self._header, params=payload, timeout=timeout)
         # reset value
@@ -352,6 +365,15 @@ class Client(object):
         self.seq = "0"
         return r
 
+    def setDefaultRecipient(self, recipient_id, is_user=True):
+        """Sets default recipient to send messages and images to.
+        
+        :param recipient_id: the user id or thread id that you want to send a message to
+        :param is_user: determines if the recipient_id is for user or thread
+        """
+        self.def_recipient_id = recipient_id
+        self.def_is_user = is_user
+        self.is_def_recipient_set = True
 
     def _adapt_user_in_chat_to_user_model(self, user_in_chat):
         """ Adapts user info from chat to User model acceptable initial dict
@@ -436,16 +458,22 @@ class Client(object):
                 users.append(User(entry))
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
-    def send(self, recipient_id, message=None, message_type='user', like=None, image_id=None, add_user_ids=None):
+    def send(self, recipient_id=None, message=None, is_user=True, like=None, image_id=None, add_user_ids=None):
         """Send a message with given thread id
 
         :param recipient_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
-        :param message_type: determines if the recipient_id is for user or thread
+        :param is_user: determines if the recipient_id is for user or thread
         :param like: size of the like sticker you want to send
         :param image_id: id for the image to send, gotten from the UploadURL
         :param add_user_ids: a list of user ids to add to a chat
         """
+
+        if self.is_def_recipient_set:
+            recipient_id = self.def_recipient_id
+            is_user = self.def_is_user
+        elif recipient_id is None:
+            raise Exception('Recipient ID is not set.')
 
         messageAndOTID = generateOfflineThreadingID()
         timestamp = now()
@@ -479,10 +507,10 @@ class Client(object):
             'signatureID' : getSignatureID()
         }
 
-        if message_type.lower() == 'group':
-            data["thread_fbid"] = recipient_id
-        else:
+        if is_user:
             data["other_user_fbid"] = recipient_id
+        else:
+            data["thread_fbid"] = recipient_id
 
         if add_user_ids:
             data['action_type'] = 'ma-type:log-message'
@@ -510,8 +538,10 @@ class Client(object):
 
         r = self._post(SendURL, data)
 
-        if not r.ok:
-            return False
+        if r.ok:
+            log.info('Message sent.')
+        else:
+            log.info('Message not sent.')
 
         if isinstance(r._content, str) is False:
             r._content = r._content.decode(facebookEncoding)
@@ -525,55 +555,58 @@ class Client(object):
         log.debug("With data {}".format(data))
         return True
 
-    def sendRemoteImage(self, recipient_id, message=None, message_type='user', image=''):
+
+    def sendRemoteImage(self, recipient_id=None, message=None, is_user=True, image=''):
         """Send an image from a URL
 
         :param recipient_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
-        :param message_type: determines if the recipient_id is for user or thread
+        :param is_user: determines if the recipient_id is for user or thread
         :param image: URL for an image to download and send
         """
         mimetype = guess_type(image)[0]
         remote_image = requests.get(image).content
         image_id = self.uploadImage({'file': (image, remote_image, mimetype)})
-        return self.send(recipient_id, message, message_type, None, image_id)
+        return self.send(recipient_id, message, is_user, None, image_id)
 
-    def sendLocalImage(self, recipient_id, message=None, message_type='user', image=''):
+    def sendLocalImage(self, recipient_id=None, message=None, is_user=True, image=''):
         """Send an image from a file path
 
         :param recipient_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
-        :param message_type: determines if the recipient_id is for user or thread
+        :param is_user: determines if the recipient_id is for user or thread
         :param image: path to a local image to send
         """
         mimetype = guess_type(image)[0]
         image_id = self.uploadImage({'file': (image, open(image, 'rb'), mimetype)})
-        return self.send(recipient_id, message, message_type, None, image_id)
+        return self.send(recipient_id, message, is_user, None, image_id)
+
 
     def uploadImage(self, image):
         """Upload an image and get the image_id for sending in a message
 
         :param image: a tuple of (file name, data, mime type) to upload to facebook
         """
+
         r = self._postFile(UploadURL, image)
         if isinstance(r._content, str) is False:
             r._content = r._content.decode(facebookEncoding)
         # Strip the start and parse out the returned image_id
         return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
 
-    def getThreadInfo(self, userID, last_n=20, start=None, thread_type='user'):
+
+    def getThreadInfo(self, userID, last_n=20, start=None, is_user=True):
         """Get the info of one Thread
 
         :param userID: ID of the user you want the messages from
         :param last_n: (optional) number of retrieved messages from start
         :param start: (optional) the start index of a thread (Deprecated)
-        :param thread_type: (optional) change from 'user' for group threads
+        :param is_user: (optional) determines if the userID is for user or thread
         """
 
         assert last_n > 0, 'length must be positive integer, got %d' % last_n
         assert start is None, '`start` is deprecated, always 0 offset querry is returned'
-        data = {}
-        if thread_type == 'user':
+        if is_user:
             key = 'user_ids'
         else:
             key = 'thread_fbids'
@@ -581,9 +614,9 @@ class Client(object):
         # deprecated
         # `start` doesn't matter, always returns from the last
         # data['messages[{}][{}][offset]'.format(key, userID)] = start
-        data['messages[{}][{}][offset]'.format(key, userID)] = 0
-        data['messages[{}][{}][limit]'.format(key, userID)] = last_n
-        data['messages[{}][{}][timestamp]'.format(key, userID)] = now()
+        data = {'messages[{}][{}][offset]'.format(key, userID): 0,
+                'messages[{}][{}][limit]'.format(key, userID): last_n,
+                'messages[{}][{}][timestamp]'.format(key, userID): now()}
 
         r = self._post(MessagesURL, query=data)
         if not r.ok or len(r.text) == 0:
@@ -608,8 +641,6 @@ class Client(object):
 
         assert length < 21, '`length` is deprecated, max. last 20 threads are returned'
 
-        timestamp = now()
-        date = datetime.now()
         data = {
             'client' : self.client,
             'inbox[offset]' : start,
@@ -664,17 +695,22 @@ class Client(object):
         return result
 
     def markAsDelivered(self, userID, threadID):
-        data = {"message_ids[0]": threadID}
-        data["thread_ids[%s][0]"%userID] = threadID
+        data = {
+            "message_ids[0]": threadID,
+            "thread_ids[%s][0]" % userID: threadID
+        }
+
         r = self._post(DeliveredURL, data)
         return r.ok
+
 
     def markAsRead(self, userID):
         data = {
             "watermarkTimestamp": now(),
-            "shouldSendReadReceipt": True
+            "shouldSendReadReceipt": True,
+            "ids[%s]" % userID: True
         }
-        data["ids[%s]"%userID] = True
+
         r = self._post(ReadStatusURL, data)
         return r.ok
 
@@ -682,6 +718,7 @@ class Client(object):
     def markAsSeen(self):
         r = self._post(MarkSeenURL, {"seen_timestamp": 0})
         return r.ok
+
 
     def friend_connect(self, friend_id):
         data = {
@@ -691,9 +728,6 @@ class Client(object):
 
         r = self._post(ConnectURL, data)
 
-        if self.debug:
-            print(r)
-            print(data)
         return r.ok
 
 
@@ -896,9 +930,6 @@ class Client(object):
 
         r = self._post(RemoveUserURL, data)
 
-        log.info(r)
-        log.info(data)
-
         return r.ok
 
     def add_users_to_chat(self, threadID, userID):
@@ -908,7 +939,7 @@ class Client(object):
         :param userID: user id to add to chat
         """
 
-        return self.send(threadID, message_type='group', add_user_ids=[userID])
+        return self.send(threadID, is_user=False, add_user_ids=[userID])
 
     def changeThreadTitle(self, threadID, newTitle):
         """Change title of a group conversation
@@ -950,10 +981,6 @@ class Client(object):
 
         r = self._post(SendURL, data)
 
-        log.info(r)
-        log.info(data)
-
-
         return r.ok
 
 
@@ -970,12 +997,12 @@ class Client(object):
         """subclass Client and override this method to add custom behavior on event"""
         self.markAsDelivered(author_id, mid)
         self.markAsRead(author_id)
-        log.info("%s said: %s"%(author_name, message))
+        log.info("%s said: %s" % (author_name, message))
 
 
     def on_friend_request(self, from_id):
         """subclass Client and override this method to add custom behavior on event"""
-        log.info("friend request from %s"%from_id)
+        log.info("Friend request from %s." % from_id)
 
 
     def on_typing(self, author_id):
