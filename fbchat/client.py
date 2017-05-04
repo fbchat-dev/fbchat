@@ -27,7 +27,7 @@ import sys
 
 # Python 3 does not have raw_input, whereas Python 2 has and it's more secure
 try:
-    in put = raw_input
+    input = raw_input
 except NameError:
     pass
 
