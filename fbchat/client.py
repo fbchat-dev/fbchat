@@ -24,6 +24,13 @@ from .models import *
 from .stickers import *
 import time
 import sys
+
+# Python 3 does not have raw_input, whereas Python 2 has and it's more secure
+try:
+    in put = raw_input
+except NameError:
+    pass
+
 # URLs
 LoginURL     ="https://m.facebook.com/login.php?login_attempt=1"
 SearchURL    ="https://www.facebook.com/ajax/typeahead/search.php"
@@ -247,12 +254,6 @@ class Client(object):
     def _2FA(self, r):
         soup = bs(r.text, "lxml")
         data = dict()
-
-        # Python 3 does not have raw_input, whereas Python 2 has and it's more secure
-        try:
-            input = raw_input
-        except NameError:
-            pass
 
         s = input('Please enter your 2FA code --> ')
         data['approvals_code'] = s
