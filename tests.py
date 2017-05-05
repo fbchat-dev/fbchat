@@ -28,10 +28,6 @@ If you've made any changes to the 2FA functionality, test it with a 2FA enabled 
 
 """
 
-class CustomClient(fbchat.Client):
-    def on_message_new(self, *args, **kwargs):
-        self.listening = False
-
 class TestFbchat(unittest.TestCase):
     def test_login_functions(self):
         self.assertTrue(client.is_logged_in())
@@ -50,7 +46,7 @@ class TestFbchat(unittest.TestCase):
     def test_sessions(self):
         global client
         session_cookies = client.getSession()
-        client = CustomClient(email, password, session_cookies=session_cookies)
+        client = fbchat.Client(email, password, session_cookies=session_cookies)
         
         self.assertTrue(client.is_logged_in())
 
@@ -116,8 +112,11 @@ class TestFbchat(unittest.TestCase):
         self.assertEquals(info['name'], 'Mark Zuckerberg')
     
     def test_remove_add_from_chat(self):
-        client.remove_user_from_chat(group_uid, user_uid)
-        client.add_users_to_chat(group_uid, user_uid)
+        self.assertTrue(client.remove_user_from_chat(group_uid, user_uid))
+        self.assertTrue(client.add_users_to_chat(group_uid, user_uid))
+    
+    def test_changeThreadTitle(self):
+        self.assertTrue(client.changeThreadTitle(group_uid, 'test_changeThreadTitle'))
 
 
 def start_test(param_client, param_group_uid, param_user_uid, tests=[]):
@@ -160,7 +159,7 @@ if __name__ == '__main__':
         user_uid = input('Please enter a user uid (To test kicking/adding functionality): ')
 
     print ('Logging in')
-    client = CustomClient(email, password)
+    client = fbchat.Client(email, password)
     
     # Warning! Taking user input directly like this could be dangerous! Use only for testing purposes!
     start_test(client, group_uid, user_uid, sys.argv[1:])
