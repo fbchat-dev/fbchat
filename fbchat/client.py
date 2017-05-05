@@ -902,7 +902,7 @@ class Client(object):
             if type(_fbid) == int:
                 return _fbid
 
-            if type(_fbid) == str and 'fbid:' in _fbid:
+            if type(_fbid) in [str, unicode] and 'fbid:' in _fbid:
                 return int(_fbid[5:])
 
         user_ids = [fbidStrip(uid) for uid in user_ids]
