@@ -57,6 +57,7 @@ facebookEncoding = 'UTF-8'
 
 # Log settings
 log = logging.getLogger("client")
+log.setLevel(logging.DEBUG)
 
 
 class Client(object):
@@ -111,14 +112,10 @@ class Client(object):
         handler = logging.StreamHandler()
         handler.setLevel(logging_level)
         log.addHandler(handler)
-        log.setLevel(logging.DEBUG)
 
         # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
         if not session_cookies or not self.setSession(session_cookies) or not self.is_logged_in():
             self.login(email, password, max_retries)
-
-    def _init_logging(self):
-        
 
     def _console(self, msg):
         """Assumes an INFO level and log it.
@@ -329,7 +326,7 @@ class Client(object):
 
         for i in range(1, max_retries+1):
             if not self._login():
-                log.warning("Attempt #{} failed{}".format(i,{True:', retrying'}.get(i<5,'')))
+                log.warning("Attempt #{} failed{}".format(i,{True:', retrying'}.get(i < max_retries, '')))
                 time.sleep(1)
                 continue
             else:
@@ -420,7 +417,6 @@ class Client(object):
             users.append(User(user))
 
         return users
-
 
     def getUsers(self, name):
         """Find and get user by his/her name

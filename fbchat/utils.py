@@ -29,7 +29,7 @@ def now():
     return int(time()*1000)
 
 def strip_to_json(text):
-    return re.sub(r"^[^{]*", '', text, 1);
+    return text[text.index('{'):]
 
 def get_json(text):
     return json.loads(strip_to_json(text))
