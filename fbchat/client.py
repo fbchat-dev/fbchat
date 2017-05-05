@@ -451,6 +451,8 @@ class Client(object):
         :param like: size of the like sticker you want to send
         :param image_id: id for the image to send, gotten from the UploadURL
         :param add_user_ids: a list of user ids to add to a chat
+        
+        returns a list of message ids of the sent message(s)
         """
 
         if self.is_def_recipient_set:
@@ -521,11 +523,10 @@ class Client(object):
             data["sticker_id"] = sticker
 
         r = self._post(SendURL, data)
-
-        if r.ok:
-            log.info('Message sent.')
-        else:
-            log.info('Message not sent.')
+        
+        if not r.ok:
+            log.warning('Error when sending message: Got {} response'.format(r.status_code))
+            return False
 
         if isinstance(r._content, str) is False:
             r._content = r._content.decode(facebookEncoding)
@@ -534,10 +535,18 @@ class Client(object):
             # 'errorDescription' is in the users own language!
             log.warning('Error #{} when sending message: {}'.format(j['error'], j['errorDescription']))
             return False
+        
+        message_ids = []
+        try:
+            message_ids += [action['message_id'] for action in j['payload']['actions'] if 'message_id' in action]
+        except KeyError as e:
+            log.warning('Error when sending message: No message ids could be found')
+            return False
 
+        log.info('Message sent.')
         log.debug("Sending {}".format(r))
         log.debug("With data {}".format(data))
-        return True
+        return message_ids
 
 
     def sendRemoteImage(self, recipient_id=None, message=None, is_user=True, image=''):
@@ -826,10 +835,10 @@ class Client(object):
                         fbid =    m['delta']['messageMetadata']['actorFbId']
                         self.on_message_new(mid, fbid, message, m, recipient_id, thread_type)
                 elif m['type'] in ['jewel_requests_add']:
-                        from_id = m['from']
-                        self.on_friend_request(from_id)
+                    from_id = m['from']
+                    self.on_friend_request(from_id)
                 else:
-                    log.debug("Unknown type {}".format(m))
+                    self.on_unknown_type(m)
             except Exception as e:
                 # ex_type, ex, tb = sys.exc_info()
                 self.on_message_error(sys.exc_info(), m)
@@ -1021,3 +1030,9 @@ class Client(object):
 
     def on_qprimer(self, timestamp):
         pass
+
+
+    def on_unknown_type(self, m):
+        """subclass Client and override this method to add custom behavior on event"""
+        log.debug("Unknown type {}".format(m))
+

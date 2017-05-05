@@ -14,17 +14,19 @@ fbchat.log.setLevel(100)
 """
 
 Tests for fbchat
+~~~~~~~~~~~~~~~~
 
 To use these tests, put:
 - email
 - password
 - a group_uid
-- a user_uid whom will be kicked from that group and then added again
+- a user_uid (the user will be kicked from the group and then added again)
 (seperated these by a newline) in a file called `tests.data`, or type them manually in the terminal prompts
 
 Please remember to test both python v. 2.7 and python v. 3.6!
 
 If you've made any changes to the 2FA functionality, test it with a 2FA enabled account
+If you only want to execute specific tests, pass the function names in the commandline
 
 """
 
@@ -56,21 +58,21 @@ class TestFbchat(unittest.TestCase):
 
     def test_getAllUsers(self):
         users = client.getAllUsers()
-        self.assertTrue(len(users) > 0)
+        self.assertGreater(len(users), 0)
 
     def test_getUsers(self):
         users = client.getUsers("Mark Zuckerberg")
-        self.assertTrue(len(users) > 0)
+        self.assertGreater(len(users), 0)
         
         u = users[0]
         
         # Test if values are set correctly
-        self.assertTrue(isinstance(u.uid, int))
+        self.assertIsInstance(u.uid, int)
         self.assertEquals(u.type, 'user')
         self.assertEquals(u.photo[:4], 'http')
         self.assertEquals(u.url[:4], 'http')
         self.assertEquals(u.name, 'Mark Zuckerberg')
-        self.assertTrue(u.score > 0)
+        self.assertGreater(u.score, 0)
     
     def test_send_likes(self):
         self.assertTrue(client.send(client.uid, like='s'))
@@ -147,7 +149,7 @@ if __name__ == '__main__':
     try:
         with open(path.join(path.dirname(__file__), 'tests.data'), 'r') as f:
             content = f.readlines()
-        content = [x.strip() for x in content]
+        content = [x.strip() for x in content if len(x.strip()) != 0]
         email = content[0]
         password = content[1]
         group_uid = content[2]
