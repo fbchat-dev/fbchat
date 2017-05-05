@@ -99,7 +99,8 @@ Saving session
 
 .. code-block:: python
     
-    client.saveSession(sessionfile)
+    session_cookies = client.setSession()
+    # save session_cookies
 
 
 Loading session
@@ -107,8 +108,9 @@ Loading session
 
 .. code-block:: python
     
-    client = fbchat.Client(None, None, do_login=False)
-    client.loadSession(sessionfile)
+    client = fbchat.Client(None, None, session_cookies=session_cookies)
+    # OR
+    client.setSession(session_cookies)
 
 
 Authors

@@ -1,6 +1,6 @@
 *py[co]
 
-#test
+# Test scripts
 *.sh
 
 # Packages
@@ -21,3 +21,6 @@ develop-eggs
 
 # Sphinx documentation
 docs/_build/
+
+# Data for tests
+tests.data
