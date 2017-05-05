@@ -21,9 +21,9 @@ from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
 from .utils import *
 from .models import *
-from .stickers import *
 import time
-import sys
+from .event_hook import EventHook
+
 
 # Python 3 does not have raw_input, whereas Python 2 has and it's more secure
 try:
@@ -75,7 +75,6 @@ class Client(object):
             import fbchat
             chat = fbchat.Client(email, password)
         """
-
         if do_login and not (email and password):
             raise Exception("Email and password not found.")
 
@@ -102,6 +101,37 @@ class Client(object):
             10: 'neuter_plural',
             11: 'unknown_plural',
         }
+
+        # Setup event hooks
+        self.onLoggingIn = EventHook()
+        self.onLoggedIn = EventHook()
+
+        self.onMessage = EventHook(mid=str, author_id=str, message=str, recipient_id=int, msg_type=MsgType, ts=str, metadata=dict)
+        self.onColorChange = EventHook(mid=str, author_id=str, new_color=str, changed_for=str, msg_type=MsgType, ts=str)
+        self.onTitleChange = EventHook(mid=str, author_id=str, new_title=str, changed_for=str, thread_id=str, ts=str)
+        self.onTyping = EventHook(author_id=int, typing_status=TypingStatus)
+        self.onSeen = EventHook(seen_by=str, thread_id=str, timestamp=str)
+
+        self.onInbox = EventHook(unseen=int, unread=int, recent_unread=int)
+        self.onPeopleAdded = EventHook(added_ids=list, author_id=str, thread_id=str)
+        self.onPersonRemoved = EventHook(removed_id=str, author_id=str, thread_id=str)
+        self.onFriendRequest = EventHook(from_id=str)
+
+        # Setup event handlers
+        self.onLoggingIn += lambda: log.info("Logging in...")
+        self.onLoggedIn += lambda: log.info("Login successful.")
+        self.onListening += lambda: log.info("Listening...")
+
+        self.onMessage += lambda mid, author_id, message, recipient_id, msg_type, ts, metadata:\
+            log.info("Message from %s: %s" % (author_id, message))
+        self.onColorChange += lambda mid, author_id, new_color, changed_for, msg_type, ts:\
+            log.info("%s changed color to %s" % (author_id, new_color))
+        self.onTitleChange += lambda mid, author_id, new_title, changed_for, thread_id, ts:\
+            log.info("%s changed title of %s to %s" % (author_id, changed_for, new_title))
+        self.onPeopleAdded += lambda added_ids, author_id, thread_id:\
+            log.info("%s added: %s" % (author_id, [x for x in added_ids]))
+        self.onPersonRemoved += lambda removed_id, author_id, thread_id:\
+            log.info("%s removed: %s" % (author_id, removed_id))
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -151,11 +181,6 @@ class Client(object):
                 DeprecationWarning)
         log.debug(msg)
 
-    def _setttstamp(self):
-        for i in self.fb_dtsg:
-            self.ttstamp += str(ord(i))
-        self.ttstamp += '2'
-
     def _generatePayload(self, query):
         """Adds the following defaults to the payload:
           __rev, __user, __a, ttstamp, fb_dtsg, __req
@@ -187,7 +212,7 @@ class Client(object):
         payload=self._generatePayload(None)
         return self._session.post(url, data=payload, timeout=timeout, files=files)
 
-    def _post_login(self):
+    def _postLogin(self):
         self.payloadDefault = {}
         self.client_id = hex(int(random()*2147483648))[2:]
         self.start_time = now()
@@ -201,7 +226,11 @@ class Client(object):
         log.debug(r.url)
         self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
         self.fb_h = soup.find("input", {'name':'h'})['value']
-        self._setttstamp()
+
+        for i in self.fb_dtsg:
+            self.ttstamp += str(ord(i))
+        self.ttstamp += '2'
+
         # Set default payload
         self.payloadDefault['__rev'] = int(r.text.split('"revision":',1)[1].split(",",1)[0])
         self.payloadDefault['__user'] = self.uid
@@ -246,7 +275,7 @@ class Client(object):
             r = self._cleanGet(SaveDeviceURL)
 
         if 'home' in r.url:
-            self._post_login()
+            self._postLogin()
             return True
         else:
             return False
@@ -328,14 +357,13 @@ class Client(object):
                     return False
                 # Load cookies into current session
                 self._session.cookies = requests.cookies.merge_cookies(self._session.cookies, j)
-                self._post_login()
+                self._postLogin()
                 return True
             except Exception as e:
                 raise Exception('Invalid json in {}, or bad merging of cookies'.format(sessionfile))
 
     def login(self, email, password, max_retries=5):
-        # Logging in
-        log.info("Logging in...")
+        self.onLoggingIn()
 
         self.email = email
         self.password = password
@@ -346,7 +374,7 @@ class Client(object):
                 time.sleep(1)
                 continue
             else:
-                log.info("Login successful.")
+                self.onLoggedIn()
                 break
         else:
             raise Exception("Login failed. Check email/password.")
@@ -376,39 +404,6 @@ class Client(object):
         self.def_is_user = is_user
         self.is_def_recipient_set = True
 
-    def _adapt_user_in_chat_to_user_model(self, user_in_chat):
-        """ Adapts user info from chat to User model acceptable initial dict
-
-        :param user_in_chat: user info from chat
-
-        'dir': None,
-        'mThumbSrcSmall': None,
-        'is_friend': False,
-        'is_nonfriend_messenger_contact': True,
-        'alternateName': '',
-        'i18nGender': 16777216,
-        'vanity': '',
-        'type': 'friend',
-        'searchTokens': ['Voznesenskij', 'Sergej'],
-        'thumbSrc': 'https://fb-s-b-a.akamaihd.net/h-ak-xfa1/v/t1.0-1/c9.0.32.32/p32x32/10354686_10150004552801856_220367501106153455_n.jpg?oh=71a87d76d4e4d17615a20c43fb8dbb47&oe=59118CE4&__gda__=1493753268_ae75cef40e9785398e744259ccffd7ff',
-        'mThumbSrcLarge': None,
-        'firstName': 'Sergej',
-        'name': 'Sergej Voznesenskij',
-        'uri': 'https://www.facebook.com/profile.php?id=100014812758264',
-        'id': '100014812758264',
-        'gender': 2
-        """
-
-        return {
-            'type': 'user',
-            'uid': user_in_chat['id'],
-            'photo': user_in_chat['thumbSrc'],
-            'path': user_in_chat['uri'],
-            'text': user_in_chat['name'],
-            'score': '',
-            'data': user_in_chat,
-        }
-
     def getAllUsers(self):
         """ Gets all users from chat with info included """
 
@@ -426,14 +421,13 @@ class Client(object):
 
         for k in payload.keys():
             try:
-                user = self._adapt_user_in_chat_to_user_model(payload[k])
+                user = User.adaptFromChat(payload[k])
             except KeyError:
                 continue
 
             users.append(User(user))
 
         return users
-
 
     def getUsers(self, name):
         """Find and get user by his/her name
@@ -529,13 +523,10 @@ class Client(object):
         if image_id:
             data['image_ids[0]'] = image_id
 
-        if like:
-            try:
-                sticker = LIKES[like.lower()]
-            except KeyError:
-                # if user doesn't enter l or m or s, then use the large one
-                sticker = LIKES['l']
-            data["sticker_id"] = sticker
+        if like and not type(like) is Sticker:
+            data["sticker_id"] = Sticker.SMALL.value
+        else:
+            data["sticker_id"] = like.value
 
         r = self._post(SendURL, data)
 
@@ -555,7 +546,6 @@ class Client(object):
         log.debug("Sending {}".format(r))
         log.debug("With data {}".format(data))
         return True
-
 
     def sendRemoteImage(self, recipient_id=None, message=None, is_user=True, image=''):
         """Send an image from a URL
@@ -582,7 +572,6 @@ class Client(object):
         image_id = self.uploadImage({'file': (image, open(image, 'rb'), mimetype)})
         return self.send(recipient_id, message, is_user, None, image_id)
 
-
     def uploadImage(self, image):
         """Upload an image and get the image_id for sending in a message
 
@@ -594,7 +583,6 @@ class Client(object):
             r._content = r._content.decode(facebookEncoding)
         # Strip the start and parse out the returned image_id
         return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
-
 
     def getThreadInfo(self, userID, last_n=20, start=None, is_user=True):
         """Get the info of one Thread
@@ -631,7 +619,6 @@ class Client(object):
         for message in j['payload']['actions']:
             messages.append(Message(**message))
         return list(reversed(messages))
-
 
     def getThreadList(self, start, length=20):
         """Get thread list of your facebook account.
@@ -675,7 +662,6 @@ class Client(object):
 
         return self.threads
 
-
     def getUnread(self):
         form = {
             'client': 'mercury_sync',
@@ -704,7 +690,6 @@ class Client(object):
         r = self._post(DeliveredURL, data)
         return r.ok
 
-
     def markAsRead(self, userID):
         data = {
             "watermarkTimestamp": now(),
@@ -715,13 +700,11 @@ class Client(object):
         r = self._post(ReadStatusURL, data)
         return r.ok
 
-
     def markAsSeen(self):
         r = self._post(MarkSeenURL, {"seen_timestamp": 0})
         return r.ok
 
-
-    def friend_connect(self, friend_id):
+    def friendConnect(self, friend_id):
         data = {
             "to_friend": friend_id,
             "action": "confirm"
@@ -730,7 +713,6 @@ class Client(object):
         r = self._post(ConnectURL, data)
 
         return r.ok
-
 
     def ping(self, sticky):
         data = {
@@ -745,11 +727,8 @@ class Client(object):
         r = self._get(PingURL, data)
         return r.ok
 
-
     def _getSticky(self):
-        """Call pull api to get sticky and pool parameter,
-        newer api needs these parameter to work.
-        """
+        """Call pull api to get sticky and pool parameter, newer api needs these parameter to work."""
 
         data = {
             "msgs_recv": 0,
@@ -766,7 +745,6 @@ class Client(object):
         sticky = j['lb_info']['sticky']
         pool = j['lb_info']['pool']
         return sticky, pool
-
 
     def _pullMessage(self, sticky, pool):
         """Call pull api with seq value to get message data."""
@@ -785,7 +763,6 @@ class Client(object):
         self.seq = j.get('seq', '0')
         return j
 
-
     def _parseMessage(self, content):
         """Get message and author name from content.
         May contains multiple messages in the content.
@@ -794,71 +771,120 @@ class Client(object):
         if 'ms' not in content: return
 
         log.debug("Received {}".format(content["ms"]))
-        for m in content['ms']:
+        for m in content["ms"]:
+            mtype = m.get("type")
             try:
-                if m['type'] in ['m_messaging', 'messaging']:
-                    if m['event'] in ['deliver']:
-                        mid =     m['message']['mid']
-                        message = m['message']['body']
-                        fbid =    m['message']['sender_fbid']
-                        name =    m['message']['sender_name']
-                        self.on_message(mid, fbid, name, message, m)
-                elif m['type'] in ['typ']:
-                    self.on_typing(m.get("from"))
-                elif m['type'] in ['m_read_receipt']:
-                    self.on_read(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
-                elif m['type'] in ['inbox']:
-                    viewer = m.get('realtime_viewer_fbid')
-                    unseen = m.get('unseen')
-                    unread = m.get('unread')
-                    other_unseen = m.get('other_unseen')
-                    other_unread = m.get('other_unread')
-                    timestamp = m.get('seen_timestamp')
-                    self.on_inbox(viewer, unseen, unread, other_unseen, other_unread, timestamp)
-                elif m['type'] in ['qprimer']:
-                    self.on_qprimer(m.get('made'))
-                elif m['type'] in ['delta']:
-                    if 'leftParticipantFbId' in m['delta']:
-                        user_id = m['delta']['leftParticipantFbId']
-                        actor_id = m['delta']['messageMetadata']['actorFbId']
-                        thread_id = m['delta']['messageMetadata']['threadKey']['threadFbId']
-                        self.on_person_removed(user_id, actor_id, thread_id)
-                    elif 'addedParticipants' in m['delta']:
-                        user_ids = [x['userFbId'] for x in m['delta']['addedParticipants']]
-                        actor_id = m['delta']['messageMetadata']['actorFbId']
-                        thread_id = m['delta']['messageMetadata']['threadKey']['threadFbId']
-                        self.on_people_added(user_ids, actor_id, thread_id)
-                    elif 'messageMetadata' in m['delta']:
-                        recipient_id = 0
-                        thread_type = None
-                        if 'threadKey' in m['delta']['messageMetadata']:
-                            if 'threadFbId' in m['delta']['messageMetadata']['threadKey']:
-                                recipient_id = m['delta']['messageMetadata']['threadKey']['threadFbId']
-                                thread_type = 'group'
-                            elif 'otherUserFbId' in m['delta']['messageMetadata']['threadKey']:
-                                recipient_id = m['delta']['messageMetadata']['threadKey']['otherUserFbId']
-                                thread_type = 'user'
-                        mid =     m['delta']['messageMetadata']['messageId']
-                        message = m['delta'].get('body','')
-                        fbid =    m['delta']['messageMetadata']['actorFbId']
-                        self.on_message_new(mid, fbid, message, m, recipient_id, thread_type)
-                elif m['type'] in ['jewel_requests_add']:
-                        from_id = m['from']
-                        self.on_friend_request(from_id)
+                # Things that directly change chat
+                if mtype == "delta":
+
+                    def getRecipientIdAndMsgType(msg_metadata):
+                        """Returns a tuple consisting of recipient id and message type"""
+                        recipient = None
+                        message_type = None
+                        if 'threadFbId' in msg_metadata['threadKey']:
+                            recipient = msg_metadata['threadKey']['threadFbId']
+                            message_type = MsgType.GROUP
+                        elif 'otherUserFbId' in msg_metadata['threadKey']:
+                            recipient = msg_metadata['threadKey']['otherUserFbId']
+                            message_type = MsgType.USER
+                        return recipient, message_type
+
+                    delta = m["delta"]
+                    delta_type = delta.get("type")
+                    metadata = delta.get("messageMetadata")
+
+                    # Added participants
+                    if 'addedParticipants' in delta:
+                        added_ids = [x['userFbId'] for x in delta['addedParticipants']]
+                        author_id = metadata['actorFbId']
+                        thread_id = metadata['threadKey']['threadFbId']
+                        ts = metadata["timestamp"]
+                        self.onPeopleAdded(added_ids=added_ids, author_id=author_id, thread_id=thread_id, ts=ts)
+
+                    # Left/removed participants
+                    elif 'leftParticipantFbId' in delta:
+                        removed_id = delta['leftParticipantFbId']
+                        author_id = metadata['actorFbId']
+                        thread_id = metadata['threadKey']['threadFbId']
+                        ts = metadata["timestamp"]
+                        self.onPersonRemoved(removed_id=removed_id, author_id=author_id, thread_id=thread_id, ts=ts)
+
+                    # Seen
+                    elif delta.get("class") == "ReadReceipt":
+                        seen_by = delta["actorFbId"] or delta["threadKey"]["otherUserFbId"]
+                        thread_id = delta["threadKey"].get("threadFbId")
+                        timestamp = delta["actionTimestampMs"]
+                        self.onSeen(seen_by=seen_by, thread_id=thread_id, timestamp=timestamp)
+
+                    # Color change
+                    elif delta_type == "change_thread_theme":
+                        mid = metadata["messageId"]
+                        author_id = metadata["actorFbId"]
+                        new_color = delta["untypedData"]["theme_color"]
+                        changed_for, msg_type = getRecipientIdAndMsgType(metadata)
+                        ts = metadata["timestamp"]
+                        self.onColorChange(mid=mid, author_id=author_id, new_color=new_color, changed_for=changed_for,
+                                           msg_type=msg_type, ts=ts)
+
+                    # Title change
+                    elif delta_type == "change_thread_nickname":
+                        mid = metadata["messageId"]
+                        author_id = metadata["actorFbId"]
+                        changed_for = delta["untypedData"]["participant_id"]
+                        new_title = delta["untypedData"]["nickanme"]
+                        thread_id = metadata["threadKey"].get("threadFbId")
+                        ts = metadata["timestamp"]
+                        self.onTitleChange(mid=mid, author_id=author_id, changed_for=changed_for, new_title=new_title,
+                                           thread_id=thread_id, ts=ts)
+
+                    # New message
+                    elif "messageMetadata" in delta:
+                        mid = metadata['messageId']
+                        message = delta.get('body', '')
+                        author_id = metadata['actorFbId']
+                        recipient_id, msg_type = getRecipientIdAndMsgType(metadata)
+                        ts = metadata["timestamp"]
+                        self.onMessage(mid=mid, author_id=author_id, message=message,
+                                       recipient_id=recipient_id, msg_type=msg_type, ts=ts, metadata=m)
+
+
+                if mtype == "inbox":
+                    self.onInbox(unseen=m["unseen"], unread=m["unread"], recent_unread=m["recent_unread"])
+
+                # Typing
+                # elif mtype == "typ":
+                #     author_id = str(m.get("from"))
+                #     typing_status = TypingStatus(m.get("st"))
+                #     self.onTyping(author_id=author_id, typing_status=typing_status)
+
+                # Seen
+                elif mtype == "m_read_receipt":
+
+                    self.onSeen(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
+
+                # elif mtype in ['jewel_requests_add']:
+                #         from_id = m['from']
+                #         self.on_friend_request(from_id)
+
+                # Happens on every login
+                elif mtype == "qprimer":
+                    pass
+
+                # Is sent before any other message
+                elif mtype == "deltaflow":
+                    pass
+
                 else:
-                    log.debug("Unknown type {}".format(m))
+                    log.debug("Unknown type %s" % m)
             except Exception as e:
-                # ex_type, ex, tb = sys.exc_info()
-                self.on_message_error(sys.exc_info(), m)
+                log.debug(str(e))
 
-
-    def start_listening(self):
+    def startListening(self):
         """Start listening from an external event loop."""
         self.listening = True
         self.sticky, self.pool = self._getSticky()
 
-
-    def do_one_listen(self, markAlive=True):
+    def doOneListen(self, markAlive=True):
         """Does one cycle of the listening loop.
         This method is only useful if you want to control fbchat from an
         external event loop."""
@@ -874,22 +900,19 @@ class Client(object):
         except requests.exceptions.Timeout:
             pass
 
-
-    def stop_listening(self):
+    def stopListening(self):
         """Cleans up the variables from start_listening."""
         self.listening = False
         self.sticky, self.pool = (None, None)
 
-
     def listen(self, markAlive=True):
-        self.start_listening()
+        self.startListening()
+        self.onListening()
 
-        log.info("Listening...")
         while self.listening:
-            self.do_one_listen(markAlive)
+            self.doOneListen(markAlive)
 
-        self.stop_listening()
-
+        self.stopListening()
 
     def getUserInfo(self, *user_ids):
         """Get user info from id. Unordered.
@@ -907,7 +930,6 @@ class Client(object):
 
         user_ids = [fbidStrip(uid) for uid in user_ids]
 
-
         data = {"ids[{}]".format(i):uid for i,uid in enumerate(user_ids)}
         r = self._post(UserInfoURL, data)
         info = get_json(r.text)
@@ -916,8 +938,7 @@ class Client(object):
             full_data=full_data[0]
         return full_data
 
-
-    def remove_user_from_chat(self, threadID, userID):
+    def removeUserFromChat(self, threadID, userID):
         """Remove user (userID) from group chat (threadID)
 
         :param threadID: group chat id
@@ -933,13 +954,12 @@ class Client(object):
 
         return r.ok
 
-    def add_users_to_chat(self, threadID, userID):
+    def addUserToChat(self, threadID, userID):
         """Add user (userID) to group chat (threadID)
 
         :param threadID: group chat id
         :param userID: user id to add to chat
         """
-
         return self.send(threadID, is_user=False, add_user_ids=[userID])
 
     def changeThreadTitle(self, threadID, newTitle):
@@ -983,58 +1003,3 @@ class Client(object):
         r = self._post(SendURL, data)
 
         return r.ok
-
-
-    def on_message_new(self, mid, author_id, message, metadata, recipient_id, thread_type):
-        """subclass Client and override this method to add custom behavior on event
-
-        This version of on_message recieves recipient_id and thread_type.
-        For backwards compatability, this data is sent directly to the old on_message.
-        """
-        self.on_message(mid, author_id, None, message, metadata)
-
-
-    def on_message(self, mid, author_id, author_name, message, metadata):
-        """subclass Client and override this method to add custom behavior on event"""
-        self.markAsDelivered(author_id, mid)
-        self.markAsRead(author_id)
-        log.info("%s said: %s" % (author_name, message))
-
-
-    def on_friend_request(self, from_id):
-        """subclass Client and override this method to add custom behavior on event"""
-        log.info("Friend request from %s." % from_id)
-
-
-    def on_typing(self, author_id):
-        """subclass Client and override this method to add custom behavior on event"""
-        pass
-
-
-    def on_read(self, author, reader, time):
-        """subclass Client and override this method to add custom behavior on event"""
-        pass
-
-
-    def on_people_added(self, user_ids, actor_id, thread_id):
-        """subclass Client and override this method to add custom behavior on event"""
-        log.info("User(s) {} was added to {} by {}".format(repr(user_ids), thread_id, actor_id))
-
-
-    def on_person_removed(self, user_id, actor_id, thread_id):
-        """subclass Client and override this method to add custom behavior on event"""
-        log.info("User {} was removed from {} by {}".format(user_id, thread_id, actor_id))
-
-
-    def on_inbox(self, viewer, unseen, unread, other_unseen, other_unread, timestamp):
-        """subclass Client and override this method to add custom behavior on event"""
-        pass
-
-
-    def on_message_error(self, exception, message):
-        """subclass Client and override this method to add custom behavior on event"""
-        log.warning("Exception:\n{}".format(exception))
-
-
-    def on_qprimer(self, timestamp):
-        pass
