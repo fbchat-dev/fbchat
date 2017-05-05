@@ -539,7 +539,8 @@ class Client(object):
         message_ids = []
         try:
             message_ids += [action['message_id'] for action in j['payload']['actions'] if 'message_id' in action]
-        except KeyError as e:
+            message_ids[0] # Try accessing element
+        except (KeyError, IndexError) as e:
             log.warning('Error when sending message: No message ids could be found')
             return False
 
