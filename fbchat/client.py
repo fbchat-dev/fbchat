@@ -66,42 +66,27 @@ class Client(object):
     documentation for the API.
     """
 
-    def __init__(self, email, password, debug=True, info_log=True, user_agent=None, max_retries=5, do_login=True):
+    def __init__(self, email, password, debug=True, info_log=True, user_agent=None, max_retries=5, session_cookies=None):
         """A client for the Facebook Chat (Messenger).
 
         :param email: Facebook `email` or `id` or `phone number`
         :param password: Facebook account password
-
-            import fbchat
-            chat = fbchat.Client(email, password)
+        :param debug: Configures the logger to `debug` logging_level
+        :param info_log: Configures the logger to `info` logging_level
+        :param user_agent: Custom user agent to use when sending requests. If `None`, user agent will be chosen from a premade list (see utils.py)
+        :param max_retries: Maximum number of times to retry login
+        :param session_cookies: Cookie dict from a previous session (Will default to login if these are invalid)
         """
 
-        if do_login and not (email and password):
-            raise Exception("Email and password not found.")
-
         self.is_def_recipient_set = False
-        self.debug = debug
         self.sticky, self.pool = (None, None)
         self._session = requests.session()
         self.req_counter = 1
         self.seq = "0"
-        self.payloadDefault={}
+        self.payloadDefault = {}
         self.client = 'mercury'
         self.listening = False
-        self.GENDERS = {
-            0: 'unknown',
-            1: 'female_singular',
-            2: 'male_singular',
-            3: 'female_singular_guess',
-            4: 'male_singular_guess',
-            5: 'mixed',
-            6: 'neuter_singular',
-            7: 'unknown_singular',
-            8: 'female_plural',
-            9: 'male_plural',
-            10: 'neuter_plural',
-            11: 'unknown_plural',
-        }
+        self.threads = []
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -114,7 +99,7 @@ class Client(object):
             'Connection' : 'keep-alive',
         }
 
-        # Configure the logger differently based on the 'debug' parameter
+        # Configure the logger differently based on the 'debug' and 'info_log' parameters
         if debug:
             logging_level = logging.DEBUG
         elif info_log:
@@ -128,10 +113,12 @@ class Client(object):
         log.addHandler(handler)
         log.setLevel(logging.DEBUG)
 
-        if do_login:
+        # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
+        if not session_cookies or not self.setSession(session_cookies) or not self.is_logged_in():
             self.login(email, password, max_retries)
 
-        self.threads = []
+    def _init_logging(self):
+        
 
     def _console(self, msg):
         """Assumes an INFO level and log it.
@@ -169,11 +156,11 @@ class Client(object):
         return payload
 
     def _get(self, url, query=None, timeout=30):
-        payload=self._generatePayload(query)
+        payload = self._generatePayload(query)
         return self._session.get(url, headers=self._header, params=payload, timeout=timeout)
 
     def _post(self, url, query=None, timeout=30):
-        payload=self._generatePayload(query)
+        payload = self._generatePayload(query)
         return self._session.post(url, headers=self._header, data=payload, timeout=timeout)
 
     def _cleanGet(self, url, query=None, timeout=30):
@@ -302,40 +289,40 @@ class Client(object):
         r = self._cleanPost(CheckpointURL, data)
         return r
 
-    def saveSession(self, sessionfile):
-        """Dumps the session cookies to (sessionfile).
-        WILL OVERWRITE ANY EXISTING FILE
+    def is_logged_in(self):
+        # Send a request to the login url, to see if we're directed to the home page.
+        r = self._cleanGet(LoginURL)
+        if 'home' in r.url:
+            return True
+        else:
+            return False
 
-        :param sessionfile: location of saved session file
+    def getSession(self):
+        """Returns the session cookies"""
+        return self._session.cookies.get_dict()
+
+    def setSession(self, session_cookies):
+        """Loads session cookies
+
+        :param session_cookies: dictionary containing session cookies
+        Return false if session_cookies does not contain proper cookies
         """
 
-        log.info('Saving session')
-        with open(sessionfile, 'w') as f:
-            # Grab cookies from current session, and save them as JSON
-            f.write(json.dumps(self._session.cookies.get_dict(), ensure_ascii=False))
-
-    def loadSession(self, sessionfile):
-        """Loads session cookies from (sessionfile)
-
-        :param sessionfile: location of saved session file
-        """
-
-        log.info('Loading session')
-        with open(sessionfile, 'r') as f:
-            try:
-                j = json.load(f)
-                if not j or 'c_user' not in j:
-                    return False
-                # Load cookies into current session
-                self._session.cookies = requests.cookies.merge_cookies(self._session.cookies, j)
-                self._post_login()
-                return True
-            except Exception as e:
-                raise Exception('Invalid json in {}, or bad merging of cookies'.format(sessionfile))
+        # Quick check to see if session_cookies is formatted properly
+        if not session_cookies or 'c_user' not in session_cookies:
+            return False
+        
+        # Load cookies into current session
+        self._session.cookies = requests.cookies.merge_cookies(self._session.cookies, session_cookies)
+        self._post_login()
+        return True
 
     def login(self, email, password, max_retries=5):
         # Logging in
-        log.info("Logging in...")
+        log.info("Logging in {}...".format(email))
+        
+        if not (email and password):
+            raise Exception("Email and password not set.")
 
         self.email = email
         self.password = password
@@ -346,7 +333,7 @@ class Client(object):
                 time.sleep(1)
                 continue
             else:
-                log.info("Login successful.")
+                log.info("Login of {} successful.".format(email))
                 break
         else:
             raise Exception("Login failed. Check email/password.")

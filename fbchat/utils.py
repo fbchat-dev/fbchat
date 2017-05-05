@@ -10,6 +10,20 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11",
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6"
 ]
+GENDERS = {
+    0: 'unknown',
+    1: 'female_singular',
+    2: 'male_singular',
+    3: 'female_singular_guess',
+    4: 'male_singular_guess',
+    5: 'mixed',
+    6: 'neuter_singular',
+    7: 'unknown_singular',
+    8: 'female_plural',
+    9: 'male_plural',
+    10: 'neuter_plural',
+    11: 'unknown_plural',
+}
 
 def now():
     return int(time()*1000)
