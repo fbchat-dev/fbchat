@@ -616,7 +616,7 @@ class Client(object):
         # `start` doesn't matter, always returns from the last
         # data['messages[{}][{}][offset]'.format(key, userID)] = start
         data = {'messages[{}][{}][offset]'.format(key, userID): 0,
-                'messages[{}][{}][limit]'.format(key, userID): last_n,
+                'messages[{}][{}][limit]'.format(key, userID): last_n - 1,
                 'messages[{}][{}][timestamp]'.format(key, userID): now()}
 
         r = self._post(MessagesURL, query=data)
