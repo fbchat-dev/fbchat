@@ -61,7 +61,7 @@ Getting last messages sent
 
 .. code-block:: python
     
-    last_messages = client.getThreadInfo(friend.uid,0)
+    last_messages = client.getThreadInfo(friend.uid, last_n=20)
     last_messages.reverse()  # messages come in reversed order
     
     for message in last_messages:
