@@ -12,11 +12,10 @@
 """
 
 import requests
-import json
 import logging
 from uuid import uuid1
 import warnings
-from random import random, choice
+from random import choice
 from datetime import datetime
 from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
@@ -25,6 +24,13 @@ from .models import *
 from .stickers import *
 import time
 import sys
+
+# Python 3 does not have raw_input, whereas Python 2 has and it's more secure
+try:
+    input = raw_input
+except NameError:
+    pass
+
 # URLs
 LoginURL     ="https://m.facebook.com/login.php?login_attempt=1"
 SearchURL    ="https://www.facebook.com/ajax/typeahead/search.php"
@@ -52,15 +58,15 @@ facebookEncoding = 'UTF-8'
 # Log settings
 log = logging.getLogger("client")
 
+
 class Client(object):
     """A client for the Facebook Chat (Messenger).
 
     See http://github.com/carpedm20/fbchat for complete
     documentation for the API.
-
     """
 
-    def __init__(self, email, password, debug=True, user_agent=None , max_retries=5, do_login=True):
+    def __init__(self, email, password, debug=True, info_log=True, user_agent=None, max_retries=5, do_login=True):
         """A client for the Facebook Chat (Messenger).
 
         :param email: Facebook `email` or `id` or `phone number`
@@ -68,12 +74,12 @@ class Client(object):
 
             import fbchat
             chat = fbchat.Client(email, password)
-
         """
 
         if do_login and not (email and password):
-            raise Exception("id and password or config is needed")
+            raise Exception("Email and password not found.")
 
+        self.is_def_recipient_set = False
         self.debug = debug
         self.sticky, self.pool = (None, None)
         self._session = requests.session()
@@ -111,6 +117,8 @@ class Client(object):
         # Configure the logger differently based on the 'debug' parameter
         if debug:
             logging_level = logging.DEBUG
+        elif info_log:
+            logging_level = logging.INFO
         else:
             logging_level = logging.WARNING
 
@@ -119,7 +127,7 @@ class Client(object):
         handler.setLevel(logging_level)
         log.addHandler(handler)
         log.setLevel(logging.DEBUG)
-        
+
         if do_login:
             self.login(email, password, max_retries)
 
@@ -131,18 +139,17 @@ class Client(object):
         This method shouldn't be used anymore.
         Use the log itself:
         >>> import logging
-        >>> from fbchat.client import Client, log
+        >>> from fbchat.client import log
         >>> log.setLevel(logging.DEBUG)
 
         You can do the same thing by adding the 'debug' argument:
         >>> from fbchat import Client
         >>> client = Client("...", "...", debug=True)
-
         """
         warnings.warn(
                 "Client._console shouldn't be used.  Use 'log.<level>'",
                 DeprecationWarning)
-        if self.debug: log.info(msg)
+        log.debug(msg)
 
     def _setttstamp(self):
         for i in self.fb_dtsg:
@@ -150,10 +157,9 @@ class Client(object):
         self.ttstamp += '2'
 
     def _generatePayload(self, query):
-        '''
-        Adds the following defaults to the payload:
+        """Adds the following defaults to the payload:
           __rev, __user, __a, ttstamp, fb_dtsg, __req
-        '''
+        """
         payload = self.payloadDefault.copy()
         if query:
             payload.update(query)
@@ -221,7 +227,7 @@ class Client(object):
 
     def _login(self):
         if not (self.email and self.password):
-            raise Exception("id and password or config is needed")
+            raise Exception("Email and password not found.")
 
         soup = bs(self._get(MobileURL).text, "lxml")
         data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
@@ -230,7 +236,7 @@ class Client(object):
         data['login'] = 'Log In'
 
         r = self._cleanPost(LoginURL, data)
-        
+
         # Usually, 'Checkpoint' will refer to 2FA
         if 'checkpoint' in r.url and 'Enter Security Code to Continue' in r.text:
             r = self._2FA(r)
@@ -244,63 +250,65 @@ class Client(object):
             return True
         else:
             return False
-    
-    def _2FA(self,r):
+
+    def _2FA(self, r):
         soup = bs(r.text, "lxml")
         data = dict()
-        s = raw_input('Please enter your 2FA code --> ')
+
+        s = input('Please enter your 2FA code --> ')
         data['approvals_code'] = s
         data['fb_dtsg'] = soup.find("input", {'name':'fb_dtsg'})['value']
         data['nh'] = soup.find("input", {'name':'nh'})['value']
         data['submit[Submit Code]'] = 'Submit Code'
         data['codes_submitted'] = 0
-        log.info('Submitting 2FA code')
+        log.info('Submitting 2FA code.')
+
         r = self._cleanPost(CheckpointURL, data)
 
         if 'home' in r.url:
             return r
-        
+
         del(data['approvals_code'])
         del(data['submit[Submit Code]'])
         del(data['codes_submitted'])
-      
+
         data['name_action_selected'] = 'save_device'
         data['submit[Continue]'] = 'Continue'
-        log.info('Saving browser') #At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
+        log.info('Saving browser.')  # At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
         r = self._cleanPost(CheckpointURL, data)
 
         if 'home' in r.url:
             return r
-        
+
         del(data['name_action_selected'])
-        log.info('Starting Facebook checkup flow') #At this stage, we have dtsg, nh, submit[Continue]
+        log.info('Starting Facebook checkup flow.')  # At this stage, we have dtsg, nh, submit[Continue]
         r = self._cleanPost(CheckpointURL, data)
 
         if 'home' in r.url:
             return r
-        
+
         del(data['submit[Continue]'])
         data['submit[This was me]'] = 'This Was Me'
-        log.info('Verifying login attempt') #At this stage, we have dtsg, nh, submit[This was me]
+        log.info('Verifying login attempt.')  # At this stage, we have dtsg, nh, submit[This was me]
         r = self._cleanPost(CheckpointURL, data)
 
         if 'home' in r.url:
             return r
-        
+
         del(data['submit[This was me]'])
         data['submit[Continue]'] = 'Continue'
         data['name_action_selected'] = 'save_device'
-        log.info('Saving device again') #At this stage, we have dtsg, nh, submit[Continue], name_action_selected
+        log.info('Saving device again.')  # At this stage, we have dtsg, nh, submit[Continue], name_action_selected
         r = self._cleanPost(CheckpointURL, data)
         return r
-        
+
     def saveSession(self, sessionfile):
         """Dumps the session cookies to (sessionfile).
         WILL OVERWRITE ANY EXISTING FILE
-        
+
         :param sessionfile: location of saved session file
         """
-        
+
         log.info('Saving session')
         with open(sessionfile, 'w') as f:
             # Grab cookies from current session, and save them as JSON
@@ -308,10 +316,10 @@ class Client(object):
 
     def loadSession(self, sessionfile):
         """Loads session cookies from (sessionfile)
-        
+
         :param sessionfile: location of saved session file
         """
-        
+
         log.info('Loading session')
         with open(sessionfile, 'r') as f:
             try:
@@ -328,25 +336,27 @@ class Client(object):
     def login(self, email, password, max_retries=5):
         # Logging in
         log.info("Logging in...")
-        
+
         self.email = email
         self.password = password
 
-        for i in range(1,max_retries+1):
+        for i in range(1, max_retries+1):
             if not self._login():
                 log.warning("Attempt #{} failed{}".format(i,{True:', retrying'}.get(i<5,'')))
                 time.sleep(1)
                 continue
             else:
-                log.info("Login successful")
+                log.info("Login successful.")
                 break
         else:
-            raise Exception("login failed. Check id/password")
+            raise Exception("Login failed. Check email/password.")
 
     def logout(self, timeout=30):
-        data = {}
-        data['ref'] = "mb"
-        data['h'] = self.fb_h
+        data = {
+            'ref': "mb",
+            'h': self.fb_h
+        }
+
         payload=self._generatePayload(data)
         r = self._session.get(LogoutURL, headers=self._header, params=payload, timeout=timeout)
         # reset value
@@ -356,15 +366,20 @@ class Client(object):
         self.seq = "0"
         return r
 
-    def listen(self):
-        pass
+    def setDefaultRecipient(self, recipient_id, is_user=True):
+        """Sets default recipient to send messages and images to.
+        
+        :param recipient_id: the user id or thread id that you want to send a message to
+        :param is_user: determines if the recipient_id is for user or thread
+        """
+        self.def_recipient_id = recipient_id
+        self.def_is_user = is_user
+        self.is_def_recipient_set = True
 
     def _adapt_user_in_chat_to_user_model(self, user_in_chat):
+        """ Adapts user info from chat to User model acceptable initial dict
 
-        ''' Adapts user info from chat to User model acceptable initial dict
-        
         :param user_in_chat: user info from chat
-
 
         'dir': None,
         'mThumbSrcSmall': None,
@@ -382,9 +397,7 @@ class Client(object):
         'uri': 'https://www.facebook.com/profile.php?id=100014812758264',
         'id': '100014812758264',
         'gender': 2
-        
-
-        '''
+        """
 
         return {
             'type': 'user',
@@ -446,18 +459,24 @@ class Client(object):
                 users.append(User(entry))
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
-    def send(self, recipient_id, message=None, message_type='user', like=None, image_id=None, add_user_ids=None):
+    def send(self, recipient_id=None, message=None, is_user=True, like=None, image_id=None, add_user_ids=None):
         """Send a message with given thread id
 
         :param recipient_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
-        :param message_type: determines if the recipient_id is for user or thread
+        :param is_user: determines if the recipient_id is for user or thread
         :param like: size of the like sticker you want to send
         :param image_id: id for the image to send, gotten from the UploadURL
         :param add_user_ids: a list of user ids to add to a chat
         """
 
-        messageAndOTID=generateOfflineThreadingID()
+        if self.is_def_recipient_set:
+            recipient_id = self.def_recipient_id
+            is_user = self.def_is_user
+        elif recipient_id is None:
+            raise Exception('Recipient ID is not set.')
+
+        messageAndOTID = generateOfflineThreadingID()
         timestamp = now()
         date = datetime.now()
         data = {
@@ -488,12 +507,12 @@ class Client(object):
             'manual_retry_cnt' : '0',
             'signatureID' : getSignatureID()
         }
-        
-        if message_type.lower() == 'group':
-            data["thread_fbid"] = recipient_id 
-        else:
+
+        if is_user:
             data["other_user_fbid"] = recipient_id
-        
+        else:
+            data["thread_fbid"] = recipient_id
+
         if add_user_ids:
             data['action_type'] = 'ma-type:log-message'
             # It's possible to add multiple users
@@ -503,7 +522,7 @@ class Client(object):
         else:
             data['action_type'] = 'ma-type:user-generated-message'
             data['body'] = message
-            data['has_attachment'] = image_id != None
+            data['has_attachment'] = image_id is not None
             data['specific_to_list[0]'] = 'fbid:' + str(recipient_id)
             data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
 
@@ -519,10 +538,12 @@ class Client(object):
             data["sticker_id"] = sticker
 
         r = self._post(SendURL, data)
-        
-        if not r.ok:
-            return False
-        
+
+        if r.ok:
+            log.info('Message sent.')
+        else:
+            log.info('Message not sent.')
+
         if isinstance(r._content, str) is False:
             r._content = r._content.decode(facebookEncoding)
         j = get_json(r._content)
@@ -535,55 +556,58 @@ class Client(object):
         log.debug("With data {}".format(data))
         return True
 
-    def sendRemoteImage(self, recipient_id, message=None, message_type='user', image=''):
+
+    def sendRemoteImage(self, recipient_id=None, message=None, is_user=True, image=''):
         """Send an image from a URL
 
         :param recipient_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
-        :param message_type: determines if the recipient_id is for user or thread
+        :param is_user: determines if the recipient_id is for user or thread
         :param image: URL for an image to download and send
         """
         mimetype = guess_type(image)[0]
         remote_image = requests.get(image).content
         image_id = self.uploadImage({'file': (image, remote_image, mimetype)})
-        return self.send(recipient_id, message, message_type, None, image_id)
+        return self.send(recipient_id, message, is_user, None, image_id)
 
-    def sendLocalImage(self, recipient_id, message=None, message_type='user', image=''):
+    def sendLocalImage(self, recipient_id=None, message=None, is_user=True, image=''):
         """Send an image from a file path
 
         :param recipient_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
-        :param message_type: determines if the recipient_id is for user or thread
+        :param is_user: determines if the recipient_id is for user or thread
         :param image: path to a local image to send
         """
         mimetype = guess_type(image)[0]
         image_id = self.uploadImage({'file': (image, open(image, 'rb'), mimetype)})
-        return self.send(recipient_id, message, message_type, None, image_id)
+        return self.send(recipient_id, message, is_user, None, image_id)
+
 
     def uploadImage(self, image):
         """Upload an image and get the image_id for sending in a message
 
         :param image: a tuple of (file name, data, mime type) to upload to facebook
         """
+
         r = self._postFile(UploadURL, image)
         if isinstance(r._content, str) is False:
             r._content = r._content.decode(facebookEncoding)
         # Strip the start and parse out the returned image_id
         return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
-        
-    def getThreadInfo(self, userID, last_n=20, start=None, thread_type='user'):
+
+
+    def getThreadInfo(self, userID, last_n=20, start=None, is_user=True):
         """Get the info of one Thread
 
         :param userID: ID of the user you want the messages from
         :param last_n: (optional) number of retrieved messages from start
         :param start: (optional) the start index of a thread (Deprecated)
-        :param thread_type: (optional) change from 'user' for group threads
+        :param is_user: (optional) determines if the userID is for user or thread
         """
-        
+
         assert last_n > 0, 'length must be positive integer, got %d' % last_n
         assert start is None, '`start` is deprecated, always 0 offset querry is returned'
-        data = {}
-        if thread_type == 'user':
+        if is_user:
             key = 'user_ids'
         else:
             key = 'thread_fbids'
@@ -591,9 +615,9 @@ class Client(object):
         # deprecated
         # `start` doesn't matter, always returns from the last
         # data['messages[{}][{}][offset]'.format(key, userID)] = start
-        data['messages[{}][{}][offset]'.format(key, userID)] = 0
-        data['messages[{}][{}][limit]'.format(key, userID)] = last_n
-        data['messages[{}][{}][timestamp]'.format(key, userID)] = now()
+        data = {'messages[{}][{}][offset]'.format(key, userID): 0,
+                'messages[{}][{}][limit]'.format(key, userID): last_n,
+                'messages[{}][{}][timestamp]'.format(key, userID): now()}
 
         r = self._post(MessagesURL, query=data)
         if not r.ok or len(r.text) == 0:
@@ -613,13 +637,11 @@ class Client(object):
         """Get thread list of your facebook account.
 
         :param start: the start index of a thread
-        :param end: (optional) the last index of a thread
+        :param length: (optional) the length of a thread
         """
-        
+
         assert length < 21, '`length` is deprecated, max. last 20 threads are returned'
-        
-        timestamp = now()
-        date = datetime.now()
+
         data = {
             'client' : self.client,
             'inbox[offset]' : start,
@@ -659,7 +681,7 @@ class Client(object):
             'client': 'mercury_sync',
             'folders[0]': 'inbox',
             'last_action_timestamp': now() - 60*1000
-            #'last_action_timestamp': 0
+            # 'last_action_timestamp': 0
         }
 
         r = self._post(ThreadSyncURL, form)
@@ -674,17 +696,22 @@ class Client(object):
         return result
 
     def markAsDelivered(self, userID, threadID):
-        data = {"message_ids[0]": threadID}
-        data["thread_ids[%s][0]"%userID] = threadID
+        data = {
+            "message_ids[0]": threadID,
+            "thread_ids[%s][0]" % userID: threadID
+        }
+
         r = self._post(DeliveredURL, data)
         return r.ok
+
 
     def markAsRead(self, userID):
         data = {
             "watermarkTimestamp": now(),
-            "shouldSendReadReceipt": True
+            "shouldSendReadReceipt": True,
+            "ids[%s]" % userID: True
         }
-        data["ids[%s]"%userID] = True
+
         r = self._post(ReadStatusURL, data)
         return r.ok
 
@@ -692,6 +719,7 @@ class Client(object):
     def markAsSeen(self):
         r = self._post(MarkSeenURL, {"seen_timestamp": 0})
         return r.ok
+
 
     def friend_connect(self, friend_id):
         data = {
@@ -701,9 +729,6 @@ class Client(object):
 
         r = self._post(ConnectURL, data)
 
-        if self.debug:
-            print(r)
-            print(data)
         return r.ok
 
 
@@ -722,10 +747,9 @@ class Client(object):
 
 
     def _getSticky(self):
-        '''
-        Call pull api to get sticky and pool parameter,
+        """Call pull api to get sticky and pool parameter,
         newer api needs these parameter to work.
-        '''
+        """
 
         data = {
             "msgs_recv": 0,
@@ -745,9 +769,7 @@ class Client(object):
 
 
     def _pullMessage(self, sticky, pool):
-        '''
-        Call pull api with seq value to get message data.
-        '''
+        """Call pull api with seq value to get message data."""
 
         data = {
             "msgs_recv": 0,
@@ -765,10 +787,9 @@ class Client(object):
 
 
     def _parseMessage(self, content):
-        '''
-        Get message and author name from content.
+        """Get message and author name from content.
         May contains multiple messages in the content.
-        '''
+        """
 
         if 'ms' not in content: return
 
@@ -878,14 +899,14 @@ class Client(object):
 
         def fbidStrip(_fbid):
             # Stripping of `fbid:` from author_id
-            if type(_fbid) == int: 
+            if type(_fbid) == int:
                 return _fbid
-            
+
             if type(_fbid) == str and 'fbid:' in _fbid:
                 return int(_fbid[5:])
-        
+
         user_ids = [fbidStrip(uid) for uid in user_ids]
-        
+
 
         data = {"ids[{}]".format(i):uid for i,uid in enumerate(user_ids)}
         r = self._post(UserInfoURL, data)
@@ -898,39 +919,36 @@ class Client(object):
 
     def remove_user_from_chat(self, threadID, userID):
         """Remove user (userID) from group chat (threadID)
-        
+
         :param threadID: group chat id
         :param userID: user id to remove from chat
         """
-        
+
         data = {
             "uid" : userID,
             "tid" : threadID
         }
-        
-        r = self._post(RemoveUserURL, data)
 
-        self._console(r)
-        self._console(data)
+        r = self._post(RemoveUserURL, data)
 
         return r.ok
 
     def add_users_to_chat(self, threadID, userID):
         """Add user (userID) to group chat (threadID)
-        
+
         :param threadID: group chat id
         :param userID: user id to add to chat
         """
-        
-        return self.send(threadID, message_type='group', add_user_ids=[userID])
+
+        return self.send(threadID, is_user=False, add_user_ids=[userID])
 
     def changeThreadTitle(self, threadID, newTitle):
         """Change title of a group conversation
-        
+
         :param threadID: group chat id
         :param newTitle: new group chat title
         """
-        
+
         messageAndOTID = generateOfflineThreadingID()
         timestamp = now()
         date = datetime.now()
@@ -964,76 +982,57 @@ class Client(object):
 
         r = self._post(SendURL, data)
 
-        self._console(r)
-        self._console(data)
-
         return r.ok
 
 
     def on_message_new(self, mid, author_id, message, metadata, recipient_id, thread_type):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        
-        This version of on_message recieves recipient_id and thread_type. For backwards compatability, this data is sent directly to the old on_message.
-        '''
+        """subclass Client and override this method to add custom behavior on event
+
+        This version of on_message recieves recipient_id and thread_type.
+        For backwards compatability, this data is sent directly to the old on_message.
+        """
         self.on_message(mid, author_id, None, message, metadata)
 
 
     def on_message(self, mid, author_id, author_name, message, metadata):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
+        """subclass Client and override this method to add custom behavior on event"""
         self.markAsDelivered(author_id, mid)
         self.markAsRead(author_id)
-        log.info("%s said: %s"%(author_name, message))
+        log.info("%s said: %s" % (author_name, message))
 
 
     def on_friend_request(self, from_id):
-       '''
-       subclass Client and override this method to add custom behavior on event
-       '''
-       log.info("friend request from %s"%from_id)
+        """subclass Client and override this method to add custom behavior on event"""
+        log.info("Friend request from %s." % from_id)
 
 
     def on_typing(self, author_id):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
+        """subclass Client and override this method to add custom behavior on event"""
         pass
 
 
     def on_read(self, author, reader, time):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
+        """subclass Client and override this method to add custom behavior on event"""
         pass
 
 
     def on_people_added(self, user_ids, actor_id, thread_id):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
+        """subclass Client and override this method to add custom behavior on event"""
         log.info("User(s) {} was added to {} by {}".format(repr(user_ids), thread_id, actor_id))
 
 
     def on_person_removed(self, user_id, actor_id, thread_id):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
+        """subclass Client and override this method to add custom behavior on event"""
         log.info("User {} was removed from {} by {}".format(user_id, thread_id, actor_id))
 
 
     def on_inbox(self, viewer, unseen, unread, other_unseen, other_unread, timestamp):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
+        """subclass Client and override this method to add custom behavior on event"""
         pass
 
 
     def on_message_error(self, exception, message):
-        '''
-        subclass Client and override this method to add custom behavior on event
-        '''
+        """subclass Client and override this method to add custom behavior on event"""
         log.warning("Exception:\n{}".format(exception))
 
 
