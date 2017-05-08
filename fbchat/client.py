@@ -75,8 +75,6 @@ class Client(object):
             import fbchat
             chat = fbchat.Client(email, password)
         """
-        if do_login and not (email and password):
-            raise Exception("Email and password not found.")
 
         self.is_def_recipient_set = False
         self.debug = debug
@@ -105,33 +103,47 @@ class Client(object):
         # Setup event hooks
         self.onLoggingIn = EventHook()
         self.onLoggedIn = EventHook()
+        self.onListening = EventHook()
 
-        self.onMessage = EventHook(mid=str, author_id=str, message=str, recipient_id=int, msg_type=MsgType, ts=str, metadata=dict)
-        self.onColorChange = EventHook(mid=str, author_id=str, new_color=str, changed_for=str, msg_type=MsgType, ts=str)
-        self.onTitleChange = EventHook(mid=str, author_id=str, new_title=str, changed_for=str, thread_id=str, ts=str)
-        self.onTyping = EventHook(author_id=int, typing_status=TypingStatus)
-        self.onSeen = EventHook(seen_by=str, thread_id=str, timestamp=str)
+        self.onMessage = EventHook(mid=str, author_id=str, message=str, thread_id=int, thread_type=ThreadType, ts=str, metadata=dict)
+        self.onColorChange = EventHook(mid=str, author_id=str, new_color=str, thread_id=str, thread_type=ThreadType, ts=str, metadata=dict)
+        self.onEmojiChange = EventHook(mid=str, author_id=str, new_emoji=str, thread_id=str, thread_type=ThreadType, ts=str, metadata=dict)
+        self.onTitleChange = EventHook(mid=str, author_id=str, new_title=str, thread_id=str, thread_type=ThreadType, ts=str, metadata=dict)
+        self.onNicknameChange = EventHook(mid=str, author_id=str, changed_for=str, new_title=str, thread_id=str, thread_type=ThreadType, ts=str, metadata=dict)
+        # self.onTyping = EventHook(author_id=int, typing_status=TypingStatus)
+        # self.onSeen = EventHook(seen_by=str, thread_id=str, timestamp=str)
 
         self.onInbox = EventHook(unseen=int, unread=int, recent_unread=int)
         self.onPeopleAdded = EventHook(added_ids=list, author_id=str, thread_id=str)
         self.onPersonRemoved = EventHook(removed_id=str, author_id=str, thread_id=str)
         self.onFriendRequest = EventHook(from_id=str)
 
+        self.onUnknownMesssageType = EventHook(msg=dict)
+
         # Setup event handlers
         self.onLoggingIn += lambda: log.info("Logging in...")
         self.onLoggedIn += lambda: log.info("Login successful.")
         self.onListening += lambda: log.info("Listening...")
 
-        self.onMessage += lambda mid, author_id, message, recipient_id, msg_type, ts, metadata:\
-            log.info("Message from %s: %s" % (author_id, message))
-        self.onColorChange += lambda mid, author_id, new_color, changed_for, msg_type, ts:\
-            log.info("%s changed color to %s" % (author_id, new_color))
-        self.onTitleChange += lambda mid, author_id, new_title, changed_for, thread_id, ts:\
-            log.info("%s changed title of %s to %s" % (author_id, changed_for, new_title))
+        self.onMessage += lambda mid, author_id, message, thread_id, thread_type, ts, metadata:\
+            log.info("Message from %s in %s (%s): %s" % (author_id, thread_id, thread_type.name, message))
+
+        self.onColorChange += lambda mid, author_id, new_color, thread_id, thread_type, ts, metadata:\
+            log.info("Color change from %s in %s (%s): %s" % (author_id, thread_id, thread_type.name, new_color))
+        self.onEmojiChange += lambda mid, author_id, new_emoji, thread_id, thread_type, ts, metadata:\
+            log.info("Emoji change from %s in %s (%s): %s" % (author_id, thread_id, thread_type.name, new_emoji))
+        self.onTitleChange += lambda mid, author_id, new_title, thread_id, thread_type, ts, metadata:\
+            log.info("Title change from %s in %s (%s): %s" % (author_id, thread_id, thread_type.name, new_title))
+        self.onNicknameChange += lambda mid, author_id, new_title, changed_for, thread_id, thread_type, ts, metadata:\
+            log.info("Nickname change from %s in %s (%s) for %s: %s" % (author_id, thread_id, thread_type.name, changed_for, new_title))
+
         self.onPeopleAdded += lambda added_ids, author_id, thread_id:\
             log.info("%s added: %s" % (author_id, [x for x in added_ids]))
         self.onPersonRemoved += lambda removed_id, author_id, thread_id:\
             log.info("%s removed: %s" % (author_id, removed_id))
+
+        self.onUnknownMesssageType += lambda msg:\
+            log.info("Unknown message type received: %s" % msg)
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -777,77 +789,96 @@ class Client(object):
                 # Things that directly change chat
                 if mtype == "delta":
 
-                    def getRecipientIdAndMsgType(msg_metadata):
-                        """Returns a tuple consisting of recipient id and message type"""
-                        recipient = None
-                        message_type = None
+                    def getThreadIdAndThreadType(msg_metadata):
+                        """Returns a tuple consisting of thread id and thread type"""
+                        id_thread = None
+                        type_thread = None
                         if 'threadFbId' in msg_metadata['threadKey']:
-                            recipient = msg_metadata['threadKey']['threadFbId']
-                            message_type = MsgType.GROUP
+                            id_thread = str(msg_metadata['threadKey']['threadFbId'])
+                            type_thread = ThreadType.GROUP
                         elif 'otherUserFbId' in msg_metadata['threadKey']:
-                            recipient = msg_metadata['threadKey']['otherUserFbId']
-                            message_type = MsgType.USER
-                        return recipient, message_type
+                            id_thread = str(msg_metadata['threadKey']['otherUserFbId'])
+                            type_thread = ThreadType.USER
+                        return id_thread, type_thread
 
                     delta = m["delta"]
                     delta_type = delta.get("type")
                     metadata = delta.get("messageMetadata")
 
+                    if metadata is not None:
+                        mid = metadata["messageId"]
+                        author_id = str(metadata['actorFbId'])
+                        ts = int(metadata["timestamp"])
+
                     # Added participants
                     if 'addedParticipants' in delta:
-                        added_ids = [x['userFbId'] for x in delta['addedParticipants']]
-                        author_id = metadata['actorFbId']
-                        thread_id = metadata['threadKey']['threadFbId']
-                        ts = metadata["timestamp"]
-                        self.onPeopleAdded(added_ids=added_ids, author_id=author_id, thread_id=thread_id, ts=ts)
+                        added_ids = [str(x['userFbId']) for x in delta['addedParticipants']]
+                        thread_id = str(metadata['threadKey']['threadFbId'])
+                        self.onPeopleAdded(mid=mid, added_ids=added_ids, author_id=author_id, thread_id=thread_id, ts=ts)
+                        continue
 
                     # Left/removed participants
                     elif 'leftParticipantFbId' in delta:
-                        removed_id = delta['leftParticipantFbId']
-                        author_id = metadata['actorFbId']
-                        thread_id = metadata['threadKey']['threadFbId']
-                        ts = metadata["timestamp"]
-                        self.onPersonRemoved(removed_id=removed_id, author_id=author_id, thread_id=thread_id, ts=ts)
-
-                    # Seen
-                    elif delta.get("class") == "ReadReceipt":
-                        seen_by = delta["actorFbId"] or delta["threadKey"]["otherUserFbId"]
-                        thread_id = delta["threadKey"].get("threadFbId")
-                        timestamp = delta["actionTimestampMs"]
-                        self.onSeen(seen_by=seen_by, thread_id=thread_id, timestamp=timestamp)
+                        removed_id = str(delta['leftParticipantFbId'])
+                        thread_id = str(metadata['threadKey']['threadFbId'])
+                        self.onPersonRemoved(mid=mid, removed_id=removed_id, author_id=author_id, thread_id=thread_id, ts=ts)
+                        continue
 
                     # Color change
                     elif delta_type == "change_thread_theme":
-                        mid = metadata["messageId"]
-                        author_id = metadata["actorFbId"]
                         new_color = delta["untypedData"]["theme_color"]
-                        changed_for, msg_type = getRecipientIdAndMsgType(metadata)
-                        ts = metadata["timestamp"]
-                        self.onColorChange(mid=mid, author_id=author_id, new_color=new_color, changed_for=changed_for,
-                                           msg_type=msg_type, ts=ts)
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
+                        self.onColorChange(mid=mid, author_id=author_id, new_color=new_color, thread_id=thread_id,
+                                           thread_type=thread_type, ts=ts, metadata=metadata)
+                        continue
 
-                    # Title change
+                    # Emoji change
+                    elif delta_type == "change_thread_icon":
+                        new_emoji = delta["untypedData"]["thread_icon"]
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
+                        self.onEmojiChange(mid=mid, author_id=author_id, new_emoji=new_emoji, thread_id=thread_id,
+                                           thread_type=thread_type, ts=ts, metadata=metadata)
+                        continue
+
+                    # Thread title change
+                    elif delta.get("class") == "ThreadName":
+                        new_title = delta["name"]
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
+                        self.onTitleChange(mid=mid, author_id=author_id, new_title=new_title, thread_id=thread_id,
+                                           thread_type=thread_type, ts=ts, metadata=metadata)
+                        continue
+
+                    # Nickname change
                     elif delta_type == "change_thread_nickname":
-                        mid = metadata["messageId"]
-                        author_id = metadata["actorFbId"]
-                        changed_for = delta["untypedData"]["participant_id"]
-                        new_title = delta["untypedData"]["nickanme"]
-                        thread_id = metadata["threadKey"].get("threadFbId")
-                        ts = metadata["timestamp"]
-                        self.onTitleChange(mid=mid, author_id=author_id, changed_for=changed_for, new_title=new_title,
-                                           thread_id=thread_id, ts=ts)
+                        changed_for = str(delta["untypedData"]["participant_id"])
+                        new_title = delta["untypedData"]["nickname"]
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
+                        self.onNicknameChange(mid=mid, author_id=author_id, changed_for=changed_for, new_title=new_title,
+                                              thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata)
+                        continue
+
+
+                    # TODO properly implement these as they differ on different scenarios
+                    # Seen
+                    # elif delta.get("class") == "ReadReceipt":
+                    #     seen_by = delta["actorFbId"] or delta["threadKey"]["otherUserFbId"]
+                    #     thread_id = delta["threadKey"].get("threadFbId")
+                    #     self.onSeen(seen_by=seen_by, thread_id=thread_id, ts=ts)
+                    #
+                    # # Message delivered
+                    # elif delta.get("class") == 'DeliveryReceipt':
+                    #     time_delivered = delta['deliveredWatermarkTimestampMs']
+                    #     self.onDelivered()
 
                     # New message
-                    elif "messageMetadata" in delta:
-                        mid = metadata['messageId']
+                    elif delta.get("class") == "NewMessage":
                         message = delta.get('body', '')
-                        author_id = metadata['actorFbId']
-                        recipient_id, msg_type = getRecipientIdAndMsgType(metadata)
-                        ts = metadata["timestamp"]
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onMessage(mid=mid, author_id=author_id, message=message,
-                                       recipient_id=recipient_id, msg_type=msg_type, ts=ts, metadata=m)
+                                       thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=m)
+                        continue
 
-
+                # Inbox
                 if mtype == "inbox":
                     self.onInbox(unseen=m["unseen"], unread=m["unread"], recent_unread=m["recent_unread"])
 
@@ -858,9 +889,9 @@ class Client(object):
                 #     self.onTyping(author_id=author_id, typing_status=typing_status)
 
                 # Seen
-                elif mtype == "m_read_receipt":
-
-                    self.onSeen(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
+                # elif mtype == "m_read_receipt":
+                #
+                #     self.onSeen(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
 
                 # elif mtype in ['jewel_requests_add']:
                 #         from_id = m['from']
@@ -874,8 +905,10 @@ class Client(object):
                 elif mtype == "deltaflow":
                     pass
 
+                # Unknown message type
                 else:
-                    log.debug("Unknown type %s" % m)
+                    self.onUnknownMesssageType(msg=m)
+
             except Exception as e:
                 log.debug(str(e))
 

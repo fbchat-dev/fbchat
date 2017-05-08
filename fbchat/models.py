@@ -70,7 +70,7 @@ class Message():
         self.__dict__.update(entries)
 
 
-class MsgType(Enum):
+class ThreadType(Enum):
     USER = 1
     GROUP = 2
 
