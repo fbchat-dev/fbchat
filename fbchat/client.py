@@ -90,8 +90,8 @@ class Client(object):
         self.threads = []
 
         # Setup event hooks
-        self.onLoggingIn = EventHook()
-        self.onLoggedIn = EventHook()
+        self.onLoggingIn = EventHook(email=str)
+        self.onLoggedIn = EventHook(email=str)
         self.onListening = EventHook()
 
         self.onMessage = EventHook(mid=str, author_id=str, message=str, thread_id=int, thread_type=ThreadType, ts=str, metadata=dict)
@@ -110,8 +110,8 @@ class Client(object):
         self.onUnknownMesssageType = EventHook(msg=dict)
 
         # Setup event handlers
-        self.onLoggingIn += lambda: log.info("Logging in...")
-        self.onLoggedIn += lambda: log.info("Login successful.")
+        self.onLoggingIn += lambda email: log.info("Logging in %s..." % email)
+        self.onLoggedIn += lambda email: log.info("Login of %s successful." % email)
         self.onListening += lambda: log.info("Listening...")
 
         self.onMessage += lambda mid, author_id, message, thread_id, thread_type, ts, metadata:\
@@ -333,7 +333,7 @@ class Client(object):
     def isLoggedIn(self):
         # Send a request to the login url, to see if we're directed to the home page.
         r = self._cleanGet(LoginURL)
-        return 'home' in r.url:
+        return 'home' in r.url
 
     def getSession(self):
         """Returns the session cookies"""
