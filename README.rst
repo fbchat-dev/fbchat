@@ -61,7 +61,7 @@ Getting last messages sent
 
 .. code-block:: python
     
-    last_messages = client.getThreadInfo(friend.uid,0)
+    last_messages = client.getThreadInfo(friend.uid, last_n=20)
     last_messages.reverse()  # messages come in reversed order
     
     for message in last_messages:
@@ -99,7 +99,8 @@ Saving session
 
 .. code-block:: python
     
-    client.saveSession(sessionfile)
+    session_cookies = client.setSession()
+    # save session_cookies
 
 
 Loading session
@@ -107,8 +108,9 @@ Loading session
 
 .. code-block:: python
     
-    client = fbchat.Client(None, None, do_login=False)
-    client.loadSession(sessionfile)
+    client = fbchat.Client(None, None, session_cookies=session_cookies)
+    # OR
+    client.setSession(session_cookies)
 
 
 Authors
