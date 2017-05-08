@@ -2,7 +2,6 @@ import re
 import json
 from time import time
 from random import random
-
 USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/601.1.10 (KHTML, like Gecko) Version/8.0.5 Safari/601.1.10",
@@ -40,7 +39,7 @@ def digit_to_char(digit):
         return str(digit)
     return chr(ord('a') + digit - 10)
 
-def str_base(number, base):
+def str_base(number,base):
     if number < 0:
         return '-' + str_base(-number, base)
     (d, m) = divmod(number, base)
@@ -51,14 +50,15 @@ def str_base(number, base):
 def generateMessageID(client_id=None):
     k = now()
     l = int(random() * 4294967295)
-    return "<%s:%s-%s@mail.projektitan.com>" % (k, l, client_id)
+    return ("<%s:%s-%s@mail.projektitan.com>" % (k, l, client_id));
 
 def getSignatureID():
     return hex(int(random() * 2147483648))
 
-def generateOfflineThreadingID():
+def generateOfflineThreadingID() :
     ret = now()
-    value = int(random() * 4294967295)
+    value = int(random() * 4294967295);
     string = ("0000000000000000000000" + bin(value))[-22:]
     msgs = bin(ret) + string
-    return str(int(msgs, 2))
+    return str(int(msgs,2))
+
