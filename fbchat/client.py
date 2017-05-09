@@ -199,7 +199,7 @@ class Client(object):
         self.payloadDefault = {}
         self.client_id = hex(int(random()*2147483648))[2:]
         self.start_time = now()
-        self.uid = int(self._session.cookies['c_user'])
+        self.uid = str(self._session.cookies['c_user'])
         self.user_channel = "p_" + str(self.uid)
         self.ttstamp = ''
 
@@ -585,18 +585,18 @@ class Client(object):
         return self._send(thread_id, message, thread_type, None, image_id, None, None)
 
     # Doesn't upload properly
-    # def sendLocalImage(self, image_path: str, message: str = None, thread_id: str = None, thread_type: ThreadType = None):
-    #     """
-    #     Sends an image from given URL to given (or default, if not) thread.
-    #     :param image_path: path of an image to upload and send
-    #     :param message: additional message
-    #     :param thread_id: user/group chat ID
-    #     :param thread_type: specify whether thread_id is user or group chat
-    #     :return: a list of message ids of the sent message(s)
-    #     """
-    #     mimetype = guess_type(image_path)[0]
-    #     image_id = self._uploadImage({'file': (image_path, open(image_path, 'rb'), mimetype)})
-    #     return self._send(thread_id, message, thread_type, None, image_id, None, None)
+    def sendLocalImage(self, image_path: str, message: str = None, thread_id: str = None, thread_type: ThreadType = None):
+        """
+        Sends an image from given URL to given (or default, if not) thread.
+        :param image_path: path of an image to upload and send
+        :param message: additional message
+        :param thread_id: user/group chat ID
+        :param thread_type: specify whether thread_id is user or group chat
+        :return: a list of message ids of the sent message(s)
+        """
+        mimetype = guess_type(image_path)[0]
+        image_id = self._uploadImage({'file': (image_path, open(image_path, 'rb'), mimetype)})
+        return self._send(thread_id, message, thread_type, None, image_id, None, None)
 
     def addUsersToChat(self, user_list: list, thread_id: str = None):
         """
@@ -659,28 +659,31 @@ class Client(object):
         # Strip the start and parse out the returned image_id
         return json.loads(response_content[9:])['payload']['metadata'][0]['image_id']
 
-    def getThreadInfo(self, userID, last_n=20, start=None, is_user=True):
+    def getThreadInfo(self, last_n=20, thread_id: str = None, thread_type: ThreadType = None):
         """Get the info of one Thread
 
-        :param userID: ID of the user you want the messages from
-        :param last_n: (optional) number of retrieved messages from start
-        :param start: (optional) the start index of a thread (Deprecated)
-        :param is_user: (optional) determines if the userID is for user or thread
+        :param last_n: number of retrieved messages from start (default 20)
+        :param thread_id: user/group chat ID
+        :param thread_type: specify whether thread_id is user or group chat 
+        :return: a list of messages
         """
 
+        if thread_id is None and self.is_def_thread_set:
+            thread_id = self.def_thread_id
+            thread_type = self.def_thread_type
+        elif thread_id is None and not self.is_def_thread_set:
+            raise ValueError('Default Thread ID is not set.')
+
         assert last_n > 0, 'length must be positive integer, got %d' % last_n
-        assert start is None, '`start` is deprecated, always 0 offset querry is returned'
-        if is_user:
+
+        if thread_type == ThreadType.USER:
             key = 'user_ids'
-        else:
+        elif thread_type == ThreadType.GROUP:
             key = 'thread_fbids'
 
-        # deprecated
-        # `start` doesn't matter, always returns from the last
-        # data['messages[{}][{}][offset]'.format(key, userID)] = start
-        data = {'messages[{}][{}][offset]'.format(key, userID): 0,
-                'messages[{}][{}][limit]'.format(key, userID): last_n - 1,
-                'messages[{}][{}][timestamp]'.format(key, userID): now()}
+        data = {'messages[{}][{}][offset]'.format(key, thread_id): 0,
+                'messages[{}][{}][limit]'.format(key, thread_id): last_n - 1,
+                'messages[{}][{}][timestamp]'.format(key, thread_id): now()}
 
         r = self._post(MessagesURL, query=data)
         if not r.ok or len(r.text) == 0:
@@ -691,7 +694,7 @@ class Client(object):
             return None
 
         messages = []
-        for message in j['payload']['actions']:
+        for message in j['payload'].get('actions'):
             messages.append(Message(**message))
         return list(reversed(messages))
 
