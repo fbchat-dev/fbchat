@@ -76,11 +76,11 @@ class ThreadType(Enum):
 
 
 class TypingStatus(Enum):
-    Deleted = 0
-    Typing = 1
+    DELETED = 0
+    TYPING = 1
 
 
-class Sticker(Enum):
+class EmojiSize(Enum):
     LARGE = '369239383222810'
     MEDIUM = '369239343222814'
     SMALL = '369239263222822'

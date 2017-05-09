@@ -79,7 +79,6 @@ class Client(object):
         :param session_cookies: Cookie dict from a previous session (Will default to login if these are invalid)
         """
 
-        self.is_def_recipient_set = False
         self.sticky, self.pool = (None, None)
         self._session = requests.session()
         self.req_counter = 1
@@ -87,6 +86,9 @@ class Client(object):
         self.payloadDefault = {}
         self.client = 'mercury'
         self.listening = False
+        self.is_def_thread_set = False
+        self.def_thread_id = None
+        self.def_thread_type = None
         self.threads = []
 
         # Setup event hooks
@@ -161,24 +163,6 @@ class Client(object):
         # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
         if not session_cookies or not self.setSession(session_cookies) or not self.isLoggedIn():
             self.login(email, password, max_retries)
-
-    def _console(self, msg):
-        """Assumes an INFO level and log it.
-
-        This method shouldn't be used anymore.
-        Use the log itself:
-        >>> import logging
-        >>> from fbchat.client import log
-        >>> log.setLevel(logging.DEBUG)
-
-        You can do the same thing by adding the 'debug' argument:
-        >>> from fbchat import Client
-        >>> client = Client("...", "...", debug=True)
-        """
-        warnings.warn(
-                "Client._console shouldn't be used.  Use 'log.<level>'",
-                DeprecationWarning)
-        log.debug(msg)
 
     def _generatePayload(self, query):
         """Adds the following defaults to the payload:
@@ -355,7 +339,7 @@ class Client(object):
         return True
 
     def login(self, email, password, max_retries=5):
-        self.onLoggingIn(email)
+        self.onLoggingIn(email=email)
 
         if not (email and password):
             raise Exception("Email and password not set.")
@@ -369,7 +353,7 @@ class Client(object):
                 time.sleep(1)
                 continue
             else:
-                self.onLoggedIn(email)
+                self.onLoggedIn(email=email)
                 break
         else:
             raise Exception("Login failed. Check email/password.")
@@ -389,15 +373,15 @@ class Client(object):
         self.seq = "0"
         return r
 
-    def setDefaultRecipient(self, recipient_id, is_user=True):
+    def setDefaultThreadId(self, thread_id=str, thread_type=ThreadType):
         """Sets default recipient to send messages and images to.
         
-        :param recipient_id: the user id or thread id that you want to send a message to
-        :param is_user: determines if the recipient_id is for user or thread
+        :param thread_id: user/group ID to default to
+        :param thread_type: type of thread_id
         """
-        self.def_recipient_id = recipient_id
-        self.def_is_user = is_user
-        self.is_def_recipient_set = True
+        self.def_thread_id = thread_id
+        self.def_thread_type = thread_type
+        self.is_def_thread_set = True
 
     def getAllUsers(self):
         """ Gets all users from chat with info included """
@@ -448,24 +432,27 @@ class Client(object):
                 users.append(User(entry))
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
-    def send(self, recipient_id=None, message=None, is_user=True, like=None, image_id=None, add_user_ids=None):
+    """
+    SEND METHODS
+    """
+
+    def _send(self, thread_id=None, message=None, thread_type=None, emoji_size=None, image_id=None, add_user_ids=None, new_title=None):
         """Send a message with given thread id
 
-        :param recipient_id: the user id or thread id that you want to send a message to
+        :param thread_id: the user id or thread id that you want to send a message to
         :param message: a text that you want to send
-        :param is_user: determines if the recipient_id is for user or thread
-        :param like: size of the like sticker you want to send
+        :param thread_type: determines if the recipient_id is for user or thread
+        :param emoji_size: size of the like sticker you want to send
         :param image_id: id for the image to send, gotten from the UploadURL
         :param add_user_ids: a list of user ids to add to a chat
-        
-        returns a list of message ids of the sent message(s)
+        :return: a list of message ids of the sent message(s)
         """
 
-        if self.is_def_recipient_set:
-            recipient_id = self.def_recipient_id
-            is_user = self.def_is_user
-        elif recipient_id is None:
-            raise Exception('Recipient ID is not set.')
+        if thread_id is None and self.is_def_thread_set:
+            thread_id = self.def_thread_id
+            thread_type = self.def_thread_type
+        elif thread_id is None and not self.is_def_thread_set:
+            raise ValueError('Default Thread ID is not set.')
 
         messageAndOTID = generateOfflineThreadingID()
         timestamp = now()
@@ -493,37 +480,47 @@ class Client(object):
             'status' : '0',
             'offline_threading_id':messageAndOTID,
             'message_id' : messageAndOTID,
-            'threading_id':generateMessageID(self.client_id),
+            'threading_id': generateMessageID(self.client_id),
             'ephemeral_ttl_mode:': '0',
             'manual_retry_cnt' : '0',
             'signatureID' : getSignatureID()
         }
 
-        if is_user:
-            data["other_user_fbid"] = recipient_id
-        else:
-            data["thread_fbid"] = recipient_id
+        # Set recipient
+        if thread_type == ThreadType.USER:
+            data["other_user_fbid"] = thread_id
+        elif thread_type == ThreadType.GROUP:
+            data["thread_fbid"] = thread_id
 
+        # Set title
+        if new_title:
+            data['action_type'] = 'ma-type:log-message'
+            data['log_message_data[name]'] = new_title
+            data['log_message_type'] = 'log:thread-name'
+
+        # Set users to add
         if add_user_ids:
             data['action_type'] = 'ma-type:log-message'
             # It's possible to add multiple users
             for i, add_user_id in enumerate(add_user_ids):
                 data['log_message_data[added_participants][' + str(i) + ']'] = "fbid:" + str(add_user_id)
             data['log_message_type'] = 'log:subscribe'
-        else:
+
+        # Sending a simple message
+        if not add_user_ids and not new_title:
             data['action_type'] = 'ma-type:user-generated-message'
-            data['body'] = message
+            data['body'] = message or ''
             data['has_attachment'] = image_id is not None
-            data['specific_to_list[0]'] = 'fbid:' + str(recipient_id)
+            data['specific_to_list[0]'] = 'fbid:' + str(thread_id)
             data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
 
+        # Set image to send
         if image_id:
             data['image_ids[0]'] = image_id
 
-        if like and not type(like) is Sticker:
-            data["sticker_id"] = Sticker.SMALL.value
-        else:
-            data["sticker_id"] = like.value
+        # Set emoji to send
+        if emoji_size:
+            data["sticker_id"] = emoji_size.value
 
         r = self._post(SendURL, data)
         
@@ -531,9 +528,10 @@ class Client(object):
             log.warning('Error when sending message: Got {} response'.format(r.status_code))
             return False
 
-        if isinstance(r._content, str) is False:
-            r._content = r._content.decode(facebookEncoding)
-        j = get_json(r._content)
+        response_content = {}
+        if isinstance(r.content, str) is False:
+            response_content = r.content.decode(facebookEncoding)
+        j = get_json(response_content)
         if 'error' in j:
             # 'errorDescription' is in the users own language!
             log.warning('Error #{} when sending message: {}'.format(j['error'], j['errorDescription']))
@@ -552,42 +550,114 @@ class Client(object):
         log.debug("With data {}".format(data))
         return message_ids
 
-    def sendRemoteImage(self, recipient_id=None, message=None, is_user=True, image=''):
-        """Send an image from a URL
-
-        :param recipient_id: the user id or thread id that you want to send a message to
-        :param message: a text that you want to send
-        :param is_user: determines if the recipient_id is for user or thread
-        :param image: URL for an image to download and send
+    def sendMessage(self, message: str, thread_id: str = None, thread_type: ThreadType = None):
         """
-        mimetype = guess_type(image)[0]
-        remote_image = requests.get(image).content
-        image_id = self.uploadImage({'file': (image, remote_image, mimetype)})
-        return self.send(recipient_id, message, is_user, None, image_id)
-
-    def sendLocalImage(self, recipient_id=None, message=None, is_user=True, image=''):
-        """Send an image from a file path
-
-        :param recipient_id: the user id or thread id that you want to send a message to
-        :param message: a text that you want to send
-        :param is_user: determines if the recipient_id is for user or thread
-        :param image: path to a local image to send
+        Sends a message to given (or default, if not) thread with an additional image.
+        :param message: message to send
+        :param thread_id: user/group chat ID
+        :param thread_type: specify whether thread_id is user or group chat
+        :return: a list of message ids of the sent message(s)
         """
-        mimetype = guess_type(image)[0]
-        image_id = self.uploadImage({'file': (image, open(image, 'rb'), mimetype)})
-        return self.send(recipient_id, message, is_user, None, image_id)
+        return self._send(thread_id, message, thread_type, None, None, None, None)
 
-    def uploadImage(self, image):
+    def sendEmoji(self, emoji_size: EmojiSize, thread_id: str = None, thread_type: ThreadType = None):
+        """
+        Sends an emoji to given (or default, if not) thread.
+        :param emoji_size: size of emoji to send
+        :param thread_id: user/group chat ID
+        :param thread_type: specify whether thread_id is user or group chat 
+        :return: a list of message ids of the sent message(s)
+        """
+        return self._send(thread_id, None, thread_type, emoji_size, None, None, None)
+
+    def sendRemoteImage(self, image_url: str, message: str = None, thread_id: str = None, thread_type: ThreadType = None):
+        """
+        Sends an image from given URL to given (or default, if not) thread.        
+        :param image_url: URL of an image to upload and send
+        :param message: additional message
+        :param thread_id: user/group chat ID
+        :param thread_type: specify whether thread_id is user or group chat 
+        :return: a list of message ids of the sent message(s)
+        """
+        mimetype = guess_type(image_url)[0]
+        remote_image = requests.get(image_url).content
+        image_id = self._uploadImage({'file': (image_url, remote_image, mimetype)})
+        return self._send(thread_id, message, thread_type, None, image_id, None, None)
+
+    # Doesn't upload properly
+    # def sendLocalImage(self, image_path: str, message: str = None, thread_id: str = None, thread_type: ThreadType = None):
+    #     """
+    #     Sends an image from given URL to given (or default, if not) thread.
+    #     :param image_path: path of an image to upload and send
+    #     :param message: additional message
+    #     :param thread_id: user/group chat ID
+    #     :param thread_type: specify whether thread_id is user or group chat
+    #     :return: a list of message ids of the sent message(s)
+    #     """
+    #     mimetype = guess_type(image_path)[0]
+    #     image_id = self._uploadImage({'file': (image_path, open(image_path, 'rb'), mimetype)})
+    #     return self._send(thread_id, message, thread_type, None, image_id, None, None)
+
+    def addUsersToChat(self, user_list: list, thread_id: str = None):
+        """
+        Adds users to given (or default, if not) thread.
+        :param user_list: list of users to add
+        :param thread_id: group chat ID
+        :return: a list of message ids of the sent message(s)
+        """
+        return self._send(thread_id, None, ThreadType.GROUP, None, None, user_list, None)
+
+    def removeUserFromChat(self, user_id: str, thread_id: str = None):
+        """
+        Adds users to given (or default, if not) thread.
+        :param user_id: user ID to remove
+        :param thread_id: group chat ID
+        :return: true if user was removed
+        """
+
+        if thread_id is None and self.def_thread_type == ThreadType.GROUP:
+            thread_id = self.def_thread_id
+        elif thread_id is None:
+            raise ValueError('Default Thread ID is not set.')
+
+        data = {
+            "uid": user_id,
+            "tid": thread_id
+        }
+
+        r = self._post(RemoveUserURL, data)
+
+        return r.ok
+
+    def changeThreadTitle(self, new_title: str, thread_id: str = None):
+        """
+        Change title of a group conversation.
+        :param new_title: new group chat title
+        :param thread_id: group chat ID
+        :return: a list of message ids of the sent message(s)
+        """
+        if thread_id is None and self.def_thread_type == ThreadType.GROUP:
+            thread_id = self.def_thread_id
+        elif thread_id is None:
+            raise ValueError('Default Thread ID is not set.')
+        return self._send(thread_id, None, ThreadType.GROUP, None, None, None, new_title)
+
+    """
+    END SEND METHODS    
+    """
+
+    def _uploadImage(self, image):
         """Upload an image and get the image_id for sending in a message
 
         :param image: a tuple of (file name, data, mime type) to upload to facebook
         """
 
         r = self._postFile(UploadURL, image)
-        if isinstance(r._content, str) is False:
-            r._content = r._content.decode(facebookEncoding)
+        response_content = {}
+        if isinstance(r.content, str) is False:
+            response_content = r.content.decode(facebookEncoding)
         # Strip the start and parse out the returned image_id
-        return json.loads(r._content[9:])['payload']['metadata'][0]['image_id']
+        return json.loads(response_content[9:])['payload']['metadata'][0]['image_id']
 
     def getThreadInfo(self, userID, last_n=20, start=None, is_user=True):
         """Get the info of one Thread
@@ -963,69 +1033,3 @@ class Client(object):
         if len(full_data)==1:
             full_data=full_data[0]
         return full_data
-
-    def removeUserFromChat(self, threadID, userID):
-        """Remove user (userID) from group chat (threadID)
-
-        :param threadID: group chat id
-        :param userID: user id to remove from chat
-        """
-
-        data = {
-            "uid" : userID,
-            "tid" : threadID
-        }
-
-        r = self._post(RemoveUserURL, data)
-
-        return r.ok
-
-    def addUserToChat(self, threadID, userID):
-        """Add user (userID) to group chat (threadID)
-
-        :param threadID: group chat id
-        :param userID: user id to add to chat
-        """
-        return self.send(threadID, is_user=False, add_user_ids=[userID])
-
-    def changeThreadTitle(self, threadID, newTitle):
-        """Change title of a group conversation
-
-        :param threadID: group chat id
-        :param newTitle: new group chat title
-        """
-
-        messageAndOTID = generateOfflineThreadingID()
-        timestamp = now()
-        date = datetime.now()
-        data = {
-            'client' : self.client,
-            'action_type' : 'ma-type:log-message',
-            'author' : 'fbid:' + str(self.uid),
-            'thread_id' : '',
-            'author_email' : '',
-            'coordinates' : '',
-            'timestamp' : timestamp,
-            'timestamp_absolute' : 'Today',
-            'timestamp_relative' : str(date.hour) + ":" + str(date.minute).zfill(2),
-            'timestamp_time_passed' : '0',
-            'is_unread' : False,
-            'is_cleared' : False,
-            'is_forward' : False,
-            'is_filtered_content' : False,
-            'is_spoof_warning' : False,
-            'source' : 'source:chat:web',
-            'source_tags[0]' : 'source:chat',
-            'status' : '0',
-            'offline_threading_id' : messageAndOTID,
-            'message_id' : messageAndOTID,
-            'threading_id': generateMessageID(self.client_id),
-            'manual_retry_cnt' : '0',
-            'thread_fbid' : threadID,
-            'log_message_data[name]' : newTitle,
-            'log_message_type' : 'log:thread-name'
-        }
-
-        r = self._post(SendURL, data)
-
-        return r.ok
