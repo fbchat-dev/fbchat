@@ -14,14 +14,12 @@
 import requests
 import logging
 from uuid import uuid1
-import warnings
 from random import choice
 from datetime import datetime
 from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
 from .utils import *
 from .models import *
-from .stickers import *
 import time
 import sys
 
@@ -58,6 +56,9 @@ facebookEncoding = 'UTF-8'
 # Log settings
 log = logging.getLogger("client")
 log.setLevel(logging.DEBUG)
+# Creates the console handler
+handler = logging.StreamHandler()
+log.addHandler(handler)
 
 
 class Client(object):
@@ -67,16 +68,17 @@ class Client(object):
     documentation for the API.
     """
 
-    def __init__(self, email, password, debug=True, info_log=True, user_agent=None, max_retries=5, session_cookies=None):
+    def __init__(self, email, password, debug=False, info_log=False, user_agent=None, max_retries=5, session_cookies=None, logging_level=logging.INFO):
         """A client for the Facebook Chat (Messenger).
 
         :param email: Facebook `email` or `id` or `phone number`
         :param password: Facebook account password
-        :param debug: Configures the logger to `debug` logging_level
-        :param info_log: Configures the logger to `info` logging_level
+        :param debug: Configures the logger to `debug` logging_level (deprecated)
+        :param info_log: Configures the logger to `info` logging_level (deprecated)
         :param user_agent: Custom user agent to use when sending requests. If `None`, user agent will be chosen from a premade list (see utils.py)
         :param max_retries: Maximum number of times to retry login
         :param session_cookies: Cookie dict from a previous session (Will default to login if these are invalid)
+        :param logging_level: Configures the logger to logging_level
         """
 
         self.sticky, self.pool = (None, None)
@@ -86,9 +88,8 @@ class Client(object):
         self.payloadDefault = {}
         self.client = 'mercury'
         self.listening = False
-        self.is_def_thread_set = False
-        self.def_thread_id = None
-        self.def_thread_type = None
+        self.default_thread_id = None
+        self.default_thread_type = None
         self.threads = []
 
         if not user_agent:
@@ -104,20 +105,38 @@ class Client(object):
 
         # Configure the logger differently based on the 'debug' and 'info_log' parameters
         if debug:
+            deprecation('Client(debug)', deprecated_in='0.6.0', details='Use Client(logging_level) instead')
             logging_level = logging.DEBUG
         elif info_log:
+            deprecation('Client(info_log)', deprecated_in='0.6.0', details='Use Client(logging_level) instead')
             logging_level = logging.INFO
-        else:
-            logging_level = logging.WARNING
 
-        # Creates the console handler
-        handler = logging.StreamHandler()
         handler.setLevel(logging_level)
-        log.addHandler(handler)
 
         # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
         if not session_cookies or not self.setSession(session_cookies) or not self.is_logged_in():
             self.login(email, password, max_retries)
+
+    @deprecated(deprecated_in='0.6.0', details='Use log.<level> instead')
+    def _console(self, msg):
+        """Assumes an INFO level and log it.
+
+        This method shouldn't be used anymore.
+        Use the log itself:
+        >>> import logging
+        >>> from fbchat.client import log
+        >>> log.setLevel(logging.DEBUG)
+
+        You can do the same thing by adding the 'debug' argument:
+        >>> from fbchat import Client
+        >>> client = Client("...", "...", debug=True)
+        """
+        log.debug(msg)
+
+    def _setttstamp(self):
+            for i in self.fb_dtsg:
+                self.ttstamp += str(ord(i))
+            self.ttstamp += '2'
 
     def _generatePayload(self, query):
         """Adds the following defaults to the payload:
@@ -154,7 +173,7 @@ class Client(object):
         self.payloadDefault = {}
         self.client_id = hex(int(random()*2147483648))[2:]
         self.start_time = now()
-        self.uid = str(self._session.cookies['c_user'])
+        self.uid = int(self._session.cookies['c_user'])
         self.user_channel = "p_" + str(self.uid)
         self.ttstamp = ''
 
@@ -294,7 +313,8 @@ class Client(object):
         return True
 
     def login(self, email, password, max_retries=5):
-        self.onLoggingIn(email=email)
+        # Logging in
+        log.info("Logging in {}...".format(email))
         
         if not (email and password):
             raise Exception("Email and password not set.")
@@ -308,7 +328,7 @@ class Client(object):
                 time.sleep(1)
                 continue
             else:
-                self.onLoggedIn(email=email)
+                log.info("Login of {} successful.".format(email))
                 break
         else:
             raise Exception("Login failed. Check email/password.")
@@ -327,16 +347,19 @@ class Client(object):
         self.req_counter = 1
         self.seq = "0"
         return r
+    
+    @deprecated(deprecated_in='0.10.2', details='Use setDefaultThread instead')
+    def setDefaultRecipient(self, recipient_id, is_user=True):
+        self.setDefaultThread(recipient_id, thread_type=isUserToThreadType(is_user))
 
-    def setDefaultThreadId(self, thread_id=str, thread_type=ThreadType):
-        """Sets default recipient to send messages and images to.
+    def setDefaultThread(self, thread_id=None, thread_type=ThreadType.USER):
+        """Sets default thread to send messages and images to.
         
         :param thread_id: user/group ID to default to
         :param thread_type: type of thread_id
         """
-        self.def_thread_id = thread_id
-        self.def_thread_type = thread_type
-        self.is_def_thread_set = True
+        self.default_thread_id = thread_id
+        self.default_thread_type = thread_type
 
     def _adapt_user_in_chat_to_user_model(self, user_in_chat):
         """ Adapts user info from chat to User model acceptable initial dict
@@ -424,7 +447,7 @@ class Client(object):
     SEND METHODS
     """
 
-    def _send(self, thread_id=None, message=None, thread_type=None, emoji_size=None, image_id=None, add_user_ids=None, new_title=None):
+    def _send(self, thread_id=None, message=None, thread_type=ThreadType.USER, emoji_size=None, image_id=None, add_user_ids=None, new_title=None):
         """Send a message with given thread id
 
         :param thread_id: the user id or thread id that you want to send a message to
@@ -436,11 +459,12 @@ class Client(object):
         :return: a list of message ids of the sent message(s)
         """
 
-        if thread_id is None and self.is_def_thread_set:
-            thread_id = self.def_thread_id
-            thread_type = self.def_thread_type
-        elif thread_id is None and not self.is_def_thread_set:
-            raise ValueError('Default Thread ID is not set.')
+        if thread_id is None:
+            if self.default_thread_id is not None:
+                thread_id = self.default_thread_id
+                thread_type = self.default_thread_type
+            else:
+                raise ValueError('Thread ID is not set.')
 
         messageAndOTID = generateOfflineThreadingID()
         timestamp = now()
@@ -538,7 +562,11 @@ class Client(object):
         log.debug("With data {}".format(data))
         return message_ids
 
-    def sendMessage(self, message: str, thread_id: str = None, thread_type: ThreadType = None):
+    @deprecated(deprecated_in='0.10.2', details='Use specific functions (eg. sendMessage()) instead')
+    def send(self, recipient_id=None, message=None, is_user=True, like=None, image_id=None, add_user_ids=None):
+        return self._send(thread_id=recipient_id, message=message, thread_type=isUserToThreadType(is_user), emoji_size=LIKES[like], image_id=image_id, add_user_ids=add_user_ids)
+
+    def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
         """
         Sends a message to given (or default, if not) thread with an additional image.
         :param message: message to send
@@ -546,19 +574,20 @@ class Client(object):
         :param thread_type: specify whether thread_id is user or group chat
         :return: a list of message ids of the sent message(s)
         """
-        return self._send(thread_id, message, thread_type, None, None, None, None)
+        return self._send(thread_id=thread_id, message=message, thread_type=thread_type)
 
-    def sendEmoji(self, emoji_size: EmojiSize, thread_id: str = None, thread_type: ThreadType = None):
+    def sendEmoji(self, thread_id, size=Size.MEDIUM, emoji=None, thread_type=ThreadType.USER):
         """
         Sends an emoji to given (or default, if not) thread.
-        :param emoji_size: size of emoji to send
+        :param size: size of emoji to send
         :param thread_id: user/group chat ID
+        :param emoji: WIP
         :param thread_type: specify whether thread_id is user or group chat 
         :return: a list of message ids of the sent message(s)
         """
-        return self._send(thread_id, None, thread_type, emoji_size, None, None, None)
+        return self._send(thread_id=thread_id, thread_type=thread_type, emoji_size=size)
 
-    def sendRemoteImage(self, image_url: str, message: str = None, thread_id: str = None, thread_type: ThreadType = None):
+    def sendRemoteImage(self, image_url, message=None, thread_id=None, thread_type=ThreadType.USER, recipient_id=None, is_user=None, image=None):
         """
         Sends an image from given URL to given (or default, if not) thread.        
         :param image_url: URL of an image to upload and send
@@ -567,13 +596,22 @@ class Client(object):
         :param thread_type: specify whether thread_id is user or group chat 
         :return: a list of message ids of the sent message(s)
         """
+        if recipient_id is not None:
+            deprecation('sendRemoteImage(recipient_id)', deprecated_in='0.10.2', details='Use sendRemoteImage(thread_id) instead')
+            thread_id = recipient_id
+        if is_user is not None:
+            deprecation('sendRemoteImage(is_user)', deprecated_in='0.10.2', details='Use sendRemoteImage(thread_type) instead')
+            thread_type = isUserToThreadType(is_user)
+        if image is not None:
+            deprecation('sendRemoteImage(image)', deprecated_in='0.10.2', details='Use sendRemoteImage(image_url) instead')
+            image_url = image
         mimetype = guess_type(image_url)[0]
         remote_image = requests.get(image_url).content
         image_id = self._uploadImage({'file': (image_url, remote_image, mimetype)})
-        return self._send(thread_id, message, thread_type, None, image_id, None, None)
+        return self._send(thread_id=thread_id, message=message, thread_type=thread_type, image_id=image_id)
 
     # Doesn't upload properly
-    def sendLocalImage(self, image_path: str, message: str = None, thread_id: str = None, thread_type: ThreadType = None):
+    def sendLocalImage(self, image_path, message=None, thread_id=None, thread_type=ThreadType.USER, recipient_id=None, is_user=None, image=None):
         """
         Sends an image from given URL to given (or default, if not) thread.
         :param image_path: path of an image to upload and send
@@ -582,20 +620,29 @@ class Client(object):
         :param thread_type: specify whether thread_id is user or group chat
         :return: a list of message ids of the sent message(s)
         """
+        if recipient_id is not None:
+            deprecation('sendRemoteImage(recipient_id)', deprecated_in='0.10.2', details='Use sendLocalImage(thread_id) instead')
+            thread_id = recipient_id
+        if is_user is not None:
+            deprecation('sendRemoteImage(is_user)', deprecated_in='0.10.2', details='Use sendLocalImage(thread_type) instead')
+            thread_type = isUserToThreadType(is_user)
+        if image is not None:
+            deprecation('sendRemoteImage(image)', deprecated_in='0.10.2', details='Use sendLocalImage(image_path) instead')
+            image_path = image
         mimetype = guess_type(image_path)[0]
         image_id = self._uploadImage({'file': (image_path, open(image_path, 'rb'), mimetype)})
-        return self._send(thread_id, message, thread_type, None, image_id, None, None)
+        return self._send(thread_id=thread_id, message=message, thread_type=thread_type, image_id=image_id)
 
-    def addUsersToChat(self, user_list: list, thread_id: str = None):
+    def addUsersToChat(self, user_ids, thread_id=None):
         """
         Adds users to given (or default, if not) thread.
-        :param user_list: list of users to add
+        :param user_ids: list of user ids to add
         :param thread_id: group chat ID
         :return: a list of message ids of the sent message(s)
         """
-        return self._send(thread_id, None, ThreadType.GROUP, None, None, user_list, None)
+        return self._send(thread_id=thread_id, thread_type=ThreadType.GROUP, add_user_ids=users)
 
-    def removeUserFromChat(self, user_id: str, thread_id: str = None):
+    def removeUserFromChat(self, user_id, thread_id=None):
         """
         Adds users to given (or default, if not) thread.
         :param user_id: user ID to remove
@@ -617,18 +664,28 @@ class Client(object):
 
         return r.ok
 
-    def changeThreadTitle(self, new_title: str, thread_id: str = None):
+    @deprecated(deprecated_in='0.10.2', details='Use removeUserFromChat() instead')
+    def add_users_to_chat(self, threadID, userID):
+        if not isinstance(userID, list):
+            userID = [userID]
+        return self.addUsersToChat(userID, thread_id=threadID)
+
+    @deprecated(deprecated_in='0.10.2', details='Use removeUserFromChat() instead')
+    def remove_user_from_chat(self, threadID, userID):
+        return self.removeUserFromChat(userID, thread_id=threadID)
+
+    @deprecated(deprecated_in='0.10.2', details='Use changeGroupTitle() instead')
+    def changeThreadTitle(self, threadID, newTitle):
+        return self.changeGroupTitle(newTitle, thread_id=threadID)
+
+    def changeGroupTitle(self, title, thread_id=None):
         """
         Change title of a group conversation.
-        :param new_title: new group chat title
+        :param title: new group chat title
         :param thread_id: group chat ID
         :return: a list of message ids of the sent message(s)
         """
-        if thread_id is None and self.def_thread_type == ThreadType.GROUP:
-            thread_id = self.def_thread_id
-        elif thread_id is None:
-            raise ValueError('Default Thread ID is not set.')
-        return self._send(thread_id, None, ThreadType.GROUP, None, None, None, new_title)
+        return self._send(thread_id=thread_id, thread_type=ThreadType.GROUP, new_title=title)
 
     """
     END SEND METHODS    
@@ -647,7 +704,7 @@ class Client(object):
         # Strip the start and parse out the returned image_id
         return json.loads(response_content[9:])['payload']['metadata'][0]['image_id']
 
-    def getThreadInfo(self, last_n=20, thread_id: str = None, thread_type: ThreadType = None):
+    def getThreadInfo(self, last_n=20, thread_id=None, thread_type=ThreadType.USER):
         """Get the info of one Thread
 
         :param last_n: number of retrieved messages from start (default 20)
@@ -969,3 +1026,65 @@ class Client(object):
         if len(full_data)==1:
             full_data=full_data[0]
         return full_data
+
+
+
+    def on_message_new(self, mid, author_id, message, metadata, recipient_id, thread_type):
+        """subclass Client and override this method to add custom behavior on event
+
+        This version of on_message recieves recipient_id and thread_type.
+        For backwards compatability, this data is sent directly to the old on_message.
+        """
+        self.on_message(mid, author_id, None, message, metadata)
+
+    @deprecated(deprecated_in='0.7.0', details='Use on_message_new() instead')
+    def on_message(self, mid, author_id, author_name, message, metadata):
+        """subclass Client and override this method to add custom behavior on event"""
+        self.markAsDelivered(author_id, mid)
+        self.markAsRead(author_id)
+        log.info("%s said: %s" % (author_name, message))
+
+
+    def on_friend_request(self, from_id):
+        """subclass Client and override this method to add custom behavior on event"""
+        log.info("Friend request from %s." % from_id)
+
+
+    def on_typing(self, author_id):
+        """subclass Client and override this method to add custom behavior on event"""
+        pass
+
+
+    def on_read(self, author, reader, time):
+        """subclass Client and override this method to add custom behavior on event"""
+        pass
+
+
+    def on_people_added(self, user_ids, actor_id, thread_id):
+        """subclass Client and override this method to add custom behavior on event"""
+        log.info("User(s) {} was added to {} by {}".format(repr(user_ids), thread_id, actor_id))
+
+
+    def on_person_removed(self, user_id, actor_id, thread_id):
+        """subclass Client and override this method to add custom behavior on event"""
+        log.info("User {} was removed from {} by {}".format(user_id, thread_id, actor_id))
+
+
+    def on_inbox(self, viewer, unseen, unread, other_unseen, other_unread, timestamp):
+        """subclass Client and override this method to add custom behavior on event"""
+        pass
+
+
+    def on_message_error(self, exception, message):
+        """subclass Client and override this method to add custom behavior on event"""
+        log.warning("Exception:\n{}".format(exception))
+
+
+    def on_qprimer(self, timestamp):
+        pass
+
+
+    def on_unknown_type(self, m):
+        """subclass Client and override this method to add custom behavior on event"""
+        log.debug("Unknown type {}".format(m))
+

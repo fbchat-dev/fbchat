@@ -2,6 +2,7 @@ import re
 import json
 from time import time
 from random import random
+import warnings
 USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/601.1.10 (KHTML, like Gecko) Version/8.0.5 Safari/601.1.10",
@@ -62,3 +63,30 @@ def generateOfflineThreadingID() :
     msgs = bin(ret) + string
     return str(int(msgs,2))
 
+def isUserToThreadType(is_user):
+    return ThreadType.USER if is_user else ThreadType.GROUP
+
+def deprecation(name, deprecated_in=None, details='', stacklevel=3):
+    """This is a function which should be used to mark parameters as deprecated.
+    It will result in a warning being emmitted when the parameter is used.
+    """
+    warning = "{} is deprecated".format(name)
+    if deprecated_in:
+        warning += ' in v. {}'.format(deprecated_in)
+    if details:
+        warning += '. {}'.format(details)
+    
+    warnings.simplefilter('always', DeprecationWarning)
+    warnings.warn(warning, category=DeprecationWarning, stacklevel=stacklevel)
+    warnings.simplefilter('default', DeprecationWarning)
+
+def deprecated(deprecated_in=None, details=''):
+    """This is a decorator which can be used to mark functions as deprecated.
+    It will result in a warning being emmitted when the decorated function is used.
+    """
+    def wrap(func, *args, **kwargs):
+        def wrapped_func(*args, **kwargs):
+            deprecation(func.__qualname__, deprecated_in, details, stacklevel=2)
+            return func(*args, **kwargs)
+        return wrapped_func
+    return wrap

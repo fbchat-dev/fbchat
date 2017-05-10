@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 import sys
+from enum import Enum
 
 class Base():
     def __repr__(self):
@@ -37,7 +38,25 @@ class TypingStatus(Enum):
     DELETED = 0
     TYPING = 1
 
-class EmojiSize(Enum):
+
+# WIP
+class StickerSize(Enum):
     LARGE = '369239383222810'
     MEDIUM = '369239343222814'
     SMALL = '369239263222822'
+
+#class Size(Enum):
+#    LARGE = 'large'
+#    MEDIUM = 'medium'
+#    SMALL = 'small'
+
+Size = StickerSize
+
+LIKES = {
+    'l': Size.LARGE,
+    'm': Size.MEDIUM,
+    's': Size.SMALL
+}
+LIKES['large'] = LIKES['l']
+LIKES['medium'] =LIKES['m']
+LIKES['small'] = LIKES['s']

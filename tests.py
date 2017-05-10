@@ -10,21 +10,27 @@ import unittest
 import sys
 from os import path
 
-# Disable logging
-logging.basicConfig(level=100)
-fbchat.log.setLevel(100)
+#Setup logging
+logging.basicConfig(level=logging.INFO)
 
 """
 
 Tests for fbchat
 ~~~~~~~~~~~~~~~~
 
-To use these tests, put:
-- email
-- password
-- a group_uid
-- a user_uid (the user will be kicked from the group and then added again) `test_data.js`,
-or type them manually in the terminal prompts
+To use these tests, make a json file called test_data.json, put this example in it, and fill in the gaps:
+{
+    "email": "example@email.com",
+    "password": "example_password",
+    "group_thread_id": 0,
+    "user_thread_id": 0
+}
+or type this information manually in the terminal prompts.
+
+- email: Your (or a test user's) email / phone number
+- password: Your (or a test user's) password
+- group_thread_id: A test group that will be used to test group functionality
+- user_thread_id: A person that will be used to test kick/add functionality (This user should be in the group)
 
 Please remember to test both python v. 2.7 and python v. 3.6!
 
@@ -101,8 +107,8 @@ class TestFbchat(unittest.TestCase):
         self.assertTrue(client.sendRemoteImage(image_url, 'test_send_user_images_remote', user_uid, ThreadType.USER))
         self.assertTrue(client.sendRemoteImage(image_url, 'test_send_group_images_remote', group_uid, ThreadType.GROUP))
         # Idk why but doesnt work, payload is null
-        # self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local', user_uid, ThreadType.USER))
-        # self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local', group_uid, ThreadType.GROUP))
+        self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local', user_uid, ThreadType.USER))
+        self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local', group_uid, ThreadType.GROUP))
     
     def test_getThreadInfo(self):
         client.sendMessage('test_user_getThreadInfo', user_uid, ThreadType.USER)
@@ -117,12 +123,12 @@ class TestFbchat(unittest.TestCase):
         self.assertEquals(info[0].author, 'fbid:' + client.uid)
         self.assertEquals(info[0].body, 'test_group_getThreadInfo')
 
-    # def test_markAs(self):
-    #     # To be implemented (requires some form of manual watching)
-    #     pass
+    def test_markAs(self):
+        # To be implemented (requires some form of manual watching)
+        pass
 
-    # def test_listen(self):
-    #     client.doOneListen()
+    def test_listen(self):
+        client.doOneListen()
 
     def test_getUserInfo(self):
         info = client.getUserInfo(4)
@@ -165,15 +171,15 @@ if __name__ == 'tests':
     try:
         with open(path.join(path.dirname(__file__), 'test_data.js'), 'r') as f:
             json = json.load(f)
-        email = json["email"]
-        password = json["password"]
-        user_uid = json["user_thread_id"]
-        group_uid = json["group_thread_id"]
+        email = json['email']
+        password = json['password']
+        user_uid = json['user_thread_id']
+        group_uid = json['group_thread_id']
     except (IOError, IndexError) as e:
         email = input('Email: ')
         password = getpass.getpass()
-        group_uid = input('Please enter a group uid (To test group functionality): ')
-        user_uid = input('Please enter a user uid (To test kicking/adding functionality): ')
+        group_uid = input('Please enter a group thread id (To test group functionality): ')
+        user_uid = input('Please enter a user thread id (To test kicking/adding functionality): ')
 
     print('Logging in...')
     client = fbchat.Client(email, password)
