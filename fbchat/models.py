@@ -19,7 +19,6 @@ class User(Base):
         self.url = data['path']
         self.name = data['text']
         self.score = data['score']
-
         self.data = data
 
 class Thread():
@@ -29,3 +28,16 @@ class Thread():
 class Message():
     def __init__(self, **entries):
         self.__dict__.update(entries)
+
+class ThreadType(Enum):
+    USER = 1
+    GROUP = 2
+
+class TypingStatus(Enum):
+    DELETED = 0
+    TYPING = 1
+
+class EmojiSize(Enum):
+    LARGE = '369239383222810'
+    MEDIUM = '369239343222814'
+    SMALL = '369239263222822'
