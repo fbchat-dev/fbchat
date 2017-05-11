@@ -897,7 +897,6 @@ class Client(object):
             if type(_fbid) == int:
                 return _fbid
 
-            print(type(_fbid))
             if type(_fbid) in [str, bytes] and 'fbid:' in _fbid:
                 return int(_fbid[5:])
 
