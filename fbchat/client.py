@@ -169,7 +169,7 @@ class Client(object):
         self.onUnknownMesssageType += lambda msg: log.info("Unknown message type received: %s" % msg)
         self.onMessageError += lambda exception, msg: log.exception(exception)
 
-    def _checkOldEventHook(self, old_event, deprecated_in='0.10.2'):
+    def _checkOldEventHook(self, old_event, deprecated_in='0.10.3'):
         if hasattr(type(self), old_event):
             deprecation('Client.{}'.format(old_event), deprecated_in=deprecated_in, details='Use new event system instead')
             return True
@@ -596,6 +596,8 @@ class Client(object):
         elif image_id:
             return self.sendImage(image_id=image_id, message=message, thread_id=recipient_id, thread_type=isUserToThreadType(is_user))
         elif like:
+            if not like in LIKES:
+                like = 'l' # Backwards compatability
             return self.sendEmoji(emoji=None, size=LIKES[like], thread_id=recipient_id, thread_type=isUserToThreadType(is_user))
         else:
             return self.sendMessage(message, thread_id=recipient_id, thread_type=isUserToThreadType(is_user))
@@ -620,7 +622,7 @@ class Client(object):
 
         return self._doSendRequest(data)
 
-    def sendEmoji(self, emoji=None, size=EmojiSize.LARGE, thread_id=None, thread_type=ThreadType.USER):
+    def sendEmoji(self, emoji=None, size=EmojiSize.SMALL, thread_id=None, thread_type=ThreadType.USER):
         # type: (str, EmojiSize, str, ThreadType) -> list
         """
         Sends an emoji to given (or default, if not) thread.
