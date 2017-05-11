@@ -1,5 +1,7 @@
 *py[co]
 
+.idea/
+
 # Test scripts
 *.sh
 
