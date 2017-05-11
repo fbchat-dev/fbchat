@@ -72,12 +72,19 @@ class TypingStatus(Enum):
     DELETED = 0
     TYPING = 1
 
-
-# WIP
 class EmojiSize(Enum):
-    LARGE = '369239383222810'
-    MEDIUM = '369239343222814'
-    SMALL = '369239263222822'
+    LARGE = {
+        'value': '369239383222810',
+        'name': 'large'
+    }
+    MEDIUM = {
+        'value': '369239343222814',
+        'name': 'medium'
+    }
+    SMALL = {
+        'value': '369239263222822',
+        'name': 'small'
+    }
 
 LIKES = {
     'l': EmojiSize.LARGE,

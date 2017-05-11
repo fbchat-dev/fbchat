@@ -24,7 +24,7 @@ from .event_hook import *
 import time
 import sys
 
-# Python 3 does not have raw_input, whereas Python 2 has and it's more secure
+# Python 2's `input` executes the input, whereas `raw_input` just returns the input
 try:
     input = raw_input
 except NameError:
@@ -95,6 +95,7 @@ class Client(object):
         self.threads = []
 
         self._setupEventHooks()
+        self._setupOldEventHooks()
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -141,6 +142,7 @@ class Client(object):
         self.onFriendRequest = EventHook(from_id=str)
 
         self.onUnknownMesssageType = EventHook(msg=dict)
+        self.onMessageError = EventHook(exception=Exception, msg=dict)
 
         # Setup event handlers
         self.onLoggingIn += lambda email: log.info("Logging in %s..." % email)
@@ -164,8 +166,51 @@ class Client(object):
         self.onPersonRemoved += lambda removed_id, author_id, thread_id:\
             log.info("%s removed: %s" % (author_id, removed_id))
 
-        self.onUnknownMesssageType += lambda msg:\
-            log.info("Unknown message type received: %s" % msg)
+        self.onUnknownMesssageType += lambda msg: log.info("Unknown message type received: %s" % msg)
+        self.onMessageError += lambda exception, msg: log.exception(exception)
+
+    def _checkOldEventHook(self, old_event, deprecated_in='0.10.2'):
+        if hasattr(type(self), old_event):
+            deprecation('Client.{}'.format(old_event), deprecated_in=deprecated_in, details='Use new event system instead')
+            return True
+        else:
+            return False
+
+    def _setupOldEventHooks(self):
+        if self._checkOldEventHook('on_message', deprecated_in='0.7.0'):
+            self.onMessage += lambda mid, author_id, message, thread_id, thread_type, ts, metadata:\
+                                     self.on_message(mid, author_id, None, message, metadata)
+
+        if self._checkOldEventHook('on_message_new'):
+            self.onMessage += lambda mid, author_id, message, thread_id, thread_type, ts, metadata:\
+                                     self.on_message_new(mid, author_id, message, metadata, thread_id, True if thread_type is ThreadType.USER else False)
+
+        if self._checkOldEventHook('on_friend_request'):
+            self.onFriendRequest += lambda from_id: self.on_friend_request(from_id)
+
+        if self._checkOldEventHook('on_typing'):
+            self.onTyping += lambda author_id, typing_status: self.on_typing(author_id)
+
+        if self._checkOldEventHook('on_read'):
+            self.onSeen += lambda seen_by, thread_id, timestamp: self.on_read(seen_by, thread_id, timestamp)
+
+        if self._checkOldEventHook('on_people_added'):
+            self.onPeopleAdded += lambda added_ids, author_id, thread_id: self.on_people_added(added_ids, author_id, thread_id)
+
+        if self._checkOldEventHook('on_person_removed'):
+            self.onPersonRemoved += lambda removed_id, author_id, thread_id: self.on_person_removed(removed_id, author_id, thread_id)
+
+        if self._checkOldEventHook('on_inbox'):
+            self.onInbox += lambda unseen, unread, recent_unread: self.on_inbox(None, unseen, unread, None, recent_unread, None)
+
+        if self._checkOldEventHook('on_qprimer'):
+            pass
+
+        if self._checkOldEventHook('on_message_error'):
+            self.onMessageError += lambda exception, msg: self.on_message_error(exception, msg)
+
+        if self._checkOldEventHook('on_unknown_type'):
+            self.onUnknownMesssageType += lambda msg: self.on_unknown_type(msg)
 
     @deprecated(deprecated_in='0.6.0', details='Use log.<level> instead')
     def _console(self, msg):
@@ -390,7 +435,7 @@ class Client(object):
         self.req_counter = 1
         self.seq = "0"
         return r
-    
+
     @deprecated(deprecated_in='0.10.2', details='Use setDefaultThread instead')
     def setDefaultRecipient(self, recipient_id, is_user=True):
         self.setDefaultThread(str(recipient_id), thread_type=isUserToThreadType(is_user))
@@ -464,18 +509,8 @@ class Client(object):
     SEND METHODS
     """
 
-    def _send(self, thread_id=None, message=None, thread_type=ThreadType.USER, emoji_size=None, image_id=None, add_user_ids=None, new_title=None):
-        # type: (str, str, ThreadType, EmojiSize, str, list, str) -> list
-        """Send a message with given thread id
-
-        :param thread_id: the user id or thread id that you want to send a message to
-        :param message: a text that you want to send
-        :param thread_type: determines if the recipient_id is for user or thread
-        :param emoji_size: size of the like sticker you want to send
-        :param image_id: id for the image to send, gotten from the UploadURL
-        :param add_user_ids: a list of user ids to add to a chat
-        :return: a list of message ids of the sent message(s)
-        """
+    def _getSendData(self, thread_id=None, thread_type=ThreadType.USER):
+        """Returns the data needed to send a request to `SendURL`"""
 
         if thread_id is None:
             if self.default_thread_id is not None:
@@ -522,36 +557,10 @@ class Client(object):
         elif thread_type == ThreadType.GROUP:
             data["thread_fbid"] = thread_id
 
-        # Set title
-        if new_title:
-            data['action_type'] = 'ma-type:log-message'
-            data['log_message_data[name]'] = new_title
-            data['log_message_type'] = 'log:thread-name'
+        return data
 
-        # Set users to add
-        if add_user_ids:
-            data['action_type'] = 'ma-type:log-message'
-            # It's possible to add multiple users
-            for i, add_user_id in enumerate(add_user_ids):
-                data['log_message_data[added_participants][' + str(i) + ']'] = "fbid:" + str(add_user_id)
-            data['log_message_type'] = 'log:subscribe'
-
-        # Sending a simple message
-        if not add_user_ids and not new_title:
-            data['action_type'] = 'ma-type:user-generated-message'
-            data['body'] = message or ''
-            data['has_attachment'] = image_id is not None
-            data['specific_to_list[0]'] = 'fbid:' + str(thread_id)
-            data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
-
-        # Set image to send
-        if image_id:
-            data['image_ids[0]'] = image_id
-
-        # Set emoji to send
-        if emoji_size:
-            data["sticker_id"] = emoji_size.value
-
+    def _doSendRequest(self, data):
+        """Sends the data to `SendURL`, and returns """
         r = self._post(SendURL, data)
         
         if not r.ok:
@@ -570,7 +579,7 @@ class Client(object):
         message_ids = []
         try:
             message_ids += [action['message_id'] for action in j['payload']['actions'] if 'message_id' in action]
-            message_ids[0]  # Try accessing element
+            message_ids[0] # Try accessing element
         except (KeyError, IndexError) as e:
             log.warning('Error when sending message: No message ids could be found')
             return None
@@ -582,7 +591,14 @@ class Client(object):
 
     @deprecated(deprecated_in='0.10.2', details='Use specific functions (eg. sendMessage()) instead')
     def send(self, recipient_id=None, message=None, is_user=True, like=None, image_id=None, add_user_ids=None):
-        return self._send(thread_id=recipient_id, message=message, thread_type=isUserToThreadType(is_user), emoji_size=LIKES[like], image_id=image_id, add_user_ids=add_user_ids)
+        if add_user_ids:
+            return self.addUsersToChat(user_ids=add_user_ids, thread_id=recipient_id)
+        elif image_id:
+            return self.sendImage(image_id=image_id, message=message, thread_id=recipient_id, thread_type=isUserToThreadType(is_user))
+        elif like:
+            return self.sendEmoji(emoji=None, size=LIKES[like], thread_id=recipient_id, thread_type=isUserToThreadType(is_user))
+        else:
+            return self.sendMessage(message, thread_id=recipient_id, thread_type=isUserToThreadType(is_user))
 
     def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
         # type: (str, str, ThreadType) -> list
@@ -594,23 +610,57 @@ class Client(object):
         :param thread_type: specify whether thread_id is user or group chat
         :return: a list of message ids of the sent message(s)
         """
-        return self._send(thread_id=thread_id, message=message, thread_type=thread_type)
+        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
 
-    def sendEmoji(self, emoji=None, size=EmojiSize.SMALL, thread_id=None, thread_type=ThreadType.USER):
+        data['action_type'] = 'ma-type:user-generated-message'
+        data['body'] = message or ''
+        data['has_attachment'] = False
+        data['specific_to_list[0]'] = 'fbid:' + str(thread_id)
+        data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
+
+        return self._doSendRequest(data)
+
+    def sendEmoji(self, emoji=None, size=EmojiSize.LARGE, thread_id=None, thread_type=ThreadType.USER):
         # type: (str, EmojiSize, str, ThreadType) -> list
         """
         Sends an emoji to given (or default, if not) thread.
         
-        :param emoji: WIP
+        :param emoji: the chosen emoji to send
         :param size: size of emoji to send
         :param thread_id: user/group chat ID
         :param thread_type: specify whether thread_id is user or group chat 
         :return: a list of message ids of the sent message(s)
         """
-        return self._send(thread_id=thread_id, thread_type=thread_type, emoji_size=size)
+        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
+        
+        if emoji:
+            data['action_type'] = 'ma-type:user-generated-message'
+            data['body'] = emoji or ''
+            data['has_attachment'] = False
+            data['specific_to_list[0]'] = 'fbid:' + str(thread_id)
+            data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
+            data['tags[0]'] = 'hot_emoji_size:' + size['name']
+        else:
+            data["sticker_id"] = size['value']
+
+        return self._doSendRequest(data)
+
+    def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER):
+        """Sends an already uploaded image with the id image_id to the thread"""
+        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
+
+        data['action_type'] = 'ma-type:user-generated-message'
+        data['body'] = message or ''
+        data['has_attachment'] = True
+        data['specific_to_list[0]'] = 'fbid:' + str(thread_id)
+        data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
+
+        data['image_ids[0]'] = image_id
+
+        return self._doSendRequest(data)
 
     def sendRemoteImage(self, image_url, message=None, thread_id=None, thread_type=ThreadType.USER,
-                            recipient_id=None, is_user=None, image=None):
+                        recipient_id=None, is_user=None, image=None):
         # type: (str, str, str, ThreadType) -> list
         """
         Sends an image from given URL to given (or default, if not) thread.        
@@ -632,7 +682,7 @@ class Client(object):
         mimetype = guess_type(image_url)[0]
         remote_image = requests.get(image_url).content
         image_id = self._uploadImage({'file': (image_url, remote_image, mimetype)})
-        return self._send(thread_id=thread_id, message=message, thread_type=thread_type, image_id=image_id)
+        return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
 
     # Doesn't upload properly
     def sendLocalImage(self, image_path, message=None, thread_id=None, thread_type=ThreadType.USER,
@@ -658,7 +708,7 @@ class Client(object):
             image_path = image
         mimetype = guess_type(image_path)[0]
         image_id = self._uploadImage({'file': (image_path, open(image_path, 'rb'), mimetype)})
-        return self._send(thread_id=thread_id, message=message, thread_type=thread_type, image_id=image_id)
+        return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
 
     def addUsersToChat(self, user_ids, thread_id=None):
         # type: (list, str) -> list
@@ -669,7 +719,16 @@ class Client(object):
         :param thread_id: group chat ID
         :return: a list of message ids of the sent message(s)
         """
-        return self._send(thread_id=thread_id, thread_type=ThreadType.GROUP, add_user_ids=user_ids)
+        
+        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
+
+        data['action_type'] = 'ma-type:log-message'
+        data['log_message_type'] = 'log:subscribe'
+
+        for i, user_id in enumerate(user_ids):
+            data['log_message_data[added_participants][' + str(i) + ']'] = "fbid:" + str(user_id)
+
+        return self._doSendRequest(data)
 
     def removeUserFromChat(self, user_id, thread_id=None):
         # type: (str, str) -> bool
@@ -715,7 +774,14 @@ class Client(object):
         :param thread_id: group chat ID
         :return: a list of message ids of the sent message(s)
         """
-        return self._send(thread_id=thread_id, thread_type=ThreadType.GROUP, new_title=title)
+
+        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
+
+        data['action_type'] = 'ma-type:log-message'
+        data['log_message_data[name]'] = title
+        data['log_message_type'] = 'log:thread-name'
+
+        return self._doSendRequest(data)
 
     """
     END SEND METHODS    
@@ -1061,7 +1127,7 @@ class Client(object):
                     self.onUnknownMesssageType(msg=m)
 
             except Exception as e:
-                log.debug(str(e))
+                self.onMessageError(exception=e, msg=msg)
 
 
     @deprecated(deprecated_in='0.10.2', details='Use startListening() instead')
@@ -1140,64 +1206,3 @@ class Client(object):
         if len(full_data)==1:
             full_data=full_data[0]
         return full_data
-
-
-
-    def on_message_new(self, mid, author_id, message, metadata, recipient_id, thread_type):
-        """subclass Client and override this method to add custom behavior on event
-
-        This version of on_message recieves recipient_id and thread_type.
-        For backwards compatability, this data is sent directly to the old on_message.
-        """
-        self.on_message(mid, author_id, None, message, metadata)
-
-    def on_message(self, mid, author_id, author_name, message, metadata):
-        """subclass Client and override this method to add custom behavior on event"""
-        self.markAsDelivered(author_id, mid)
-        self.markAsRead(author_id)
-        log.info("%s said: %s" % (author_name, message))
-
-
-    def on_friend_request(self, from_id):
-        """subclass Client and override this method to add custom behavior on event"""
-        log.info("Friend request from %s." % from_id)
-
-
-    def on_typing(self, author_id):
-        """subclass Client and override this method to add custom behavior on event"""
-        pass
-
-
-    def on_read(self, author, reader, time):
-        """subclass Client and override this method to add custom behavior on event"""
-        pass
-
-
-    def on_people_added(self, user_ids, actor_id, thread_id):
-        """subclass Client and override this method to add custom behavior on event"""
-        log.info("User(s) {} was added to {} by {}".format(repr(user_ids), thread_id, actor_id))
-
-
-    def on_person_removed(self, user_id, actor_id, thread_id):
-        """subclass Client and override this method to add custom behavior on event"""
-        log.info("User {} was removed from {} by {}".format(user_id, thread_id, actor_id))
-
-
-    def on_inbox(self, viewer, unseen, unread, other_unseen, other_unread, timestamp):
-        """subclass Client and override this method to add custom behavior on event"""
-        pass
-
-
-    def on_message_error(self, exception, message):
-        """subclass Client and override this method to add custom behavior on event"""
-        log.warning("Exception:\n{}".format(exception))
-
-
-    def on_qprimer(self, timestamp):
-        pass
-
-
-    def on_unknown_type(self, m):
-        """subclass Client and override this method to add custom behavior on event"""
-        log.debug("Unknown type {}".format(m))
-

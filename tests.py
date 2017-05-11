@@ -18,7 +18,14 @@ logging.basicConfig(level=logging.INFO)
 Tests for fbchat
 ~~~~~~~~~~~~~~~~
 
-To use these tests, fill in test_data.json or type this information manually in the terminal prompts.
+To use these tests, make a json file called test_data.json, put this example in it, and fill in the gaps:
+{
+    "email": "example@email.com",
+    "password": "example_password",
+    "group_thread_id": 0,
+    "user_thread_id": 0
+}
+or type this information manually in the terminal prompts.
 
 - email: Your (or a test user's) email / phone number
 - password: Your (or a test user's) password
