@@ -24,6 +24,7 @@ from .models import *
 from .stickers import *
 import time
 import sys
+import traceback
 
 # Python 3 does not have raw_input, whereas Python 2 has and it's more secure
 try:
@@ -653,7 +654,8 @@ class Client(object):
             for participant in j['payload']['participants']:
                 participants[participant["fbid"]] = participant["name"]
         except Exception as e:
-            log.warning(str(j))
+            traceback.print_exc()
+#           log.warning(str(j))
 
         # Prevent duplicates in self.threads
         threadIDs = [getattr(x, "thread_id") for x in self.threads]
@@ -1026,7 +1028,8 @@ class Client(object):
 
     def on_message_error(self, exception, message):
         """subclass Client and override this method to add custom behavior on event"""
-        log.warning("Exception:\n{}".format(exception))
+        traceback.print_exc()
+#        log.warning("Exception:\n{}".format(exception))
 
 
     def on_qprimer(self, timestamp):
