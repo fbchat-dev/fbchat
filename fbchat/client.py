@@ -871,7 +871,7 @@ class Client(object):
             for participant in j['payload']['participants']:
                 participants[participant["fbid"]] = participant["name"]
         except Exception as e:
-            log.warning(str(j))
+            log.exception(e)
 
         # Prevent duplicates in self.threads
         threadIDs = [getattr(x, "thread_id") for x in self.threads]
@@ -1195,7 +1195,7 @@ class Client(object):
             if type(_fbid) == int:
                 return _fbid
 
-            if type(_fbid) in [str, unicode] and 'fbid:' in _fbid:
+            if type(_fbid) in [str, bytes] and 'fbid:' in _fbid:
                 return int(_fbid[5:])
 
         user_ids = [fbidStrip(uid) for uid in user_ids]
@@ -1208,3 +1208,4 @@ class Client(object):
         if len(full_data)==1:
             full_data=full_data[0]
         return full_data
+
