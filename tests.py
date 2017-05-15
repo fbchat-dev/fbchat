@@ -1,27 +1,36 @@
 #!/usr/bin/env python
 
+import time
+import json
 import logging
 import fbchat
+from fbchat.models import *
 import getpass
 import unittest
 import sys
 from os import path
 
-# Disable logging
-logging.basicConfig(level=100)
-fbchat.log.setLevel(100)
+#Setup logging
+logging.basicConfig(level=logging.INFO)
 
 """
 
 Tests for fbchat
 ~~~~~~~~~~~~~~~~
 
-To use these tests, put:
-- email
-- password
-- a group_uid
-- a user_uid (the user will be kicked from the group and then added again)
-(seperated these by a newline) in a file called `tests.data`, or type them manually in the terminal prompts
+To use these tests, make a json file called test_data.json, put this example in it, and fill in the gaps:
+{
+    "email": "example@email.com",
+    "password": "example_password",
+    "group_thread_id": 0,
+    "user_thread_id": 0
+}
+or type this information manually in the terminal prompts.
+
+- email: Your (or a test user's) email / phone number
+- password: Your (or a test user's) password
+- group_thread_id: A test group that will be used to test group functionality
+- user_thread_id: A person that will be used to test kick/add functionality (This user should be in the group)
 
 Please remember to test both python v. 2.7 and python v. 3.6!
 
@@ -31,30 +40,36 @@ If you only want to execute specific tests, pass the function names in the comma
 """
 
 class TestFbchat(unittest.TestCase):
-    def test_login_functions(self):
-        self.assertTrue(client.is_logged_in())
-        
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        time.sleep(3)
+
+    def test_loginFunctions(self):
+        self.assertTrue(client.isLoggedIn())
+
         client.logout()
-        
-        self.assertFalse(client.is_logged_in())
-        
+
+        self.assertFalse(client.isLoggedIn())
+
         with self.assertRaises(Exception):
             client.login("not@email.com", "not_password", max_retries=1)
-        
+
         client.login(email, password)
-        
-        self.assertTrue(client.is_logged_in())
+
+        self.assertTrue(client.isLoggedIn())
 
     def test_sessions(self):
         global client
         session_cookies = client.getSession()
         client = fbchat.Client(email, password, session_cookies=session_cookies)
-        
-        self.assertTrue(client.is_logged_in())
 
-    def test_setDefaultRecipient(self):
-        client.setDefaultRecipient(client.uid, is_user=True)
-        self.assertTrue(client.send(message="test_default_recipient"))
+        self.assertTrue(client.isLoggedIn())
+
+    def test_setDefaultThreadId(self):
+        client.setDefaultThreadId(client.uid, ThreadType.USER)
+        self.assertTrue(client.sendMessage("test_default_recipient"))
 
     def test_getAllUsers(self):
         users = client.getAllUsers()
@@ -63,9 +78,9 @@ class TestFbchat(unittest.TestCase):
     def test_getUsers(self):
         users = client.getUsers("Mark Zuckerberg")
         self.assertGreater(len(users), 0)
-        
+
         u = users[0]
-        
+
         # Test if values are set correctly
         self.assertIsInstance(u.uid, int)
         self.assertEquals(u.type, 'user')
@@ -73,73 +88,80 @@ class TestFbchat(unittest.TestCase):
         self.assertEquals(u.url[:4], 'http')
         self.assertEquals(u.name, 'Mark Zuckerberg')
         self.assertGreater(u.score, 0)
-    
-    def test_send_likes(self):
-        self.assertTrue(client.send(client.uid, like='s'))
-        self.assertTrue(client.send(client.uid, like='m'))
-        self.assertTrue(client.send(client.uid, like='l'))
-        self.assertTrue(client.send(group_uid, like='s', is_user=False))
-        self.assertTrue(client.send(group_uid, like='m', is_user=False))
-        self.assertTrue(client.send(group_uid, like='l', is_user=False))
-    
-    def test_send(self):
-        self.assertTrue(client.send(client.uid, message='test_send_user'))
-        self.assertTrue(client.send(group_uid, message='test_send_group', is_user=False))
-    
-    def test_send_images(self):
+
+    def test_sendEmoji(self):
+        self.assertTrue(client.sendEmoji(EmojiSize.SMALL, user_uid, ThreadType.USER))
+        self.assertTrue(client.sendEmoji(EmojiSize.MEDIUM, user_uid, ThreadType.USER))
+        self.assertTrue(client.sendEmoji(EmojiSize.LARGE, user_uid, ThreadType.USER))
+        self.assertTrue(client.sendEmoji(EmojiSize.SMALL, group_uid, ThreadType.GROUP))
+        self.assertTrue(client.sendEmoji(EmojiSize.MEDIUM, group_uid, ThreadType.GROUP))
+        self.assertTrue(client.sendEmoji(EmojiSize.LARGE, group_uid, ThreadType.GROUP))
+
+    def test_sendMessage(self):
+        self.assertTrue(client.sendMessage('test_send_user', user_uid, ThreadType.USER))
+        self.assertTrue(client.sendMessage('test_send_group', group_uid, ThreadType.GROUP))
+
+    def test_sendImages(self):
         image_url = 'https://cdn4.iconfinder.com/data/icons/ionicons/512/icon-image-128.png'
         image_local_url = path.join(path.dirname(__file__), 'test_image.png')
-        self.assertTrue(client.sendRemoteImage(client.uid, message='test_send_user_images_remote', image=image_url))
-        self.assertTrue(client.sendLocalImage(client.uid, message='test_send_user_images_local', image=image_local_url))
-        self.assertTrue(client.sendRemoteImage(group_uid, message='test_send_group_images_remote', is_user=False, image=image_url))
-        self.assertTrue(client.sendLocalImage(group_uid, message='test_send_group_images_local', is_user=False, image=image_local_url))
+        self.assertTrue(client.sendRemoteImage(image_url, 'test_send_user_images_remote', user_uid, ThreadType.USER))
+        self.assertTrue(client.sendRemoteImage(image_url, 'test_send_group_images_remote', group_uid, ThreadType.GROUP))
+        # Idk why but doesnt work, payload is null
+        self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local', user_uid, ThreadType.USER))
+        self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local', group_uid, ThreadType.GROUP))
     
     def test_getThreadInfo(self):
-        info = client.getThreadInfo(client.uid, last_n=1)
-        self.assertEquals(info[0].author, 'fbid:' + str(client.uid))
-        client.send(group_uid, message='test_getThreadInfo', is_user=False)
-        info = client.getThreadInfo(group_uid, last_n=1, is_user=False)
-        self.assertEquals(info[0].author, 'fbid:' + str(client.uid))
-        self.assertEquals(info[0].body, 'test_getThreadInfo')
+        client.sendMessage('test_user_getThreadInfo', user_uid, ThreadType.USER)
+        time.sleep(3)
+        info = client.getThreadInfo(20, user_uid, ThreadType.USER)
+        self.assertEquals(info[0].author, 'fbid:' + client.uid)
+        self.assertEquals(info[0].body, 'test_user_getThreadInfo')
+
+        client.sendMessage('test_group_getThreadInfo', group_uid, ThreadType.GROUP)
+        time.sleep(3)
+        info = client.getThreadInfo(20, group_uid, ThreadType.GROUP)
+        self.assertEquals(info[0].author, 'fbid:' + client.uid)
+        self.assertEquals(info[0].body, 'test_group_getThreadInfo')
 
     def test_markAs(self):
         # To be implemented (requires some form of manual watching)
         pass
 
     def test_listen(self):
-        client.do_one_listen()
+        client.doOneListen()
 
     def test_getUserInfo(self):
         info = client.getUserInfo(4)
         self.assertEquals(info['name'], 'Mark Zuckerberg')
-    
-    def test_remove_add_from_chat(self):
-        self.assertTrue(client.remove_user_from_chat(group_uid, user_uid))
-        self.assertTrue(client.add_users_to_chat(group_uid, user_uid))
-    
+
+    def test_removeAddFromChat(self):
+        self.assertTrue(client.removeUserFromChat(user_uid, group_uid))
+        self.assertTrue(client.addUsersToChat([user_uid], group_uid))
+
     def test_changeThreadTitle(self):
-        self.assertTrue(client.changeThreadTitle(group_uid, 'test_changeThreadTitle'))
+        self.assertTrue(client.changeThreadTitle('test_changeThreadTitle', group_uid))
 
 
 def start_test(param_client, param_group_uid, param_user_uid, tests=[]):
     global client
     global group_uid
     global user_uid
-    
+
     client = param_client
     group_uid = param_group_uid
     user_uid = param_user_uid
-    
+
     if len(tests) == 0:
         suite = unittest.TestLoader().loadTestsFromTestCase(TestFbchat)
     else:
         suite = unittest.TestSuite(map(TestFbchat, tests))
-    print ('Starting test(s)')
+    print('Starting test(s)')
     unittest.TextTestRunner(verbosity=2).run(suite)
 
 
+client = None
 
-if __name__ == '__main__':
+if __name__ == 'tests':
     # Python 3 does not use raw_input, whereas Python 2 does
     try:
         input = raw_input
@@ -147,20 +169,19 @@ if __name__ == '__main__':
         pass
 
     try:
-        with open(path.join(path.dirname(__file__), 'tests.data'), 'r') as f:
-            content = f.readlines()
-        content = [x.strip() for x in content if len(x.strip()) != 0]
-        email = content[0]
-        password = content[1]
-        group_uid = content[2]
-        user_uid = content[3]
+        with open(path.join(path.dirname(__file__), 'test_data.json'), 'r') as f:
+            json = json.load(f)
+        email = json['email']
+        password = json['password']
+        user_uid = json['user_thread_id']
+        group_uid = json['group_thread_id']
     except (IOError, IndexError) as e:
         email = input('Email: ')
         password = getpass.getpass()
-        group_uid = input('Please enter a group uid (To test group functionality): ')
-        user_uid = input('Please enter a user uid (To test kicking/adding functionality): ')
+        group_uid = input('Please enter a group thread id (To test group functionality): ')
+        user_uid = input('Please enter a user thread id (To test kicking/adding functionality): ')
 
-    print ('Logging in')
+    print('Logging in...')
     client = fbchat.Client(email, password)
     
     # Warning! Taking user input directly like this could be dangerous! Use only for testing purposes!
