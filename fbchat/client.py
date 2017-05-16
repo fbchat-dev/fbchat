@@ -264,8 +264,8 @@ class Client(object):
         self.payloadDefault = {}
         self.client_id = hex(int(random()*2147483648))[2:]
         self.start_time = now()
-        self.uid = int(self._session.cookies['c_user'])
-        self.user_channel = "p_" + str(self.uid)
+        self.uid = str(self._session.cookies['c_user'])
+        self.user_channel = "p_" + self.uid
         self.ttstamp = ''
 
         r = self._get(BaseURL)
@@ -457,6 +457,22 @@ class Client(object):
         self.default_thread_id = None
         self.default_thread_type = None
 
+    def _setThread(self, given_thread_id, given_thread_type):
+        # type: (str, ThreadType) -> (str, ThreadType)
+        """
+        Checks if thread ID is given, checks if default is set and returns correct values
+        
+        :raises ValueError: if thread ID is not given and there is no default
+        :return: tuple of thread ID and thread type
+        """
+        if given_thread_id is None:
+            if self.default_thread_id is not None:
+                return self.default_thread_id, self.default_thread_type
+            else:
+                raise ValueError('Thread ID is not set.')
+        else:
+            return given_thread_id, given_thread_type
+
     def getAllUsers(self):
         """ Gets all users from chat with info included """
 
@@ -513,14 +529,6 @@ class Client(object):
 
     def _getSendData(self, thread_id=None, thread_type=ThreadType.USER):
         """Returns the data needed to send a request to `SendURL`"""
-
-        if thread_id is None:
-            if self.default_thread_id is not None:
-                thread_id = self.default_thread_id
-                thread_type = self.default_thread_type
-            else:
-                raise ValueError('Thread ID is not set.')
-
         messageAndOTID = generateOfflineThreadingID()
         timestamp = now()
         date = datetime.now()
@@ -545,7 +553,7 @@ class Client(object):
             'html_body' : False,
             'ui_push_phase' : 'V3',
             'status' : '0',
-            'offline_threading_id':messageAndOTID,
+            'offline_threading_id': messageAndOTID,
             'message_id' : messageAndOTID,
             'threading_id': generateMessageID(self.client_id),
             'ephemeral_ttl_mode:': '0',
@@ -614,44 +622,47 @@ class Client(object):
         :param thread_type: specify whether thread_id is user or group chat
         :return: a list of message ids of the sent message(s)
         """
-        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        thread_id, thread_type = self._setThread(thread_id, thread_type)
+        data = self._getSendData(thread_id, thread_type)
 
         data['action_type'] = 'ma-type:user-generated-message'
         data['body'] = message or ''
         data['has_attachment'] = False
-        data['specific_to_list[0]'] = 'fbid:' + str(thread_id)
-        data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
+        data['specific_to_list[0]'] = 'fbid:' + thread_id
+        data['specific_to_list[1]'] = 'fbid:' + self.uid
 
         return self._doSendRequest(data)
 
     def sendEmoji(self, emoji=None, size=EmojiSize.SMALL, thread_id=None, thread_type=ThreadType.USER):
         # type: (str, EmojiSize, str, ThreadType) -> list
         """
-        Sends an emoji to given (or default, if not) thread.
+        Sends an emoji. If emoji and size are not specified a small like is sent. 
         
-        :param emoji: the chosen emoji to send
+        :param emoji: the chosen emoji to send. If not specified, default thread emoji is sent
         :param size: size of emoji to send
         :param thread_id: user/group chat ID
         :param thread_type: specify whether thread_id is user or group chat 
         :return: a list of message ids of the sent message(s)
         """
-        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
-        
+        thread_id, thread_type = self._setThread(thread_id, thread_type)
+        data = self._getSendData(thread_id, thread_type)
+        data['action_type'] = 'ma-type:user-generated-message'
+        data['has_attachment'] = False
+        data['specific_to_list[0]'] = 'fbid:' + thread_id
+        data['specific_to_list[1]'] = 'fbid:' + self.uid
+
         if emoji:
-            data['action_type'] = 'ma-type:user-generated-message'
-            data['body'] = emoji or ''
-            data['has_attachment'] = False
-            data['specific_to_list[0]'] = 'fbid:' + str(thread_id)
-            data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
-            data['tags[0]'] = 'hot_emoji_size:' + size['name']
+            data['body'] = emoji
+            data['tags[0]'] = 'hot_emoji_size:' + size.name.lower()
         else:
-            data["sticker_id"] = size['value']
+            data["sticker_id"] = size.value
 
         return self._doSendRequest(data)
 
     def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER):
         """Sends an already uploaded image with the id image_id to the thread"""
-        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
+        thread_id, thread_type = self._setThread(thread_id, thread_type)
+        data = self._getSendData(thread_id, thread_type)
 
         data['action_type'] = 'ma-type:user-generated-message'
         data['body'] = message or ''
@@ -723,8 +734,8 @@ class Client(object):
         :param thread_id: group chat ID
         :return: a list of message ids of the sent message(s)
         """
-        
-        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
+        thread_id, thread_type = self._setThread(thread_id, None)
+        data = self._getSendData(thread_id, ThreadType.GROUP)
 
         data['action_type'] = 'ma-type:log-message'
         data['log_message_type'] = 'log:subscribe'
@@ -738,6 +749,7 @@ class Client(object):
         # type: (str, str) -> bool
         """
         Adds users to given (or default, if not) thread.
+        
         :param user_id: user ID to remove
         :param thread_id: group chat ID
         :return: true if user was removed
@@ -774,12 +786,13 @@ class Client(object):
     def changeGroupTitle(self, title, thread_id=None):
         """
         Change title of a group conversation.
+        
         :param title: new group chat title
         :param thread_id: group chat ID
         :return: a list of message ids of the sent message(s)
         """
-
-        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
+        thread_id, thread_type = self._setThread(thread_id, None)
+        data = self._getSendData(thread_id, ThreadType.GROUP)
 
         data['action_type'] = 'ma-type:log-message'
         data['log_message_data[name]'] = title
@@ -787,12 +800,16 @@ class Client(object):
 
         return self._doSendRequest(data)
 
-    def changeThreadColor(self, new_color, thread_id=None, thread_type=None):
+    def changeThreadColor(self, new_color, thread_id=None):
         # type: (ChatColor, str, ThreadType) -> bool
-        if thread_id is None and self.def_thread_type == ThreadType.GROUP:
-            thread_id = self.def_thread_id
-        elif thread_id is None:
-            raise ValueError('Default Thread ID is not set.')
+        """
+        Changes thread color to specified color. For more info about color names - see wiki.
+        
+        :param new_color: new color name
+        :param thread_id: user/group chat ID
+        :return: True if color was changed
+        """
+        thread_id = self._setThread(thread_id, None)
 
         data = {
             "color_choice": new_color.value,
@@ -830,11 +847,7 @@ class Client(object):
         :return: a list of messages
         """
 
-        if thread_id is None and self.is_def_thread_set:
-            thread_id = self.def_thread_id
-            thread_type = self.def_thread_type
-        elif thread_id is None and not self.is_def_thread_set:
-            raise ValueError('Default Thread ID is not set.')
+        thread_id, thread_type = self._setThread(thread_id, thread_type)
 
         assert last_n > 0, 'length must be positive integer, got %d' % last_n
 

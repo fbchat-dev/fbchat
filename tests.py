@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO)
 Tests for fbchat
 ~~~~~~~~~~~~~~~~
 
-To use these tests fill in test_data.json or type this information manually in the terminal prompts.
+To use these tests copy test_data.json to my_test_data.json or type this information manually in the terminal prompts.
 
 - email: Your (or a test user's) email / phone number
 - password: Your (or a test user's) password
@@ -61,8 +61,12 @@ class TestFbchat(unittest.TestCase):
         self.assertTrue(client.isLoggedIn())
 
     def test_setDefaultThreadId(self):
-        client.setDefaultThreadId(client.uid, ThreadType.USER)
+        client.setDefaultThread(client.uid, ThreadType.USER)
         self.assertTrue(client.sendMessage("test_default_recipient"))
+
+    def test_resetDefaultThreadId(self):
+        client.resetDefaultThread()
+        self.assertRaises(ValueError, client.sendMessage("should_not_send"))
 
     def test_getAllUsers(self):
         users = client.getAllUsers()
@@ -83,12 +87,13 @@ class TestFbchat(unittest.TestCase):
         self.assertGreater(u.score, 0)
 
     def test_sendEmoji(self):
-        self.assertTrue(client.sendEmoji(EmojiSize.SMALL, user_uid, ThreadType.USER))
-        self.assertTrue(client.sendEmoji(EmojiSize.MEDIUM, user_uid, ThreadType.USER))
-        self.assertTrue(client.sendEmoji(EmojiSize.LARGE, user_uid, ThreadType.USER))
-        self.assertTrue(client.sendEmoji(EmojiSize.SMALL, group_uid, ThreadType.GROUP))
-        self.assertTrue(client.sendEmoji(EmojiSize.MEDIUM, group_uid, ThreadType.GROUP))
-        self.assertTrue(client.sendEmoji(EmojiSize.LARGE, group_uid, ThreadType.GROUP))
+        self.assertTrue(client.sendEmoji(size=EmojiSize.SMALL, thread_id=user_uid, thread_type=ThreadType.USER))
+        self.assertTrue(client.sendEmoji(size=EmojiSize.MEDIUM, thread_id=user_uid, thread_type=ThreadType.USER))
+        self.assertTrue(client.sendEmoji("😆", EmojiSize.LARGE, user_uid, ThreadType.USER))
+
+        self.assertTrue(client.sendEmoji(size=EmojiSize.SMALL, thread_id=group_uid, thread_type=ThreadType.GROUP))
+        self.assertTrue(client.sendEmoji(size=EmojiSize.MEDIUM, thread_id=group_uid, thread_type=ThreadType.GROUP))
+        self.assertTrue(client.sendEmoji("😆", EmojiSize.LARGE, group_uid, ThreadType.GROUP))
 
     def test_sendMessage(self):
         self.assertTrue(client.sendMessage('test_send_user', user_uid, ThreadType.USER))
@@ -135,22 +140,22 @@ class TestFbchat(unittest.TestCase):
         self.assertTrue(client.changeThreadTitle('test_changeThreadTitle', group_uid))
 
     def test_changeThreadColor(self):
-        self.assertTrue(client.changeThreadColor(ChatColor.BRILLIANT_ROSE, group_uid, ThreadType.GROUP))
+        self.assertTrue(client.changeThreadColor(ChatColor.BRILLIANT_ROSE, group_uid))
         client.sendMessage(ChatColor.BRILLIANT_ROSE.name, group_uid, ThreadType.GROUP)
 
         time.sleep(1)
 
-        self.assertTrue(client.changeThreadColor(ChatColor.MESSENGER_BLUE, group_uid, ThreadType.GROUP))
+        self.assertTrue(client.changeThreadColor(ChatColor.MESSENGER_BLUE, group_uid))
         client.sendMessage(ChatColor.MESSENGER_BLUE.name, group_uid, ThreadType.GROUP)
 
         time.sleep(2)
 
-        self.assertTrue(client.changeThreadColor(ChatColor.BRILLIANT_ROSE, user_uid, ThreadType.USER))
+        self.assertTrue(client.changeThreadColor(ChatColor.BRILLIANT_ROSE, user_uid))
         client.sendMessage(ChatColor.BRILLIANT_ROSE.name, user_uid, ThreadType.USER)
 
         time.sleep(1)
 
-        self.assertTrue(client.changeThreadColor(ChatColor.MESSENGER_BLUE, user_uid, ThreadType.USER))
+        self.assertTrue(client.changeThreadColor(ChatColor.MESSENGER_BLUE, user_uid))
         client.sendMessage(ChatColor.MESSENGER_BLUE.name, user_uid, ThreadType.USER)
 
 
@@ -181,7 +186,7 @@ if __name__ == 'tests':
         pass
 
     try:
-        with open(path.join(path.dirname(__file__), 'test_data.json'), 'r') as f:
+        with open(path.join(path.dirname(__file__), 'my_test_data.json'), 'r') as f:
             json = json.load(f)
         email = json['email']
         password = json['password']

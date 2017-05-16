@@ -25,5 +25,5 @@ develop-eggs
 docs/_build/
 
 # Data for tests
-test_data.json
+my_test_data.json
 tests.data
