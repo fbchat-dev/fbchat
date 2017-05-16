@@ -18,14 +18,7 @@ logging.basicConfig(level=logging.INFO)
 Tests for fbchat
 ~~~~~~~~~~~~~~~~
 
-To use these tests, make a json file called test_data.json, put this example in it, and fill in the gaps:
-{
-    "email": "example@email.com",
-    "password": "example_password",
-    "group_thread_id": 0,
-    "user_thread_id": 0
-}
-or type this information manually in the terminal prompts.
+To use these tests fill in test_data.json or type this information manually in the terminal prompts.
 
 - email: Your (or a test user's) email / phone number
 - password: Your (or a test user's) password
@@ -83,10 +76,10 @@ class TestFbchat(unittest.TestCase):
 
         # Test if values are set correctly
         self.assertIsInstance(u.uid, int)
-        self.assertEquals(u.type, 'user')
-        self.assertEquals(u.photo[:4], 'http')
-        self.assertEquals(u.url[:4], 'http')
-        self.assertEquals(u.name, 'Mark Zuckerberg')
+        self.assertEqual(u.type, 'user')
+        self.assertEqual(u.photo[:4], 'http')
+        self.assertEqual(u.url[:4], 'http')
+        self.assertEqual(u.name, 'Mark Zuckerberg')
         self.assertGreater(u.score, 0)
 
     def test_sendEmoji(self):
@@ -109,13 +102,13 @@ class TestFbchat(unittest.TestCase):
         # Idk why but doesnt work, payload is null
         self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local', user_uid, ThreadType.USER))
         self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local', group_uid, ThreadType.GROUP))
-    
+
     def test_getThreadInfo(self):
         client.sendMessage('test_user_getThreadInfo', user_uid, ThreadType.USER)
         time.sleep(3)
         info = client.getThreadInfo(20, user_uid, ThreadType.USER)
-        self.assertEquals(info[0].author, 'fbid:' + client.uid)
-        self.assertEquals(info[0].body, 'test_user_getThreadInfo')
+        self.assertEqual(info[0].author, 'fbid:' + client.uid)
+        self.assertEqual(info[0].body, 'test_user_getThreadInfo')
 
         client.sendMessage('test_group_getThreadInfo', group_uid, ThreadType.GROUP)
         time.sleep(3)
@@ -140,6 +133,25 @@ class TestFbchat(unittest.TestCase):
 
     def test_changeThreadTitle(self):
         self.assertTrue(client.changeThreadTitle('test_changeThreadTitle', group_uid))
+
+    def test_changeThreadColor(self):
+        self.assertTrue(client.changeThreadColor(ChatColor.BRILLIANT_ROSE, group_uid, ThreadType.GROUP))
+        client.sendMessage(ChatColor.BRILLIANT_ROSE.name, group_uid, ThreadType.GROUP)
+
+        time.sleep(1)
+
+        self.assertTrue(client.changeThreadColor(ChatColor.MESSENGER_BLUE, group_uid, ThreadType.GROUP))
+        client.sendMessage(ChatColor.MESSENGER_BLUE.name, group_uid, ThreadType.GROUP)
+
+        time.sleep(2)
+
+        self.assertTrue(client.changeThreadColor(ChatColor.BRILLIANT_ROSE, user_uid, ThreadType.USER))
+        client.sendMessage(ChatColor.BRILLIANT_ROSE.name, user_uid, ThreadType.USER)
+
+        time.sleep(1)
+
+        self.assertTrue(client.changeThreadColor(ChatColor.MESSENGER_BLUE, user_uid, ThreadType.USER))
+        client.sendMessage(ChatColor.MESSENGER_BLUE.name, user_uid, ThreadType.USER)
 
 
 def start_test(param_client, param_group_uid, param_user_uid, tests=[]):

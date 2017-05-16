@@ -52,6 +52,7 @@ LogoutURL    ="https://www.facebook.com/logout.php"
 AllUsersURL  ="https://www.facebook.com/chat/user_info_all"
 SaveDeviceURL="https://m.facebook.com/login/save-device/cancel/"
 CheckpointURL="https://m.facebook.com/login/checkpoint/"
+ChatColorURL="https://www.facebook.com/messaging/save_thread_color/?source=thread_settings&dpr=1"
 facebookEncoding = 'UTF-8'
 
 # Log settings
@@ -505,6 +506,7 @@ class Client(object):
                 users.append(User(entry))
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
 
+
     """
     SEND METHODS
     """
@@ -612,7 +614,7 @@ class Client(object):
         :param thread_type: specify whether thread_id is user or group chat
         :return: a list of message ids of the sent message(s)
         """
-        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
+        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
 
         data['action_type'] = 'ma-type:user-generated-message'
         data['body'] = message or ''
@@ -784,6 +786,22 @@ class Client(object):
         data['log_message_type'] = 'log:thread-name'
 
         return self._doSendRequest(data)
+
+    def changeThreadColor(self, new_color, thread_id=None, thread_type=None):
+        # type: (ChatColor, str, ThreadType) -> bool
+        if thread_id is None and self.def_thread_type == ThreadType.GROUP:
+            thread_id = self.def_thread_id
+        elif thread_id is None:
+            raise ValueError('Default Thread ID is not set.')
+
+        data = {
+            "color_choice": new_color.value,
+            "thread_or_other_fbid": thread_id
+        }
+
+        r = self._post(ChatColorURL, data)
+
+        return r.ok
 
     """
     END SEND METHODS    
@@ -1129,7 +1147,7 @@ class Client(object):
                     self.onUnknownMesssageType(msg=m)
 
             except Exception as e:
-                self.onMessageError(exception=e, msg=msg)
+                self.onMessageError(exception=e, msg=m)
 
 
     @deprecated(deprecated_in='0.10.2', details='Use startListening() instead')
