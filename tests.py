@@ -158,6 +158,10 @@ class TestFbchat(unittest.TestCase):
         self.assertTrue(client.changeThreadColor(ChatColor.MESSENGER_BLUE, user_uid))
         client.sendMessage(ChatColor.MESSENGER_BLUE.name, user_uid, ThreadType.USER)
 
+    def test_reactToMessage(self):
+        mid = client.sendMessage("react_to_message", user_uid, ThreadType.USER)[0]
+        self.assertTrue(client.reactToMessage(mid, fbchat.MessageReaction.LOVE))
+
 
 def start_test(param_client, param_group_uid, param_user_uid, tests=[]):
     global client

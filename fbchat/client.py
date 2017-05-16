@@ -11,6 +11,7 @@
     :license: BSD, see LICENSE for more details.
 """
 
+from urllib import parse
 import requests
 import logging
 from uuid import uuid1
@@ -30,30 +31,7 @@ try:
 except NameError:
     pass
 
-# URLs
-LoginURL     ="https://m.facebook.com/login.php?login_attempt=1"
-SearchURL    ="https://www.facebook.com/ajax/typeahead/search.php"
-SendURL      ="https://www.facebook.com/messaging/send/"
-ThreadsURL   ="https://www.facebook.com/ajax/mercury/threadlist_info.php"
-ThreadSyncURL="https://www.facebook.com/ajax/mercury/thread_sync.php"
-MessagesURL  ="https://www.facebook.com/ajax/mercury/thread_info.php"
-ReadStatusURL="https://www.facebook.com/ajax/mercury/change_read_status.php"
-DeliveredURL ="https://www.facebook.com/ajax/mercury/delivery_receipts.php"
-MarkSeenURL  ="https://www.facebook.com/ajax/mercury/mark_seen.php"
-BaseURL      ="https://www.facebook.com"
-MobileURL    ="https://m.facebook.com/"
-StickyURL    ="https://0-edge-chat.facebook.com/pull"
-PingURL      ="https://0-channel-proxy-06-ash2.facebook.com/active_ping"
-UploadURL    ="https://upload.facebook.com/ajax/mercury/upload.php"
-UserInfoURL  ="https://www.facebook.com/chat/user_info/"
-ConnectURL   ="https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
-RemoveUserURL="https://www.facebook.com/chat/remove_participants/"
-LogoutURL    ="https://www.facebook.com/logout.php"
-AllUsersURL  ="https://www.facebook.com/chat/user_info_all"
-SaveDeviceURL="https://m.facebook.com/login/save-device/cancel/"
-CheckpointURL="https://m.facebook.com/login/checkpoint/"
-ChatColorURL="https://www.facebook.com/messaging/save_thread_color/?source=thread_settings&dpr=1"
-facebookEncoding = 'UTF-8'
+
 
 # Log settings
 log = logging.getLogger("client")
@@ -103,8 +81,8 @@ class Client(object):
 
         self._header = {
             'Content-Type' : 'application/x-www-form-urlencoded',
-            'Referer' : BaseURL,
-            'Origin' : BaseURL,
+            'Referer' : ReqUrl.BASE,
+            'Origin' : ReqUrl.BASE,
             'User-Agent' : user_agent,
             'Connection' : 'keep-alive',
         }
@@ -268,7 +246,7 @@ class Client(object):
         self.user_channel = "p_" + self.uid
         self.ttstamp = ''
 
-        r = self._get(BaseURL)
+        r = self._get(ReqUrl.BASE)
         soup = bs(r.text, "lxml")
         log.debug(r.text)
         log.debug(r.url)
@@ -304,13 +282,13 @@ class Client(object):
         if not (self.email and self.password):
             raise Exception("Email and password not found.")
 
-        soup = bs(self._get(MobileURL).text, "lxml")
+        soup = bs(self._get(ReqUrl.MOBILE).text, "lxml")
         data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
         data['email'] = self.email
         data['pass'] = self.password
         data['login'] = 'Log In'
 
-        r = self._cleanPost(LoginURL, data)
+        r = self._cleanPost(ReqUrl.LOGIN, data)
 
         # Usually, 'Checkpoint' will refer to 2FA
         if 'checkpoint' in r.url and 'Enter Security Code to Continue' in r.text:
@@ -318,7 +296,7 @@ class Client(object):
 
         # Sometimes Facebook tries to show the user a "Save Device" dialog
         if 'save-device' in r.url:
-            r = self._cleanGet(SaveDeviceURL)
+            r = self._cleanGet(ReqUrl.SAVE_DEVICE)
 
         if 'home' in r.url:
             self._postLogin()
@@ -338,7 +316,7 @@ class Client(object):
         data['codes_submitted'] = 0
         log.info('Submitting 2FA code.')
 
-        r = self._cleanPost(CheckpointURL, data)
+        r = self._cleanPost(ReqUrl.CHECKPOINT, data)
 
         if 'home' in r.url:
             return r
@@ -350,14 +328,14 @@ class Client(object):
         data['name_action_selected'] = 'save_device'
         data['submit[Continue]'] = 'Continue'
         log.info('Saving browser.')  # At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
-        r = self._cleanPost(CheckpointURL, data)
+        r = self._cleanPost(ReqUrl.CHECKPOINT, data)
 
         if 'home' in r.url:
             return r
 
         del(data['name_action_selected'])
         log.info('Starting Facebook checkup flow.')  # At this stage, we have dtsg, nh, submit[Continue]
-        r = self._cleanPost(CheckpointURL, data)
+        r = self._cleanPost(ReqUrl.CHECKPOINT, data)
 
         if 'home' in r.url:
             return r
@@ -365,7 +343,7 @@ class Client(object):
         del(data['submit[Continue]'])
         data['submit[This was me]'] = 'This Was Me'
         log.info('Verifying login attempt.')  # At this stage, we have dtsg, nh, submit[This was me]
-        r = self._cleanPost(CheckpointURL, data)
+        r = self._cleanPost(ReqUrl.CHECKPOINT, data)
 
         if 'home' in r.url:
             return r
@@ -374,12 +352,12 @@ class Client(object):
         data['submit[Continue]'] = 'Continue'
         data['name_action_selected'] = 'save_device'
         log.info('Saving device again.')  # At this stage, we have dtsg, nh, submit[Continue], name_action_selected
-        r = self._cleanPost(CheckpointURL, data)
+        r = self._cleanPost(ReqUrl.CHECKPOINT, data)
         return r
 
     def isLoggedIn(self):
         # Send a request to the login url, to see if we're directed to the home page.
-        r = self._cleanGet(LoginURL)
+        r = self._cleanGet(ReqUrl.LOGIN)
         return 'home' in r.url
 
     def getSession(self):
@@ -429,7 +407,7 @@ class Client(object):
         }
 
         payload=self._generatePayload(data)
-        r = self._session.get(LogoutURL, headers=self._header, params=payload, timeout=timeout)
+        r = self._session.get(ReqUrl.LOGOUT, headers=self._header, params=payload, timeout=timeout)
         # reset value
         self.payloadDefault={}
         self._session = requests.session()
@@ -479,7 +457,7 @@ class Client(object):
         data = {
             'viewer': self.uid,
         }
-        r = self._post(AllUsersURL, query=data)
+        r = self._post(ReqUrl.ALL_USERS, query=data)
         if not r.ok or len(r.text) == 0:
             return None
         j = get_json(r.text)
@@ -513,7 +491,7 @@ class Client(object):
             'request_id' : str(uuid1()),
         }
 
-        r = self._get(SearchURL, payload)
+        r = self._get(ReqUrl.SEARCH, payload)
         self.j = j = get_json(r.text)
 
         users = []
@@ -571,7 +549,7 @@ class Client(object):
 
     def _doSendRequest(self, data):
         """Sends the data to `SendURL`, and returns """
-        r = self._post(SendURL, data)
+        r = self._post(ReqUrl.SEND, data)
         
         if not r.ok:
             log.warning('Error when sending message: Got {} response'.format(r.status_code))
@@ -755,17 +733,14 @@ class Client(object):
         :return: true if user was removed
         """
 
-        if thread_id is None and self.def_thread_type == ThreadType.GROUP:
-            thread_id = self.def_thread_id
-        elif thread_id is None:
-            raise ValueError('Default Thread ID is not set.')
+        thread_id = self._setThread(thread_id, None)
 
         data = {
             "uid": user_id,
             "tid": thread_id
         }
 
-        r = self._post(RemoveUserURL, data)
+        r = self._post(ReqUrl.REMOVE_USER, data)
 
         return r.ok
 
@@ -816,9 +791,36 @@ class Client(object):
             "thread_or_other_fbid": thread_id
         }
 
-        r = self._post(ChatColorURL, data)
+        r = self._post(ReqUrl.CHAT_COLOR, data)
 
         return r.ok
+
+    def reactToMessage(self, message_id, reaction):
+        # type: (str, MessageReaction) -> bool
+        """
+        Reacts to a message.
+
+        :param message_id: message ID to react to
+        :param reaction: reaction emoji to send
+        :return: true if reacted
+        """
+        full_data = {
+            "doc_id": 1491398900900362,
+            "dpr": 1,
+            "variables": {
+                "data": {
+                    "action": "ADD_REACTION",
+                    "client_mutation_id": "1",
+                    "actor_id": self.uid,
+                    "message_id": message_id,
+                    "reaction": reaction.value
+                    }
+            }
+        }
+
+        r = self._post(ReqUrl.MESSAGE_REACTION + "/?" + parse.urlencode(full_data))
+        return r.ok
+
 
     """
     END SEND METHODS    
@@ -830,7 +832,7 @@ class Client(object):
         :param image: a tuple of (file name, data, mime type) to upload to facebook
         """
 
-        r = self._postFile(UploadURL, image)
+        r = self._postFile(ReqUrl.UPLOAD, image)
         response_content = {}
         if isinstance(r.content, str) is False:
             response_content = r.content.decode(facebookEncoding)
@@ -860,13 +862,13 @@ class Client(object):
                 'messages[{}][{}][limit]'.format(key, thread_id): last_n - 1,
                 'messages[{}][{}][timestamp]'.format(key, thread_id): now()}
 
-        r = self._post(MessagesURL, query=data)
+        r = self._post(ReqUrl.MESSAGES, query=data)
         if not r.ok or len(r.text) == 0:
-            return None
+            return []
 
         j = get_json(r.text)
         if not j['payload']:
-            return None
+            return []
 
         messages = []
         for message in j['payload'].get('actions'):
@@ -890,9 +892,9 @@ class Client(object):
             'inbox[limit]' : length,
         }
 
-        r = self._post(ThreadsURL, data)
+        r = self._post(ReqUrl.THREADS, data)
         if not r.ok or len(r.text) == 0:
-            return None
+            return []
 
         j = get_json(r.text)
 
@@ -925,7 +927,7 @@ class Client(object):
             # 'last_action_timestamp': 0
         }
 
-        r = self._post(ThreadSyncURL, form)
+        r = self._post(ReqUrl.THREAD_SYNC, form)
         if not r.ok or len(r.text) == 0:
             return None
 
@@ -942,7 +944,7 @@ class Client(object):
             "thread_ids[%s][0]" % userID: threadID
         }
 
-        r = self._post(DeliveredURL, data)
+        r = self._post(ReqUrl.DELIVERED, data)
         return r.ok
 
     def markAsRead(self, userID):
@@ -952,11 +954,11 @@ class Client(object):
             "ids[%s]" % userID: True
         }
 
-        r = self._post(ReadStatusURL, data)
+        r = self._post(ReqUrl.READ_STATUS, data)
         return r.ok
 
     def markAsSeen(self):
-        r = self._post(MarkSeenURL, {"seen_timestamp": 0})
+        r = self._post(ReqUrl.MARK_SEEN, {"seen_timestamp": 0})
         return r.ok
 
     @deprecated(deprecated_in='0.10.2', details='Use friendConnect() instead')
@@ -970,7 +972,7 @@ class Client(object):
             "action": "confirm"
         }
 
-        r = self._post(ConnectURL, data)
+        r = self._post(ReqUrl.CONNECT, data)
         return r.ok
 
     def ping(self, sticky):
@@ -983,7 +985,7 @@ class Client(object):
             'sticky': sticky,
             'viewer_uid': self.uid
         }
-        r = self._get(PingURL, data)
+        r = self._get(ReqUrl.PING, data)
         return r.ok
 
     def _getSticky(self):
@@ -997,7 +999,7 @@ class Client(object):
             "clientid": self.client_id
         }
 
-        r = self._get(StickyURL, data)
+        r = self._get(ReqUrl.STICKY, data)
         j = get_json(r.text)
 
         if 'lb_info' not in j:
@@ -1017,7 +1019,7 @@ class Client(object):
             "clientid": self.client_id,
         }
 
-        r = self._get(StickyURL, data)
+        r = self._get(ReqUrl.STICKY, data)
         r.encoding = facebookEncoding
         j = get_json(r.text)
 
@@ -1233,7 +1235,7 @@ class Client(object):
 
 
         data = {"ids[{}]".format(i):uid for i,uid in enumerate(user_ids)}
-        r = self._post(UserInfoURL, data)
+        r = self._post(ReqUrl.USER_INFO, data)
         info = get_json(r.text)
         full_data= [details for profile,details in info['payload']['profiles'].items()]
         if len(full_data)==1:

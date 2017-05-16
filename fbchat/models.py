@@ -102,3 +102,12 @@ class ChatColor(Enum):
     CAMEO = '#d4a88c'
     BRILLIANT_ROSE = '#ff5ca1'
     BILOBA_FLOWER = '#a695c7'
+
+class MessageReaction(Enum):
+    LOVE = '😍'
+    SMILE = '😆'
+    WOW = '😮'
+    SAD = '😢'
+    ANGRY = '😠'
+    YES = '👍'
+    NO = '👎'
