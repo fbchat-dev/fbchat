@@ -3,7 +3,8 @@ import json
 from time import time
 from random import random
 import warnings
-from enum import Enum
+from .models import *
+
 USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/601.1.10 (KHTML, like Gecko) Version/8.0.5 Safari/601.1.10",
@@ -51,6 +52,7 @@ class ReqUrl:
     CHECKPOINT = "https://m.facebook.com/login/checkpoint/"
     CHAT_COLOR = "https://www.facebook.com/messaging/save_thread_color/?source=thread_settings&dpr=1"
     MESSAGE_REACTION = "https://www.facebook.com/webgraphql/mutation"
+    TYPING = "https://www.facebook.com/ajax/messaging/typ.php"
 
 facebookEncoding = 'UTF-8'
 

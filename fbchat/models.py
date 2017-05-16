@@ -69,7 +69,7 @@ class ThreadType(Enum):
     GROUP = 2
 
 class TypingStatus(Enum):
-    DELETED = 0
+    STOPPED = 0
     TYPING = 1
 
 class EmojiSize(Enum):

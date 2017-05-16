@@ -821,6 +821,26 @@ class Client(object):
         r = self._post(ReqUrl.MESSAGE_REACTION + "/?" + parse.urlencode(full_data))
         return r.ok
 
+    def setTypingStatus(self, status, thread_id=None, thread_type=None):
+        # type: (TypingStatus, str, ThreadType) -> bool
+        """
+        Sets users typing status.
+        
+        :param status: typing or not typing
+        :param thread_id: user/group chat ID
+        :return: True if status changed
+        """
+        thread_id, thread_type = self._setThread(thread_id, None)
+
+        data = {
+            "typ": status.value,
+            "thread": thread_id,
+            "to": thread_id if thread_type == ThreadType.USER else "",
+            "source": "mercury-chat"
+        }
+
+        r = self._post(ReqUrl.TYPING, data)
+        return r.ok
 
     """
     END SEND METHODS    
