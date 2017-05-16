@@ -112,8 +112,11 @@ class Client(object):
         self.onEmojiChange = EventHook(mid=str, author_id=str, new_emoji=str, thread_id=str, thread_type=ThreadType, ts=str, metadata=dict)
         self.onTitleChange = EventHook(mid=str, author_id=str, new_title=str, thread_id=str, thread_type=ThreadType, ts=str, metadata=dict)
         self.onNicknameChange = EventHook(mid=str, author_id=str, changed_for=str, new_title=str, thread_id=str, thread_type=ThreadType, ts=str, metadata=dict)
-        # self.onTyping = EventHook(author_id=int, typing_status=TypingStatus)
-        # self.onSeen = EventHook(seen_by=str, thread_id=str, timestamp=str)
+
+
+        self.onMessageSeen = EventHook(seen_by=str, thread_id=str, thread_type=ThreadType, seen_ts=int, delivered_ts=int, metadata=dict)
+        self.onMessageDelivered = EventHook(msg_ids=list, delivered_for=str, thread_id=str, thread_type=ThreadType, ts=int, metadata=dict)
+        self.onMarkedSeen = EventHook(threads=list, seen_ts=int, delivered_ts=int, metadata=dict)
 
         self.onInbox = EventHook(unseen=int, unread=int, recent_unread=int)
         self.onPeopleAdded = EventHook(added_ids=list, author_id=str, thread_id=str)
@@ -144,6 +147,14 @@ class Client(object):
             log.info("%s added: %s" % (author_id, [x for x in added_ids]))
         self.onPersonRemoved += lambda removed_id, author_id, thread_id:\
             log.info("%s removed: %s" % (author_id, removed_id))
+
+
+        self.onMessageSeen += lambda seen_by, thread_id, thread_type, seen_ts, delivered_ts, metadata:\
+            log.info("Messages seen by %s in %s (%s) at %ss", seen_by, thread_id, thread_type.name, seen_ts/1000)
+        self.onMessageDelivered += lambda msg_ids, delivered_for, thread_id, thread_type, ts, metadata:\
+            log.info("Messages %s delivered to %s in %s (%s) at %ss", msg_ids, delivered_for, thread_id, thread_type.name, ts/1000)
+        self.onMarkedSeen += lambda threads, seen_ts, delivered_ts, metadata:\
+            log.info("Marked messages as seen in threads %s at %ss", [(x[0], x[1].name) for x in threads], seen_ts/1000)
 
         self.onUnknownMesssageType += lambda msg: log.info("Unknown message type received: %s" % msg)
         self.onMessageError += lambda exception, msg: log.exception(exception)
@@ -699,6 +710,8 @@ class Client(object):
         if image is not None:
             deprecation('sendRemoteImage(image)', deprecated_in='0.10.2', details='Use sendLocalImage(image_path) instead')
             image_path = image
+
+        thread_id, thread_type = self._setThread(thread_id, None)
         mimetype = guess_type(image_path)[0]
         image_id = self._uploadImage({'file': (image_path, open(image_path, 'rb'), mimetype)})
         return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
@@ -1077,7 +1090,7 @@ class Client(object):
                     if metadata is not None:
                         mid = metadata["messageId"]
                         author_id = str(metadata['actorFbId'])
-                        ts = int(metadata["timestamp"])
+                        ts = int(metadata.get("timestamp"))
 
                     # Added participants
                     if 'addedParticipants' in delta:
@@ -1129,18 +1142,38 @@ class Client(object):
                                               thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata)
                         continue
 
+                    # Message delivered
+                    elif delta.get("class") == "DeliveryReceipt":
+                        message_ids = delta["messageIds"]
+                        delivered_for = str(delta["actorFbId"])
+                        ts = int(delta["deliveredWatermarkTimestampMs"])
+                        thread_id, thread_type = getThreadIdAndThreadType(delta)
+                        self.onMessageDelivered(msg_ids=message_ids, delivered_for=delivered_for,
+                                                thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata)
+                        continue
 
-                    # TODO properly implement these as they differ on different scenarios
-                    # Seen
-                    # elif delta.get("class") == "ReadReceipt":
-                    #     seen_by = delta["actorFbId"] or delta["threadKey"]["otherUserFbId"]
-                    #     thread_id = delta["threadKey"].get("threadFbId")
-                    #     self.onSeen(seen_by=seen_by, thread_id=thread_id, ts=ts)
-                    #
-                    # # Message delivered
-                    # elif delta.get("class") == 'DeliveryReceipt':
-                    #     time_delivered = delta['deliveredWatermarkTimestampMs']
-                    #     self.onDelivered()
+                    # Message seen
+                    elif delta.get("class") == "ReadReceipt":
+                        seen_by = str(delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"])
+                        seen_ts = int(delta["actionTimestampMs"])
+                        delivered_ts = int(delta["watermarkTimestampMs"])
+                        thread_id, thread_type = getThreadIdAndThreadType(delta)
+                        self.onMessageSeen(seen_by=seen_by, thread_id=thread_id, thread_type=thread_type,
+                                           seen_ts=seen_ts, delivered_ts=delivered_ts, metadata=metadata)
+                        continue
+
+                    # Messages marked as seen
+                    elif delta.get("class") == "MarkRead":
+                        seen_ts = int(delta.get("actionTimestampMs") or delta.get("actionTimestamp"))
+                        delivered_ts = int(delta.get("watermarkTimestampMs") or delta.get("watermarkTimestamp"))
+
+                        threads = []
+                        if "folders" not in delta:
+                            threads = [getThreadIdAndThreadType({"threadKey": thr}) for thr in delta.get("threadKeys")]
+
+                        # thread_id, thread_type = getThreadIdAndThreadType(delta)
+                        self.onMarkedSeen(threads=threads, seen_ts=seen_ts, delivered_ts=delivered_ts, metadata=delta)
+                        continue
 
                     # New message
                     elif delta.get("class") == "NewMessage":
@@ -1159,6 +1192,8 @@ class Client(object):
                 #     author_id = str(m.get("from"))
                 #     typing_status = TypingStatus(m.get("st"))
                 #     self.onTyping(author_id=author_id, typing_status=typing_status)
+
+                # Delivered
 
                 # Seen
                 # elif mtype == "m_read_receipt":
