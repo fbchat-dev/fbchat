@@ -69,22 +69,13 @@ class ThreadType(Enum):
     GROUP = 2
 
 class TypingStatus(Enum):
-    DELETED = 0
+    STOPPED = 0
     TYPING = 1
 
 class EmojiSize(Enum):
-    LARGE = {
-        'value': '369239383222810',
-        'name': 'large'
-    }
-    MEDIUM = {
-        'value': '369239343222814',
-        'name': 'medium'
-    }
-    SMALL = {
-        'value': '369239263222822',
-        'name': 'small'
-    }
+    LARGE = '369239383222810'
+    MEDIUM = '369239343222814'
+    SMALL = '369239263222822'
 
 LIKES = {
     'l': EmojiSize.LARGE,
@@ -94,3 +85,29 @@ LIKES = {
 LIKES['large'] = LIKES['l']
 LIKES['medium'] =LIKES['m']
 LIKES['small'] = LIKES['s']
+
+class ChatColor(Enum):
+    MESSENGER_BLUE = ''
+    VIKING = '#44bec7'
+    GOLDEN_POPPY = '#ffc300'
+    RADICAL_RED = '#fa3c4c'
+    SHOCKING = '#d696bb'
+    PICTON_BLUE = '#6699cc'
+    FREE_SPEECH_GREEN = '#13cf13'
+    PUMPKIN = '#ff7e29'
+    LIGHT_CORAL = '#e68585'
+    MEDIUM_SLATE_BLUE = '#7646ff'
+    DEEP_SKY_BLUE = '#20cef5'
+    FERN = '#67b868'
+    CAMEO = '#d4a88c'
+    BRILLIANT_ROSE = '#ff5ca1'
+    BILOBA_FLOWER = '#a695c7'
+
+class MessageReaction(Enum):
+    LOVE = '😍'
+    SMILE = '😆'
+    WOW = '😮'
+    SAD = '😢'
+    ANGRY = '😠'
+    YES = '👍'
+    NO = '👎'

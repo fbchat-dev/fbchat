@@ -3,6 +3,8 @@ import json
 from time import time
 from random import random
 import warnings
+from .models import *
+
 USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/601.1.10 (KHTML, like Gecko) Version/8.0.5 Safari/601.1.10",
@@ -26,6 +28,33 @@ GENDERS = {
     11: 'unknown_plural',
 }
 
+class ReqUrl:
+    SEARCH = "https://www.facebook.com/ajax/typeahead/search.php"
+    LOGIN = "https://m.facebook.com/login.php?login_attempt=1"
+    SEND = "https://www.facebook.com/messaging/send/"
+    THREAD_SYNC = "https://www.facebook.com/ajax/mercury/thread_sync.php"
+    THREADS = "https://www.facebook.com/ajax/mercury/threadlist_info.php"
+    MESSAGES = "https://www.facebook.com/ajax/mercury/thread_info.php"
+    READ_STATUS = "https://www.facebook.com/ajax/mercury/change_read_status.php"
+    DELIVERED = "https://www.facebook.com/ajax/mercury/delivery_receipts.php"
+    MARK_SEEN = "https://www.facebook.com/ajax/mercury/mark_seen.php"
+    BASE = "https://www.facebook.com"
+    MOBILE = "https://m.facebook.com/"
+    STICKY = "https://0-edge-chat.facebook.com/pull"
+    PING = "https://0-channel-proxy-06-ash2.facebook.com/active_ping"
+    UPLOAD = "https://upload.facebook.com/ajax/mercury/upload.php"
+    USER_INFO = "https://www.facebook.com/chat/user_info/"
+    CONNECT = "https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
+    REMOVE_USER = "https://www.facebook.com/chat/remove_participants/"
+    LOGOUT = "https://www.facebook.com/logout.php"
+    ALL_USERS = "https://www.facebook.com/chat/user_info_all"
+    SAVE_DEVICE = "https://m.facebook.com/login/save-device/cancel/"
+    CHECKPOINT = "https://m.facebook.com/login/checkpoint/"
+    CHAT_COLOR = "https://www.facebook.com/messaging/save_thread_color/?source=thread_settings&dpr=1"
+    MESSAGE_REACTION = "https://www.facebook.com/webgraphql/mutation"
+    TYPING = "https://www.facebook.com/ajax/messaging/typ.php"
+
+facebookEncoding = 'UTF-8'
 
 def now():
     return int(time()*1000)
