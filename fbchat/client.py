@@ -446,7 +446,7 @@ class Client(object):
         self.default_thread_id = None
         self.default_thread_type = None
 
-    def _setThread(self, given_thread_id, given_thread_type):
+    def _getThreadId(self, given_thread_id, given_thread_type):
         # type: (str, ThreadType) -> (str, ThreadType)
         """
         Checks if thread ID is given, checks if default is set and returns correct values
@@ -611,7 +611,7 @@ class Client(object):
         :param thread_type: specify whether thread_id is user or group chat
         :return: a list of message ids of the sent message(s)
         """
-        thread_id, thread_type = self._setThread(thread_id, thread_type)
+        thread_id, thread_type = self._getThreadId(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
 
         data['action_type'] = 'ma-type:user-generated-message'
@@ -633,7 +633,7 @@ class Client(object):
         :param thread_type: specify whether thread_id is user or group chat 
         :return: a list of message ids of the sent message(s)
         """
-        thread_id, thread_type = self._setThread(thread_id, thread_type)
+        thread_id, thread_type = self._getThreadId(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
         data['action_type'] = 'ma-type:user-generated-message'
         data['has_attachment'] = False
@@ -650,7 +650,7 @@ class Client(object):
 
     def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER):
         """Sends an already uploaded image with the id image_id to the thread"""
-        thread_id, thread_type = self._setThread(thread_id, thread_type)
+        thread_id, thread_type = self._getThreadId(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
 
         data['action_type'] = 'ma-type:user-generated-message'
@@ -711,7 +711,7 @@ class Client(object):
             deprecation('sendRemoteImage(image)', deprecated_in='0.10.2', details='Use sendLocalImage(image_path) instead')
             image_path = image
 
-        thread_id, thread_type = self._setThread(thread_id, None)
+        thread_id, thread_type = self._getThreadId(thread_id, None)
         mimetype = guess_type(image_path)[0]
         image_id = self._uploadImage({'file': (image_path, open(image_path, 'rb'), mimetype)})
         return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
@@ -725,7 +725,7 @@ class Client(object):
         :param thread_id: group chat ID
         :return: a list of message ids of the sent message(s)
         """
-        thread_id, thread_type = self._setThread(thread_id, None)
+        thread_id, thread_type = self._getThreadId(thread_id, None)
         data = self._getSendData(thread_id, ThreadType.GROUP)
 
         data['action_type'] = 'ma-type:log-message'
@@ -746,7 +746,7 @@ class Client(object):
         :return: true if user was removed
         """
 
-        thread_id = self._setThread(thread_id, None)
+        thread_id = self._getThreadId(thread_id, None)
 
         data = {
             "uid": user_id,
@@ -779,7 +779,7 @@ class Client(object):
         :param thread_id: group chat ID
         :return: a list of message ids of the sent message(s)
         """
-        thread_id, thread_type = self._setThread(thread_id, None)
+        thread_id, thread_type = self._getThreadId(thread_id, None)
         data = self._getSendData(thread_id, ThreadType.GROUP)
 
         data['action_type'] = 'ma-type:log-message'
@@ -797,7 +797,7 @@ class Client(object):
         :param thread_id: user/group chat ID
         :return: True if color was changed
         """
-        thread_id = self._setThread(thread_id, None)
+        thread_id = self._getThreadId(thread_id, None)
 
         data = {
             "color_choice": new_color.value,
@@ -843,7 +843,7 @@ class Client(object):
         :param thread_id: user/group chat ID
         :return: True if status changed
         """
-        thread_id, thread_type = self._setThread(thread_id, None)
+        thread_id, thread_type = self._getThreadId(thread_id, None)
 
         data = {
             "typ": status.value,
@@ -882,7 +882,7 @@ class Client(object):
         :return: a list of messages
         """
 
-        thread_id, thread_type = self._setThread(thread_id, thread_type)
+        thread_id, thread_type = self._getThreadId(thread_id, thread_type)
 
         assert last_n > 0, 'length must be positive integer, got %d' % last_n
 
