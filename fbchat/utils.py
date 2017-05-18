@@ -96,13 +96,15 @@ def generateOfflineThreadingID():
 def isUserToThreadType(is_user):
     return ThreadType.USER if is_user else ThreadType.GROUP
 
-def deprecation(name, deprecated_in=None, details='', stacklevel=3):
+def deprecation(name, deprecated_in=None, removed_in=None, details='', stacklevel=3):
     """This is a function which should be used to mark parameters as deprecated.
     It will result in a warning being emmitted when the parameter is used.
     """
     warning = "{} is deprecated".format(name)
     if deprecated_in:
         warning += ' in v. {}'.format(deprecated_in)
+    if removed_in:
+        warning += ' and will be removed in v. {}'.format(removed_in)
     if details:
         warning += '. {}'.format(details)
     
@@ -110,13 +112,13 @@ def deprecation(name, deprecated_in=None, details='', stacklevel=3):
     warnings.warn(warning, category=DeprecationWarning, stacklevel=stacklevel)
     warnings.simplefilter('default', DeprecationWarning)
 
-def deprecated(deprecated_in=None, details=''):
+def deprecated(deprecated_in=None, removed_in=None, details=''):
     """This is a decorator which can be used to mark functions as deprecated.
     It will result in a warning being emmitted when the decorated function is used.
     """
     def wrap(func, *args, **kwargs):
         def wrapped_func(*args, **kwargs):
-            deprecation(func.__qualname__, deprecated_in, details, stacklevel=2)
+            deprecation(func.__qualname__, deprecated_in=deprecated_in, removed_in=removed_in, details=details, stacklevel=2)
             return func(*args, **kwargs)
         return wrapped_func
     return wrap

@@ -89,10 +89,10 @@ class Client(object):
 
         # Configure the logger differently based on the 'debug' and 'info_log' parameters
         if debug:
-            deprecation('Client(debug)', deprecated_in='0.6.0', details='Use Client(logging_level) instead')
+            deprecation('Client(debug)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use Client(logging_level) instead')
             logging_level = logging.DEBUG
         elif info_log:
-            deprecation('Client(info_log)', deprecated_in='0.6.0', details='Use Client(logging_level) instead')
+            deprecation('Client(info_log)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use Client(logging_level) instead')
             logging_level = logging.INFO
 
         handler.setLevel(logging_level)
@@ -159,15 +159,15 @@ class Client(object):
         self.onUnknownMesssageType += lambda msg: log.info("Unknown message type received: %s" % msg)
         self.onMessageError += lambda exception, msg: log.exception(exception)
 
-    def _checkOldEventHook(self, old_event, deprecated_in='0.10.3'):
+    def _checkOldEventHook(self, old_event, deprecated_in='0.10.3', removed_in='0.15.0'):
         if hasattr(type(self), old_event):
-            deprecation('Client.{}'.format(old_event), deprecated_in=deprecated_in, details='Use new event system instead')
+            deprecation('Client.{}'.format(old_event), deprecated_in=deprecated_in, removed_in=removed_in, details='Use new event system instead')
             return True
         else:
             return False
 
     def _setupOldEventHooks(self):
-        if self._checkOldEventHook('on_message', deprecated_in='0.7.0'):
+        if self._checkOldEventHook('on_message', deprecated_in='0.7.0', removed_in='0.12.0'):
             self.onMessage += lambda mid, author_id, message, thread_id, thread_type, ts, metadata:\
                                      self.on_message(mid, author_id, None, message, metadata)
 
@@ -202,7 +202,7 @@ class Client(object):
         if self._checkOldEventHook('on_unknown_type'):
             self.onUnknownMesssageType += lambda msg: self.on_unknown_type(msg)
 
-    @deprecated(deprecated_in='0.6.0', details='Use log.<level> instead')
+    @deprecated(deprecated_in='0.6.0', removed_in='0.11.0', details='Use log.<level> instead')
     def _console(self, msg):
         """Assumes an INFO level and log it.
 
@@ -311,9 +311,9 @@ class Client(object):
 
         if 'home' in r.url:
             self._postLogin()
-            return True
+            return True, r.url
         else:
-            return False
+            return False, r.url
 
     def _2FA(self, r):
         soup = bs(r.text, "lxml")
@@ -401,7 +401,8 @@ class Client(object):
         self.password = password
 
         for i in range(1, max_retries+1):
-            if not self._login():
+            login_successful, login_url = self._login()
+            if not login_successful:
                 log.warning("Attempt #{} failed{}".format(i,{True:', retrying'}.get(i < max_retries, '')))
                 time.sleep(1)
                 continue
@@ -409,7 +410,7 @@ class Client(object):
                 self.onLoggedIn(email=email)
                 break
         else:
-            raise Exception("Login failed. Check email/password.")
+            raise Exception("Login failed. Check email/password. (Failed on url: {})".format(login_url))
 
     def logout(self, timeout=30):
         data = {
@@ -426,7 +427,7 @@ class Client(object):
         self.seq = "0"
         return r
 
-    @deprecated(deprecated_in='0.10.2', details='Use setDefaultThread instead')
+    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use setDefaultThread instead')
     def setDefaultRecipient(self, recipient_id, is_user=True):
         self.setDefaultThread(str(recipient_id), thread_type=isUserToThreadType(is_user))
 
@@ -446,7 +447,7 @@ class Client(object):
         self.default_thread_id = None
         self.default_thread_type = None
 
-    def _getThreadId(self, given_thread_id, given_thread_type):
+    def _getThread(self, given_thread_id, given_thread_type):
         # type: (str, ThreadType) -> (str, ThreadType)
         """
         Checks if thread ID is given, checks if default is set and returns correct values
@@ -588,7 +589,7 @@ class Client(object):
         log.debug("With data {}".format(data))
         return message_ids
 
-    @deprecated(deprecated_in='0.10.2', details='Use specific functions (eg. sendMessage()) instead')
+    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use specific functions (eg. sendMessage()) instead')
     def send(self, recipient_id=None, message=None, is_user=True, like=None, image_id=None, add_user_ids=None):
         if add_user_ids:
             return self.addUsersToChat(user_ids=add_user_ids, thread_id=recipient_id)
@@ -611,7 +612,7 @@ class Client(object):
         :param thread_type: specify whether thread_id is user or group chat
         :return: a list of message ids of the sent message(s)
         """
-        thread_id, thread_type = self._getThreadId(thread_id, thread_type)
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
 
         data['action_type'] = 'ma-type:user-generated-message'
@@ -633,7 +634,7 @@ class Client(object):
         :param thread_type: specify whether thread_id is user or group chat 
         :return: a list of message ids of the sent message(s)
         """
-        thread_id, thread_type = self._getThreadId(thread_id, thread_type)
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
         data['action_type'] = 'ma-type:user-generated-message'
         data['has_attachment'] = False
@@ -650,7 +651,7 @@ class Client(object):
 
     def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER):
         """Sends an already uploaded image with the id image_id to the thread"""
-        thread_id, thread_type = self._getThreadId(thread_id, thread_type)
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
 
         data['action_type'] = 'ma-type:user-generated-message'
@@ -678,10 +679,10 @@ class Client(object):
         if recipient_id is not None:
             thread_id = recipient_id
         if is_user is not None:
-            deprecation('sendRemoteImage(is_user)', deprecated_in='0.10.2', details='Use sendRemoteImage(thread_type) instead')
+            deprecation('sendRemoteImage(is_user)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendRemoteImage(thread_type) instead')
             thread_type = isUserToThreadType(is_user)
         if image is not None:
-            deprecation('sendRemoteImage(image)', deprecated_in='0.10.2', details='Use sendRemoteImage(image_url) instead')
+            deprecation('sendRemoteImage(image)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendRemoteImage(image_url) instead')
             image_url = image
         mimetype = guess_type(image_url)[0]
         remote_image = requests.get(image_url).content
@@ -702,16 +703,16 @@ class Client(object):
         :return: a list of message ids of the sent message(s)
         """
         if recipient_id is not None:
-            deprecation('sendRemoteImage(recipient_id)', deprecated_in='0.10.2', details='Use sendLocalImage(thread_id) instead')
+            deprecation('sendRemoteImage(recipient_id)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(thread_id) instead')
             thread_id = recipient_id
         if is_user is not None:
-            deprecation('sendRemoteImage(is_user)', deprecated_in='0.10.2', details='Use sendLocalImage(thread_type) instead')
+            deprecation('sendRemoteImage(is_user)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(thread_type) instead')
             thread_type = isUserToThreadType(is_user)
         if image is not None:
-            deprecation('sendRemoteImage(image)', deprecated_in='0.10.2', details='Use sendLocalImage(image_path) instead')
+            deprecation('sendRemoteImage(image)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(image_path) instead')
             image_path = image
 
-        thread_id, thread_type = self._getThreadId(thread_id, None)
+        thread_id, thread_type = self._getThread(thread_id, None)
         mimetype = guess_type(image_path)[0]
         image_id = self._uploadImage({'file': (image_path, open(image_path, 'rb'), mimetype)})
         return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
@@ -725,7 +726,7 @@ class Client(object):
         :param thread_id: group chat ID
         :return: a list of message ids of the sent message(s)
         """
-        thread_id, thread_type = self._getThreadId(thread_id, None)
+        thread_id, thread_type = self._getThread(thread_id, None)
         data = self._getSendData(thread_id, ThreadType.GROUP)
 
         data['action_type'] = 'ma-type:log-message'
@@ -746,7 +747,7 @@ class Client(object):
         :return: true if user was removed
         """
 
-        thread_id = self._getThreadId(thread_id, None)
+        thread_id = self._getThread(thread_id, None)
 
         data = {
             "uid": user_id,
@@ -757,17 +758,17 @@ class Client(object):
 
         return r.ok
 
-    @deprecated(deprecated_in='0.10.2', details='Use removeUserFromChat() instead')
+    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use removeUserFromChat() instead')
     def add_users_to_chat(self, threadID, userID):
         if not isinstance(userID, list):
             userID = [userID]
         return self.addUsersToChat(userID, thread_id=threadID)
 
-    @deprecated(deprecated_in='0.10.2', details='Use removeUserFromChat() instead')
+    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use removeUserFromChat() instead')
     def remove_user_from_chat(self, threadID, userID):
         return self.removeUserFromChat(userID, thread_id=threadID)
 
-    @deprecated(deprecated_in='0.10.2', details='Use changeGroupTitle() instead')
+    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use changeGroupTitle() instead')
     def changeThreadTitle(self, threadID, newTitle):
         return self.changeGroupTitle(newTitle, thread_id=threadID)
 
@@ -779,7 +780,7 @@ class Client(object):
         :param thread_id: group chat ID
         :return: a list of message ids of the sent message(s)
         """
-        thread_id, thread_type = self._getThreadId(thread_id, None)
+        thread_id, thread_type = self._getThread(thread_id, None)
         data = self._getSendData(thread_id, ThreadType.GROUP)
 
         data['action_type'] = 'ma-type:log-message'
@@ -797,7 +798,7 @@ class Client(object):
         :param thread_id: user/group chat ID
         :return: True if color was changed
         """
-        thread_id = self._getThreadId(thread_id, None)
+        thread_id = self._getThread(thread_id, None)
 
         data = {
             "color_choice": new_color.value,
@@ -843,7 +844,7 @@ class Client(object):
         :param thread_id: user/group chat ID
         :return: True if status changed
         """
-        thread_id, thread_type = self._getThreadId(thread_id, None)
+        thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {
             "typ": status.value,
@@ -882,7 +883,7 @@ class Client(object):
         :return: a list of messages
         """
 
-        thread_id, thread_type = self._getThreadId(thread_id, thread_type)
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
 
         assert last_n > 0, 'length must be positive integer, got %d' % last_n
 
@@ -994,7 +995,7 @@ class Client(object):
         r = self._post(ReqUrl.MARK_SEEN, {"seen_timestamp": 0})
         return r.ok
 
-    @deprecated(deprecated_in='0.10.2', details='Use friendConnect() instead')
+    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use friendConnect() instead')
     def friend_connect(self, friend_id):
         return self.friendConnect(friend_id)
 
@@ -1220,7 +1221,7 @@ class Client(object):
                 self.onMessageError(exception=e, msg=m)
 
 
-    @deprecated(deprecated_in='0.10.2', details='Use startListening() instead')
+    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use startListening() instead')
     def start_listening(self):
         return self.startListening()
 
@@ -1230,7 +1231,7 @@ class Client(object):
         self.sticky, self.pool = self._getSticky()
 
 
-    @deprecated(deprecated_in='0.10.2', details='Use doOneListen() instead')
+    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use doOneListen() instead')
     def do_one_listen(self, markAlive=True):
         return self.doOneListen(markAlive)
 
@@ -1252,7 +1253,7 @@ class Client(object):
             pass
 
 
-    @deprecated(deprecated_in='0.10.2', details='Use stopListening() instead')
+    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use stopListening() instead')
     def stop_listening(self):
         return self.stopListening()
 
