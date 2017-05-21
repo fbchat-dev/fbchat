@@ -560,24 +560,33 @@ class Client(object):
 
         return data
 
-    def _doSendRequest(self, data):
-        """Sends the data to `SendURL`, and returns """
-        r = self._post(ReqUrl.SEND, data)
-        
+    def _checkRequest(self, r):
         if not r.ok:
-            log.warning('Error when sending message: Got {} response'.format(r.status_code))
+            log.warning('Error when sending request: Got {} response'.format(r.status_code))
             return None
 
         j = get_json(r)
         if 'error' in j:
             # 'errorDescription' is in the users own language!
-            log.warning('Error #{} when sending message: {}'.format(j['error'], j['errorDescription']))
+            log.warning('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']))
             return None
         
-        message_ids = []
+        return j
+
+    def _doSendRequest(self, data):
+        """Sends the data to `SendURL`, and returns the message id"""
+        r = self._post(ReqUrl.SEND, data)
+
+        j = self._checkRequest(r)
+        
+        if j is None:
+            return None
+
         try:
-            message_ids += [action['message_id'] for action in j['payload']['actions'] if 'message_id' in action]
-            message_ids[0] # Try accessing element
+            message_ids = [action['message_id'] for action in j['payload']['actions'] if 'message_id' in action]
+            if len(message_ids) != 1:
+                log.warning("Got multiple message ids' back: {}".format(message_ids))
+            message_id = message_ids[0]
         except (KeyError, IndexError) as e:
             log.warning('Error when sending message: No message ids could be found')
             return None
@@ -585,7 +594,8 @@ class Client(object):
         log.info('Message sent.')
         log.debug('Sending {}'.format(r))
         log.debug('With data {}'.format(data))
-        return message_ids
+        log.debug('Recieved message id {}'.format(message_id))
+        return message_id
 
     @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use specific functions (eg. sendMessage()) instead')
     def send(self, recipient_id=None, message=None, is_user=True, like=None, image_id=None, add_user_ids=None):
@@ -608,7 +618,7 @@ class Client(object):
         :param message: message to send
         :param thread_id: user/group chat ID
         :param thread_type: specify whether thread_id is user or group chat
-        :return: a list of message ids of the sent message(s)
+        :return: the message id of the message
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
@@ -624,13 +634,13 @@ class Client(object):
     def sendEmoji(self, emoji=None, size=EmojiSize.SMALL, thread_id=None, thread_type=ThreadType.USER):
         # type: (str, EmojiSize, str, ThreadType) -> list
         """
-        Sends an emoji. If emoji and size are not specified a small like is sent. 
+        Sends an emoji. If emoji and size are not specified a small like is sent.
         
         :param emoji: the chosen emoji to send. If not specified, default thread emoji is sent
         :param size: size of emoji to send
         :param thread_id: user/group chat ID
-        :param thread_type: specify whether thread_id is user or group chat 
-        :return: a list of message ids of the sent message(s)
+        :param thread_type: specify whether thread_id is user or group chat
+        :return: the message id of the emoji
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
@@ -672,7 +682,7 @@ class Client(object):
         :param message: additional message
         :param thread_id: user/group chat ID
         :param thread_type: specify whether thread_id is user or group chat 
-        :return: a list of message ids of the sent message(s)
+        :return: the message id of the message
         """
         if recipient_id is not None:
             deprecation('sendRemoteImage(recipient_id)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendRemoteImage(thread_id) instead')
@@ -700,7 +710,7 @@ class Client(object):
         :param message: additional message
         :param thread_id: user/group chat ID
         :param thread_type: specify whether thread_id is user or group chat
-        :return: a list of message ids of the sent message(s)
+        :return: the message id of the message
         """
         if recipient_id is not None:
             deprecation('sendLocalImage(recipient_id)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(thread_id) instead')
@@ -717,14 +727,14 @@ class Client(object):
         image_id = self._uploadImage(image_path, open(image_path, 'rb'), mimetype)
         return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
 
-    def addUsersToChat(self, user_ids, thread_id=None):
+    def addUsersToGroup(self, user_ids, thread_id=None):
         # type: (list, str) -> list
         """
-        Adds users to given (or default, if not) thread.
+        Adds users to the given (or default, if not) group.
         
         :param user_ids: list of user ids to add
         :param thread_id: group chat ID
-        :return: a list of message ids of the sent message(s)
+        :return: the message id of the "message"
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = self._getSendData(thread_id, ThreadType.GROUP)
@@ -737,36 +747,36 @@ class Client(object):
 
         return self._doSendRequest(data)
 
-    def removeUserFromChat(self, user_id, thread_id=None):
+    def removeUserFromGroup(self, user_id, thread_id=None):
         # type: (str, str) -> bool
         """
-        Adds users to given (or default, if not) thread.
+        Adds users to the given (or default, if not) group.
         
         :param user_id: user ID to remove
         :param thread_id: group chat ID
-        :return: true if user was removed
+        :return: whether the action was successful
         """
 
-        thread_id = self._getThread(thread_id, None)
+        thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {
             "uid": user_id,
             "tid": thread_id
         }
+        
+        j = self._checkRequest(self._post(ReqUrl.REMOVE_USER, data))
 
-        r = self._post(ReqUrl.REMOVE_USER, data)
+        return False if j is None else True
 
-        return r.ok
-
-    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use removeUserFromChat() instead')
+    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use removeUserFromGroup() instead')
     def add_users_to_chat(self, threadID, userID):
         if not isinstance(userID, list):
             userID = [userID]
-        return self.addUsersToChat(userID, thread_id=threadID)
+        return self.addUsersToGroup(userID, thread_id=threadID)
 
-    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use removeUserFromChat() instead')
+    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use removeUserFromGroup() instead')
     def remove_user_from_chat(self, threadID, userID):
-        return self.removeUserFromChat(userID, thread_id=threadID)
+        return self.removeUserFromGroup(userID, thread_id=threadID)
 
     @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use changeGroupTitle() instead')
     def changeThreadTitle(self, threadID, newTitle):
@@ -778,7 +788,7 @@ class Client(object):
         
         :param title: new group chat title
         :param thread_id: group chat ID
-        :return: a list of message ids of the sent message(s)
+        :return: the message id of the "message"
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = self._getSendData(thread_id, ThreadType.GROUP)
@@ -790,24 +800,24 @@ class Client(object):
         return self._doSendRequest(data)
 
     def changeThreadColor(self, new_color, thread_id=None):
-        # type: (ChatColor, str, ThreadType) -> bool
+        # type: (ThreadColor, str, ThreadType) -> bool
         """
         Changes thread color to specified color. For more info about color names - see wiki.
         
         :param new_color: new color name
         :param thread_id: user/group chat ID
-        :return: True if color was changed
+        :return: whether the action was successful
         """
-        thread_id = self._getThread(thread_id, None)
+        thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {
             "color_choice": new_color.value,
             "thread_or_other_fbid": thread_id
         }
 
-        r = self._post(ReqUrl.CHAT_COLOR, data)
+        j = self._checkRequest(self._post(ReqUrl.THREAD_COLOR, data))
 
-        return r.ok
+        return False if j is None else True
 
     def reactToMessage(self, message_id, reaction):
         # type: (str, MessageReaction) -> bool
@@ -816,7 +826,7 @@ class Client(object):
 
         :param message_id: message ID to react to
         :param reaction: reaction emoji to send
-        :return: true if reacted
+        :return: whether the action was successful
         """
         full_data = {
             "doc_id": 1491398900900362,
@@ -832,8 +842,9 @@ class Client(object):
             }
         }
 
-        r = self._post(ReqUrl.MESSAGE_REACTION + "/?" + parse.urlencode(full_data))
-        return r.ok
+        j = self._checkRequest(self._post(ReqUrl.MESSAGE_REACTION + "/?" + parse.urlencode(full_data)))
+
+        return False if j is None else True
 
     def setTypingStatus(self, status, thread_id=None, thread_type=None):
         # type: (TypingStatus, str, ThreadType) -> bool
@@ -853,8 +864,9 @@ class Client(object):
             "source": "mercury-chat"
         }
 
-        r = self._post(ReqUrl.TYPING, data)
-        return r.ok
+        j = self._checkRequest(self._post(ReqUrl.TYPING, data))
+
+        return False if j is None else True
 
     """
     END SEND METHODS    

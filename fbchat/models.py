@@ -86,7 +86,7 @@ LIKES['large'] = LIKES['l']
 LIKES['medium'] =LIKES['m']
 LIKES['small'] = LIKES['s']
 
-class ChatColor(Enum):
+class ThreadColor(Enum):
     MESSENGER_BLUE = ''
     VIKING = '#44bec7'
     GOLDEN_POPPY = '#ffc300'

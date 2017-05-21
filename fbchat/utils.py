@@ -50,7 +50,7 @@ class ReqUrl:
     ALL_USERS = "https://www.facebook.com/chat/user_info_all"
     SAVE_DEVICE = "https://m.facebook.com/login/save-device/cancel/"
     CHECKPOINT = "https://m.facebook.com/login/checkpoint/"
-    CHAT_COLOR = "https://www.facebook.com/messaging/save_thread_color/?source=thread_settings&dpr=1"
+    THREAD_COLOR = "https://www.facebook.com/messaging/save_thread_color/?source=thread_settings&dpr=1"
     MESSAGE_REACTION = "https://www.facebook.com/webgraphql/mutation"
     TYPING = "https://www.facebook.com/ajax/messaging/typ.php"
 

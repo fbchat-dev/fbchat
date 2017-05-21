@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 
-import time
 import json
 import logging
-import fbchat
-from fbchat.models import *
-import getpass
 import unittest
-import sys
+from getpass import getpass
+from sys import argv
 from os import path
-
-#Setup logging
-#logging.basicConfig(level=logging.INFO)
-#fbchat.log.setLevel(1000)
+from fbchat import Client
+from fbchat.models import *
 
 logging_level = logging.ERROR
 
@@ -32,6 +27,10 @@ Please remember to test both python v. 2.7 and python v. 3.6!
 
 If you've made any changes to the 2FA functionality, test it with a 2FA enabled account
 If you only want to execute specific tests, pass the function names in the commandline
+
+WARNING:
+Do not execute the full set of tests in too quick succession. This can get you temporarily blocked for spam!
+(You should execute the script at max about 10 times a day)
 
 """
 
@@ -59,7 +58,7 @@ class TestFbchat(unittest.TestCase):
     def test_sessions(self):
         global client
         session_cookies = client.getSession()
-        client = fbchat.Client(email, password, session_cookies=session_cookies, logging_level=logging_level)
+        client = Client(email, password, session_cookies=session_cookies, logging_level=logging_level)
 
         self.assertTrue(client.isLoggedIn())
 
@@ -101,8 +100,10 @@ class TestFbchat(unittest.TestCase):
         self.assertTrue(client.sendEmoji("😆", EmojiSize.LARGE, group_uid, ThreadType.GROUP))
 
     def test_sendMessage(self):
-        self.assertTrue(client.sendMessage('test_send_user', user_uid, ThreadType.USER))
-        self.assertTrue(client.sendMessage('test_send_group', group_uid, ThreadType.GROUP))
+        self.assertIsNotNone(client.sendMessage('test_send_user', user_uid, ThreadType.USER))
+        self.assertIsNotNone(client.sendMessage('test_send_group', group_uid, ThreadType.GROUP))
+        self.assertIsNone(client.sendMessage('test_send_user_should_fail', user_uid, ThreadType.GROUP))
+        self.assertIsNone(client.sendMessage('test_send_group_should_fail', group_uid, ThreadType.USER))
 
     def test_sendImages(self):
         image_url = 'https://cdn4.iconfinder.com/data/icons/ionicons/512/icon-image-128.png'
@@ -115,13 +116,13 @@ class TestFbchat(unittest.TestCase):
 
     def test_getThreadInfo(self):
         client.sendMessage('test_user_getThreadInfo', user_uid, ThreadType.USER)
-        time.sleep(3)
+        
         info = client.getThreadInfo(20, user_uid, ThreadType.USER)
         self.assertEqual(info[0].author, 'fbid:' + client.uid)
         self.assertEqual(info[0].body, 'test_user_getThreadInfo')
 
         client.sendMessage('test_group_getThreadInfo', group_uid, ThreadType.GROUP)
-        time.sleep(3)
+        
         info = client.getThreadInfo(20, group_uid, ThreadType.GROUP)
         self.assertEqual(info[0].author, 'fbid:' + client.uid)
         self.assertEqual(info[0].body, 'test_group_getThreadInfo')
@@ -137,29 +138,22 @@ class TestFbchat(unittest.TestCase):
         info = client.getUserInfo(4)
         self.assertEqual(info['name'], 'Mark Zuckerberg')
 
-    def test_removeAddFromChat(self):
-        self.assertTrue(client.removeUserFromChat(user_uid, group_uid))
-        self.assertTrue(client.addUsersToChat([user_uid], group_uid))
+    def test_removeAddFromGroup(self):
+        self.assertTrue(client.removeUserFromGroup(user_uid, group_uid))
+        self.assertTrue(client.addUsersToGroup([user_uid], group_uid))
 
     def test_changeGroupTitle(self):
         self.assertTrue(client.changeGroupTitle('test_changeGroupTitle', group_uid))
 
     def test_changeThreadColor(self):
-        self.assertTrue(client.changeThreadColor(ChatColor.BRILLIANT_ROSE, group_uid))
-        client.sendMessage(ChatColor.BRILLIANT_ROSE.name, group_uid, ThreadType.GROUP)
-
-        self.assertTrue(client.changeThreadColor(ChatColor.MESSENGER_BLUE, group_uid))
-        client.sendMessage(ChatColor.MESSENGER_BLUE.name, group_uid, ThreadType.GROUP)
-
-        self.assertTrue(client.changeThreadColor(ChatColor.BRILLIANT_ROSE, user_uid))
-        client.sendMessage(ChatColor.BRILLIANT_ROSE.name, user_uid, ThreadType.USER)
-
-        self.assertTrue(client.changeThreadColor(ChatColor.MESSENGER_BLUE, user_uid))
-        client.sendMessage(ChatColor.MESSENGER_BLUE.name, user_uid, ThreadType.USER)
+        self.assertTrue(client.changeThreadColor(ThreadColor.BRILLIANT_ROSE, group_uid))
+        self.assertTrue(client.changeThreadColor(ThreadColor.MESSENGER_BLUE, group_uid))
+        self.assertTrue(client.changeThreadColor(ThreadColor.BRILLIANT_ROSE, user_uid))
+        self.assertTrue(client.changeThreadColor(ThreadColor.MESSENGER_BLUE, user_uid))
 
     def test_reactToMessage(self):
-        mid = client.sendMessage("react_to_message", user_uid, ThreadType.USER)[0]
-        self.assertTrue(client.reactToMessage(mid, fbchat.MessageReaction.LOVE))
+        mid = client.sendMessage("react_to_message", user_uid, ThreadType.USER)
+        self.assertTrue(client.reactToMessage(mid, MessageReaction.LOVE))
 
 
 def start_test(param_client, param_group_uid, param_user_uid, tests=[]):
@@ -170,6 +164,8 @@ def start_test(param_client, param_group_uid, param_user_uid, tests=[]):
     client = param_client
     group_uid = param_group_uid
     user_uid = param_user_uid
+    
+    tests = ['test_' + test for test in tests]
 
     if len(tests) == 0:
         suite = unittest.TestLoader().loadTestsFromTestCase(TestFbchat)
@@ -197,13 +193,13 @@ if __name__ == '__main__':
         group_uid = json['group_thread_id']
     except (IOError, IndexError) as e:
         email = input('Email: ')
-        password = getpass.getpass()
+        password = getpass()
         group_uid = input('Please enter a group thread id (To test group functionality): ')
         user_uid = input('Please enter a user thread id (To test kicking/adding functionality): ')
     
     print('Logging in...')
-    client = fbchat.Client(email, password, logging_level=logging_level)
+    client = Client(email, password, logging_level=logging_level)
     
     # Warning! Taking user input directly like this could be dangerous! Use only for testing purposes!
-    start_test(client, group_uid, user_uid, sys.argv[1:])
+    start_test(client, group_uid, user_uid, argv[1:])
 
