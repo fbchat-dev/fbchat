@@ -60,10 +60,19 @@ def now():
     return int(time()*1000)
 
 def strip_to_json(text):
-    return text[text.index('{'):]
+    try:
+        return text[text.index('{'):]
+    except ValueError as e:
+        return None
 
-def get_json(text):
-    return json.loads(strip_to_json(text))
+def get_dencoded(r):
+    if not isinstance(r._content, str):
+        return r._content.decode(facebookEncoding)
+    else:
+        return r._content
+
+def get_json(r):
+    return json.loads(strip_to_json(get_dencoded(r)))
 
 def digit_to_char(digit):
     if digit < 10:
@@ -118,7 +127,7 @@ def deprecated(deprecated_in=None, removed_in=None, details=''):
     """
     def wrap(func, *args, **kwargs):
         def wrapped_func(*args, **kwargs):
-            deprecation(func.__qualname__, deprecated_in=deprecated_in, removed_in=removed_in, details=details, stacklevel=2)
+            deprecation(func.__qualname__, deprecated_in=deprecated_in, removed_in=removed_in, details=details, stacklevel=3)
             return func(*args, **kwargs)
         return wrapped_func
     return wrap

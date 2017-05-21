@@ -245,9 +245,11 @@ class Client(object):
         self.req_counter += 1
         return self._session.post(url, headers=self._header, data=query, timeout=timeout)
 
-    def _postFile(self, url, files=None, timeout=30):
-        payload=self._generatePayload(None)
-        return self._session.post(url, data=payload, timeout=timeout, files=files)
+    def _postFile(self, url, files=None, query=None, timeout=30):
+        payload=self._generatePayload(query)
+        # Removes 'Content-Type' from the header
+        headers = dict((i, self._header[i]) for i in self._header if i != 'Content-Type')
+        return self._session.post(url, headers=headers, data=payload, timeout=timeout, files=files)
 
     def _postLogin(self):
         self.payloadDefault = {}
@@ -472,7 +474,7 @@ class Client(object):
         r = self._post(ReqUrl.ALL_USERS, query=data)
         if not r.ok or len(r.text) == 0:
             return None
-        j = get_json(r.text)
+        j = get_json(r)
         if not j['payload']:
             return None
         payload = j['payload']
@@ -504,14 +506,13 @@ class Client(object):
         }
 
         r = self._get(ReqUrl.SEARCH, payload)
-        self.j = j = get_json(r.text)
+        self.j = j = get_json(r)
 
         users = []
         for entry in j['payload']['entries']:
             if entry['type'] == 'user':
                 users.append(User(entry))
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
-
 
     """
     SEND METHODS
@@ -567,10 +568,7 @@ class Client(object):
             log.warning('Error when sending message: Got {} response'.format(r.status_code))
             return None
 
-        response_content = {}
-        if isinstance(r.content, str) is False:
-            response_content = r.content.decode(facebookEncoding)
-        j = get_json(response_content)
+        j = get_json(r)
         if 'error' in j:
             # 'errorDescription' is in the users own language!
             log.warning('Error #{} when sending message: {}'.format(j['error'], j['errorDescription']))
@@ -585,8 +583,8 @@ class Client(object):
             return None
 
         log.info('Message sent.')
-        log.debug("Sending {}".format(r))
-        log.debug("With data {}".format(data))
+        log.debug('Sending {}'.format(r))
+        log.debug('With data {}'.format(data))
         return message_ids
 
     @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use specific functions (eg. sendMessage()) instead')
@@ -677,6 +675,7 @@ class Client(object):
         :return: a list of message ids of the sent message(s)
         """
         if recipient_id is not None:
+            deprecation('sendRemoteImage(recipient_id)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendRemoteImage(thread_id) instead')
             thread_id = recipient_id
         if is_user is not None:
             deprecation('sendRemoteImage(is_user)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendRemoteImage(thread_type) instead')
@@ -684,12 +683,13 @@ class Client(object):
         if image is not None:
             deprecation('sendRemoteImage(image)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendRemoteImage(image_url) instead')
             image_url = image
+
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
         mimetype = guess_type(image_url)[0]
         remote_image = requests.get(image_url).content
-        image_id = self._uploadImage({'file': (image_url, remote_image, mimetype)})
+        image_id = self._uploadImage(image_url, remote_image, mimetype)
         return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
 
-    # Doesn't upload properly
     def sendLocalImage(self, image_path, message=None, thread_id=None, thread_type=ThreadType.USER,
                        recipient_id=None, is_user=None, image=None):
         # type: (str, str, str, ThreadType) -> list
@@ -703,18 +703,18 @@ class Client(object):
         :return: a list of message ids of the sent message(s)
         """
         if recipient_id is not None:
-            deprecation('sendRemoteImage(recipient_id)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(thread_id) instead')
+            deprecation('sendLocalImage(recipient_id)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(thread_id) instead')
             thread_id = recipient_id
         if is_user is not None:
-            deprecation('sendRemoteImage(is_user)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(thread_type) instead')
+            deprecation('sendLocalImage(is_user)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(thread_type) instead')
             thread_type = isUserToThreadType(is_user)
         if image is not None:
-            deprecation('sendRemoteImage(image)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(image_path) instead')
+            deprecation('sendLocalImage(image)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(image_path) instead')
             image_path = image
 
-        thread_id, thread_type = self._getThread(thread_id, None)
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
         mimetype = guess_type(image_path)[0]
-        image_id = self._uploadImage({'file': (image_path, open(image_path, 'rb'), mimetype)})
+        image_id = self._uploadImage(image_path, open(image_path, 'rb'), mimetype)
         return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
 
     def addUsersToChat(self, user_ids, thread_id=None):
@@ -860,18 +860,22 @@ class Client(object):
     END SEND METHODS    
     """
 
-    def _uploadImage(self, image):
+    def _uploadImage(self, image_path, data, mimetype):
         """Upload an image and get the image_id for sending in a message
 
         :param image: a tuple of (file name, data, mime type) to upload to facebook
         """
 
-        r = self._postFile(ReqUrl.UPLOAD, image)
-        response_content = {}
-        if isinstance(r.content, str) is False:
-            response_content = r.content.decode(facebookEncoding)
-        # Strip the start and parse out the returned image_id
-        return json.loads(response_content[9:])['payload']['metadata'][0]['image_id']
+        r = self._postFile(ReqUrl.UPLOAD, {
+            'file': (
+                image_path,
+                data,
+                mimetype
+            )
+        })
+        j = get_json(r)
+        # Return the image_id
+        return j['payload']['metadata'][0]['image_id']
 
     def getThreadInfo(self, last_n=20, thread_id=None, thread_type=ThreadType.USER):
         # type: (int, str, ThreadType) -> list
@@ -900,7 +904,7 @@ class Client(object):
         if not r.ok or len(r.text) == 0:
             return []
 
-        j = get_json(r.text)
+        j = get_json(r)
         if not j['payload']:
             return []
 
@@ -930,7 +934,7 @@ class Client(object):
         if not r.ok or len(r.text) == 0:
             return []
 
-        j = get_json(r.text)
+        j = get_json(r)
 
         # Get names for people
         participants = {}
@@ -965,7 +969,7 @@ class Client(object):
         if not r.ok or len(r.text) == 0:
             return None
 
-        j = get_json(r.text)
+        j = get_json(r)
         result = {
             "message_counts": j['payload']['message_counts'],
             "unseen_threads": j['payload']['unseen_thread_ids']
@@ -1034,7 +1038,7 @@ class Client(object):
         }
 
         r = self._get(ReqUrl.STICKY, data)
-        j = get_json(r.text)
+        j = get_json(r)
 
         if 'lb_info' not in j:
             raise Exception('Get sticky pool error')
@@ -1054,8 +1058,7 @@ class Client(object):
         }
 
         r = self._get(ReqUrl.STICKY, data)
-        r.encoding = facebookEncoding
-        j = get_json(r.text)
+        j = get_json(r)
 
         self.seq = j.get('seq', '0')
         return j
@@ -1292,7 +1295,7 @@ class Client(object):
 
         data = {"ids[{}]".format(i):uid for i,uid in enumerate(user_ids)}
         r = self._post(ReqUrl.USER_INFO, data)
-        info = get_json(r.text)
+        info = get_json(r)
         full_data= [details for profile,details in info['payload']['profiles'].items()]
         if len(full_data)==1:
             full_data=full_data[0]
