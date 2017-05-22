@@ -1,3 +1,5 @@
+# -*- coding: UTF-8 -*-
+
 from __future__ import unicode_literals
 import sys
 from enum import Enum
@@ -111,3 +113,13 @@ class MessageReaction(Enum):
     ANGRY = '😠'
     YES = '👍'
     NO = '👎'
+
+MessageReactionFix = {
+    '😍': ('0001f60d', '%F0%9F%98%8D'),
+    '😆': ('0001f606', '%F0%9F%98%86'),
+    '😮': ('0001f62e', '%F0%9F%98%AE'),
+    '😢': ('0001f622', '%F0%9F%98%A2'),
+    '😠': ('0001f620', '%F0%9F%98%A0'),
+    '👍': ('0001f44d', '%F0%9F%91%8D'),
+    '👎': ('0001f44e', '%F0%9F%91%8E')
+}

@@ -26,4 +26,5 @@ docs/_build/
 
 # Data for tests
 my_test_data.json
+my_data.json
 tests.data

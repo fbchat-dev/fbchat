@@ -1,3 +1,6 @@
+# -*- coding: UTF-8 -*-
+
+from __future__ import unicode_literals
 import re
 import json
 from time import time
@@ -98,18 +101,21 @@ def getSignatureID():
 def generateOfflineThreadingID():
     ret = now()
     value = int(random() * 4294967295)
-    string = ("0000000000000000000000" + bin(value))[-22:]
-    msgs = bin(ret) + string
+    string = ("0000000000000000000000" + format(value, 'b'))[-22:]
+    msgs = format(ret, 'b') + string
     return str(int(msgs, 2))
 
 def isUserToThreadType(is_user):
     return ThreadType.USER if is_user else ThreadType.GROUP
 
+def raise_exception(e):
+    raise e
+
 def deprecation(name, deprecated_in=None, removed_in=None, details='', stacklevel=3):
     """This is a function which should be used to mark parameters as deprecated.
     It will result in a warning being emmitted when the parameter is used.
     """
-    warning = "{} is deprecated".format(name)
+    warning = "Client.{} is deprecated".format(name)
     if deprecated_in:
         warning += ' in v. {}'.format(deprecated_in)
     if removed_in:
@@ -127,7 +133,7 @@ def deprecated(deprecated_in=None, removed_in=None, details=''):
     """
     def wrap(func, *args, **kwargs):
         def wrapped_func(*args, **kwargs):
-            deprecation(func.__qualname__, deprecated_in=deprecated_in, removed_in=removed_in, details=details, stacklevel=3)
+            deprecation(func.__name__, deprecated_in=deprecated_in, removed_in=removed_in, details=details, stacklevel=3)
             return func(*args, **kwargs)
         return wrapped_func
     return wrap

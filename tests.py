@@ -1,5 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: UTF-8 -*-
 
+from __future__ import unicode_literals
 import json
 import logging
 import unittest
@@ -16,7 +18,7 @@ logging_level = logging.ERROR
 Tests for fbchat
 ~~~~~~~~~~~~~~~~
 
-To use these tests copy test_data.json to my_test_data.json or type this information manually in the terminal prompts.
+To use these tests copy `tests/data.json` to `tests/my_data.json` or type this information manually in the terminal prompts.
 
 - email: Your (or a test user's) email / phone number
 - password: Your (or a test user's) password
@@ -49,7 +51,7 @@ class TestFbchat(unittest.TestCase):
         self.assertFalse(client.isLoggedIn())
 
         with self.assertRaises(Exception):
-            client.login("not@email.com", "not_password", max_retries=1)
+            client.login('not@email.com', 'not_password', max_retries=1)
 
         client.login(email, password)
 
@@ -63,14 +65,14 @@ class TestFbchat(unittest.TestCase):
         self.assertTrue(client.isLoggedIn())
 
     def test_defaultThread(self):
+        # setDefaultThread
+        client.setDefaultThread(client.uid, ThreadType.USER)
+        self.assertTrue(client.sendMessage('test_default_recipient★'))
+
         # resetDefaultThread
         client.resetDefaultThread()
         with self.assertRaises(ValueError):
-            client.sendMessage("should_not_send")
-        
-        # setDefaultThread
-        client.setDefaultThread(client.uid, ThreadType.USER)
-        self.assertTrue(client.sendMessage("test_default_recipient"))
+            client.sendMessage('should_not_send')
 
     def test_getAllUsers(self):
         users = client.getAllUsers()
@@ -100,32 +102,32 @@ class TestFbchat(unittest.TestCase):
         self.assertTrue(client.sendEmoji("😆", EmojiSize.LARGE, group_uid, ThreadType.GROUP))
 
     def test_sendMessage(self):
-        self.assertIsNotNone(client.sendMessage('test_send_user', user_uid, ThreadType.USER))
-        self.assertIsNotNone(client.sendMessage('test_send_group', group_uid, ThreadType.GROUP))
-        self.assertIsNone(client.sendMessage('test_send_user_should_fail', user_uid, ThreadType.GROUP))
-        self.assertIsNone(client.sendMessage('test_send_group_should_fail', group_uid, ThreadType.USER))
+        self.assertIsNotNone(client.sendMessage('test_send_user★', user_uid, ThreadType.USER))
+        self.assertIsNotNone(client.sendMessage('test_send_group★', group_uid, ThreadType.GROUP))
+        self.assertIsNone(client.sendMessage('test_send_user_should_fail★', user_uid, ThreadType.GROUP))
+        self.assertIsNone(client.sendMessage('test_send_group_should_fail★', group_uid, ThreadType.USER))
 
     def test_sendImages(self):
         image_url = 'https://cdn4.iconfinder.com/data/icons/ionicons/512/icon-image-128.png'
-        image_local_url = path.join(path.dirname(__file__), 'test_image.png')
+        image_local_url = path.join(path.dirname(__file__), 'tests/image.png')
         #self.assertTrue(client.sendRemoteImage(image_url, 'test_send_user_images_remote', user_uid, ThreadType.USER))
-        self.assertTrue(client.sendRemoteImage(image_url, 'test_send_group_images_remote', group_uid, ThreadType.GROUP))
+        self.assertTrue(client.sendRemoteImage(image_url, 'test_send_group_images_remote★', group_uid, ThreadType.GROUP))
         # Idk why but doesnt work, payload is null
         #self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local', user_uid, ThreadType.USER))
-        self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local', group_uid, ThreadType.GROUP))
+        self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local★', group_uid, ThreadType.GROUP))
 
     def test_getThreadInfo(self):
-        client.sendMessage('test_user_getThreadInfo', user_uid, ThreadType.USER)
+        client.sendMessage('test_user_getThreadInfo★', user_uid, ThreadType.USER)
         
         info = client.getThreadInfo(20, user_uid, ThreadType.USER)
         self.assertEqual(info[0].author, 'fbid:' + client.uid)
-        self.assertEqual(info[0].body, 'test_user_getThreadInfo')
+        self.assertEqual(info[0].body, 'test_user_getThreadInfo★')
 
-        client.sendMessage('test_group_getThreadInfo', group_uid, ThreadType.GROUP)
+        client.sendMessage('test_group_getThreadInfo★', group_uid, ThreadType.GROUP)
         
         info = client.getThreadInfo(20, group_uid, ThreadType.GROUP)
         self.assertEqual(info[0].author, 'fbid:' + client.uid)
-        self.assertEqual(info[0].body, 'test_group_getThreadInfo')
+        self.assertEqual(info[0].body, 'test_group_getThreadInfo★')
 
     def test_markAs(self):
         # To be implemented (requires some form of manual watching)
@@ -143,7 +145,7 @@ class TestFbchat(unittest.TestCase):
         self.assertTrue(client.addUsersToGroup([user_uid], group_uid))
 
     def test_changeGroupTitle(self):
-        self.assertTrue(client.changeGroupTitle('test_changeGroupTitle', group_uid))
+        self.assertTrue(client.changeGroupTitle('test_changeGroupTitle★', group_uid))
 
     def test_changeThreadColor(self):
         self.assertTrue(client.changeThreadColor(ThreadColor.BRILLIANT_ROSE, group_uid))
@@ -152,8 +154,14 @@ class TestFbchat(unittest.TestCase):
         self.assertTrue(client.changeThreadColor(ThreadColor.MESSENGER_BLUE, user_uid))
 
     def test_reactToMessage(self):
-        mid = client.sendMessage("react_to_message", user_uid, ThreadType.USER)
+        mid = client.sendMessage('react_to_message', user_uid, ThreadType.USER)
         self.assertTrue(client.reactToMessage(mid, MessageReaction.LOVE))
+    
+    def test_setTypingStatus(self):
+        self.assertTrue(client.setTypingStatus(TypingStatus.TYPING, thread_id=user_uid, thread_type=ThreadType.USER))
+        self.assertTrue(client.setTypingStatus(TypingStatus.STOPPED, thread_id=user_uid, thread_type=ThreadType.USER))
+        self.assertTrue(client.setTypingStatus(TypingStatus.TYPING, thread_id=group_uid, thread_type=ThreadType.GROUP))
+        self.assertTrue(client.setTypingStatus(TypingStatus.STOPPED, thread_id=group_uid, thread_type=ThreadType.GROUP))
 
 
 def start_test(param_client, param_group_uid, param_user_uid, tests=[]):
@@ -185,7 +193,7 @@ if __name__ == '__main__':
         pass
 
     try:
-        with open(path.join(path.dirname(__file__), 'my_test_data.json'), 'r') as f:
+        with open(path.join(path.dirname(__file__), 'tests/my_data.json'), 'r') as f:
             json = json.load(f)
         email = json['email']
         password = json['password']
