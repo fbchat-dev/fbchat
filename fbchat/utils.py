@@ -57,6 +57,8 @@ class ReqUrl(object):
     SAVE_DEVICE = "https://m.facebook.com/login/save-device/cancel/"
     CHECKPOINT = "https://m.facebook.com/login/checkpoint/"
     THREAD_COLOR = "https://www.facebook.com/messaging/save_thread_color/?source=thread_settings&dpr=1"
+    THREAD_NICKNAME = "https://www.facebook.com/messaging/save_thread_nickname/?source=thread_settings&dpr=1"
+    THREAD_EMOJI = "https://www.facebook.com/messaging/save_thread_emoji/?source=thread_settings&dpr=1"
     MESSAGE_REACTION = "https://www.facebook.com/webgraphql/mutation"
     TYPING = "https://www.facebook.com/ajax/messaging/typ.php"
 

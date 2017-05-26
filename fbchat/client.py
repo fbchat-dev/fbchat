@@ -35,7 +35,7 @@ class Client(object):
     """
 
     def __init__(self, email, password, debug=False, info_log=False, user_agent=None, max_retries=5,
-                 session_cookies=None, logging_level=logging.INFO, set_default_events=True):
+                 session_cookies=None, logging_level=logging.INFO):
         """Initializes and logs in the client
 
         :param email: Facebook `email`, `id` or `phone number`
@@ -44,11 +44,9 @@ class Client(object):
         :param max_retries: Maximum number of times to retry login
         :param session_cookies: Cookies from a previous session (Will default to login if these are invalid)
         :param logging_level: Configures the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. Defaults to `INFO`
-        :param set_default_events: Specifies whether the default `logging.info` events should be initialized
         :type max_retries: int
         :type session_cookies: dict
         :type logging_level: int
-        :type set_default_events: bool
         :raises: Exception on failed login
         """
 
@@ -62,7 +60,6 @@ class Client(object):
         self.default_thread_id = None
         self.default_thread_type = None
         self.threads = []
-        self.set_default_events = set_default_events
 
         self._setupEventHooks()
         self._setupOldEventHooks()
@@ -94,10 +91,7 @@ class Client(object):
 
     def _setEventHook(self, event_name, *functions):
         if not hasattr(type(self), event_name):
-            if self.set_default_events:
-                eventhook = EventHook(*functions)
-            else:
-                eventhook = EventHook()
+            eventhook = EventHook(*functions)
             setattr(self, event_name, eventhook)
 
     def _setupEventHooks(self):
@@ -138,15 +132,17 @@ class Client(object):
             log.info("Marked messages as seen in threads {} at {}s".format([(x[0], x[1].name) for x in threads], seen_ts/1000)))
 
 
-        self._setEventHook('onPeopleAdded', lambda added_ids, author_id, thread_id, msg:\
+        self._setEventHook('onPeopleAdded', lambda mid, added_ids, author_id, thread_id, ts, msg:\
             log.info("{} added: {}".format(author_id, ', '.join(added_ids))))
 
-        self._setEventHook('onPersonRemoved', lambda removed_id, author_id, thread_id, msg:\
+        self._setEventHook('onPersonRemoved', lambda mid, removed_id, author_id, thread_id, ts, msg:\
             log.info("{} removed: {}".format(author_id, removed_id)))
 
         self._setEventHook('onFriendRequest', lambda from_id, msg: log.info("Friend request from {}".format(from_id)))
 
         self._setEventHook('onInbox', lambda unseen, unread, recent_unread, msg: log.info('Inbox event: {}, {}, {}'.format(unseen, unread, recent_unread)))
+
+        self._setEventHook('onQprimer', lambda made, msg: None)
 
 
         self._setEventHook('onUnknownMesssageType', lambda msg: log.debug('Unknown message received: {}'.format(msg)))
@@ -447,12 +443,9 @@ class Client(object):
         """
         Safely logs out the client
 
-        .. todo::
-            Possibly check return parameter with _checkRequest, and the write documentation about the return
-
         :param timeout: See `requests timeout <http://docs.python-requests.org/en/master/user/advanced/#timeouts>`_
-        :return:
-        :rtype:
+        :return: True if the action was successful
+        :rtype: bool
         """
         data = {
             'ref': "mb",
@@ -466,7 +459,8 @@ class Client(object):
         self._session = requests.session()
         self.req_counter = 1
         self.seq = "0"
-        return r
+
+        return r.ok
 
     @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use setDefaultThread instead')
     def setDefaultRecipient(self, recipient_id, is_user=True):
@@ -928,13 +922,13 @@ class Client(object):
         image_id = self._uploadImage(image_path, open(image_path, 'rb'), mimetype)
         return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
 
-    def addUsersToGroup(self, user_ids, thread_id=None):
+    def addUsersToGroup(self, *user_ids, thread_id=None):
         """
         Adds users to a group.
 
         :param user_ids: User ids to add
         :param thread_id: Group ID to add people to. See :ref:`intro_thread_id`
-        :type user_ids: list
+        :type user_ids: list of positional arguments
         :return: :ref:`Message ID <intro_message_ids>` of the sent "message"
         """
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -986,29 +980,61 @@ class Client(object):
     def remove_user_from_chat(self, threadID, userID):
         return self.removeUserFromGroup(userID, thread_id=threadID)
 
-    @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use changeGroupTitle() instead')
-    def changeThreadTitle(self, threadID, newTitle):
-        return self.changeGroupTitle(newTitle, thread_id=threadID)
-
-    def changeGroupTitle(self, title, thread_id=None):
+    def changeThreadTitle(self, title, thread_id=None, thread_type=ThreadType.USER):
         """
-        Changes title of a group conversation.
-
-        .. todo::
-            Check whether this can work on group threads, and if it does, change it (back) to changeThreadTitle
+        Changes title of a thread
 
         :param title: New group chat title
         :param thread_id: Group ID to change title of. See :ref:`intro_thread_id`
-        :return: :ref:`Message ID <intro_message_ids>` of the sent "message"
+        :param thread_type: See :ref:`intro_thread_type`
+        :type thread_type: models.ThreadType
+        :return: True if the action was successful
+        :rtype: bool
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-        data = self._getSendData(thread_id, ThreadType.GROUP)
+        # For backwards compatability. Previously `thread_id` and `title` were swapped around
+        try:
+            int(thread_id)
+        except ValueError:
+            deprecation('changeThreadTitle(threadID, newTitle)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use changeThreadTitle(title, thread_id, thread_type) instead')
+            title, thread_id, thread_type = thread_id, title, ThreadType.GROUP
 
-        data['action_type'] = 'ma-type:log-message'
-        data['log_message_data[name]'] = title
-        data['log_message_type'] = 'log:thread-name'
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
 
-        return self._doSendRequest(data)
+        if thread_type == ThreadType.USER:
+            # The thread is a user, so we change the user's nickname
+            return self.changeNickname(title, thread_id, thread_id=thread_id, thread_type=thread_type)
+        else:
+            data = self._getSendData(thread_id, thread_type)
+
+            data['action_type'] = 'ma-type:log-message'
+            data['log_message_data[name]'] = title
+            data['log_message_type'] = 'log:thread-name'
+
+            return False if self._doSendRequest(data) is None else True
+
+    def changeNickname(self, nickname, user_id, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Changes the nickname of a user in a thread
+
+        :param nickname: New nickname
+        :param user_id: User that will have their nickname changed
+        :param thread_id: User/Group ID to change color of. See :ref:`intro_thread_id`
+        :param thread_type: See :ref:`intro_thread_type`
+        :type thread_type: models.ThreadType
+        :return: True if the action was successful
+        :rtype: bool
+        """
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
+
+        data = {
+            'nickname': nickname,
+            'participant_id': user_id,
+            'thread_or_other_fbid': thread_id
+        }
+
+        j = self._checkRequest(self._post(ReqUrl.THREAD_NICKNAME, data))
+
+        return False if j is None else True
 
     def changeThreadColor(self, color, thread_id=None):
         """
@@ -1017,16 +1043,39 @@ class Client(object):
         :param color: New thread color
         :param thread_id: User/Group ID to change color of. See :ref:`intro_thread_id`
         :type color: models.ThreadColor
-        :return: (*bool*) True if the action was successful
+        :return: True if the action was successful
+        :rtype: bool
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {
-            "color_choice": color.value,
-            "thread_or_other_fbid": thread_id
+            'color_choice': color.value,
+            'thread_or_other_fbid': thread_id
         }
 
         j = self._checkRequest(self._post(ReqUrl.THREAD_COLOR, data))
+
+        return False if j is None else True
+
+    def changeThreadEmoji(self, emoji, thread_id=None):
+        """
+        Changes thread color
+
+        Trivia: While changing the emoji, the Facebook web client actually sends multiple different requests, though only this one is required to make the change
+
+        :param color: New thread emoji
+        :param thread_id: User/Group ID to change emoji of. See :ref:`intro_thread_id`
+        :return: True if the action was successful
+        :rtype: bool
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+
+        data = {
+            'emoji_choice': emoji,
+            'thread_or_other_fbid': thread_id
+        }
+
+        j = self._checkRequest(self._post(ReqUrl.THREAD_EMOJI, data))
 
         return False if j is None else True
 
@@ -1280,7 +1329,7 @@ class Client(object):
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onNicknameChange(mid=mid, author_id=author_id, changed_for=changed_for,
                                               new_nickname=new_nickname,
-                                              thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata)
+                                              thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
                         continue
 
                     # Message delivered
@@ -1347,7 +1396,7 @@ class Client(object):
 
                 # Happens on every login
                 elif mtype == "qprimer":
-                    pass
+                    self.onQprimer(made=m.get("made"), msg=m)
 
                 # Is sent before any other message
                 elif mtype == "deltaflow":
