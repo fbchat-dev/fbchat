@@ -13,36 +13,7 @@ from fbchat.models import *
 
 logging_level = logging.ERROR
 
-"""
-
-Tests for fbchat
-~~~~~~~~~~~~~~~~
-
-To use these tests copy `tests/data.json` to `tests/my_data.json` or type this information manually in the terminal prompts.
-
-- email: Your (or a test user's) email / phone number
-- password: Your (or a test user's) password
-- group_thread_id: A test group that will be used to test group functionality
-- user_thread_id: A person that will be used to test kick/add functionality (This user should be in the group)
-
-Please remember to test both python v. 2.7 and python v. 3.6!
-
-If you've made any changes to the 2FA functionality, test it with a 2FA enabled account
-If you only want to execute specific tests, pass the function names in the commandline
-
-WARNING:
-Do not execute the full set of tests in too quick succession. This can get you temporarily blocked for spam!
-(You should execute the script at max about 10 times a day)
-
-"""
-
 class TestFbchat(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_loginFunctions(self):
         self.assertTrue(client.isLoggedIn())
 
@@ -51,7 +22,7 @@ class TestFbchat(unittest.TestCase):
         self.assertFalse(client.isLoggedIn())
 
         with self.assertRaises(Exception):
-            client.login('not@email.com', 'not_password', max_retries=1)
+            client.login('<email>', '<password>', max_retries=1)
 
         client.login(email, password)
 

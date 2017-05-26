@@ -8,6 +8,7 @@ from random import random
 import warnings
 from .models import *
 
+#: Default list of user agents
 USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/601.1.10 (KHTML, like Gecko) Version/8.0.5 Safari/601.1.10",
@@ -16,6 +17,7 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11",
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6"
 ]
+
 GENDERS = {
     0: 'unknown',
     1: 'female_singular',
@@ -31,7 +33,8 @@ GENDERS = {
     11: 'unknown_plural',
 }
 
-class ReqUrl:
+class ReqUrl(object):
+    """A class containing all urls used by `fbchat`"""
     SEARCH = "https://www.facebook.com/ajax/typeahead/search.php"
     LOGIN = "https://m.facebook.com/login.php?login_attempt=1"
     SEND = "https://www.facebook.com/messaging/send/"
@@ -68,14 +71,14 @@ def strip_to_json(text):
     except ValueError as e:
         return None
 
-def get_dencoded(r):
+def get_decoded(r):
     if not isinstance(r._content, str):
         return r._content.decode(facebookEncoding)
     else:
         return r._content
 
 def get_json(r):
-    return json.loads(strip_to_json(get_dencoded(r)))
+    return json.loads(strip_to_json(get_decoded(r)))
 
 def digit_to_char(digit):
     if digit < 10:
@@ -112,9 +115,7 @@ def raise_exception(e):
     raise e
 
 def deprecation(name, deprecated_in=None, removed_in=None, details='', stacklevel=3):
-    """This is a function which should be used to mark parameters as deprecated.
-    It will result in a warning being emmitted when the parameter is used.
-    """
+    """Used to mark parameters as deprecated. Will result in a warning being emmitted when the parameter is used."""
     warning = "Client.{} is deprecated".format(name)
     if deprecated_in:
         warning += ' in v. {}'.format(deprecated_in)
@@ -122,15 +123,13 @@ def deprecation(name, deprecated_in=None, removed_in=None, details='', stackleve
         warning += ' and will be removed in v. {}'.format(removed_in)
     if details:
         warning += '. {}'.format(details)
-    
+
     warnings.simplefilter('always', DeprecationWarning)
     warnings.warn(warning, category=DeprecationWarning, stacklevel=stacklevel)
     warnings.simplefilter('default', DeprecationWarning)
 
 def deprecated(deprecated_in=None, removed_in=None, details=''):
-    """This is a decorator which can be used to mark functions as deprecated.
-    It will result in a warning being emmitted when the decorated function is used.
-    """
+    """A decorator used to mark functions as deprecated. Will result in a warning being emmitted when the decorated function is used."""
     def wrap(func, *args, **kwargs):
         def wrapped_func(*args, **kwargs):
             deprecation(func.__name__, deprecated_in=deprecated_in, removed_in=removed_in, details=details, stacklevel=3)

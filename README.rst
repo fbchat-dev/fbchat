@@ -5,7 +5,7 @@ fbchat
 
 Facebook Chat (`Messenger <https://www.messenger.com/>`__) for Python. This project was inspired by `facebook-chat-api <https://github.com/Schmavery/facebook-chat-api>`__.
 
-**No XMPP or API key is needed**. Just use your ID and PASSWORD.
+**No XMPP or API key is needed**. Just use your EMAIL and PASSWORD.
 
 
 Installation
@@ -18,21 +18,20 @@ Simple:
     $ pip install fbchat
 
 
-Example
-=======
+Example Login
+=============
 
 .. code-block:: python
 
     import fbchat
 
-    client = fbchat.Client("YOUR_ID", "YOUR_PASSWORD")
-
+    client = fbchat.Client('YOUR_EMAIL', 'YOUR_PASSWORD')
 
 Sending a Message
 =================
 
 .. code-block:: python
-    
+
     friends = client.getUsers("FRIEND'S NAME")  # return a list of names
     friend = friends[0]
     sent = client.send(friend.uid, "Your Message")

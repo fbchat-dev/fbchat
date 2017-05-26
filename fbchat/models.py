@@ -1,11 +1,28 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import unicode_literals
-import sys
-from enum import Enum
+import enum
 
-class User:
+class User(object):
+    """Represents a Facebook User"""
+
+    #: The unique identifier of the user. Can be used a `thread_id`. See :ref:`intro_thread_id` for more info
+    uid = None
+    #: Currently always set to `user`. Might change in the future
+    type = 'user'
+    #: The profile picture of the user
+    photo = None
+    #: The profile url
+    url = None
+    #: The name of the user
+    name = None
+    #: Only used by :any:`Client.getUsers`. Each user is assigned a score between 0 and 1, based on how likely it is that they were the person being searched for
+    score = None
+    #: Dictionary containing raw userdata from when the :class:`User` was created
+    data = None
+
     def __init__(self, data):
+        """Represents a Facebook User"""
         if data['type'] != 'user':
             raise Exception("[!] %s <%s> is not a user" % (data['text'], data['path']))
         self.uid = data['uid']
@@ -13,21 +30,21 @@ class User:
         self.photo = data['photo']
         self.url = data['path']
         self.name = data['text']
-        self.score = data['score']
+        self.score = float(data['score'])
         self.data = data
 
     def __repr__(self):
-        uni = self.__unicode__()
-        return uni.encode('utf-8') if sys.version_info < (3, 0) else uni
+        return self.__unicode__()
 
     def __unicode__(self):
         return u'<%s %s (%s)>' % (self.type.upper(), self.name, self.url)
 
     @staticmethod
-    def adaptFromChat(user_in_chat):
-        """ Adapts user info from chat to User model acceptable initial dict
+    def _adaptFromChat(user_in_chat):
+        """Adapts user info from chat to User model acceptable initial dict
 
         :param user_in_chat: user info from chat
+        :return: :class:`User` object
 
         'dir': None,
         'mThumbSrcSmall': None,
@@ -53,42 +70,42 @@ class User:
             'photo': user_in_chat['thumbSrc'],
             'path': user_in_chat['uri'],
             'text': user_in_chat['name'],
-            'score': '',
+            'score': 1,
             'data': user_in_chat,
         }
 
-
-class Thread:
+class Thread(object):
     def __init__(self, **entries): 
         self.__dict__.update(entries)
 
-class Message:
+class Message(object):
     def __init__(self, **entries):
         self.__dict__.update(entries)
 
+class Enum(enum.Enum):
+    """Used internally by fbchat to support enumerations"""
+    def __repr__(self):
+        # For documentation:
+        return '{}.{}'.format(type(self).__name__, self.name)
+
 class ThreadType(Enum):
+    """Used to specify what type of Facebook thread is being used. See :ref:`intro_thread_type` for more info"""
     USER = 1
     GROUP = 2
 
 class TypingStatus(Enum):
+    """Used to specify whether the user is typing or has stopped typing"""
     STOPPED = 0
     TYPING = 1
 
 class EmojiSize(Enum):
+    """Used to specify the size of a sent emoji"""
     LARGE = '369239383222810'
     MEDIUM = '369239343222814'
     SMALL = '369239263222822'
 
-LIKES = {
-    'l': EmojiSize.LARGE,
-    'm': EmojiSize.MEDIUM,
-    's': EmojiSize.SMALL
-}
-LIKES['large'] = LIKES['l']
-LIKES['medium'] =LIKES['m']
-LIKES['small'] = LIKES['s']
-
 class ThreadColor(Enum):
+    """Used to specify a thread colors"""
     MESSENGER_BLUE = ''
     VIKING = '#44bec7'
     GOLDEN_POPPY = '#ffc300'
@@ -106,6 +123,7 @@ class ThreadColor(Enum):
     BILOBA_FLOWER = '#a695c7'
 
 class MessageReaction(Enum):
+    """Used to specify a message reaction"""
     LOVE = '😍'
     SMILE = '😆'
     WOW = '😮'
@@ -113,6 +131,15 @@ class MessageReaction(Enum):
     ANGRY = '😠'
     YES = '👍'
     NO = '👎'
+
+LIKES = {
+    'large': EmojiSize.LARGE,
+    'medium': EmojiSize.MEDIUM,
+    'small': EmojiSize.SMALL,
+    'l': EmojiSize.LARGE,
+    'm': EmojiSize.MEDIUM,
+    's': EmojiSize.SMALL
+}
 
 MessageReactionFix = {
     '😍': ('0001f60d', '%F0%9F%98%8D'),

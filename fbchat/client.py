@@ -1,16 +1,5 @@
 # -*- coding: UTF-8 -*-
 
-"""
-    fbchat
-    ~~~~~~
-
-    Facebook Chat (Messenger) for Python
-
-    :copyright: (c) 2015      by Taehoon Kim.
-    :copyright: (c) 2015-2016 by PidgeyL.
-    :license: BSD, see LICENSE for more details.
-"""
-
 from __future__ import unicode_literals
 import requests
 import logging
@@ -24,15 +13,12 @@ from .utils import *
 from .models import *
 from .event_hook import *
 import time
-import sys
 
 # Python 2's `input` executes the input, whereas `raw_input` just returns the input
 try:
     input = raw_input
 except NameError:
     pass
-
-
 
 # Log settings
 log = logging.getLogger("client")
@@ -45,23 +31,25 @@ log.addHandler(handler)
 class Client(object):
     """A client for the Facebook Chat (Messenger).
 
-    See http://github.com/carpedm20/fbchat for complete
-    documentation for the API.
+    See https://fbchat.readthedocs.io for complete documentation of the API.
     """
 
     def __init__(self, email, password, debug=False, info_log=False, user_agent=None, max_retries=5,
                  session_cookies=None, logging_level=logging.INFO, set_default_events=True):
-        """A client for the Facebook Chat (Messenger).
+        """Initializes and logs in the client
 
-        :param email: Facebook `email` or `id` or `phone number`
+        :param email: Facebook `email`, `id` or `phone number`
         :param password: Facebook account password
-        :param debug: Configures the logger to `debug` logging_level (deprecated)
-        :param info_log: Configures the logger to `info` logging_level (deprecated)
-        :param user_agent: Custom user agent to use when sending requests. If `None`, user agent will be chosen from a premade list (see utils.py)
+        :param user_agent: Custom user agent to use when sending requests. If `None`, user agent will be chosen from a premade list (see :any:`utils.USER_AGENTS`)
         :param max_retries: Maximum number of times to retry login
-        :param session_cookies: Cookie dict from a previous session (Will default to login if these are invalid)
-        :param logging_level: Configures the logger to logging_level
-        :param set_default_events: Specifies whether the default logging.info events should be initialized
+        :param session_cookies: Cookies from a previous session (Will default to login if these are invalid)
+        :param logging_level: Configures the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. Defaults to `INFO`
+        :param set_default_events: Specifies whether the default `logging.info` events should be initialized
+        :type max_retries: int
+        :type session_cookies: dict
+        :type logging_level: int
+        :type set_default_events: bool
+        :raises: Exception on failed login
         """
 
         self.sticky, self.pool = (None, None)
@@ -115,6 +103,8 @@ class Client(object):
     def _setupEventHooks(self):
         self._setEventHook('onLoggingIn', lambda email: log.info("Logging in {}...".format(email)))
 
+        self._setEventHook('on2FACode', lambda: input('Please enter your 2FA code --> '))
+
         self._setEventHook('onLoggedIn', lambda email: log.info("Login of {} successful.".format(email)))
 
         self._setEventHook('onListening', lambda: log.info("Listening..."))
@@ -134,8 +124,8 @@ class Client(object):
         self._setEventHook('onTitleChange', lambda mid, author_id, new_title, thread_id, thread_type, ts, metadata, msg:\
             log.info("Title change from {} in {} ({}): {}".format(author_id, thread_id, thread_type.name, new_title)))
 
-        self._setEventHook('onNicknameChange', lambda mid, author_id, new_title, changed_for, thread_id, thread_type, ts, metadata, msg:\
-            log.info("Nickname change from {} in {} ({}) for {}: {}".format(author_id, thread_id, thread_type.name, changed_for, new_title)))
+        self._setEventHook('onNicknameChange', lambda mid, author_id, changed_for, new_nickname, thread_id, thread_type, ts, metadata, msg:\
+            log.info("Nickname change from {} in {} ({}) for {}: {}".format(author_id, thread_id, thread_type.name, changed_for, new_nickname)))
 
 
         self._setEventHook('onMessageSeen', lambda seen_by, thread_id, thread_type, seen_ts, delivered_ts, metadata, msg:\
@@ -325,7 +315,8 @@ class Client(object):
         soup = bs(r.text, "lxml")
         data = dict()
 
-        s = input('Please enter your 2FA code --> ')
+        s = self.on2FACode()
+
         data['approvals_code'] = s
         data['fb_dtsg'] = soup.find("input", {'name':'fb_dtsg'})['value']
         data['nh'] = soup.find("input", {'name':'nh'})['value']
@@ -372,34 +363,68 @@ class Client(object):
         r = self._cleanPost(ReqUrl.CHECKPOINT, data)
         return r
 
+    def _checkRequest(self, r):
+        if not r.ok:
+            log.warning('Error when sending request: Got {} response'.format(r.status_code))
+            return None
+
+        j = get_json(r)
+        if 'error' in j:
+            # 'errorDescription' is in the users own language!
+            log.warning('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']))
+            return None
+
+        return j
+
     def isLoggedIn(self):
-        # Send a request to the login url, to see if we're directed to the home page.
+        """
+        Sends a request to Facebook to check the login status
+
+        :return: True if the client is still logged in
+        :rtype: bool
+        """
+        # Send a request to the login url, to see if we're directed to the home page
         r = self._cleanGet(ReqUrl.LOGIN)
         return 'home' in r.url
 
     def getSession(self):
-        """Returns the session cookies"""
+        """Retrieves session cookies
+
+        :return: A dictionay containing session cookies
+        :rtype: dict
+        """
         return self._session.cookies.get_dict()
 
     def setSession(self, session_cookies):
         """Loads session cookies
 
-        :param session_cookies: dictionary containing session cookies
-        Return false if session_cookies does not contain proper cookies
+        :param session_cookies: A dictionay containing session cookies
+        :type session_cookies: dict
+        :return: False if `session_cookies` does not contain proper cookies
+        :rtype: bool
         """
 
         # Quick check to see if session_cookies is formatted properly
         if not session_cookies or 'c_user' not in session_cookies:
             return False
-        
+
         # Load cookies into current session
         self._session.cookies = requests.cookies.merge_cookies(self._session.cookies, session_cookies)
         self._postLogin()
         return True
 
     def login(self, email, password, max_retries=5):
+        """
+        Uses `email` and `password` to login the user (If the user is already logged in, this will do a re-login)
+
+        :param email: Facebook `email` or `id` or `phone number`
+        :param password: Facebook account password
+        :param max_retries: Maximum number of times to retry login
+        :type max_retries: int
+        :raises: Exception on failed login
+        """
         self.onLoggingIn(email=email)
-        
+
         if not (email and password):
             raise Exception("Email and password not set.")
 
@@ -419,6 +444,16 @@ class Client(object):
             raise Exception("Login failed. Check email/password. (Failed on url: {})".format(login_url))
 
     def logout(self, timeout=30):
+        """
+        Safely logs out the client
+
+        .. todo::
+            Possibly check return parameter with _checkRequest, and the write documentation about the return
+
+        :param timeout: See `requests timeout <http://docs.python-requests.org/en/master/user/advanced/#timeouts>`_
+        :return:
+        :rtype:
+        """
         data = {
             'ref': "mb",
             'h': self.fb_h
@@ -438,28 +473,26 @@ class Client(object):
         self.setDefaultThread(str(recipient_id), thread_type=isUserToThreadType(is_user))
 
     def setDefaultThread(self, thread_id, thread_type):
-        # type: (str, ThreadType) -> None
-        """Sets default thread to send messages and images to.
+        """Sets default thread to send messages to
 
-        :param thread_id: user/group ID to default to
-        :param thread_type: type of thread_id
+        :param thread_id: User/Group ID to default to. See :ref:`intro_thread_id`
+        :param thread_type: See :ref:`intro_thread_type`
+        :type thread_type: models.ThreadType
         """
         self.default_thread_id = thread_id
         self.default_thread_type = thread_type
 
     def resetDefaultThread(self):
-        # type: () -> None
-        """Resets default thread."""
-        self.default_thread_id = None
-        self.default_thread_type = None
+        """Resets default thread"""
+        self.setDefaultThread(None, None)
 
-    def _getThread(self, given_thread_id, given_thread_type):
-        # type: (str, ThreadType) -> (str, ThreadType)
+    def _getThread(self, given_thread_id=None, given_thread_type=None):
         """
         Checks if thread ID is given, checks if default is set and returns correct values
-        
-        :raises ValueError: if thread ID is not given and there is no default
-        :return: tuple of thread ID and thread type
+
+        :raises ValueError: If thread ID is not given and there is no default
+        :return: Thread ID and thread type
+        :rtype: tuple
         """
         if given_thread_id is None:
             if self.default_thread_id is not None:
@@ -469,8 +502,17 @@ class Client(object):
         else:
             return given_thread_id, given_thread_type
 
+    """
+    GET METHODS
+    """
+
     def getAllUsers(self):
-        """ Gets all users from chat with info included """
+        """
+        Gets all users from chat with info included
+
+        :return: :class:`models.User` objects
+        :rtype: list
+        """
 
         data = {
             'viewer': self.uid,
@@ -486,7 +528,7 @@ class Client(object):
 
         for k in payload.keys():
             try:
-                user = User.adaptFromChat(payload[k])
+                user = User._adaptFromChat(payload[k])
             except KeyError:
                 continue
 
@@ -498,6 +540,8 @@ class Client(object):
         """Find and get user by his/her name
 
         :param name: name of a person
+        :return: :class:`models.User` objects, ordered by relevance
+        :rtype: list
         """
 
         payload = {
@@ -517,6 +561,144 @@ class Client(object):
             if entry['type'] == 'user':
                 users.append(User(entry))
         return users # have bug TypeError: __repr__ returned non-string (type bytes)
+
+    def getUserInfo(self, *user_ids):
+        """Get user info from id. Unordered.
+
+        :param user_ids: One or more user ID(s) to query
+        :return: A raw dataset containing user information
+        """
+
+        def fbidStrip(_fbid):
+            # Stripping of `fbid:` from author_id
+            if type(_fbid) == int:
+                return _fbid
+
+            if type(_fbid) in [str, bytes] and 'fbid:' in _fbid:
+                return int(_fbid[5:])
+
+        user_ids = [fbidStrip(uid) for uid in user_ids]
+
+        data = {
+            "ids[{}]".format(i): uid for i, uid in enumerate(user_ids)
+        }
+        r = self._post(ReqUrl.USER_INFO, data)
+        info = get_json(r)
+        full_data = [details for profile,details in info['payload']['profiles'].items()]
+        if len(full_data) == 1:
+            full_data = full_data[0]
+        return full_data
+
+    def getThreadInfo(self, last_n=20, thread_id=None, thread_type=ThreadType.USER):
+        """Get the last messages in a thread
+
+        :param last_n: Number of messages to retrieve
+        :param thread_id: User/Group ID to retrieve from. See :ref:`intro_thread_id`
+        :param thread_type: See :ref:`intro_thread_type`
+        :type last_n: int
+        :type thread_type: models.ThreadType
+        :return: Dictionaries, containing message data
+        :rtype: list
+        """
+
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
+
+        assert last_n > 0, 'length must be positive integer, got %d' % last_n
+
+        if thread_type == ThreadType.USER:
+            key = 'user_ids'
+        elif thread_type == ThreadType.GROUP:
+            key = 'thread_fbids'
+
+        data = {'messages[{}][{}][offset]'.format(key, thread_id): 0,
+                'messages[{}][{}][limit]'.format(key, thread_id): last_n - 1,
+                'messages[{}][{}][timestamp]'.format(key, thread_id): now()}
+
+        r = self._post(ReqUrl.MESSAGES, query=data)
+        if not r.ok or len(r.text) == 0:
+            return []
+
+        j = get_json(r)
+        if not j['payload']:
+            return []
+
+        messages = []
+        for message in j['payload'].get('actions'):
+            messages.append(Message(**message))
+        return list(reversed(messages))
+
+    def getThreadList(self, start=0, length=20):
+        """Get thread list of your facebook account
+
+        :param start: The offset, from where in the list to recieve threads from
+        :param length: The amount of threads to recieve. Maximum of 20
+        :type start: int
+        :type length: int
+        :return: Dictionaries, containing thread data
+        :rtype: list
+        """
+
+        assert length < 21, '`length` is deprecated, max. last 20 threads are returned'
+
+        data = {
+            'client' : self.client,
+            'inbox[offset]' : start,
+            'inbox[limit]' : length,
+        }
+
+        r = self._post(ReqUrl.THREADS, data)
+        if not r.ok or len(r.text) == 0:
+            return []
+
+        j = get_json(r)
+
+        # Get names for people
+        participants = {}
+        try:
+            for participant in j['payload']['participants']:
+                participants[participant["fbid"]] = participant["name"]
+        except Exception:
+            log.exception('Exception while getting names for people in getThreadList. {}'.format(j))
+
+        # Prevent duplicates in self.threads
+        threadIDs = [getattr(x, "thread_id") for x in self.threads]
+        for thread in j['payload']['threads']:
+            if thread["thread_id"] not in threadIDs:
+                try:
+                    thread["other_user_name"] = participants[int(thread["other_user_fbid"])]
+                except:
+                    thread["other_user_name"] = ""
+                t = Thread(**thread)
+                self.threads.append(t)
+
+        return self.threads
+
+    def getUnread(self):
+        """
+        .. todo::
+            Documenting this
+        """
+        form = {
+            'client': 'mercury_sync',
+            'folders[0]': 'inbox',
+            'last_action_timestamp': now() - 60*1000
+            # 'last_action_timestamp': 0
+        }
+
+        r = self._post(ReqUrl.THREAD_SYNC, form)
+        if not r.ok or len(r.text) == 0:
+            return None
+
+        j = get_json(r)
+        result = {
+            "message_counts": j['payload']['message_counts'],
+            "unseen_threads": j['payload']['unseen_thread_ids']
+        }
+        return result
+
+    """
+    END GET METHODS
+    """
 
     """
     SEND METHODS
@@ -564,25 +746,12 @@ class Client(object):
 
         return data
 
-    def _checkRequest(self, r):
-        if not r.ok:
-            log.warning('Error when sending request: Got {} response'.format(r.status_code))
-            return None
-
-        j = get_json(r)
-        if 'error' in j:
-            # 'errorDescription' is in the users own language!
-            log.warning('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']))
-            return None
-        
-        return j
-
     def _doSendRequest(self, data):
         """Sends the data to `SendURL`, and returns the message id"""
         r = self._post(ReqUrl.SEND, data)
 
         j = self._checkRequest(r)
-        
+
         if j is None:
             return None
 
@@ -615,14 +784,14 @@ class Client(object):
             return self.sendMessage(message, thread_id=recipient_id, thread_type=isUserToThreadType(is_user))
 
     def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
-        # type: (str, str, ThreadType) -> list
         """
-        Sends a message to given (or default, if not) thread with an additional image.
-        
-        :param message: message to send
-        :param thread_id: user/group chat ID
-        :param thread_type: specify whether thread_id is user or group chat
-        :return: the message id of the message
+        Sends a message to a thread
+
+        :param message: Message to send
+        :param thread_id: User/Group ID to send to. See :ref:`intro_thread_id`
+        :param thread_type: See :ref:`intro_thread_type`
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent message
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
@@ -636,15 +805,16 @@ class Client(object):
         return self._doSendRequest(data)
 
     def sendEmoji(self, emoji=None, size=EmojiSize.SMALL, thread_id=None, thread_type=ThreadType.USER):
-        # type: (str, EmojiSize, str, ThreadType) -> list
         """
-        Sends an emoji. If emoji and size are not specified a small like is sent.
-        
-        :param emoji: the chosen emoji to send. If not specified, default thread emoji is sent
-        :param size: size of emoji to send
-        :param thread_id: user/group chat ID
-        :param thread_type: specify whether thread_id is user or group chat
-        :return: the message id of the emoji
+        Sends an emoji to a thread
+
+        :param emoji: The chosen emoji to send. If not specified, the thread's default emoji is sent
+        :param size: If not specified, a small emoji is sent
+        :param thread_id: User/Group ID to send to. See :ref:`intro_thread_id`
+        :param thread_type: See :ref:`intro_thread_type`
+        :type size: models.EmojiSize
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent emoji
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
@@ -661,8 +831,34 @@ class Client(object):
 
         return self._doSendRequest(data)
 
+    def _uploadImage(self, image_path, data, mimetype):
+        """Upload an image and get the image_id for sending in a message
+
+        :param image: a tuple of (file name, data, mime type) to upload to facebook
+        """
+
+        r = self._postFile(ReqUrl.UPLOAD, {
+            'file': (
+                image_path,
+                data,
+                mimetype
+            )
+        })
+        j = get_json(r)
+        # Return the image_id
+        return j['payload']['metadata'][0]['image_id']
+
     def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """Sends an already uploaded image with the id image_id to the thread"""
+        """
+        Sends an already uploaded image to a thread. (Used by :any:`Client.sendRemoteImage` and :any:`Client.sendLocalImage`)
+
+        :param image_id: ID of an image that's already uploaded to Facebook
+        :param message: Additional message
+        :param thread_id: User/Group ID to send to. See :ref:`intro_thread_id`
+        :param thread_type: See :ref:`intro_thread_type`
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent image
+        """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
 
@@ -678,15 +874,15 @@ class Client(object):
 
     def sendRemoteImage(self, image_url, message=None, thread_id=None, thread_type=ThreadType.USER,
                         recipient_id=None, is_user=None, image=None):
-        # type: (str, str, str, ThreadType) -> list
         """
-        Sends an image from given URL to given (or default, if not) thread.        
-        
+        Sends an image from a URL to a thread
+
         :param image_url: URL of an image to upload and send
-        :param message: additional message
-        :param thread_id: user/group chat ID
-        :param thread_type: specify whether thread_id is user or group chat 
-        :return: the message id of the message
+        :param message: Additional message
+        :param thread_id: User/Group ID to send to. See :ref:`intro_thread_id`
+        :param thread_type: See :ref:`intro_thread_type`
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent image
         """
         if recipient_id is not None:
             deprecation('sendRemoteImage(recipient_id)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendRemoteImage(thread_id) instead')
@@ -708,13 +904,14 @@ class Client(object):
                        recipient_id=None, is_user=None, image=None):
         # type: (str, str, str, ThreadType) -> list
         """
-        Sends an image from given URL to given (or default, if not) thread.
-        
-        :param image_path: path of an image to upload and send
-        :param message: additional message
-        :param thread_id: user/group chat ID
-        :param thread_type: specify whether thread_id is user or group chat
-        :return: the message id of the message
+        Sends a local image to a thread
+
+        :param image_path: URL of an image to upload and send
+        :param message: Additional message
+        :param thread_id: User/Group ID to send to. See :ref:`intro_thread_id`
+        :param thread_type: See :ref:`intro_thread_type`
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent image
         """
         if recipient_id is not None:
             deprecation('sendLocalImage(recipient_id)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(thread_id) instead')
@@ -732,13 +929,13 @@ class Client(object):
         return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
 
     def addUsersToGroup(self, user_ids, thread_id=None):
-        # type: (list, str) -> list
         """
-        Adds users to the given (or default, if not) group.
-        
-        :param user_ids: list of user ids to add
-        :param thread_id: group chat ID
-        :return: the message id of the "message"
+        Adds users to a group.
+
+        :param user_ids: User ids to add
+        :param thread_id: Group ID to add people to. See :ref:`intro_thread_id`
+        :type user_ids: list
+        :return: :ref:`Message ID <intro_message_ids>` of the sent "message"
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = self._getSendData(thread_id, ThreadType.GROUP)
@@ -746,19 +943,26 @@ class Client(object):
         data['action_type'] = 'ma-type:log-message'
         data['log_message_type'] = 'log:subscribe'
 
+        # Make list of users unique
+        user_ids = set(user_ids)
+
         for i, user_id in enumerate(user_ids):
-            data['log_message_data[added_participants][' + str(i) + ']'] = "fbid:" + str(user_id)
+            if user_id == self.uid:
+                log.warning('Error when adding users: Cannot add self to group chat')
+                if len(user_ids) == 0:
+                    return None
+            else:
+                data['log_message_data[added_participants][' + str(i) + ']'] = "fbid:" + str(user_id)
 
         return self._doSendRequest(data)
 
     def removeUserFromGroup(self, user_id, thread_id=None):
-        # type: (str, str) -> bool
         """
-        Adds users to the given (or default, if not) group.
-        
-        :param user_id: user ID to remove
-        :param thread_id: group chat ID
-        :return: whether the action was successful
+        Removes users from a group.
+
+        :param user_id: User ID to remove
+        :param thread_id: Group ID to remove people from. See :ref:`intro_thread_id`
+        :return: :ref:`Message ID <intro_message_ids>` of the sent "message"
         """
 
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -767,7 +971,7 @@ class Client(object):
             "uid": user_id,
             "tid": thread_id
         }
-        
+
         j = self._checkRequest(self._post(ReqUrl.REMOVE_USER, data))
 
         return False if j is None else True
@@ -788,11 +992,14 @@ class Client(object):
 
     def changeGroupTitle(self, title, thread_id=None):
         """
-        Change title of a group conversation.
-        
-        :param title: new group chat title
-        :param thread_id: group chat ID
-        :return: the message id of the "message"
+        Changes title of a group conversation.
+
+        .. todo::
+            Check whether this can work on group threads, and if it does, change it (back) to changeThreadTitle
+
+        :param title: New group chat title
+        :param thread_id: Group ID to change title of. See :ref:`intro_thread_id`
+        :return: :ref:`Message ID <intro_message_ids>` of the sent "message"
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = self._getSendData(thread_id, ThreadType.GROUP)
@@ -803,19 +1010,19 @@ class Client(object):
 
         return self._doSendRequest(data)
 
-    def changeThreadColor(self, new_color, thread_id=None):
-        # type: (ThreadColor, str, ThreadType) -> bool
+    def changeThreadColor(self, color, thread_id=None):
         """
-        Changes thread color to specified color. For more info about color names - see wiki.
-        
-        :param new_color: new color name
-        :param thread_id: user/group chat ID
-        :return: whether the action was successful
+        Changes thread color
+
+        :param color: New thread color
+        :param thread_id: User/Group ID to change color of. See :ref:`intro_thread_id`
+        :type color: models.ThreadColor
+        :return: (*bool*) True if the action was successful
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {
-            "color_choice": new_color.value,
+            "color_choice": color.value,
             "thread_or_other_fbid": thread_id
         }
 
@@ -824,13 +1031,14 @@ class Client(object):
         return False if j is None else True
 
     def reactToMessage(self, message_id, reaction):
-        # type: (str, MessageReaction) -> bool
         """
         Reacts to a message.
 
-        :param message_id: message ID to react to
-        :param reaction: reaction emoji to send
-        :return: whether the action was successful
+        :param message_id: :ref:`Message ID <intro_message_ids>` to react to
+        :param reaction: Reaction emoji to use
+        :type reaction: models.MessageReaction
+        :return: True if the action was successful
+        :rtype: bool
         """
         full_data = {
             "doc_id": 1491398900900362,
@@ -852,20 +1060,22 @@ class Client(object):
             url_part = urllib.urlencode(full_data)\
                 .replace('u%27', '%27')\
                 .replace('%5CU{}'.format(MessageReactionFix[reaction.value][0]), MessageReactionFix[reaction.value][1])
-        
+
         j = self._checkRequest(self._post('{}/?{}'.format(ReqUrl.MESSAGE_REACTION, url_part)))
 
         return False if j is None else True
 
     def setTypingStatus(self, status, thread_id=None, thread_type=None):
-        # type: (TypingStatus, str, ThreadType) -> bool
         """
-        Sets users typing status.
-        
-        :param status: specify whether the status is typing or not (TypingStatus)
-        :param thread_id: user/group chat ID
-        :param thread_type: specify whether thread_id is user or group chat
-        :return: True if status changed
+        Sets users typing status in a thread
+
+        :param status: Specify the typing status
+        :param thread_id: User/Group ID to change status in. See :ref:`intro_thread_id`
+        :param thread_type: See :ref:`intro_thread_type`
+        :type status: models.TypingStatus
+        :type thread_type: models.ThreadType
+        :return: True if the action was successful
+        :rtype: bool
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
@@ -881,126 +1091,14 @@ class Client(object):
         return False if j is None else True
 
     """
-    END SEND METHODS    
+    END SEND METHODS
     """
 
-    def _uploadImage(self, image_path, data, mimetype):
-        """Upload an image and get the image_id for sending in a message
-
-        :param image: a tuple of (file name, data, mime type) to upload to facebook
-        """
-
-        r = self._postFile(ReqUrl.UPLOAD, {
-            'file': (
-                image_path,
-                data,
-                mimetype
-            )
-        })
-        j = get_json(r)
-        # Return the image_id
-        return j['payload']['metadata'][0]['image_id']
-
-    def getThreadInfo(self, last_n=20, thread_id=None, thread_type=ThreadType.USER):
-        # type: (int, str, ThreadType) -> list
-        """Get the info of one Thread
-
-        :param last_n: number of retrieved messages from start (default 20)
-        :param thread_id: user/group chat ID
-        :param thread_type: specify whether thread_id is user or group chat 
-        :return: a list of messages
-        """
-
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
-
-        assert last_n > 0, 'length must be positive integer, got %d' % last_n
-
-        if thread_type == ThreadType.USER:
-            key = 'user_ids'
-        elif thread_type == ThreadType.GROUP:
-            key = 'thread_fbids'
-
-        data = {'messages[{}][{}][offset]'.format(key, thread_id): 0,
-                'messages[{}][{}][limit]'.format(key, thread_id): last_n - 1,
-                'messages[{}][{}][timestamp]'.format(key, thread_id): now()}
-
-        r = self._post(ReqUrl.MESSAGES, query=data)
-        if not r.ok or len(r.text) == 0:
-            return []
-
-        j = get_json(r)
-        if not j['payload']:
-            return []
-
-        messages = []
-        for message in j['payload'].get('actions'):
-            messages.append(Message(**message))
-        return list(reversed(messages))
-
-
-    def getThreadList(self, start, length=20):
-        # type: (int, int) -> list
-        """Get thread list of your facebook account.
-
-        :param start: the start index of a thread
-        :param length: (optional) the length of a thread
-        """
-
-        assert length < 21, '`length` is deprecated, max. last 20 threads are returned'
-
-        data = {
-            'client' : self.client,
-            'inbox[offset]' : start,
-            'inbox[limit]' : length,
-        }
-
-        r = self._post(ReqUrl.THREADS, data)
-        if not r.ok or len(r.text) == 0:
-            return []
-
-        j = get_json(r)
-
-        # Get names for people
-        participants = {}
-        try:
-            for participant in j['payload']['participants']:
-                participants[participant["fbid"]] = participant["name"]
-        except Exception:
-            log.exception('Exception while getting names for people in getThreadList. {}'.format(j))
-
-        # Prevent duplicates in self.threads
-        threadIDs = [getattr(x, "thread_id") for x in self.threads]
-        for thread in j['payload']['threads']:
-            if thread["thread_id"] not in threadIDs:
-                try:
-                    thread["other_user_name"] = participants[int(thread["other_user_fbid"])]
-                except:
-                    thread["other_user_name"] = ""
-                t = Thread(**thread)
-                self.threads.append(t)
-
-        return self.threads
-
-    def getUnread(self):
-        form = {
-            'client': 'mercury_sync',
-            'folders[0]': 'inbox',
-            'last_action_timestamp': now() - 60*1000
-            # 'last_action_timestamp': 0
-        }
-
-        r = self._post(ReqUrl.THREAD_SYNC, form)
-        if not r.ok or len(r.text) == 0:
-            return None
-
-        j = get_json(r)
-        result = {
-            "message_counts": j['payload']['message_counts'],
-            "unseen_threads": j['payload']['unseen_thread_ids']
-        }
-        return result
-
     def markAsDelivered(self, userID, threadID):
+        """
+        .. todo::
+            Documenting this
+        """
         data = {
             "message_ids[0]": threadID,
             "thread_ids[%s][0]" % userID: threadID
@@ -1010,6 +1108,10 @@ class Client(object):
         return r.ok
 
     def markAsRead(self, userID):
+        """
+        .. todo::
+            Documenting this
+        """
         data = {
             "watermarkTimestamp": now(),
             "shouldSendReadReceipt": True,
@@ -1020,6 +1122,10 @@ class Client(object):
         return r.ok
 
     def markAsSeen(self):
+        """
+        .. todo::
+            Documenting this
+        """
         r = self._post(ReqUrl.MARK_SEEN, {"seen_timestamp": 0})
         return r.ok
 
@@ -1028,7 +1134,10 @@ class Client(object):
         return self.friendConnect(friend_id)
 
     def friendConnect(self, friend_id):
-        # type: (str) -> bool
+        """
+        .. todo::
+            Documenting this
+        """
         data = {
             "to_friend": friend_id,
             "action": "confirm"
@@ -1038,6 +1147,10 @@ class Client(object):
         return r.ok
 
     def ping(self, sticky):
+        """
+        .. todo::
+            Documenting this
+        """
         data = {
             'channel': self.user_channel,
             'clientid': self.client_id,
@@ -1138,7 +1251,7 @@ class Client(object):
 
                     # Color change
                     elif delta_type == "change_thread_theme":
-                        new_color = delta["untypedData"]["theme_color"]
+                        new_color = ThreadColor(delta["untypedData"]["theme_color"])
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onColorChange(mid=mid, author_id=author_id, new_color=new_color, thread_id=thread_id,
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
@@ -1163,10 +1276,10 @@ class Client(object):
                     # Nickname change
                     elif delta_type == "change_thread_nickname":
                         changed_for = str(delta["untypedData"]["participant_id"])
-                        new_title = delta["untypedData"]["nickname"]
+                        new_nickname = delta["untypedData"]["nickname"]
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onNicknameChange(mid=mid, author_id=author_id, changed_for=changed_for,
-                                              new_title=new_title,
+                                              new_nickname=new_nickname,
                                               thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata)
                         continue
 
@@ -1263,10 +1376,15 @@ class Client(object):
         return self.doOneListen(markAlive)
 
     def doOneListen(self, markAlive=True):
-        # type: (bool) -> None
-        """Does one cycle of the listening loop.
-        This method is only useful if you want to control fbchat from an
-        external event loop."""
+        """
+        Does one cycle of the listening loop.
+        This method is useful if you want to control fbchat from an external event loop
+
+        :param markAlive: Whether this should ping the Facebook server before running
+        :type markAlive: bool
+        :return: Whether the loop should keep running
+        :rtype: bool
+        """
         try:
             if markAlive: self.ping(self.sticky)
             try:
@@ -1275,11 +1393,13 @@ class Client(object):
             except requests.exceptions.RequestException as e:
                 pass
         except KeyboardInterrupt:
-            self.listening = False
+            return False
         except requests.exceptions.Timeout:
             pass
         except Exception as e:
-            self.onListenError(e)
+            return self.onListenError(e)
+
+        return True
 
 
     @deprecated(deprecated_in='0.10.2', removed_in='0.15.0', details='Use stopListening() instead')
@@ -1287,43 +1407,22 @@ class Client(object):
         return self.stopListening()
 
     def stopListening(self):
-        """Cleans up the variables from start_listening."""
+        """Cleans up the variables from startListening"""
         self.listening = False
         self.sticky, self.pool = (None, None)
 
 
     def listen(self, markAlive=True):
+        """
+        Initializes and runs the listening loop continually
+
+        :param markAlive: Whether this should ping the Facebook server each time the loop runs
+        :type markAlive: bool
+        """
         self.startListening()
         self.onListening()
 
-        while self.listening:
-            self.doOneListen(markAlive)
+        while self.listening and self.doOneListen(markAlive):
+            pass
 
         self.stopListening()
-
-
-    def getUserInfo(self, *user_ids):
-        """Get user info from id. Unordered.
-
-        :param user_ids: one or more user id(s) to query
-        """
-
-        def fbidStrip(_fbid):
-            # Stripping of `fbid:` from author_id
-            if type(_fbid) == int:
-                return _fbid
-
-            if type(_fbid) in [str, bytes] and 'fbid:' in _fbid:
-                return int(_fbid[5:])
-
-        user_ids = [fbidStrip(uid) for uid in user_ids]
-
-
-        data = {"ids[{}]".format(i):uid for i,uid in enumerate(user_ids)}
-        r = self._post(ReqUrl.USER_INFO, data)
-        info = get_json(r)
-        full_data= [details for profile,details in info['payload']['profiles'].items()]
-        if len(full_data)==1:
-            full_data=full_data[0]
-        return full_data
-
