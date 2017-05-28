@@ -16,6 +16,7 @@ except ImportError:
 with open('README.rst') as f:
     readme_content = f.read().strip()
 
+requirements = [line.rstrip('\n') for line in open('requirements.txt')]
 
 version = None
 author = None
@@ -70,11 +71,7 @@ setup(
     ],
     include_package_data=True,
     packages=['fbchat'],
-    install_requires=[
-        'requests',
-        'lxml',
-        'beautifulsoup4'
-    ],
+    install_requires=requirements,
     url=source,
     version=version,
     zip_safe=True,
