@@ -7,22 +7,20 @@ Examples
 These are a few examples on how to use `fbchat`. Remember to swap out `<email>` and `<password>` for your email and password
 
 
-Sending messages
-----------------
+Interacting with Threads
+------------------------
 
-This will send one of each message type to the specified thread
+This will interract with the thread in every way `fbchat` supports
 
-.. literalinclude:: ../examples/send.py
-    :language: python
+.. literalinclude:: ../examples/interract.py
 
 
-Getting information
--------------------
+Fetching Information
+--------------------
 
 This will show the different ways of fetching information about users and threads
 
-.. literalinclude:: ../examples/get.py
-    :language: python
+.. literalinclude:: ../examples/fetch.py
 
 
 Echobot
@@ -31,22 +29,20 @@ Echobot
 This will reply to any message with the same message
 
 .. literalinclude:: ../examples/echobot.py
-    :language: python
 
 
-Remove bot
+Remove Bot
 ----------
 
 This will remove a user from a group if they write the message `Remove me!`
 
 .. literalinclude:: ../examples/removebot.py
-    :language: python
 
 
-"Keep it"-bot
--------------
+"Prevent changes"-Bot
+---------------------
 
-This will prevent chat color, emoji, nicknames and chat name from being changed. It will also prevent people from being added and removed
+This will prevent chat color, emoji, nicknames and chat name from being changed.
+It will also prevent people from being added and removed
 
 .. literalinclude:: ../examples/keepbot.py
-    :language: python

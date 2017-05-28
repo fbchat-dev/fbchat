@@ -28,10 +28,44 @@ handler = logging.StreamHandler()
 log.addHandler(handler)
 
 
+
+#: This function needs the logger
+def check_request(r, check_json=True):
+    if not r.ok:
+        log.warning('Error when sending request: Got {} response'.format(r.status_code))
+        return None
+
+    content = get_decoded(r)
+
+    if content is None or len(content) == 0:
+        log.warning('Error when sending request: Got empty response')
+        return None
+
+    if check_json:
+        j = json.loads(strip_to_json(content))
+        if 'error' in j:
+            # 'errorDescription' is in the users own language!
+            log.warning('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']))
+            return None
+        return j
+    else:
+        return r
+
+
 class Client(object):
     """A client for the Facebook Chat (Messenger).
 
     See https://fbchat.readthedocs.io for complete documentation of the API.
+    """
+
+    listening = False
+    """Whether the client is listening. Used when creating an external event loop to determine when to stop listening"""
+    uid = None
+    """
+    The id of the client.
+    Can be used a `thread_id`. See :ref:`intro_threads` for more info.
+
+    Note: Modifying this results in undefined behaviour
     """
 
     def __init__(self, email, password, debug=False, info_log=False, user_agent=None, max_retries=5,
@@ -56,7 +90,6 @@ class Client(object):
         self.seq = "0"
         self.payloadDefault = {}
         self.client = 'mercury'
-        self.listening = False
         self.default_thread_id = None
         self.default_thread_type = None
         self.threads = []
@@ -359,19 +392,6 @@ class Client(object):
         r = self._cleanPost(ReqUrl.CHECKPOINT, data)
         return r
 
-    def _checkRequest(self, r):
-        if not r.ok:
-            log.warning('Error when sending request: Got {} response'.format(r.status_code))
-            return None
-
-        j = get_json(r)
-        if 'error' in j:
-            # 'errorDescription' is in the users own language!
-            log.warning('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']))
-            return None
-
-        return j
-
     def isLoggedIn(self):
         """
         Sends a request to Facebook to check the login status
@@ -469,8 +489,8 @@ class Client(object):
     def setDefaultThread(self, thread_id, thread_type):
         """Sets default thread to send messages to
 
-        :param thread_id: User/Group ID to default to. See :ref:`intro_thread_id`
-        :param thread_type: See :ref:`intro_thread_type`
+        :param thread_id: User/Group ID to default to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
         """
         self.default_thread_id = thread_id
@@ -497,7 +517,7 @@ class Client(object):
             return given_thread_id, given_thread_type
 
     """
-    GET METHODS
+    FETCH METHODS
     """
 
     def getAllUsers(self):
@@ -559,8 +579,11 @@ class Client(object):
     def getUserInfo(self, *user_ids):
         """Get user info from id. Unordered.
 
+        .. todo::
+            Make this return a list of User objects
+
         :param user_ids: One or more user ID(s) to query
-        :return: A raw dataset containing user information
+        :return: (list of) raw user data
         """
 
         def fbidStrip(_fbid):
@@ -587,8 +610,8 @@ class Client(object):
         """Get the last messages in a thread
 
         :param last_n: Number of messages to retrieve
-        :param thread_id: User/Group ID to retrieve from. See :ref:`intro_thread_id`
-        :param thread_type: See :ref:`intro_thread_type`
+        :param thread_id: User/Group ID to retrieve from. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
         :type last_n: int
         :type thread_type: models.ThreadType
         :return: Dictionaries, containing message data
@@ -679,19 +702,15 @@ class Client(object):
             # 'last_action_timestamp': 0
         }
 
-        r = self._post(ReqUrl.THREAD_SYNC, form)
-        if not r.ok or len(r.text) == 0:
-            return None
+        j = check_request(self._post(ReqUrl.THREAD_SYNC, form))
 
-        j = get_json(r)
-        result = {
+        return {
             "message_counts": j['payload']['message_counts'],
             "unseen_threads": j['payload']['unseen_thread_ids']
         }
-        return result
 
     """
-    END GET METHODS
+    END FETCH METHODS
     """
 
     """
@@ -741,10 +760,10 @@ class Client(object):
         return data
 
     def _doSendRequest(self, data):
-        """Sends the data to `SendURL`, and returns the message id"""
+        """Sends the data to `SendURL`, and returns the message id or None on failure"""
         r = self._post(ReqUrl.SEND, data)
 
-        j = self._checkRequest(r)
+        j = check_request(r)
 
         if j is None:
             return None
@@ -782,10 +801,10 @@ class Client(object):
         Sends a message to a thread
 
         :param message: Message to send
-        :param thread_id: User/Group ID to send to. See :ref:`intro_thread_id`
-        :param thread_type: See :ref:`intro_thread_type`
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+        :return: :ref:`Message ID <intro_message_ids>` of the sent message or `None` on failure
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
@@ -802,13 +821,13 @@ class Client(object):
         """
         Sends an emoji to a thread
 
-        :param emoji: The chosen emoji to send. If not specified, the thread's default emoji is sent
+        :param emoji: The chosen emoji to send. If not specified, the default `like` emoji is sent
         :param size: If not specified, a small emoji is sent
-        :param thread_id: User/Group ID to send to. See :ref:`intro_thread_id`
-        :param thread_type: See :ref:`intro_thread_type`
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
         :type size: models.EmojiSize
         :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent emoji
+        :return: :ref:`Message ID <intro_message_ids>` of the sent emoji or `None` on failure
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
@@ -844,14 +863,14 @@ class Client(object):
 
     def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
-        Sends an already uploaded image to a thread. (Used by :any:`Client.sendRemoteImage` and :any:`Client.sendLocalImage`)
+        Sends an already uploaded image to a thread. (Used by :func:`Client.sendRemoteImage` and :func:`Client.sendLocalImage`)
 
         :param image_id: ID of an image that's already uploaded to Facebook
         :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_thread_id`
-        :param thread_type: See :ref:`intro_thread_type`
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent image
+        :return: :ref:`Message ID <intro_message_ids>` of the sent image or `None` on failure
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id, thread_type)
@@ -873,10 +892,10 @@ class Client(object):
 
         :param image_url: URL of an image to upload and send
         :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_thread_id`
-        :param thread_type: See :ref:`intro_thread_type`
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent image
+        :return: :ref:`Message ID <intro_message_ids>` of the sent image or `None` on failure
         """
         if recipient_id is not None:
             deprecation('sendRemoteImage(recipient_id)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendRemoteImage(thread_id) instead')
@@ -902,10 +921,10 @@ class Client(object):
 
         :param image_path: URL of an image to upload and send
         :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_thread_id`
-        :param thread_type: See :ref:`intro_thread_type`
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent image
+        :return: :ref:`Message ID <intro_message_ids>` of the sent image or `None` on failure
         """
         if recipient_id is not None:
             deprecation('sendLocalImage(recipient_id)', deprecated_in='0.10.2', removed_in='0.15.0', details='Use sendLocalImage(thread_id) instead')
@@ -922,14 +941,14 @@ class Client(object):
         image_id = self._uploadImage(image_path, open(image_path, 'rb'), mimetype)
         return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
 
-    def addUsersToGroup(self, *user_ids, thread_id=None):
+    def addUsersToGroup(self, user_ids, thread_id=None):
         """
         Adds users to a group.
 
-        :param user_ids: User ids to add
-        :param thread_id: Group ID to add people to. See :ref:`intro_thread_id`
-        :type user_ids: list of positional arguments
-        :return: :ref:`Message ID <intro_message_ids>` of the sent "message"
+        :param user_ids: One or more user ids to add
+        :param thread_id: Group ID to add people to. See :ref:`intro_threads`
+        :type user_ids: list
+        :return: :ref:`Message ID <intro_message_ids>` of the executed action or `None` on failure
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = self._getSendData(thread_id, ThreadType.GROUP)
@@ -937,8 +956,13 @@ class Client(object):
         data['action_type'] = 'ma-type:log-message'
         data['log_message_type'] = 'log:subscribe'
 
+        if type(user_ids) is not list:
+            user_ids = [user_ids]
+
         # Make list of users unique
         user_ids = set(user_ids)
+
+        print(user_ids)
 
         for i, user_id in enumerate(user_ids):
             if user_id == self.uid:
@@ -955,8 +979,9 @@ class Client(object):
         Removes users from a group.
 
         :param user_id: User ID to remove
-        :param thread_id: Group ID to remove people from. See :ref:`intro_thread_id`
-        :return: :ref:`Message ID <intro_message_ids>` of the sent "message"
+        :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
+        :return: True if the action was successful
+        :rtype: bool
         """
 
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -966,7 +991,7 @@ class Client(object):
             "tid": thread_id
         }
 
-        j = self._checkRequest(self._post(ReqUrl.REMOVE_USER, data))
+        j = check_request(self._post(ReqUrl.REMOVE_USER, data))
 
         return False if j is None else True
 
@@ -982,11 +1007,12 @@ class Client(object):
 
     def changeThreadTitle(self, title, thread_id=None, thread_type=ThreadType.USER):
         """
-        Changes title of a thread
+        Changes title of a thread.
+        If this is executed on a user thread, this will change the nickname of that user, effectively changing the title
 
         :param title: New group chat title
-        :param thread_id: Group ID to change title of. See :ref:`intro_thread_id`
-        :param thread_type: See :ref:`intro_thread_type`
+        :param thread_id: Group ID to change title of. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
         :return: True if the action was successful
         :rtype: bool
@@ -1018,8 +1044,8 @@ class Client(object):
 
         :param nickname: New nickname
         :param user_id: User that will have their nickname changed
-        :param thread_id: User/Group ID to change color of. See :ref:`intro_thread_id`
-        :param thread_type: See :ref:`intro_thread_type`
+        :param thread_id: User/Group ID to change color of. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
         :return: True if the action was successful
         :rtype: bool
@@ -1032,7 +1058,7 @@ class Client(object):
             'thread_or_other_fbid': thread_id
         }
 
-        j = self._checkRequest(self._post(ReqUrl.THREAD_NICKNAME, data))
+        j = check_request(self._post(ReqUrl.THREAD_NICKNAME, data))
 
         return False if j is None else True
 
@@ -1041,7 +1067,7 @@ class Client(object):
         Changes thread color
 
         :param color: New thread color
-        :param thread_id: User/Group ID to change color of. See :ref:`intro_thread_id`
+        :param thread_id: User/Group ID to change color of. See :ref:`intro_threads`
         :type color: models.ThreadColor
         :return: True if the action was successful
         :rtype: bool
@@ -1053,7 +1079,7 @@ class Client(object):
             'thread_or_other_fbid': thread_id
         }
 
-        j = self._checkRequest(self._post(ReqUrl.THREAD_COLOR, data))
+        j = check_request(self._post(ReqUrl.THREAD_COLOR, data))
 
         return False if j is None else True
 
@@ -1064,7 +1090,7 @@ class Client(object):
         Trivia: While changing the emoji, the Facebook web client actually sends multiple different requests, though only this one is required to make the change
 
         :param color: New thread emoji
-        :param thread_id: User/Group ID to change emoji of. See :ref:`intro_thread_id`
+        :param thread_id: User/Group ID to change emoji of. See :ref:`intro_threads`
         :return: True if the action was successful
         :rtype: bool
         """
@@ -1075,7 +1101,7 @@ class Client(object):
             'thread_or_other_fbid': thread_id
         }
 
-        j = self._checkRequest(self._post(ReqUrl.THREAD_EMOJI, data))
+        j = check_request(self._post(ReqUrl.THREAD_EMOJI, data))
 
         return False if j is None else True
 
@@ -1110,7 +1136,7 @@ class Client(object):
                 .replace('u%27', '%27')\
                 .replace('%5CU{}'.format(MessageReactionFix[reaction.value][0]), MessageReactionFix[reaction.value][1])
 
-        j = self._checkRequest(self._post('{}/?{}'.format(ReqUrl.MESSAGE_REACTION, url_part)))
+        j = check_request(self._post('{}/?{}'.format(ReqUrl.MESSAGE_REACTION, url_part)))
 
         return False if j is None else True
 
@@ -1119,8 +1145,8 @@ class Client(object):
         Sets users typing status in a thread
 
         :param status: Specify the typing status
-        :param thread_id: User/Group ID to change status in. See :ref:`intro_thread_id`
-        :param thread_type: See :ref:`intro_thread_type`
+        :param thread_id: User/Group ID to change status in. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
         :type status: models.TypingStatus
         :type thread_type: models.ThreadType
         :return: True if the action was successful
@@ -1135,7 +1161,7 @@ class Client(object):
             "source": "mercury-chat"
         }
 
-        j = self._checkRequest(self._post(ReqUrl.TYPING, data))
+        j = check_request(self._post(ReqUrl.TYPING, data))
 
         return False if j is None else True
 
@@ -1195,11 +1221,7 @@ class Client(object):
         r = self._post(ReqUrl.CONNECT, data)
         return r.ok
 
-    def ping(self, sticky):
-        """
-        .. todo::
-            Documenting this
-        """
+    def _ping(self, sticky):
         data = {
             'channel': self.user_channel,
             'clientid': self.client_id,
@@ -1209,8 +1231,7 @@ class Client(object):
             'sticky': sticky,
             'viewer_uid': self.uid
         }
-        r = self._get(ReqUrl.PING, data)
-        return r.ok
+        return False if check_request(self._get(ReqUrl.PING, data), check_json=False) is None else True
 
     def _getSticky(self):
         """Call pull api to get sticky and pool parameter,
@@ -1435,7 +1456,7 @@ class Client(object):
         :rtype: bool
         """
         try:
-            if markAlive: self.ping(self.sticky)
+            if markAlive: self._ping(self.sticky)
             try:
                 content = self._pullMessage(self.sticky, self.pool)
                 if content: self._parseMessage(content)

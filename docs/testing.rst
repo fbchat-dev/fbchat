@@ -1,10 +1,11 @@
 .. highlight:: sh
+.. module:: fbchat
 .. _testing:
 
 Testing
 =======
 
-To use these tests copy ``tests/data.json`` to ``tests/my_data.json`` or type the information manually in the terminal prompts.
+To use the tests, copy ``tests/data.json`` to ``tests/my_data.json`` or type the information manually in the terminal prompts.
 
 - email: Your (or a test user's) email / phone number
 - password: Your (or a test user's) password

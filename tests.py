@@ -15,6 +15,13 @@ import py_compile
 
 logging_level = logging.ERROR
 
+"""
+
+Testing script for `fbchat`.
+Full documentation on https://fbchat.readthedocs.io/
+
+"""
+
 class CustomClient(Client):
     def __init__(self, *args, **kwargs):
         self.got_qprimer = False
@@ -168,8 +175,8 @@ class TestFbchat(unittest.TestCase):
     def test_setTypingStatus(self):
         self.assertTrue(client.sendMessage('Hi', thread_id=user_uid, thread_type=ThreadType.USER))
         self.assertTrue(client.setTypingStatus(TypingStatus.TYPING, thread_id=user_uid, thread_type=ThreadType.USER))
-        self.assertTrue(client.setTypingStatus(TypingStatus.TYPING, thread_id=group_uid, thread_type=ThreadType.GROUP))
         self.assertTrue(client.setTypingStatus(TypingStatus.STOPPED, thread_id=user_uid, thread_type=ThreadType.USER))
+        self.assertTrue(client.setTypingStatus(TypingStatus.TYPING, thread_id=group_uid, thread_type=ThreadType.GROUP))
         self.assertTrue(client.setTypingStatus(TypingStatus.STOPPED, thread_id=group_uid, thread_type=ThreadType.GROUP))
 
 

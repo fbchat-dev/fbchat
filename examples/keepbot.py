@@ -9,12 +9,12 @@ old_thread_id = '1234567890'
 # Change these to match your liking
 old_color = ThreadColor.MESSENGER_BLUE
 old_emoji = '👍'
-old_title = 'Old school'
+old_title = 'Old group chat name'
 old_nicknames = {
-    '12345678901': 'Old School user nr. 1',
-    '12345678902': 'Old School user nr. 2',
-    '12345678903': 'Old School user nr. 3',
-    '12345678904': 'Old School user nr. 4'
+    '12345678901': "User nr. 1's nickname",
+    '12345678902': "User nr. 2's nickname",
+    '12345678903': "User nr. 3's nickname",
+    '12345678904': "User nr. 4's nickname"
 }
 
 class KeepBot(Client):

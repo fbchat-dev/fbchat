@@ -6,7 +6,7 @@ import enum
 class User(object):
     """Represents a Facebook User"""
 
-    #: The unique identifier of the user. Can be used a `thread_id`. See :ref:`intro_thread_id` for more info
+    #: The unique identifier of the user. Can be used a `thread_id`. See :ref:`intro_threads` for more info
     uid = None
     #: Currently always set to `user`. Might change in the future
     type = 'user'
@@ -75,10 +75,12 @@ class User(object):
         }
 
 class Thread(object):
-    def __init__(self, **entries): 
+    """Represents a thread. Currently just acts as a dict"""
+    def __init__(self, **entries):
         self.__dict__.update(entries)
 
 class Message(object):
+    """Represents a message. Currently just acts as a dict"""
     def __init__(self, **entries):
         self.__dict__.update(entries)
 
@@ -89,7 +91,7 @@ class Enum(enum.Enum):
         return '{}.{}'.format(type(self).__name__, self.name)
 
 class ThreadType(Enum):
-    """Used to specify what type of Facebook thread is being used. See :ref:`intro_thread_type` for more info"""
+    """Used to specify what type of Facebook thread is being used. See :ref:`intro_threads` for more info"""
     USER = 1
     GROUP = 2
 
