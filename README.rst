@@ -1,11 +1,11 @@
 fbchat: Facebook Chat (Messenger) for Python
 ============================================
 
-.. image:: /docs/_static/license.svg
+.. image:: https://raw.githubusercontent.com/carpedm20/fbchat/development/docs/_static/license.svg
     :target: LICENSE.txt
     :alt: License: BSD
 
-.. image:: /docs/_static/python-versions.svg
+.. image:: https://raw.githubusercontent.com/carpedm20/fbchat/development/docs/_static/python-versions.svg
     :target: https://pypi.python.org/pypi/fbchat
     :alt: Supported python versions: 2.7, 3.4, 3.5 and 3.6
 
