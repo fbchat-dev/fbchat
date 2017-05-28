@@ -14,7 +14,7 @@ This project was inspired by `facebook-chat-api <https://github.com/Schmavery/fa
 
 **No XMPP or API key is needed**. Just use your email and password.
 
-Go to `ReadTheDocs <https://fbchat.readthedocs.io>`__ to see the full documentation,
+Go to `Read the Docs <https://fbchat.readthedocs.io>`__ to see the full documentation,
 or jump right into the code by viewing the `examples <examples>`__
 
 Installation:
