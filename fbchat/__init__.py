@@ -10,16 +10,16 @@
     :license: BSD, see LICENSE for more details.
 """
 
-
+from datetime import datetime
 from .client import *
 
-
-__copyright__ = 'Copyright 2015 by Taehoon Kim'
-__version__ = '0.10.1'
+__copyright__ = 'Copyright 2015 - {} by Taehoon Kim'.format(datetime.now().year)
+__version__ = '0.10.4'
 __license__ = 'BSD'
-__author__ = 'Taehoon Kim; Moreels Pieter-Jan'
+__author__ = 'Taehoon Kim; Moreels Pieter-Jan; Mads Marquart'
 __email__ = 'carpedm20@gmail.com'
 __source__ = 'https://github.com/carpedm20/fbchat/'
+__description__ = 'Facebook Chat (Messenger) for Python'
 
 __all__ = [
     'Client',
