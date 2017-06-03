@@ -621,7 +621,7 @@ class Client(object):
             return None
 
         messages = []
-        for message in j['payload']['actions']:
+        for message in j['payload'].get('actions', []):
             messages.append(Message(**message))
         return list(reversed(messages))
 
