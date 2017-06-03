@@ -892,11 +892,11 @@ class Client(object):
 
         def fbidStrip(_fbid):
             # Stripping of `fbid:` from author_id
-            if type(_fbid) == int:
-                return _fbid
-
-            if type(_fbid) in [str, unicode] and 'fbid:' in _fbid:
-                return int(_fbid[5:])
+            try:
+                return int(_fbid)
+            except:
+                if type(_fbid) in [str, unicode] and 'fbid:' in _fbid:
+                    return int(_fbid[5:])
 
         user_ids = [fbidStrip(uid) for uid in user_ids]
 
