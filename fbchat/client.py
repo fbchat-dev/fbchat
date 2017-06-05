@@ -59,6 +59,9 @@ facebookEncoding = 'UTF-8'
 log = logging.getLogger("client")
 log.setLevel(logging.DEBUG)
 
+# Creates the console handler
+handler = logging.StreamHandler()
+log.addHandler(handler)
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
@@ -107,11 +110,7 @@ class Client(object):
             logging_level = logging.INFO
         else:
             logging_level = logging.WARNING
-
-        # Creates the console handler
-        handler = logging.StreamHandler()
         handler.setLevel(logging_level)
-        log.addHandler(handler)
 
         # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
         if not session_cookies or not self.setSession(session_cookies) or not self.is_logged_in():
