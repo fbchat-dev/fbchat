@@ -61,7 +61,7 @@ Getting last messages sent
 
 .. code-block:: python
     
-    last_messages = client.getThreadInfo(friend.uid,0)
+    last_messages = client.getThreadInfo(friend.uid, last_n=20)
     last_messages.reverse()  # messages come in reversed order
     
     for message in last_messages:
@@ -93,6 +93,24 @@ Example Echobot
     bot = EchoBot("<email>", "<password>")
     bot.listen()
 
+
+Saving session
+==========================
+
+.. code-block:: python
+    
+    session_cookies = client.setSession()
+    # save session_cookies
+
+
+Loading session
+==========================
+
+.. code-block:: python
+    
+    client = fbchat.Client(None, None, session_cookies=session_cookies)
+    # OR
+    client.setSession(session_cookies)
 
 
 Authors
