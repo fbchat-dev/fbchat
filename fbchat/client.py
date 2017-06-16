@@ -634,8 +634,6 @@ class Client(object):
         :param thread_type: (optional) "inbox", "pending", "archived"
         """
 
-        assert length < 21, '`length` is deprecated, max. last 20 threads are returned'
-
         if thread_type in ['inbox', 'pending', 'archived']:
             if thread_type == 'archived':
                 thread_type = 'action:archived'
