@@ -53,9 +53,9 @@ These will specify whether the thread is a single user chat or a group chat.
 This is required for many of `fbchat`'s functions, since Facebook differetiates between these two internally
 
 Searching for group chats and finding their ID is not yet possible with `fbchat`,
-but searching for users is possible via. :func:`Client.getUsers`. See :ref:`intro_fetching`
+but searching for users is possible via. :func:`Client.searchForUsers`. See :ref:`intro_fetching`
 
-You can get your own user ID by using :any:`Client.uid`
+You can get your own user ID by using :any:`Client.id`
 
 Getting the ID of a group chat is fairly trivial though, since you only need to navigate to `<https://www.facebook.com/messages/>`_,
 click on the group you want to find the ID of, and then read the id from the address bar.
@@ -108,7 +108,7 @@ like adding users to and removing users from a group chat, logically only works 
 The simplest way of using `fbchat` is to send a message.
 The following snippet will, as you've probably already figured out, send the message `test message` to your account::
 
-    message_id = client.sendMessage('test message', thread_id=client.uid, thread_type=ThreadType.USER)
+    message_id = client.sendMessage('test message', thread_id=client.id, thread_type=ThreadType.USER)
 
 You can see a full example showing all the possible thread interactions with `fbchat` by going to :ref:`examples`
 
@@ -120,12 +120,12 @@ Fetching Information
 
 You can use `fbchat` to fetch basic information like user names, profile pictures, thread names and user IDs
 
-You can retrieve a user's ID with :func:`Client.getUsers`.
+You can retrieve a user's ID with :func:`Client.searchForUsers`.
 The following snippet will search for users by their name, take the first (and most likely) user, and then get their user ID from the result::
 
-    users = client.getUsers('<name of user>')
+    users = client.searchForUsers('<name of user>')
     user = users[0]
-    print("User's ID: {}".format(user.uid))
+    print("User's ID: {}".format(user.id))
     print("User's name: {}".format(user.name))
     print("User's profile picture url: {}".format(user.photo))
     print("User's main url: {}".format(user.url))
@@ -198,23 +198,3 @@ and ``mid``, ``ts``, ``metadata`` and ``msg`` got removed, but the function stil
     the API actually requires that you include ``**kwargs`` as your final argument.
 
 View the :ref:`examples` to see some more examples illustrating the event system
-
-
-.. _intro_submitting:
-
-Submitting Issues
------------------
-
-If you're having trouble with some of the snippets shown here, or you think some of the functionality is broken,
-please feel free to submit an issue on `Github <https://github.com/carpedm20/fbchat>`_.
-One side note is that you should first login with ``logging_level`` set to ``logging.DEBUG``::
-
-    from fbchat import Client
-    import logging
-    client = Client('<email>', '<password>', logging_level=logging.DEBUG)
-
-Then you can submit the relevant parts of this log, and detailed steps on how to reproduce
-
-.. warning::
-    Always remove your credentials from any debug information you may provide us.
-    Preferably, use a test account, in case you miss anything

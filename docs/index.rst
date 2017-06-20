@@ -36,6 +36,9 @@ Currently `fbchat` support Python 2.7, 3.4, 3.5 and 3.6:
 This means doing the exact same GET/POST requests and tricking Facebook into thinking it's accessing the website normally.
 Therefore, this API requires the credentials of a Facebook account.
 
+.. note::
+    If you're having problems, please check the :ref:`faq`, before asking questions on Github
+
 .. warning::
     We are not responsible if your account gets banned for spammy activities,
     such as sending lots of messages to people you don't know, sending messages very quickly,
@@ -60,3 +63,4 @@ Overview
     testing
     api
     todo
+    faq

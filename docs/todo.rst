@@ -17,7 +17,7 @@ Missing Functionality
     - This will use the graphql request API
 - Implement chatting with pages
     - This might require a new :class:`models.ThreadType`, something like ``ThreadType.PAGE``
-- Rework `User`, `Thread` and `Message` models, and rework fething methods, to make the whole process more streamlined
+- Rework `Message` model, to make the whole process more streamlined
 
 
 Documentation

@@ -6,7 +6,21 @@ import json
 from time import time
 from random import random
 import warnings
+import logging
 from .models import *
+
+# Python 2's `input` executes the input, whereas `raw_input` just returns the input
+try:
+    input = raw_input
+except NameError:
+    pass
+
+# Log settings
+log = logging.getLogger("client")
+log.setLevel(logging.DEBUG)
+# Creates the console handler
+handler = logging.StreamHandler()
+log.addHandler(handler)
 
 #: Default list of user agents
 USER_AGENTS = [
@@ -49,7 +63,7 @@ class ReqUrl(object):
     STICKY = "https://0-edge-chat.facebook.com/pull"
     PING = "https://0-channel-proxy-06-ash2.facebook.com/active_ping"
     UPLOAD = "https://upload.facebook.com/ajax/mercury/upload.php"
-    USER_INFO = "https://www.facebook.com/chat/user_info/"
+    INFO = "https://www.facebook.com/chat/user_info/"
     CONNECT = "https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
     REMOVE_USER = "https://www.facebook.com/chat/remove_participants/"
     LOGOUT = "https://www.facebook.com/logout.php"
@@ -82,7 +96,7 @@ def get_decoded(r):
 def get_json(r):
     return json.loads(strip_to_json(get_decoded(r)))
 
-def digit_to_char(digit):
+def digitToChar(digit):
     if digit < 10:
         return str(digit)
     return chr(ord('a') + digit - 10)
@@ -92,8 +106,8 @@ def str_base(number, base):
         return '-' + str_base(-number, base)
     (d, m) = divmod(number, base)
     if d > 0:
-        return str_base(d, base) + digit_to_char(m)
-    return digit_to_char(m)
+        return str_base(d, base) + digitToChar(m)
+    return digitToChar(m)
 
 def generateMessageID(client_id=None):
     k = now()
@@ -110,31 +124,20 @@ def generateOfflineThreadingID():
     msgs = format(ret, 'b') + string
     return str(int(msgs, 2))
 
-def isUserToThreadType(is_user):
-    return ThreadType.USER if is_user else ThreadType.GROUP
+def checkRequest(r, check_json=True):
+    if not r.ok:
+        raise Exception('Error when sending request: Got {} response'.format(r.status_code))
 
-def raise_exception(e):
-    raise e
+    content = get_decoded(r)
 
-def deprecation(name, deprecated_in=None, removed_in=None, details='', stacklevel=3):
-    """Used to mark parameters as deprecated. Will result in a warning being emmitted when the parameter is used."""
-    warning = "Client.{} is deprecated".format(name)
-    if deprecated_in:
-        warning += ' in v. {}'.format(deprecated_in)
-    if removed_in:
-        warning += ' and will be removed in v. {}'.format(removed_in)
-    if details:
-        warning += '. {}'.format(details)
+    if content is None or len(content) == 0:
+        raise Exception('Error when sending request: Got empty response')
 
-    warnings.simplefilter('always', DeprecationWarning)
-    warnings.warn(warning, category=DeprecationWarning, stacklevel=stacklevel)
-    warnings.simplefilter('default', DeprecationWarning)
-
-def deprecated(deprecated_in=None, removed_in=None, details=''):
-    """A decorator used to mark functions as deprecated. Will result in a warning being emmitted when the decorated function is used."""
-    def wrap(func, *args, **kwargs):
-        def wrapped_func(*args, **kwargs):
-            deprecation(func.__name__, deprecated_in=deprecated_in, removed_in=removed_in, details=details, stacklevel=3)
-            return func(*args, **kwargs)
-        return wrapped_func
-    return wrap
+    if check_json:
+        j = json.loads(strip_to_json(content))
+        if 'error' in j:
+            # 'errorDescription' is in the users own language!
+            raise Exception('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']))
+        return j
+    else:
+        return r

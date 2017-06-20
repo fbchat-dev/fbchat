@@ -7,6 +7,14 @@ Examples
 These are a few examples on how to use `fbchat`. Remember to swap out `<email>` and `<password>` for your email and password
 
 
+Basic example
+-------------
+
+This will show basic usage of `fbchat`
+
+.. literalinclude:: ../examples/basic_usage.py
+
+
 Interacting with Threads
 ------------------------
 

@@ -3,81 +3,76 @@
 from __future__ import unicode_literals
 import enum
 
-class User(object):
-    """Represents a Facebook User"""
-
+class Thread(object):
     #: The unique identifier of the user. Can be used a `thread_id`. See :ref:`intro_threads` for more info
-    uid = None
-    #: Currently always set to `user`. Might change in the future
-    type = 'user'
-    #: The profile picture of the user
+    id = None
+    #: Specifies the type of thread. Uses ThreadType
+    type = None
+    #: The thread's picture
     photo = None
-    #: The profile url
-    url = None
-    #: The name of the user
+    #: The name of the thread
     name = None
-    #: Only used by :any:`Client.getUsers`. Each user is assigned a score between 0 and 1, based on how likely it is that they were the person being searched for
-    score = None
-    #: Dictionary containing raw userdata from when the :class:`User` was created
-    data = None
 
-    def __init__(self, data):
-        """Represents a Facebook User"""
-        if data['type'] != 'user':
-            raise Exception("[!] %s <%s> is not a user" % (data['text'], data['path']))
-        self.uid = data['uid']
-        self.type = data['type']
-        self.photo = data['photo']
-        self.url = data['path']
-        self.name = data['text']
-        self.score = float(data['score'])
-        self.data = data
+    def __init__(self, _type, _id, photo=None, name=None):
+        """Represents a Facebook thread"""
+        self.id = str(_id)
+        self.type = _type
+        self.photo = photo
+        self.name = name
 
     def __repr__(self):
         return self.__unicode__()
 
     def __unicode__(self):
-        return u'<%s %s (%s)>' % (self.type.upper(), self.name, self.url)
+        return '<{} {} ({})>'.format(self.type.name, self.name, self.id)
 
-    @staticmethod
-    def _adaptFromChat(user_in_chat):
-        """Adapts user info from chat to User model acceptable initial dict
 
-        :param user_in_chat: user info from chat
-        :return: :class:`User` object
+class User(Thread):
+    #: The profile url
+    url = None
+    #: The users first name
+    first_name = None
+    #: The users last name
+    last_name = None
+    #: Whether the user and the client are friends
+    is_friend = None
+    #: The user's gender
+    gender = None
 
-        'dir': None,
-        'mThumbSrcSmall': None,
-        'is_friend': False,
-        'is_nonfriend_messenger_contact': True,
-        'alternateName': '',
-        'i18nGender': 16777216,
-        'vanity': '',
-        'type': 'friend',
-        'searchTokens': ['Voznesenskij', 'Sergej'],
-        'thumbSrc': 'https://fb-s-b-a.akamaihd.net/h-ak-xfa1/v/t1.0-1/c9.0.32.32/p32x32/10354686_10150004552801856_220367501106153455_n.jpg?oh=71a87d76d4e4d17615a20c43fb8dbb47&oe=59118CE4&__gda__=1493753268_ae75cef40e9785398e744259ccffd7ff',
-        'mThumbSrcLarge': None,
-        'firstName': 'Sergej',
-        'name': 'Sergej Voznesenskij',
-        'uri': 'https://www.facebook.com/profile.php?id=100014812758264',
-        'id': '100014812758264',
-        'gender': 2
-        """
+    def __init__(self, _id, url=None, first_name=None, last_name=None, is_friend=None, gender=None, **kwargs):
+        """Represents a Facebook user. Inherits `Thread`"""
+        super(User, self).__init__(ThreadType.USER, _id, **kwargs)
+        self.url = url
+        self.first_name = first_name
+        self.last_name = last_name
+        self.is_friend = is_friend
+        self.gender = gender
 
-        return {
-            'type': 'user',
-            'uid': user_in_chat['id'],
-            'photo': user_in_chat['thumbSrc'],
-            'path': user_in_chat['uri'],
-            'text': user_in_chat['name'],
-            'score': 1,
-            'data': user_in_chat,
-        }
 
-class Thread(object):
-    """Represents a thread. Currently just acts as a dict"""
-    def __init__(self, **entries):
-        self.__dict__.update(entries)
+class Group(Thread):
+    def __init__(self, _id, **kwargs):
+        """Represents a Facebook group. Inherits `Thread`"""
+        super(Group, self).__init__(ThreadType.GROUP, _id, **kwargs)
+
+
+class Page(Thread):
+    #: The page's custom url
+    url = None
+    #: The name of the page's location city
+    city = None
+    #: Amount of likes the page has
+    likees = None
+    #: Some extra information about the page
+    sub_text = None
+
+    def __init__(self, _id, url=None, city=None, likees=None, sub_text=None, **kwargs):
+        """Represents a Facebook page. Inherits `Thread`"""
+        super(Page, self).__init__(ThreadType.PAGE, _id, **kwargs)
+        self.url = url
+        self.city = city
+        self.likees = likees
+        self.sub_text = sub_text
+
 
 class Message(object):
     """Represents a message. Currently just acts as a dict"""
@@ -94,6 +89,7 @@ class ThreadType(Enum):
     """Used to specify what type of Facebook thread is being used. See :ref:`intro_threads` for more info"""
     USER = 1
     GROUP = 2
+    PAGE = 3
 
 class TypingStatus(Enum):
     """Used to specify whether the user is typing or has stopped typing"""

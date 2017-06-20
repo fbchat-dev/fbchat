@@ -16,14 +16,8 @@ Client
 This is the main class of `fbchat`, which contains all the methods you use to interract with Facebook.
 You can extend this class, and overwrite the events, to provide custom event handling (mainly used while listening)
 
-.. todo::
-    Add documentation for all events
-
-.. autoclass:: Client(email, password, user_agent=None, max_retries=5, session_cookies=None, logging_level=logging.INFO)
+.. autoclass:: Client(email, password, user_agent=None, max_tries=5, session_cookies=None, logging_level=logging.INFO)
     :members:
-
-    .. automethod:: sendRemoteImage(image_url, message=None, thread_id=None, thread_type=ThreadType.USER)
-    .. automethod:: sendLocalImage(image_path, message=None, thread_id=None, thread_type=ThreadType.USER)
 
 
 .. _api_models:
