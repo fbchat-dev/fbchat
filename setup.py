@@ -16,11 +16,13 @@ except ImportError:
 with open('README.rst') as f:
     readme_content = f.read().strip()
 
+requirements = [line.rstrip('\n') for line in open('requirements.txt')]
 
 version = None
 author = None
 email = None
 source = None
+description = None
 with open(os.path.join('fbchat', '__init__.py')) as f:
     for line in f:
         if line.strip().startswith('__version__'):
@@ -31,7 +33,9 @@ with open(os.path.join('fbchat', '__init__.py')) as f:
             email = line.split('=')[1].strip().replace('"', '').replace("'", '')
         elif line.strip().startswith('__source__'):
             source = line.split('=')[1].strip().replace('"', '').replace("'", '')
-        elif None not in (version, author, email, source):
+        elif line.strip().startswith('__description__'):
+            description = line.split('=')[1].strip().replace('"', '').replace("'", '')
+        elif None not in (version, author, email, source, description):
             break
 
 setup(
@@ -40,7 +44,7 @@ setup(
     author_email=email,
     license='BSD License',
     keywords=["facebook chat fbchat"],
-    description="Facebook Chat (Messenger) for Python",
+    description=description,
     long_description=readme_content,
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
@@ -67,11 +71,7 @@ setup(
     ],
     include_package_data=True,
     packages=['fbchat'],
-    install_requires=[
-        'requests',
-        'lxml',
-        'beautifulsoup4'
-    ],
+    install_requires=requirements,
     url=source,
     version=version,
     zip_safe=True,
