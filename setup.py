@@ -16,7 +16,10 @@ except ImportError:
 with open('README.rst') as f:
     readme_content = f.read().strip()
 
-requirements = [line.rstrip('\n') for line in open('requirements.txt')]
+try:
+    requirements = [line.rstrip('\n') for line in open('fbchat.egg-info/requires.txt')]
+except FileNotFoundError:
+    requirements = [line.rstrip('\n') for line in open('requirements.txt')]
 
 version = None
 author = None
