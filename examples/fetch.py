@@ -34,19 +34,19 @@ print("Is user client's friend: {}".format(user.is_friend))
 # Fetches a list of the 20 top threads you're currently chatting with
 threads = client.fetchThreadList()
 # Fetches the next 10 threads
-threads += client.fetchThreadList(offset=20, amount=10)
+threads += client.fetchThreadList(offset=20, limit=10)
 
-print("Thread's INFO: {}".format(threads))
+print("Threads: {}".format(threads))
 
 
 # Gets the last 10 messages sent to the thread
-messages = client.fetchThreadMessages(offset=0, amount=10, thread_id='<thread id>', thread_type=ThreadType)
+messages = client.fetchThreadMessages(thread_id='<thread id>', limit=10)
 # Since the message come in reversed order, reverse them
 messages.reverse()
 
 # Prints the content of all the messages
 for message in messages:
-    print(message.body)
+    print(message.text)
 
 
 # Here should be an example of `getUnread`

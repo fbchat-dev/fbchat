@@ -32,7 +32,14 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6"
 ]
 
+TYPES = {
+    'Page': ThreadType.PAGE,
+    'User': ThreadType.USER,
+    'Group': ThreadType.GROUP
+}
+
 GENDERS = {
+    # For standard requests
     0: 'unknown',
     1: 'female_singular',
     2: 'male_singular',
@@ -45,6 +52,21 @@ GENDERS = {
     9: 'male_plural',
     10: 'neuter_plural',
     11: 'unknown_plural',
+
+    # For graphql requests
+    #'': 'unknown',
+    'FEMALE': 'female_singular',
+    'MALE': 'male_singular',
+    #'': 'female_singular_guess',
+    #'': 'male_singular_guess',
+    #'': 'mixed',
+    #'': 'neuter_singular',
+    #'': 'unknown_singular',
+    #'': 'female_plural',
+    #'': 'male_plural',
+    #'': 'neuter_plural',
+    #'': 'unknown_plural',
+    None: None
 }
 
 class ReqUrl(object):
@@ -61,7 +83,7 @@ class ReqUrl(object):
     BASE = "https://www.facebook.com"
     MOBILE = "https://m.facebook.com/"
     STICKY = "https://0-edge-chat.facebook.com/pull"
-    PING = "https://0-channel-proxy-06-ash2.facebook.com/active_ping"
+    PING = "https://0-edge-chat.facebook.com/active_ping"
     UPLOAD = "https://upload.facebook.com/ajax/mercury/upload.php"
     INFO = "https://www.facebook.com/chat/user_info/"
     CONNECT = "https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
@@ -75,6 +97,8 @@ class ReqUrl(object):
     THREAD_EMOJI = "https://www.facebook.com/messaging/save_thread_emoji/?source=thread_settings&dpr=1"
     MESSAGE_REACTION = "https://www.facebook.com/webgraphql/mutation"
     TYPING = "https://www.facebook.com/ajax/messaging/typ.php"
+    GRAPHQL = "https://www.facebook.com/api/graphqlbatch/"
+
 
 facebookEncoding = 'UTF-8'
 
@@ -112,7 +136,7 @@ def str_base(number, base):
 def generateMessageID(client_id=None):
     k = now()
     l = int(random() * 4294967295)
-    return "<%s:%s-%s@mail.projektitan.com>" % (k, l, client_id)
+    return "<{}:{}-{}@mail.projektitan.com>".format(k, l, client_id)
 
 def getSignatureID():
     return hex(int(random() * 2147483648))
@@ -124,7 +148,17 @@ def generateOfflineThreadingID():
     msgs = format(ret, 'b') + string
     return str(int(msgs, 2))
 
-def checkRequest(r, check_json=True):
+def check_json(j):
+    if 'error' in j and j['error'] is not None:
+        if 'errorDescription' in j:
+            # 'errorDescription' is in the users own language!
+            raise Exception('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']))
+        elif 'debug_info' in j['error']:
+            raise Exception('Error #{} when sending request: {}'.format(j['error']['code'], repr(j['error']['debug_info'])))
+        else:
+            raise Exception('Error {} when sending request'.format(j['error']))
+
+def checkRequest(r, do_json_check=True):
     if not r.ok:
         raise Exception('Error when sending request: Got {} response'.format(r.status_code))
 
@@ -133,11 +167,12 @@ def checkRequest(r, check_json=True):
     if content is None or len(content) == 0:
         raise Exception('Error when sending request: Got empty response')
 
-    if check_json:
-        j = json.loads(strip_to_json(content))
-        if 'error' in j:
-            # 'errorDescription' is in the users own language!
-            raise Exception('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']))
+    if do_json_check:
+        try:
+            j = json.loads(strip_to_json(content))
+        except Exception as e:
+            raise Exception('Error while parsing JSON: {}'.format(repr(content)))
+        check_json(j)
         return j
     else:
-        return r
+        return content

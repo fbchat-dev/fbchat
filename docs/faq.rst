@@ -2,8 +2,8 @@
 .. module:: fbchat
 .. _faq:
 
-Frequently asked questions
-==========================
+FAQ
+===
 
 Version X broke my installation
 -------------------------------

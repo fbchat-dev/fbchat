@@ -11,13 +11,11 @@ This page will be periodically updated to show missing features and documentatio
 Missing Functionality
 ---------------------
 
-- Implement Client.searchForThread
-    - This will use the graphql request API
 - Implement Client.searchForMessage
     - This will use the graphql request API
-- Implement chatting with pages
-    - This might require a new :class:`models.ThreadType`, something like ``ThreadType.PAGE``
-- Rework `Message` model, to make the whole process more streamlined
+- Implement chatting with pages properly
+- Write better FAQ
+- Explain usage of graphql
 
 
 Documentation

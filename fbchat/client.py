@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
 from .utils import *
 from .models import *
+from .graphql import *
 import time
 
 
@@ -22,7 +23,7 @@ class Client(object):
 
     listening = False
     """Whether the client is listening. Used when creating an external event loop to determine when to stop listening"""
-    id = None
+    uid = None
     """
     The ID of the client.
     Can be used as `thread_id`. See :ref:`intro_threads` for more info.
@@ -53,7 +54,6 @@ class Client(object):
         self.client = 'mercury'
         self.default_thread_id = None
         self.default_thread_type = None
-        self.threads = []
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -109,6 +109,27 @@ class Client(object):
         headers = dict((i, self._header[i]) for i in self._header if i != 'Content-Type')
         return self._session.post(url, headers=headers, data=payload, timeout=timeout, files=files)
 
+    def graphql_request(self, *queries):
+        """
+        .. todo::
+            Documenting this
+
+        :raises: Exception if request failed
+        """
+        payload = {
+            'method': 'GET',
+            'response_format': 'json',
+            'queries': graphql_queries_to_json(*queries)
+        }
+
+        j = graphql_response_to_json(checkRequest(self._post(ReqUrl.GRAPHQL, payload), do_json_check=False))
+
+        if len(j) == 1:
+            return j[0]
+        else:
+            return tuple(j)
+
+
     """
     END INTERNAL REQUEST METHODS
     """
@@ -117,18 +138,23 @@ class Client(object):
     LOGIN METHODS
     """
 
+    def _resetValues(self):
+        self.payloadDefault={}
+        self._session = requests.session()
+        self.req_counter = 1
+        self.seq = "0"
+        self.uid = None
+
     def _postLogin(self):
         self.payloadDefault = {}
         self.client_id = hex(int(random()*2147483648))[2:]
         self.start_time = now()
-        self.id = str(self._session.cookies['c_user'])
-        self.user_channel = "p_" + self.id
+        self.uid = str(self._session.cookies['c_user'])
+        self.user_channel = "p_" + self.uid
         self.ttstamp = ''
 
         r = self._get(ReqUrl.BASE)
         soup = bs(r.text, "lxml")
-        log.debug(r.text)
-        log.debug(r.url)
         self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
         self.fb_h = soup.find("input", {'name':'h'})['value']
         for i in self.fb_dtsg:
@@ -136,7 +162,7 @@ class Client(object):
         self.ttstamp += '2'
         # Set default payload
         self.payloadDefault['__rev'] = int(r.text.split('"client_revision":',1)[1].split(",",1)[0])
-        self.payloadDefault['__user'] = self.id
+        self.payloadDefault['__user'] = self.uid
         self.payloadDefault['__a'] = '1'
         self.payloadDefault['ttstamp'] = self.ttstamp
         self.payloadDefault['fb_dtsg'] = self.fb_dtsg
@@ -145,8 +171,8 @@ class Client(object):
             'channel' : self.user_channel,
             'partition' : '-2',
             'clientid' : self.client_id,
-            'viewer_uid' : self.id,
-            'uid' : self.id,
+            'viewer_uid' : self.uid,
+            'uid' : self.uid,
             'state' : 'active',
             'format' : 'json',
             'idle' : 0,
@@ -267,9 +293,13 @@ class Client(object):
         if not session_cookies or 'c_user' not in session_cookies:
             return False
 
-        # Load cookies into current session
-        self._session.cookies = requests.cookies.merge_cookies(self._session.cookies, session_cookies)
-        self._postLogin()
+        try:
+            # Load cookies into current session
+            self._session.cookies = requests.cookies.merge_cookies(self._session.cookies, session_cookies)
+            self._postLogin()
+        except Exception:
+            self._resetValues()
+            return False
         return True
 
     def login(self, email, password, max_tries=5):
@@ -320,12 +350,7 @@ class Client(object):
 
         r = self._get(ReqUrl.LOGOUT, data)
 
-        # reset value
-        self.payloadDefault={}
-        self._session = requests.session()
-        self.req_counter = 1
-        self.seq = "0"
-        self.id = None
+        self._resetValues()
 
         return r.ok
 
@@ -385,7 +410,7 @@ class Client(object):
         """
 
         data = {
-            'viewer': self.id,
+            'viewer': self.uid,
         }
         j = checkRequest(self._post(ReqUrl.ALL_USERS, query=data))
         if not j['payload']:
@@ -399,51 +424,82 @@ class Client(object):
 
         return users
 
-    def _searchFor(self, name):
-        payload = {
-            'value' : name.lower(),
-            'viewer' : self.id,
-            'rsp' : 'search',
-            'context' : 'search',
-            'path' : '/home.php',
-            'request_id' : str(uuid1()),
-        }
+    def searchForUsers(self, name, limit=1):
+        """
+        Find and get user by his/her name
 
-        j = checkRequest(self._get(ReqUrl.SEARCH, payload))
-
-        entries = []
-        for k in j['payload']['entries']:
-            if k['type'] in ['user', 'friend']:
-                entries.append(User(k['uid'], url=k['path'], first_name=k['firstname'], last_name=k['lastname'], is_friend=k['is_connected'], photo=k['photo'], name=k['text']))
-            if k['type'] == 'page':
-                if 'city_text' not in k:
-                    k['city_text'] = None
-                entries.append(Page(k['uid'], url=k['path'], city=k['city_text'], likees=k['feedback_count'], sub_text=k['subtext'], photo=k['photo'], name=k['text']))
-        return entries
-
-    def searchForUsers(self, name):
-        """Find and get user by his/her name
-
-        :param name: name of a user
+        :param name: Name of the user
+        :param limit: The max. amount of users to fetch
         :return: :class:`models.User` objects, ordered by relevance
         :rtype: list
         :raises: Exception if request failed
         """
 
-        entries = self._searchFor(name)
-        return [k for k in entries if k.type == ThreadType.USER]
+        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_USER, params={'search': name, 'limit': limit}))
 
-    def searchForPages(self, name):
-        """Find and get page by its name
+        return [graphql_to_user(node) for node in j[name]['users']['nodes']]
 
-        :param name: name of a page
+    def searchForPages(self, name, limit=1):
+        """
+        Find and get page by its name
+
+        :param name: Name of the page
         :return: :class:`models.Page` objects, ordered by relevance
         :rtype: list
         :raises: Exception if request failed
         """
 
-        entries = self._searchFor(name)
-        return [k for k in entries if k.type == ThreadType.PAGE]
+        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_PAGE, params={'search': name, 'limit': limit}))
+
+        return [graphql_to_page(node) for node in j[name]['pages']['nodes']]
+
+        #entries = self._searchFor(name)
+        #return [k for k in entries if k.type == ThreadType.PAGE]
+
+    def searchForGroups(self, name, limit=1):
+        """
+        Find and get group thread by its name
+
+        :param name: Name of the group thread
+        :param limit: The max. amount of groups to fetch
+        :return: :class:`models.Group` objects, ordered by relevance
+        :rtype: list
+        :raises: Exception if request failed
+        """
+
+        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_GROUP, params={'search': name, 'limit': limit}))
+
+        return [graphql_to_group(node) for node in j['viewer']['groups']['nodes']]
+
+    def searchForThreads(self, name, limit=1):
+        """
+        Find and get a thread by its name
+
+        :param name: Name of the thread
+        :param limit: The max. amount of groups to fetch
+        :return: :class:`models.User`, :class:`models.Group` and :class:`models.Page` objects, ordered by relevance
+        :rtype: list
+        :raises: Exception if request failed
+        """
+
+        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_THREAD, params={'search': name, 'limit': limit}))
+
+        rtn = []
+        for node in j[name]['threads']['nodes']:
+            if node['__typename'] == 'User':
+                rtn.append(graphql_to_user(node))
+            elif node['__typename'] == 'MessageThread':
+                # MessageThread => Group thread
+                rtn.append(graphql_to_group(node))
+            elif node['__typename'] == 'Page':
+                rtn.append(graphql_to_page(node))
+            elif node['__typename'] == 'Group':
+                # We don't handle Facebook "Groups"
+                pass
+            else:
+                log.warning('Unknown __typename: {} in {}'.format(repr(node['__typename']), node))
+
+        return rtn
 
     def _fetchInfo(self, *ids):
         data = {
@@ -459,16 +515,19 @@ class Client(object):
             k = j['payload']['profiles'][_id]
             if k['type'] in ['user', 'friend']:
                 entries[_id] = User(_id, url=k['uri'], first_name=k['firstName'], is_friend=k['is_friend'], gender=GENDERS[k['gender']], photo=k['thumbSrc'], name=k['name'])
-            if k['type'] == 'page':
-                entries[_id] = Page(_id, url=k['uri'], city=None, likees=None, sub_text=None, photo=k['thumbSrc'], name=k['name'])
+            elif k['type'] == 'page':
+                entries[_id] = Page(_id, url=k['uri'], photo=k['thumbSrc'], name=k['name'])
+            else:
+                raise Exception('{} had an unknown thread type: {}'.format(_id, k))
 
         return entries
 
     def fetchUserInfo(self, *user_ids):
-        """Get users' info from ids, unordered
+        """
+        Get users' info from IDs, unordered
 
         :param user_ids: One or more user ID(s) to query
-        :return: :class:`models.User` objects
+        :return: :class:`models.User` objects, labeled by their ID
         :rtype: dict
         :raises: Exception if request failed
         """
@@ -482,10 +541,11 @@ class Client(object):
         return users
 
     def fetchPageInfo(self, *page_ids):
-        """Get page's info from ids, unordered
+        """
+        Get pages' info from IDs, unordered
 
-        :param user_ids: One or more page ID(s) to query
-        :return: :class:`models.Page` objects
+        :param page_ids: One or more page ID(s) to query
+        :return: :class:`models.Page` objects, labeled by their ID
         :rtype: dict
         :raises: Exception if request failed
         """
@@ -498,95 +558,79 @@ class Client(object):
 
         return users
 
-    def fetchThreadMessages(self, offset=0, amount=20, thread_id=None, thread_type=ThreadType.USER):
-        """Get the last messages in a thread
+    def fetchThreadMessages(self, thread_id=None, limit=20, before=None):
+        """
+        Get the last messages in a thread
 
-        .. todo::
-            Fix this. Facebook broke it somehow. Also, clean up return values
-
-        :param offset: Where to start retrieving messages from
-        :param amount: Number of messages to retrieve
-        :param thread_id: User/Group ID to retrieve from. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type offset: int
-        :type amount: int
-        :type thread_type: models.ThreadType
-        :return: Dictionaries, containing message data
+        :param thread_id: User/Group ID to default to. See :ref:`intro_threads`
+        :param limit: Max. number of messages to retrieve
+        :param before: A timestamp, indicating from which point to retrieve messages
+        :type limit: int
+        :type before: int
+        :return: :class:`models.Message` objects
         :rtype: list
         :raises: Exception if request failed
         """
 
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
+        j = self.graphql_request(GraphQL(doc_id='1386147188135407', params={
+            'id': thread_id,
+            'message_limit': limit,
+            'load_messages': True,
+            'load_read_receipts': False,
+            'before': before
+        }))
 
-        if amount < 1:
-            raise Exception('`amount` must be a positive integer, got {}'.format(amount))
+        if j['message_thread'] is None:
+            raise Exception('Could not fetch thread {}'.format(thread_id))
 
-        if thread_type == ThreadType.USER:
-            key = 'user_ids'
-        elif thread_type == ThreadType.GROUP:
-            key = 'thread_fbids'
+        return list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
 
-        data = {
-            'messages[{}][{}][offset]'.format(key, thread_id): offset,
-            'messages[{}][{}][limit]'.format(key, thread_id): 19,
-            'messages[{}][{}][timestamp]'.format(key, thread_id): now()
-        }
-
-        j = checkRequest(self._post(ReqUrl.MESSAGES, query=data))
-        if not j['payload']:
-            raise Exception('Missing payload: {}, with data: {}'.format(j, data))
-
-        messages = []
-        for message in j['payload'].get('actions'):
-            messages.append(Message(**message))
-        return list(reversed(messages))
-
-    def fetchThreadList(self, offset=0, amount=20):
+    def fetchThreadList(self, offset=0, limit=20):
         """Get thread list of your facebook account
 
-        .. todo::
-            Clean up return values
-
         :param offset: The offset, from where in the list to recieve threads from
-        :param amount: The amount of threads to recieve. Maximum of 20
+        :param limit: Max. number of threads to retrieve. Capped at 20
         :type offset: int
-        :type amount: int
-        :return: Dictionaries, containing thread data
+        :type limit: int
+        :return: :class:`models.Thread` objects
         :rtype: list
         :raises: Exception if request failed
         """
 
-        if amount > 20 or amount < 1:
-            raise Exception('`amount` should be between 1 and 20')
+        if limit > 20 or limit < 1:
+            raise Exception('`limit` should be between 1 and 20')
 
         data = {
             'client' : self.client,
-            'inbox[offset]' : start,
-            'inbox[limit]' : amount,
+            'inbox[offset]' : offset,
+            'inbox[limit]' : limit,
         }
 
         j = checkRequest(self._post(ReqUrl.THREADS, data))
+        if j.get('payload') is None:
+            raise Exception('Missing payload: {}, with data: {}'.format(j, data))
 
-        # Get names for people
         participants = {}
-        try:
-            for participant in j['payload']['participants']:
-                participants[participant["fbid"]] = participant["name"]
-        except Exception:
-            log.exception('Exception while getting names for people in getThreadList. {}'.format(j))
+        for p in j['payload']['participants']:
+            if p['type'] == 'page':
+                participants[p['fbid']] = Page(p['fbid'], url=p['href'], photo=p['image_src'], name=p['name'])
+            elif p['type'] == 'user':
+                participants[p['fbid']] = User(p['fbid'], url=p['href'], first_name=p['short_name'], is_friend=p['is_friend'], gender=GENDERS[p['gender']], photo=p['image_src'], name=p['name'])
+            else:
+                raise Exception('A participant had an unknown type {}: {}'.format(p['type'], p))
 
-        # Prevent duplicates in self.threads
-        threadIDs = [getattr(x, "thread_id") for x in self.threads]
-        for thread in j['payload']['threads']:
-            if thread["thread_id"] not in threadIDs:
-                try:
-                    thread["other_user_name"] = participants[int(thread["other_user_fbid"])]
-                except:
-                    thread["other_user_name"] = ""
-                t = Thread(**thread)
-                self.threads.append(t)
+        entries = []
+        for k in j['payload']['threads']:
+            if k['thread_type'] == 1:
+                if k['other_user_fbid'] not in participants:
+                    raise Exception('A thread was not in participants: {}'.format(j['payload']))
+                entries.append(participants[k['other_user_fbid']])
+            elif k['thread_type'] == 2:
+                entries.append(Group(k['thread_fbid'], participants=[p.strip('fbid:') for p in k['participants']], photo=k['image_src'], name=k['name']))
+            else:
+                raise Exception('A thread had an unknown thread type: {}'.format(k))
 
-        return self.threads
+        return entries
 
     def fetchUnread(self):
         """
@@ -624,7 +668,7 @@ class Client(object):
         date = datetime.now()
         data = {
             'client': self.client,
-            'author' : 'fbid:' + str(self.id),
+            'author' : 'fbid:' + str(self.uid),
             'timestamp' : timestamp,
             'timestamp_absolute' : 'Today',
             'timestamp_relative' : str(date.hour) + ":" + str(date.minute).zfill(2),
@@ -669,11 +713,8 @@ class Client(object):
                 log.warning("Got multiple message ids' back: {}".format(message_ids))
             message_id = message_ids[0]
         except (KeyError, IndexError) as e:
-            raise Exception('Error when sending message: No message IDs could be found')
+            raise Exception('Error when sending message: No message IDs could be found: {}'.format(j))
 
-        log.info('Message sent.')
-        log.debug('Sending with data {}'.format(data))
-        log.debug('Recieved message ID {}'.format(message_id))
         return message_id
 
     def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
@@ -694,7 +735,7 @@ class Client(object):
         data['body'] = message or ''
         data['has_attachment'] = False
         data['specific_to_list[0]'] = 'fbid:' + thread_id
-        data['specific_to_list[1]'] = 'fbid:' + self.id
+        data['specific_to_list[1]'] = 'fbid:' + self.uid
 
         return self._doSendRequest(data)
 
@@ -716,7 +757,7 @@ class Client(object):
         data['action_type'] = 'ma-type:user-generated-message'
         data['has_attachment'] = False
         data['specific_to_list[0]'] = 'fbid:' + thread_id
-        data['specific_to_list[1]'] = 'fbid:' + self.id
+        data['specific_to_list[1]'] = 'fbid:' + self.uid
 
         if emoji:
             data['body'] = emoji
@@ -758,7 +799,7 @@ class Client(object):
         data['body'] = message or ''
         data['has_attachment'] = True
         data['specific_to_list[0]'] = 'fbid:' + str(thread_id)
-        data['specific_to_list[1]'] = 'fbid:' + str(self.id)
+        data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
 
         data['image_ids[0]'] = image_id
 
@@ -822,7 +863,7 @@ class Client(object):
         user_ids = set(user_ids)
 
         for i, user_id in enumerate(user_ids):
-            if user_id == self.id:
+            if user_id == self.uid:
                 raise Exception('Error when adding users: Cannot add self to group thread')
             else:
                 data['log_message_data[added_participants][' + str(i) + ']'] = "fbid:" + str(user_id)
@@ -944,7 +985,7 @@ class Client(object):
                 "data": {
                     "action": "ADD_REACTION",
                     "client_mutation_id": "1",
-                    "actor_id": self.id,
+                    "actor_id": self.uid,
                     "message_id": str(message_id),
                     "reaction": reaction.value
                 }
@@ -1039,17 +1080,19 @@ class Client(object):
     LISTEN METHODS
     """
 
-    def _ping(self, sticky):
+    def _ping(self, sticky, pool):
         data = {
             'channel': self.user_channel,
             'clientid': self.client_id,
             'partition': -2,
             'cap': 0,
-            'uid': self.id,
-            'sticky': sticky,
-            'viewer_uid': self.id
+            'uid': self.uid,
+            'sticky_token': sticky,
+            'sticky_pool': pool,
+            'viewer_uid': self.uid,
+            'state': 'active'
         }
-        checkRequest(self._get(ReqUrl.PING, data), check_json=False)
+        checkRequest(self._get(ReqUrl.PING, data), do_json_check=False)
 
     def _fetchSticky(self):
         """Call pull api to get sticky and pool parameter, newer api needs these parameters to work"""
@@ -1087,7 +1130,6 @@ class Client(object):
 
         if 'ms' not in content: return
 
-        log.debug("Received {}".format(content["ms"]))
         for m in content["ms"]:
             mtype = m.get("type")
             try:
@@ -1265,7 +1307,7 @@ class Client(object):
         :rtype: bool
         """
         try:
-            #if markAlive: self._ping(self.sticky)
+            if markAlive: self._ping(self.sticky, self.pool)
             try:
                 content = self._pullMessage(self.sticky, self.pool)
                 if content: self._parseMessage(content)

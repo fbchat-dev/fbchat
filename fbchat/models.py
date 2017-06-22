@@ -3,19 +3,20 @@
 from __future__ import unicode_literals
 import enum
 
+
 class Thread(object):
-    #: The unique identifier of the user. Can be used a `thread_id`. See :ref:`intro_threads` for more info
-    id = None
-    #: Specifies the type of thread. Uses ThreadType
+    #: The unique identifier of the thread. Can be used a `thread_id`. See :ref:`intro_threads` for more info
+    uid = str
+    #: Specifies the type of thread. Can be used a `thread_type`. See :ref:`intro_threads` for more info
     type = None
     #: The thread's picture
-    photo = None
+    photo = str
     #: The name of the thread
-    name = None
+    name = str
 
-    def __init__(self, _type, _id, photo=None, name=None):
+    def __init__(self, _type, uid, photo=None, name=None):
         """Represents a Facebook thread"""
-        self.id = str(_id)
+        self.uid = str(uid)
         self.type = _type
         self.photo = photo
         self.name = name
@@ -24,60 +25,112 @@ class Thread(object):
         return self.__unicode__()
 
     def __unicode__(self):
-        return '<{} {} ({})>'.format(self.type.name, self.name, self.id)
+        return '<{} {} ({})>'.format(self.type.name, self.name, self.uid)
 
 
 class User(Thread):
     #: The profile url
-    url = None
+    url = str
     #: The users first name
-    first_name = None
+    first_name = str
     #: The users last name
-    last_name = None
+    last_name = str
     #: Whether the user and the client are friends
-    is_friend = None
+    is_friend = bool
     #: The user's gender
-    gender = None
+    gender = str
+    #: From 0 to 1. How close the client is to the user
+    affinity = float
 
-    def __init__(self, _id, url=None, first_name=None, last_name=None, is_friend=None, gender=None, **kwargs):
+    def __init__(self, uid, url=None, first_name=None, last_name=None, is_friend=None, gender=None, affinity=None, **kwargs):
         """Represents a Facebook user. Inherits `Thread`"""
-        super(User, self).__init__(ThreadType.USER, _id, **kwargs)
+        super(User, self).__init__(ThreadType.USER, uid, **kwargs)
         self.url = url
         self.first_name = first_name
         self.last_name = last_name
         self.is_friend = is_friend
         self.gender = gender
+        self.affinity = affinity
 
 
 class Group(Thread):
-    def __init__(self, _id, **kwargs):
+    #: List of the group thread's participant user IDs
+    participants = list
+
+    def __init__(self, uid, participants=[], **kwargs):
         """Represents a Facebook group. Inherits `Thread`"""
-        super(Group, self).__init__(ThreadType.GROUP, _id, **kwargs)
+        super(Group, self).__init__(ThreadType.GROUP, uid, **kwargs)
+        self.participants = participants
 
 
 class Page(Thread):
     #: The page's custom url
-    url = None
+    url = str
     #: The name of the page's location city
-    city = None
+    city = str
     #: Amount of likes the page has
-    likees = None
+    likes = int
     #: Some extra information about the page
-    sub_text = None
+    sub_title = str
+    #: The page's category
+    category = str
 
-    def __init__(self, _id, url=None, city=None, likees=None, sub_text=None, **kwargs):
+    def __init__(self, uid, url=None, city=None, likes=None, sub_title=None, category=None, **kwargs):
         """Represents a Facebook page. Inherits `Thread`"""
-        super(Page, self).__init__(ThreadType.PAGE, _id, **kwargs)
+        super(Page, self).__init__(ThreadType.PAGE, uid, **kwargs)
         self.url = url
         self.city = city
-        self.likees = likees
-        self.sub_text = sub_text
+        self.likes = likes
+        self.sub_title = sub_title
+        self.category = category
 
 
 class Message(object):
-    """Represents a message. Currently just acts as a dict"""
-    def __init__(self, **entries):
-        self.__dict__.update(entries)
+    #: The message ID
+    uid = str
+    #: ID of the sender
+    author = int
+    #: Timestamp of when the message was sent
+    timestamp = str
+    #: Whether the message is read
+    is_read = bool
+    #: A list of message reactions
+    reactions = list
+    #: The actual message
+    text = str
+    #: A list of :class:`Mention` objects
+    mentions = list
+    #: An ID of a sent sticker
+    sticker = str
+    #: A list of attachments
+    attachments = list
+
+    def __init__(self, uid, author=None, timestamp=None, is_read=None, reactions=[], text=None, mentions=[], sticker=None, attachments=[]):
+        """Represents a Facebook message"""
+        self.uid = uid
+        self.author = author
+        self.timestamp = timestamp
+        self.is_read = is_read
+        self.reactions = reactions
+        self.text = text
+        self.mentions = mentions
+        self.sticker = sticker
+        self.attachments = attachments
+
+
+class Mention(object):
+    #: The user ID the mention is pointing at
+    user_id = str
+    #: The character where the mention starts
+    offset = int
+    #: The length of the mention
+    length = int
+
+    def __init__(self, user_id, offset=0, length=10):
+        """Represents a @mention"""
+        self.user_id = user_id
+        self.offset = offset
+        self.length = length
 
 class Enum(enum.Enum):
     """Used internally by fbchat to support enumerations"""

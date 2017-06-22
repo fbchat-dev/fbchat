@@ -86,7 +86,7 @@ class TestFbchat(unittest.TestCase):
         u = users[0]
 
         # Test if values are set correctly
-        self.assertEqual(u.id, '4')
+        self.assertEqual(u.uid, '4')
         self.assertEqual(u.type, ThreadType.USER)
         self.assertEqual(u.photo[:4], 'http')
         self.assertEqual(u.url[:4], 'http')
@@ -117,18 +117,21 @@ class TestFbchat(unittest.TestCase):
         self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local★', user_id, ThreadType.USER))
         self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local★', group_id, ThreadType.GROUP))
 
+    def test_fetchThreadList(self):
+        client.fetchThreadList(offset=0, limit=20)
+
     def test_fetchThreadMessages(self):
         client.sendMessage('test_user_getThreadInfo★', thread_id=user_id, thread_type=ThreadType.USER)
 
-        info = client.fetchThreadMessages(offset=0, amount=2, thread_id=user_id, thread_type=ThreadType.USER)
-        self.assertEqual(info[0].author, 'fbid:' + client.uid)
-        self.assertEqual(info[0].body, 'test_user_getThreadInfo★')
+        messages = client.fetchThreadMessages(thread_id=user_id, limit=1)
+        self.assertEqual(messages[0].author, client.uid)
+        self.assertEqual(messages[0].text, 'test_user_getThreadInfo★')
 
         client.sendMessage('test_group_getThreadInfo★', thread_id=group_id, thread_type=ThreadType.GROUP)
 
-        info = client.fetchThreadMessages(offset=0, amount=2, thread_id=group_id, thread_type=ThreadType.GROUP)
-        self.assertEqual(info[0].author, 'fbid:' + client.uid)
-        self.assertEqual(info[0].body, 'test_group_getThreadInfo★')
+        messages = client.fetchThreadMessages(thread_id=group_id, limit=1)
+        self.assertEqual(messages[0].author, client.uid)
+        self.assertEqual(messages[0].text, 'test_group_getThreadInfo★')
 
     def test_listen(self):
         client.startListening()
@@ -150,9 +153,9 @@ class TestFbchat(unittest.TestCase):
         client.changeThreadTitle('test_changeThreadTitle★', thread_id=user_id, thread_type=ThreadType.USER)
 
     def test_changeNickname(self):
-        client.changeNickname('test_changeNicknameSelf★', client.id, thread_id=user_id, thread_type=ThreadType.USER)
+        client.changeNickname('test_changeNicknameSelf★', client.uid, thread_id=user_id, thread_type=ThreadType.USER)
         client.changeNickname('test_changeNicknameOther★', user_id, thread_id=user_id, thread_type=ThreadType.USER)
-        client.changeNickname('test_changeNicknameSelf★', client.id, thread_id=group_id, thread_type=ThreadType.GROUP)
+        client.changeNickname('test_changeNicknameSelf★', client.uid, thread_id=group_id, thread_type=ThreadType.GROUP)
         client.changeNickname('test_changeNicknameOther★', user_id, thread_id=group_id, thread_type=ThreadType.GROUP)
 
     def test_changeThreadEmoji(self):
