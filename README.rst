@@ -9,7 +9,7 @@ fbchat: Facebook Chat (Messenger) for Python
     :target: https://pypi.python.org/pypi/fbchat
     :alt: Supported python versions: 2.7, 3.4, 3.5 and 3.6
 
-.. image:: https://readthedocs.org/projects/fbchat/badge/
+.. image:: https://readthedocs.org/projects/fbchat/badge/?version=master
     :target: https://fbchat.readthedocs.io
     :alt: Documentation
 
