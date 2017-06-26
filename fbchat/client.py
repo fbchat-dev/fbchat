@@ -739,7 +739,7 @@ class Client(object):
                     raise Exception('A thread was not in participants: {}'.format(j['payload']))
                 entries.append(participants[k['other_user_fbid']])
             elif k['thread_type'] == 2:
-                entries.append(Group(k['thread_fbid'], participants=[p.strip('fbid:') for p in k['participants']], photo=k['image_src'], name=k['name']))
+                entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name']))
             else:
                 raise Exception('A thread had an unknown thread type: {}'.format(k))
 
@@ -1288,7 +1288,7 @@ class Client(object):
 
                     # Color change
                     elif delta_type == "change_thread_theme":
-                        new_color = ThreadColor(delta["untypedData"]["theme_color"])
+                        new_color = graphql_color_to_enum(delta["untypedData"]["theme_color"])
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onColorChange(mid=mid, author_id=author_id, new_color=new_color, thread_id=thread_id,
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
@@ -1350,7 +1350,7 @@ class Client(object):
                             threads = [getThreadIdAndThreadType({"threadKey": thr}) for thr in delta.get("threadKeys")]
 
                         # thread_id, thread_type = getThreadIdAndThreadType(delta)
-                        self.onMarkedSeen(threads=threads, seen_ts=seen_ts, delivered_ts=delivered_ts, metadata=delta, msg=m)
+                        self.onMarkedSeen(threads=threads, seen_ts=seen_ts, ts=delivered_ts, metadata=delta, msg=m)
                         continue
 
                     # New message

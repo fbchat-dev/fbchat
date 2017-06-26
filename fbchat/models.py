@@ -66,8 +66,8 @@ class User(Thread):
 
 
 class Group(Thread):
-    #: List of the group thread's participant user IDs
-    participants = list
+    #: Unique list (set) of the group thread's participant user IDs
+    participants = set
     #: Dict, containing user nicknames mapped to their IDs
     nicknames = dict
     #: A :class:`ThreadColor`. The groups's message color
@@ -75,7 +75,7 @@ class Group(Thread):
     #: The groups's default emoji
     emoji = str
 
-    def __init__(self, uid, participants=[], nicknames=[], color=None, emoji=None, **kwargs):
+    def __init__(self, uid, participants=set(), nicknames=[], color=None, emoji=None, **kwargs):
         """Represents a Facebook group. Inherits `Thread`"""
         super(Group, self).__init__(ThreadType.GROUP, uid, **kwargs)
         self.participants = participants

@@ -102,7 +102,7 @@ def graphql_to_group(group):
     c_info = get_customization_info(group)
     return Group(
         group['thread_key']['thread_fbid'],
-        participants=[node['messaging_actor']['id'] for node in group['all_participants']['nodes']],
+        participants=set([node['messaging_actor']['id'] for node in group['all_participants']['nodes']]),
         nicknames=c_info.get('nicknames'),
         color=c_info.get('color'),
         emoji=c_info.get('emoji'),
