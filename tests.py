@@ -79,7 +79,7 @@ class TestFbchat(unittest.TestCase):
         users = client.fetchAllUsers()
         self.assertGreater(len(users), 0)
 
-    def test_searchForUsers(self):
+    def test_searchFor(self):
         users = client.searchForUsers('Mark Zuckerberg')
         self.assertGreater(len(users), 0)
 
@@ -91,6 +91,10 @@ class TestFbchat(unittest.TestCase):
         self.assertEqual(u.photo[:4], 'http')
         self.assertEqual(u.url[:4], 'http')
         self.assertEqual(u.name, 'Mark Zuckerberg')
+
+        group_name = client.changeThreadTitle('tést_searchFor', thread_id=group_id, thread_type=ThreadType.GROUP)
+        groups = client.searchForGroups('té')
+        self.assertGreater(len(groups), 0)
 
     def test_sendEmoji(self):
         self.assertIsNotNone(client.sendEmoji(size=EmojiSize.SMALL, thread_id=user_id, thread_type=ThreadType.USER))
@@ -140,9 +144,12 @@ class TestFbchat(unittest.TestCase):
 
         self.assertTrue(client.got_qprimer)
 
-    def test_fetchUserInfo(self):
+    def test_fetchInfo(self):
         info = client.fetchUserInfo('4')['4']
         self.assertEqual(info.name, 'Mark Zuckerberg')
+
+        info = client.fetchGroupInfo(group_id)[group_id]
+        self.assertEqual(info.type, ThreadType.GROUP)
 
     def test_removeAddFromGroup(self):
         client.removeUserFromGroup(user_id, thread_id=group_id)

@@ -23,6 +23,39 @@ class ConcatJSONDecoder(json.JSONDecoder):
         return objs
 # End shameless copy
 
+def graphql_color_to_enum(color):
+    if color is None:
+        return None
+    try:
+        return ThreadColor('#{}'.format(color[2:].lower()))
+    except KeyError:
+        raise Exception('Could not get ThreadColor from color: {}'.format(color))
+
+def get_customization_info(thread):
+    if thread is None or thread.get('customization_info') is None:
+        return {}
+    info = thread['customization_info']
+
+    rtn = {
+        'emoji': info.get('emoji'),
+        'color': graphql_color_to_enum(info.get('outgoing_bubble_color'))
+    }
+    if thread.get('thread_type') == 'GROUP' or thread.get('is_group_thread') or thread.get('thread_key', {}).get('thread_fbid'):
+        rtn['nicknames'] = {}
+        for k in info['participant_customizations']:
+            rtn['nicknames'][k['participant_id']] = k.get('nickname')
+    else:
+        _id = thread.get('thread_key', {}).get('other_user_id') or thread.get('id')
+        if info['participant_customizations'][0]['participant_id'] == _id:
+            rtn['nickname'] = info['participant_customizations'][0]
+            rtn['own_nickname'] = info['participant_customizations'][1]
+        elif info['participant_customizations'][1]['participant_id'] == _id:
+            rtn['nickname'] = info['participant_customizations'][1]
+            rtn['own_nickname'] = info['participant_customizations'][0]
+        else:
+            raise Exception('No participant matching the user {} found: {}'.format(_id, info['participant_customizations']))
+    return rtn
+
 def graphql_to_message(message):
     if message.get('message_sender') is None:
         message['message_sender'] = {}
@@ -46,6 +79,7 @@ def graphql_to_message(message):
 def graphql_to_user(user):
     if user.get('profile_picture') is None:
         user['profile_picture'] = {}
+    c_info = get_customization_info(user)
     return User(
         user['id'],
         url=user.get('url'),
@@ -54,6 +88,10 @@ def graphql_to_user(user):
         is_friend=user.get('is_viewer_friend'),
         gender=GENDERS[user.get('gender')],
         affinity=user.get('affinity'),
+        nickname=c_info.get('nickname'),
+        color=c_info.get('color'),
+        emoji=c_info.get('emoji'),
+        own_nickname=c_info.get('own_nickname'),
         photo=user['profile_picture'].get('uri'),
         name=user.get('name')
     )
@@ -61,9 +99,13 @@ def graphql_to_user(user):
 def graphql_to_group(group):
     if group.get('image') is None:
         group['image'] = {}
+    c_info = get_customization_info(group)
     return Group(
         group['thread_key']['thread_fbid'],
         participants=[node['messaging_actor']['id'] for node in group['all_participants']['nodes']],
+        nicknames=c_info.get('nicknames'),
+        color=c_info.get('color'),
+        emoji=c_info.get('emoji'),
         photo=group['image'].get('uri'),
         name=group.get('name')
     )
@@ -160,6 +202,14 @@ class GraphQL(object):
                     id
                 }
             }
+        },
+        customization_info {
+            participant_customizations {
+                participant_id,
+                nickname
+            },
+            outgoing_bubble_color,
+            emoji
         }
     }
     """

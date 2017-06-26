@@ -12,7 +12,7 @@ print("users' IDs: {}".format(user.uid for user in users))
 print("users' names: {}".format(user.name for user in users))
 
 
-# If we have a user id, we can use `getUserInfo` to fetch a `User` object
+# If we have a user id, we can use `fetchUserInfo` to fetch a `User` object
 user = client.fetchUserInfo('<user id>')['<user id>']
 # We can also query both mutiple users together, which returns list of `User` objects
 users = client.fetchUserInfo('<1st user id>', '<2nd user id>', '<3rd user id>')
@@ -47,6 +47,18 @@ messages.reverse()
 # Prints the content of all the messages
 for message in messages:
     print(message.text)
+
+
+# If we have a thread id, we can use `fetchThreadInfo` to fetch a `Thread` object
+thread = client.fetchThreadInfo('<thread id>')['<thread id>']
+print("thread's name: {}".format(thread.name))
+print("thread's type: {}".format(thread.type))
+
+
+# `searchForThreads` searches works like `searchForUsers`, but gives us a list of threads instead
+thread = client.searchForThreads('<name of thread>')[0]
+print("thread's name: {}".format(thread.name))
+print("thread's type: {}".format(thread.type))
 
 
 # Here should be an example of `getUnread`

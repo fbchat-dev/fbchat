@@ -110,7 +110,7 @@ class Client(object):
         headers = dict((i, self._header[i]) for i in self._header if i != 'Content-Type')
         return self._session.post(url, headers=headers, data=payload, timeout=timeout, files=files)
 
-    def graphql_request(self, *queries):
+    def graphql_requests(self, *queries):
         """
         .. todo::
             Documenting this
@@ -125,10 +125,15 @@ class Client(object):
 
         j = graphql_response_to_json(checkRequest(self._post(ReqUrl.GRAPHQL, payload), do_json_check=False))
 
-        if len(j) == 1:
-            return j[0]
-        else:
-            return tuple(j)
+        return tuple(j)
+
+    def graphql_request(self, query):
+        """
+        Shorthand for `graphql_requests(query)[0]`
+
+        :raises: Exception if request failed
+        """
+        return self.graphql_requests(query)[0]
 
 
     """
@@ -455,9 +460,6 @@ class Client(object):
 
         return [graphql_to_page(node) for node in j[name]['pages']['nodes']]
 
-        #entries = self._searchFor(name)
-        #return [k for k in entries if k.type == ThreadType.PAGE]
-
     def searchForGroups(self, name, limit=1):
         """
         Find and get group thread by its name
@@ -510,23 +512,42 @@ class Client(object):
         j = checkRequest(self._post(ReqUrl.INFO, data))
 
         if not j['payload']['profiles']:
-            raise Exception('No users returned')
+            raise Exception('No users/pages returned')
 
         entries = {}
         for _id in j['payload']['profiles']:
             k = j['payload']['profiles'][_id]
             if k['type'] in ['user', 'friend']:
-                entries[_id] = User(_id, url=k['uri'], first_name=k['firstName'], is_friend=k['is_friend'], gender=GENDERS[k['gender']], photo=k['thumbSrc'], name=k['name'])
+                entries[_id] = {
+                    'id': _id,
+                    'type': ThreadType.USER,
+                    'url': k.get('uri'),
+                    'first_name': k.get('firstName'),
+                    'is_viewer_friend': k.get('is_friend'),
+                    'gender': k.get('gender'),
+                    'profile_picture': {'uri': k.get('thumbSrc')},
+                    'name': k.get('name')
+                }
             elif k['type'] == 'page':
-                entries[_id] = Page(_id, url=k['uri'], photo=k['thumbSrc'], name=k['name'])
+                entries[_id] = {
+                    'id': _id,
+                    'type': ThreadType.PAGE,
+                    'url': k.get('uri'),
+                    'profile_picture': {'uri': k.get('thumbSrc')},
+                    'name': k.get('name')
+                }
             else:
                 raise Exception('{} had an unknown thread type: {}'.format(_id, k))
 
+        log.debug(entries)
         return entries
 
     def fetchUserInfo(self, *user_ids):
         """
         Get users' info from IDs, unordered
+
+        .. warning::
+            Sends two requests, to fetch all available info!
 
         :param user_ids: One or more user ID(s) to query
         :return: :class:`models.User` objects, labeled by their ID
@@ -534,11 +555,13 @@ class Client(object):
         :raises: Exception if request failed
         """
 
-        entries = self._fetchInfo(*user_ids)
+        threads = self.fetchThreadInfo(*user_ids)
         users = {}
-        for k in entries:
-            if entries[k].type == ThreadType.USER:
-                users[k] = entries[k]
+        for k in threads:
+            if threads[k].type == ThreadType.USER:
+                users[k] = threads[k]
+            else:
+                raise Exception('Thread {} was not a user'.format(threads[k]))
 
         return users
 
@@ -546,19 +569,104 @@ class Client(object):
         """
         Get pages' info from IDs, unordered
 
+        .. warning::
+            Sends two requests, to fetch all available info!
+
         :param page_ids: One or more page ID(s) to query
         :return: :class:`models.Page` objects, labeled by their ID
         :rtype: dict
         :raises: Exception if request failed
         """
 
-        entries = self._fetchInfo(*user_ids)
-        users = {}
-        for k in entries:
-            if entries[k].type == ThreadType.PAGE:
-                users[k] = entries[k]
+        threads = self.fetchThreadInfo(*page_ids)
+        pages = {}
+        for k in threads:
+            if threads[k].type == ThreadType.PAGE:
+                pages[k] = threads[k]
+            else:
+                raise Exception('Thread {} was not a page'.format(threads[k]))
 
-        return users
+        return pages
+
+    def fetchGroupInfo(self, *group_ids):
+        """
+        Get groups' info from IDs, unordered
+
+        :param group_ids: One or more group ID(s) to query
+        :return: :class:`models.Group` objects, labeled by their ID
+        :rtype: dict
+        :raises: Exception if request failed
+        """
+
+        threads = self.fetchThreadInfo(*group_ids)
+        groups = {}
+        for k in threads:
+            if threads[k].type == ThreadType.GROUP:
+                groups[k] = threads[k]
+            else:
+                raise Exception('Thread {} was not a group'.format(threads[k]))
+
+        return groups
+
+    def fetchThreadInfo(self, *thread_ids):
+        """
+        Get threads' info from IDs, unordered
+
+        .. warning::
+            Sends two requests if users or pages are present, to fetch all available info!
+
+        :param thread_ids: One or more thread ID(s) to query
+        :return: :class:`models.Thread` objects, labeled by their ID
+        :rtype: dict
+        :raises: Exception if request failed
+        """
+
+        queries = []
+        for thread_id in thread_ids:
+            queries.append(GraphQL(doc_id='1386147188135407', params={
+                'id': thread_id,
+                'message_limit': 0,
+                'load_messages': False,
+                'load_read_receipts': False,
+                'before': None
+            }))
+
+        j = self.graphql_requests(*queries)
+
+        for i, entry in enumerate(j):
+            if entry.get('message_thread') is None:
+                # If you don't have an existing thread with this person, attempt to retrieve user data anyways
+                j[i]['message_thread'] = {
+                    'thread_key': {
+                        'other_user_id': thread_ids[i]
+                    },
+                    'thread_type': 'ONE_TO_ONE'
+                }
+
+        pages_and_user_ids = [k['message_thread']['thread_key']['other_user_id'] for k in j if k['message_thread'].get('thread_type') == 'ONE_TO_ONE']
+        pages_and_users = {}
+        if len(pages_and_user_ids) != 0:
+            pages_and_users = self._fetchInfo(*pages_and_user_ids)
+
+        rtn = {}
+        for i, entry in enumerate(j):
+            entry = entry['message_thread']
+            if entry.get('thread_type') == 'GROUP':
+                _id = entry['thread_key']['thread_fbid']
+                rtn[_id] = graphql_to_group(entry)
+            elif entry.get('thread_type') == 'ONE_TO_ONE':
+                _id = entry['thread_key']['other_user_id']
+                if pages_and_users.get(_id) is None:
+                    raise Exception('Could not fetch thread {}'.format(_id))
+                entry.update(pages_and_users[_id])
+                if entry['type'] == ThreadType.USER:
+                    rtn[_id] = graphql_to_user(entry)
+                else:
+                    rtn[_id] = graphql_to_page(entry)
+            else:
+                raise Exception('{} had an unknown thread type: {}'.format(thread_ids[i], entry))
+
+        return rtn
 
     def fetchThreadMessages(self, thread_id=None, limit=20, before=None):
         """

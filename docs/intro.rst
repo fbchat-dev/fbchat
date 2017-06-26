@@ -52,12 +52,12 @@ A thread can refer to two things: A Messenger group chat or a single Facebook us
 These will specify whether the thread is a single user chat or a group chat.
 This is required for many of `fbchat`'s functions, since Facebook differetiates between these two internally
 
-Searching for group chats and finding their ID is not yet possible with `fbchat`,
-but searching for users is possible via. :func:`Client.searchForUsers`. See :ref:`intro_fetching`
+Searching for group chats and finding their ID can be done via. :func:`Client.searchForGroups`,
+and searching for users is possible via. :func:`Client.searchForUsers`. See :ref:`intro_fetching`
 
 You can get your own user ID by using :any:`Client.uid`
 
-Getting the ID of a group chat is fairly trivial though, since you only need to navigate to `<https://www.facebook.com/messages/>`_,
+Getting the ID of a group chat is fairly trivial otherwise, since you only need to navigate to `<https://www.facebook.com/messages/>`_,
 click on the group you want to find the ID of, and then read the id from the address bar.
 The URL will look something like this: ``https://www.facebook.com/messages/t/1234567890``, where ``1234567890`` would be the ID of the group.
 An image to illustrate this is shown below:

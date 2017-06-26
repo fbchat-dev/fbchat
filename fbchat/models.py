@@ -41,8 +41,16 @@ class User(Thread):
     gender = str
     #: From 0 to 1. How close the client is to the user
     affinity = float
+    #: The user's nickname
+    nickname = str
+    #: The clients nickname, as seen by the user
+    own_nickname = str
+    #: A :class:`ThreadColor`. The message color
+    color = None
+    #: The default emoji
+    emoji = str
 
-    def __init__(self, uid, url=None, first_name=None, last_name=None, is_friend=None, gender=None, affinity=None, **kwargs):
+    def __init__(self, uid, url=None, first_name=None, last_name=None, is_friend=None, gender=None, affinity=None, nickname=None, own_nickname=None, color=None, emoji=None, **kwargs):
         """Represents a Facebook user. Inherits `Thread`"""
         super(User, self).__init__(ThreadType.USER, uid, **kwargs)
         self.url = url
@@ -51,16 +59,29 @@ class User(Thread):
         self.is_friend = is_friend
         self.gender = gender
         self.affinity = affinity
+        self.nickname = nickname
+        self.own_nickname = own_nickname
+        self.color = color
+        self.emoji = emoji
 
 
 class Group(Thread):
     #: List of the group thread's participant user IDs
     participants = list
+    #: Dict, containing user nicknames mapped to their IDs
+    nicknames = dict
+    #: A :class:`ThreadColor`. The groups's message color
+    color = None
+    #: The groups's default emoji
+    emoji = str
 
-    def __init__(self, uid, participants=[], **kwargs):
+    def __init__(self, uid, participants=[], nicknames=[], color=None, emoji=None, **kwargs):
         """Represents a Facebook group. Inherits `Thread`"""
         super(Group, self).__init__(ThreadType.GROUP, uid, **kwargs)
         self.participants = participants
+        self.nicknames = nicknames
+        self.color = color
+        self.emoji = emoji
 
 
 class Page(Thread):
