@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 import requests
 import urllib
+import traceback
 from uuid import uuid1
 from random import choice
 from datetime import datetime
@@ -420,7 +421,8 @@ class Client(object):
 
         for key in j['payload']:
             k = j['payload'][key]
-            users.append(User(k['id'], first_name=k['firstName'], url=k['uri'], photo=k['thumbSrc'], name=k['name'], is_friend=k['is_friend'], gender=GENDERS[k['gender']]))
+            if k['type'] in ['user', 'friend']:
+                users.append(User(k['id'], first_name=k.get('firstName'), url=k.get('uri'), photo=k.get('thumbSrc'), name=k.get('name'), is_friend=k.get('is_friend'), gender=GENDERS[k.get('gender')]))
 
         return users
 
@@ -1298,9 +1300,6 @@ class Client(object):
         Does one cycle of the listening loop.
         This method is useful if you want to control fbchat from an external event loop
 
-        .. note::
-            markAlive is currently broken, and is ignored
-
         :param markAlive: Whether this should ping the Facebook server before running
         :type markAlive: bool
         :return: Whether the loop should keep running
@@ -1380,7 +1379,7 @@ class Client(object):
 
         :param exception: The exception that was encountered
         """
-        raise exception
+        traceback.print_exc()
 
 
     def onMessage(self, mid=None, author_id=None, message=None, thread_id=None, thread_type=ThreadType.USER, ts=None, metadata=None, msg={}):
@@ -1558,7 +1557,7 @@ class Client(object):
         """
         log.info('Inbox event: {}, {}, {}'.format(unseen, unread, recent_unread))
 
-    def onQprimer(self, made=None, msg={}):
+    def onQprimer(self, ts=None, msg={}):
         """
         Called when the client just started listening
 

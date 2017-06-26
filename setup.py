@@ -17,7 +17,7 @@ with open('README.rst') as f:
     readme_content = f.read().strip()
 
 try:
-    requirements = [line.rstrip('\n') for line in open('fbchat.egg-info/requires.txt')]
+    requirements = [line.rstrip('\n') for line in open(os.path.join('fbchat.egg-info', 'requires.txt'))]
 except FileNotFoundError:
     requirements = [line.rstrip('\n') for line in open('requirements.txt')]
 

@@ -108,17 +108,17 @@ def now():
 def strip_to_json(text):
     try:
         return text[text.index('{'):]
-    except ValueError as e:
-        return None
+    except ValueError:
+        raise Exception('No JSON object found: {}, {}'.format(repr(text), text.index('{')))
 
-def get_decoded(r):
-    if not isinstance(r._content, str):
-        return r._content.decode(facebookEncoding)
-    else:
-        return r._content
+def get_decoded_r(r):
+    return get_decoded(r._content)
+
+def get_decoded(content):
+    return content.decode(facebookEncoding)
 
 def get_json(r):
-    return json.loads(strip_to_json(get_decoded(r)))
+    return json.loads(strip_to_json(get_decoded_r(r)))
 
 def digitToChar(digit):
     if digit < 10:
@@ -162,16 +162,17 @@ def checkRequest(r, do_json_check=True):
     if not r.ok:
         raise Exception('Error when sending request: Got {} response'.format(r.status_code))
 
-    content = get_decoded(r)
+    content = get_decoded_r(r)
 
     if content is None or len(content) == 0:
         raise Exception('Error when sending request: Got empty response')
 
     if do_json_check:
+        content = strip_to_json(content)
         try:
-            j = json.loads(strip_to_json(content))
+            j = json.loads(content)
         except Exception as e:
-            raise Exception('Error while parsing JSON: {}'.format(repr(content)))
+            raise Exception('Error while parsing JSON: {}'.format(repr(content)), e)
         check_json(j)
         return j
     else:
