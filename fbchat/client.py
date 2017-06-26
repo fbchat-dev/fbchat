@@ -427,6 +427,9 @@ class Client(object):
         for key in j['payload']:
             k = j['payload'][key]
             if k['type'] in ['user', 'friend']:
+                if k['id'] in ['0', 0]:
+                    # Skip invalid users
+                    pass
                 users.append(User(k['id'], first_name=k.get('firstName'), url=k.get('uri'), photo=k.get('thumbSrc'), name=k.get('name'), is_friend=k.get('is_friend'), gender=GENDERS[k.get('gender')]))
 
         return users
