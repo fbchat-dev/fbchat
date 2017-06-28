@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 import requests
 import urllib
-import traceback
 from uuid import uuid1
 from random import choice
 from datetime import datetime
@@ -1279,7 +1278,6 @@ class Client(object):
                         thread_id = str(metadata['threadKey']['threadFbId'])
                         self.onPeopleAdded(mid=mid, added_ids=added_ids, author_id=author_id, thread_id=thread_id,
                                            ts=ts, msg=m)
-                        continue
 
                     # Left/removed participants
                     elif 'leftParticipantFbId' in delta:
@@ -1287,7 +1285,6 @@ class Client(object):
                         thread_id = str(metadata['threadKey']['threadFbId'])
                         self.onPersonRemoved(mid=mid, removed_id=removed_id, author_id=author_id, thread_id=thread_id,
                                              ts=ts, msg=m)
-                        continue
 
                     # Color change
                     elif delta_type == "change_thread_theme":
@@ -1295,7 +1292,6 @@ class Client(object):
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onColorChange(mid=mid, author_id=author_id, new_color=new_color, thread_id=thread_id,
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
-                        continue
 
                     # Emoji change
                     elif delta_type == "change_thread_icon":
@@ -1303,7 +1299,6 @@ class Client(object):
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onEmojiChange(mid=mid, author_id=author_id, new_emoji=new_emoji, thread_id=thread_id,
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
-                        continue
 
                     # Thread title change
                     elif delta.get("class") == "ThreadName":
@@ -1311,7 +1306,6 @@ class Client(object):
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onTitleChange(mid=mid, author_id=author_id, new_title=new_title, thread_id=thread_id,
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
-                        continue
 
                     # Nickname change
                     elif delta_type == "change_thread_nickname":
@@ -1321,7 +1315,6 @@ class Client(object):
                         self.onNicknameChange(mid=mid, author_id=author_id, changed_for=changed_for,
                                               new_nickname=new_nickname,
                                               thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
-                        continue
 
                     # Message delivered
                     elif delta.get("class") == "DeliveryReceipt":
@@ -1331,7 +1324,6 @@ class Client(object):
                         thread_id, thread_type = getThreadIdAndThreadType(delta)
                         self.onMessageDelivered(msg_ids=message_ids, delivered_for=delivered_for,
                                                 thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
-                        continue
 
                     # Message seen
                     elif delta.get("class") == "ReadReceipt":
@@ -1341,7 +1333,6 @@ class Client(object):
                         thread_id, thread_type = getThreadIdAndThreadType(delta)
                         self.onMessageSeen(seen_by=seen_by, thread_id=thread_id, thread_type=thread_type,
                                            seen_ts=seen_ts, ts=delivered_ts, metadata=metadata, msg=m)
-                        continue
 
                     # Messages marked as seen
                     elif delta.get("class") == "MarkRead":
@@ -1354,18 +1345,20 @@ class Client(object):
 
                         # thread_id, thread_type = getThreadIdAndThreadType(delta)
                         self.onMarkedSeen(threads=threads, seen_ts=seen_ts, ts=delivered_ts, metadata=delta, msg=m)
-                        continue
 
                     # New message
                     elif delta.get("class") == "NewMessage":
                         message = delta.get('body', '')
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onMessage(mid=mid, author_id=author_id, message=message,
-                                       thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=m, msg=m)
-                        continue
+                                       thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
+
+                    # Unknown message type
+                    else:
+                        self.onUnknownMesssageType(msg=m)
 
                 # Inbox
-                if mtype == "inbox":
+                elif mtype == "inbox":
                     self.onInbox(unseen=m["unseen"], unread=m["unread"], recent_unread=m["recent_unread"], msg=m)
 
                 # Typing
@@ -1493,7 +1486,7 @@ class Client(object):
 
         :param exception: The exception that was encountered
         """
-        traceback.print_exc()
+        log.exception('Got exception while listening')
 
 
     def onMessage(self, mid=None, author_id=None, message=None, thread_id=None, thread_type=ThreadType.USER, ts=None, metadata=None, msg={}):
