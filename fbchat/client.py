@@ -1012,6 +1012,7 @@ class Client(object):
         :type thread_type: models.ThreadType
         :raises: Exception if request failed
         """
+
         thread_id, thread_type = self._getThread(thread_id, thread_type)
 
         if thread_type == ThreadType.USER:
@@ -1023,6 +1024,8 @@ class Client(object):
             data['action_type'] = 'ma-type:log-message'
             data['log_message_data[name]'] = title
             data['log_message_type'] = 'log:thread-name'
+
+            return self._doSendRequest(data)
 
     def changeNickname(self, nickname, user_id, thread_id=None, thread_type=ThreadType.USER):
         """

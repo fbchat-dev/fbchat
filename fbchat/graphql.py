@@ -26,9 +26,11 @@ class ConcatJSONDecoder(json.JSONDecoder):
 def graphql_color_to_enum(color):
     if color is None:
         return None
+    if len(color) == 0:
+        return ThreadColor.MESSENGER_BLUE
     try:
         return ThreadColor('#{}'.format(color[2:].lower()))
-    except KeyError:
+    except KeyError, ValueError:
         raise Exception('Could not get ThreadColor from color: {}'.format(color))
 
 def get_customization_info(thread):
