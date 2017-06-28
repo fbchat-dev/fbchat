@@ -125,8 +125,10 @@ class Message(object):
     sticker = str
     #: A list of attachments
     attachments = list
+    #: An extensible attachment, e.g. share object
+    extensible_attachment = dict
 
-    def __init__(self, uid, author=None, timestamp=None, is_read=None, reactions=[], text=None, mentions=[], sticker=None, attachments=[]):
+    def __init__(self, uid, author=None, timestamp=None, is_read=None, reactions=[], text=None, mentions=[], sticker=None, attachments=[], extensible_attachment={}):
         """Represents a Facebook message"""
         self.uid = uid
         self.author = author
@@ -137,6 +139,7 @@ class Message(object):
         self.mentions = mentions
         self.sticker = sticker
         self.attachments = attachments
+        self.extensible_attachment = extensible_attachment
 
 
 class Mention(object):

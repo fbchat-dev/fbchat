@@ -75,7 +75,8 @@ def graphql_to_message(message):
         text=message.get('message').get('text'),
         mentions=[Mention(m.get('entity', {}).get('id'), offset=m.get('offset'), length=m.get('length')) for m in message.get('message').get('ranges', [])],
         sticker=message.get('sticker'),
-        attachments=message.get('blob_attachments')
+        attachments=message.get('blob_attachments'),
+        extensible_attachment=message.get('extensible_attachment')
     )
 
 def graphql_to_user(user):
