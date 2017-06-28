@@ -30,7 +30,7 @@ def graphql_color_to_enum(color):
         return ThreadColor.MESSENGER_BLUE
     try:
         return ThreadColor('#{}'.format(color[2:].lower()))
-    except KeyError, ValueError:
+    except ValueError:
         raise Exception('Could not get ThreadColor from color: {}'.format(color))
 
 def get_customization_info(thread):
