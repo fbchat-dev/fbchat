@@ -44,7 +44,7 @@ def get_customization_info(thread):
         rtn['nicknames'] = {}
         for k in info['participant_customizations']:
             rtn['nicknames'][k['participant_id']] = k.get('nickname')
-    else:
+    elif info.get('participant_customizations'):
         _id = thread.get('thread_key', {}).get('other_user_id') or thread.get('id')
         if info['participant_customizations'][0]['participant_id'] == _id:
             rtn['nickname'] = info['participant_customizations'][0]
