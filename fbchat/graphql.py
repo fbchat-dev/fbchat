@@ -44,16 +44,18 @@ def get_customization_info(thread):
     }
     if thread.get('thread_type') == 'GROUP' or thread.get('is_group_thread') or thread.get('thread_key', {}).get('thread_fbid'):
         rtn['nicknames'] = {}
-        for k in info['participant_customizations']:
+        for k in info.get('participant_customizations', []):
             rtn['nicknames'][k['participant_id']] = k.get('nickname')
     elif info.get('participant_customizations'):
         _id = thread.get('thread_key', {}).get('other_user_id') or thread.get('id')
         if info['participant_customizations'][0]['participant_id'] == _id:
             rtn['nickname'] = info['participant_customizations'][0]
-            rtn['own_nickname'] = info['participant_customizations'][1]
+            if len(info['participant_customizations']) > 1:
+                rtn['own_nickname'] = info['participant_customizations'][1]
         elif info['participant_customizations'][1]['participant_id'] == _id:
             rtn['nickname'] = info['participant_customizations'][1]
-            rtn['own_nickname'] = info['participant_customizations'][0]
+            if len(info['participant_customizations']) > 1:
+                rtn['own_nickname'] = info['participant_customizations'][0]
         else:
             raise Exception('No participant matching the user {} found: {}'.format(_id, info['participant_customizations']))
     return rtn
