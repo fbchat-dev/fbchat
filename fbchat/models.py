@@ -13,13 +13,16 @@ class Thread(object):
     photo = str
     #: The name of the thread
     name = str
+    #: Timestamp of last message
+    last_message_timestamp = str
 
-    def __init__(self, _type, uid, photo=None, name=None):
+    def __init__(self, _type, uid, photo=None, name=None, last_message_timestamp=None):
         """Represents a Facebook thread"""
         self.uid = str(uid)
         self.type = _type
         self.photo = photo
         self.name = name
+        self.last_message_timestamp = last_message_timestamp
 
     def __repr__(self):
         return self.__unicode__()
