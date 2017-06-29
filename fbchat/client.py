@@ -71,6 +71,9 @@ class Client(object):
         # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
         if not session_cookies or not self.setSession(session_cookies) or not self.isLoggedIn():
             self.login(email, password, max_tries)
+        else:
+            self.email = email
+            self.password = password
 
     """
     INTERNAL REQUEST METHODS
@@ -736,10 +739,9 @@ class Client(object):
             if k['thread_type'] == 1:
                 if k['other_user_fbid'] not in participants:
                     raise Exception('A thread was not in participants: {}'.format(j['payload']))
-                participants[k['other_user_fbid']].last_message_timestamp = k['last_message_timestamp']
                 entries.append(participants[k['other_user_fbid']])
             elif k['thread_type'] == 2:
-                entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], last_message_timestamp=k['last_message_timestamp']))
+                entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name']))
             else:
                 raise Exception('A thread had an unknown thread type: {}'.format(k))
 
