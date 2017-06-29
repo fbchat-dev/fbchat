@@ -13,13 +13,16 @@ class Thread(object):
     photo = str
     #: The name of the thread
     name = str
+    #: Timestamp of last message
+    last_message_timestamp = str
 
-    def __init__(self, _type, uid, photo=None, name=None):
+    def __init__(self, _type, uid, photo=None, name=None, last_message_timestamp=None):
         """Represents a Facebook thread"""
         self.uid = str(uid)
         self.type = _type
         self.photo = photo
         self.name = name
+        self.last_message_timestamp = last_message_timestamp
 
     def __repr__(self):
         return self.__unicode__()
@@ -125,8 +128,10 @@ class Message(object):
     sticker = str
     #: A list of attachments
     attachments = list
+    #: An extensible attachment, e.g. share object
+    extensible_attachment = dict
 
-    def __init__(self, uid, author=None, timestamp=None, is_read=None, reactions=[], text=None, mentions=[], sticker=None, attachments=[]):
+    def __init__(self, uid, author=None, timestamp=None, is_read=None, reactions=[], text=None, mentions=[], sticker=None, attachments=[], extensible_attachment={}):
         """Represents a Facebook message"""
         self.uid = uid
         self.author = author
@@ -137,6 +142,7 @@ class Message(object):
         self.mentions = mentions
         self.sticker = sticker
         self.attachments = attachments
+        self.extensible_attachment = extensible_attachment
 
 
 class Mention(object):

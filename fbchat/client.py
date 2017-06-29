@@ -736,9 +736,10 @@ class Client(object):
             if k['thread_type'] == 1:
                 if k['other_user_fbid'] not in participants:
                     raise Exception('A thread was not in participants: {}'.format(j['payload']))
+                participants[k['other_user_fbid']].last_message_timestamp = k['last_message_timestamp']
                 entries.append(participants[k['other_user_fbid']])
             elif k['thread_type'] == 2:
-                entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name']))
+                entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], last_message_timestamp=k['last_message_timestamp']))
             else:
                 raise Exception('A thread had an unknown thread type: {}'.format(k))
 
