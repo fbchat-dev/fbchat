@@ -1355,7 +1355,7 @@ class Client(object):
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onMessage(mid=mid, author_id=author_id, message=message,
                                        thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
-                        
+
                     # Unknown message type
                     else:
                         self.onUnknownMesssageType(msg=m)
@@ -1388,16 +1388,15 @@ class Client(object):
                 # Is sent before any other message
                 elif mtype == "deltaflow":
                     pass
-                
+
                 # Chat timestamp
                 elif mtype == "chatproxy-presence":
-                    buddyList = []
-                    for id in m.get("buddyList", {}).keys():
-                        payload = m["buddyList"][id]
-                        timestamp = payload["lat"]
-                        buddyList.append({id:timestamp})
-                    self.onChatTimestamp(buddylist=buddyList, msg=m)
-                    
+                    buddylist = {}
+                    for _id in m.get('buddyList', {}):
+                        payload = m['buddyList'][_id]
+                        buddylist[_id] = payload.get('lat')
+                    self.onChatTimestamp(buddylist=buddylist, msg=m)
+
                 # Unknown message type
                 else:
                     self.onUnknownMesssageType(msg=m)
@@ -1685,15 +1684,15 @@ class Client(object):
         """
         pass
 
-    def onChatTimestamp(self, buddylist={), msg={}):
-                                         """
+    def onChatTimestamp(self, buddylist={}, msg={}):
+        """
         Called when the client receives chat online presence update
 
         :param buddylist: A list of dicts with friend id and last seen timestamp
         :param msg: A full set of the data recieved
         """
         log.debug('Chat Timestamps received: {}'.format(buddylist))
-        
+
     def onUnknownMesssageType(self, msg={}):
         """
         Called when the client is listening, and some unknown data was recieved
