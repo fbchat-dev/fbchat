@@ -18,7 +18,7 @@ with open('README.rst') as f:
 
 try:
     requirements = [line.rstrip('\n') for line in open(os.path.join('fbchat.egg-info', 'requires.txt'))]
-except FileNotFoundError:
+except IOError:
     requirements = [line.rstrip('\n') for line in open('requirements.txt')]
 
 version = None
