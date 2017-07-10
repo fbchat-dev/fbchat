@@ -834,7 +834,7 @@ class Client(object):
         # update JS token if receive from response
         if ('jsmods' in j) and ('require' in j['jsmods']):
             try:
-                self.payloadDefault['fb_dtsg'] = j['jsmods']['require'][3]
+                self.payloadDefault['fb_dtsg'] = j['jsmods']['require'][0][3][0]
             except (KeyError, IndexError) as e:
                 log.warning("Error when update fb_dtsg. Facebook might have changed protocol.")
 
