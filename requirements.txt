@@ -1,3 +1,4 @@
 requests
 lxml
 beautifulsoup4
+enum34
