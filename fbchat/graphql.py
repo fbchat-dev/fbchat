@@ -48,11 +48,11 @@ def get_customization_info(thread):
             rtn['nicknames'][k['participant_id']] = k.get('nickname')
     elif info.get('participant_customizations'):
         _id = thread.get('thread_key', {}).get('other_user_id') or thread.get('id')
-        if info['participant_customizations'][0]['participant_id'] == _id:
+        if len(info['participant_customizations']) > 0 and info['participant_customizations'][0]['participant_id'] == _id:
             rtn['nickname'] = info['participant_customizations'][0]
             if len(info['participant_customizations']) > 1:
                 rtn['own_nickname'] = info['participant_customizations'][1]
-        elif info['participant_customizations'][1]['participant_id'] == _id:
+        elif len(info['participant_customizations']) > 1 and info['participant_customizations'][1]['participant_id'] == _id:
             rtn['nickname'] = info['participant_customizations'][1]
             if len(info['participant_customizations']) > 1:
                 rtn['own_nickname'] = info['participant_customizations'][0]

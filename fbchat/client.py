@@ -950,7 +950,7 @@ class Client(object):
         """
         Sends a local image to a thread
 
-        :param image_path: URL of an image to upload and send
+        :param image_path: Path of an image to upload and send
         :param message: Additional message
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
