@@ -831,6 +831,13 @@ class Client(object):
         except (KeyError, IndexError) as e:
             raise Exception('Error when sending message: No message IDs could be found: {}'.format(j))
 
+        # update JS token if receive from response
+        if ('jsmods' in j) and ('require' in j['jsmods']):
+            try:
+                self.payloadDefault['fb_dtsg'] = j['jsmods']['require'][0][3][0]
+            except (KeyError, IndexError) as e:
+                log.warning("Error when update fb_dtsg. Facebook might have changed protocol.")
+
         return message_id
 
     def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
