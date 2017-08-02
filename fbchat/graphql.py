@@ -47,17 +47,18 @@ def get_customization_info(thread):
         for k in info.get('participant_customizations', []):
             rtn['nicknames'][k['participant_id']] = k.get('nickname')
     elif info.get('participant_customizations'):
-        _id = thread.get('thread_key', {}).get('other_user_id') or thread.get('id')
-        if len(info['participant_customizations']) > 0 and info['participant_customizations'][0]['participant_id'] == _id:
-            rtn['nickname'] = info['participant_customizations'][0]
-            if len(info['participant_customizations']) > 1:
-                rtn['own_nickname'] = info['participant_customizations'][1]
-        elif len(info['participant_customizations']) > 1 and info['participant_customizations'][1]['participant_id'] == _id:
-            rtn['nickname'] = info['participant_customizations'][1]
-            if len(info['participant_customizations']) > 1:
-                rtn['own_nickname'] = info['participant_customizations'][0]
-        else:
-            raise Exception('No participant matching the user {} found: {}'.format(_id, info['participant_customizations']))
+        uid = thread.get('thread_key', {}).get('other_user_id') or thread.get('id')
+        pc = info['participant_customizations']
+        if len(pc) > 0:
+            if pc[0].get('participant_id') == uid:
+                rtn['nickname'] = pc[0].get('nickname')
+            else:
+                rtn['own_nickname'] = pc[0].get('nickname')
+        if len(pc) > 1:
+            if pc[1].get('participant_id') == uid:
+                rtn['nickname'] = pc[1].get('nickname')
+            else:
+                rtn['own_nickname'] = pc[1].get('nickname')
     return rtn
 
 def graphql_to_message(message):
