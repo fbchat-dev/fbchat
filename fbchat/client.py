@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 import requests
 import urllib
-from uuid import uuid1
 from random import choice
 from datetime import datetime
 from bs4 import BeautifulSoup as bs
@@ -191,11 +190,19 @@ class Client(object):
         self.tmp_prev = now()
         self.last_sync = now()
 
+    def _loginNextUrl(self, r):
+        url = urlparse.parse_qs(urlparse.urlparse(r.url).query).get('next', [None])[0]
+        log.debug(url)
+        if url is not None:
+            return self._cleanGet(url)
+        else:
+            return r
+
     def _login(self):
         if not (self.email and self.password):
             raise Exception("Email and password not found.")
 
-        soup = bs(self._get(ReqUrl.MOBILE).text, "lxml")
+        soup = bs(checkRequest(self._get(ReqUrl.MOBILE), do_json_check=False), 'lxml')
         data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
         data['email'] = self.email
         data['pass'] = self.password
@@ -203,14 +210,22 @@ class Client(object):
 
         r = self._cleanPost(ReqUrl.LOGIN, data)
 
+        r = self._loginNextUrl(r)
+
+        content = checkRequest(r, do_json_check=False)
+
         # Usually, 'Checkpoint' will refer to 2FA
         if ('checkpoint' in r.url and
-            ('Enter Security Code to Continue' in r.text or 'Enter Login Code to Continue' in r.text)):
-            r = self._2FA(r)
+            ('Enter Security Code to Continue' in content or 'Enter Login Code to Continue' in content)):
+            r = self._2FA(content)
+
+        r = self._loginNextUrl(r)
 
         # Sometimes Facebook tries to show the user a "Save Device" dialog
         if 'save-device' in r.url:
             r = self._cleanGet(ReqUrl.SAVE_DEVICE)
+
+        r = self._loginNextUrl(r)
 
         if 'home' in r.url:
             self._postLogin()
@@ -218,8 +233,8 @@ class Client(object):
         else:
             return False, r.url
 
-    def _2FA(self, r):
-        soup = bs(r.text, "lxml")
+    def _2FA(self, content):
+        soup = bs(content, "lxml")
         data = dict()
 
         s = self.on2FACode()
@@ -638,7 +653,7 @@ class Client(object):
             }))
 
         j = self.graphql_requests(*queries)
-        
+
         for i, entry in enumerate(j):
             if entry.get('message_thread') is None:
                 # If you don't have an existing thread with this person, attempt to retrieve user data anyways

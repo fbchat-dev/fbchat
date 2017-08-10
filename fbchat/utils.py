@@ -9,6 +9,12 @@ import warnings
 import logging
 from .models import *
 
+# Python 2: urlparse, Python 3: urllib.parse
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
+
 # Python 2's `input` executes the input, whereas `raw_input` just returns the input
 try:
     input = raw_input
