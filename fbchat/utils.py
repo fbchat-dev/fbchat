@@ -21,6 +21,14 @@ try:
 except NameError:
     pass
 
+class FBchatException(Exception):
+    pass
+
+class FBchatValueError(FBchatException):
+    pass
+
+regex_prog_fb_h = re.compile(r'/logout\.php.*')
+
 # Log settings
 log = logging.getLogger("client")
 log.setLevel(logging.DEBUG)
@@ -109,7 +117,13 @@ def strip_to_json(text):
     try:
         return text[text.index('{'):]
     except ValueError:
-        raise Exception('No JSON object found: {}, {}'.format(repr(text), text.index('{')))
+        raise FBchatException('No JSON object found: {}, {}'.format(repr(text), text.index('{')))
+
+def get_parameter(url, parameter):
+    return urlparse.parse_qs(urlparse.urlparse(url).query).get(parameter, [None])[0]
+
+def get_client_revision(content):
+    return int(content.split('"client_revision":', 1)[1].split(",", 1)[0])
 
 def get_decoded_r(r):
     return get_decoded(r._content)
@@ -152,27 +166,27 @@ def check_json(j):
     if 'error' in j and j['error'] is not None:
         if 'errorDescription' in j:
             # 'errorDescription' is in the users own language!
-            raise Exception('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']))
+            raise FBchatException('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']))
         elif 'debug_info' in j['error']:
-            raise Exception('Error #{} when sending request: {}'.format(j['error']['code'], repr(j['error']['debug_info'])))
+            raise FBchatException('Error #{} when sending request: {}'.format(j['error']['code'], repr(j['error']['debug_info'])))
         else:
-            raise Exception('Error {} when sending request'.format(j['error']))
+            raise FBchatException('Error {} when sending request'.format(j['error']))
 
 def checkRequest(r, do_json_check=True):
     if not r.ok:
-        raise Exception('Error when sending request: Got {} response'.format(r.status_code))
+        raise FBchatException('Error when sending request: Got {} response'.format(r.status_code))
 
     content = get_decoded_r(r)
 
     if content is None or len(content) == 0:
-        raise Exception('Error when sending request: Got empty response')
+        raise FBchatException('Error when sending request: Got empty response')
 
     if do_json_check:
         content = strip_to_json(content)
         try:
             j = json.loads(content)
         except Exception as e:
-            raise Exception('Error while parsing JSON: {}'.format(repr(content)), e)
+            raise FBchatException('Error while parsing JSON: {}'.format(repr(content)), e)
         check_json(j)
         return j
     else:

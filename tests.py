@@ -9,7 +9,7 @@ from getpass import getpass
 from sys import argv
 from os import path, chdir
 from glob import glob
-from fbchat import Client
+from fbchat import Client, FBchatException, FBchatValueError
 from fbchat.models import *
 import py_compile
 
@@ -21,6 +21,7 @@ Testing script for `fbchat`.
 Full documentation on https://fbchat.readthedocs.io/
 
 """
+
 
 class CustomClient(Client):
     def __init__(self, *args, **kwargs):
@@ -48,7 +49,7 @@ class TestFbchat(unittest.TestCase):
 
         self.assertFalse(client.isLoggedIn())
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(FBchatException):
             client.login('<email>', '<password>', max_tries=1)
 
         client.login(email, password)
@@ -72,7 +73,7 @@ class TestFbchat(unittest.TestCase):
 
         # resetDefaultThread
         client.resetDefaultThread()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(FBchatValueError):
             client.sendMessage('should_not_send')
 
     def test_fetchAllUsers(self):
@@ -108,9 +109,9 @@ class TestFbchat(unittest.TestCase):
     def test_sendMessage(self):
         self.assertIsNotNone(client.sendMessage('test_send_user★', user_id, ThreadType.USER))
         self.assertIsNotNone(client.sendMessage('test_send_group★', group_id, ThreadType.GROUP))
-        with self.assertRaises(Exception):
+        with self.assertRaises(FBchatException):
             client.sendMessage('test_send_user_should_fail★', user_id, ThreadType.GROUP)
-        with self.assertRaises(Exception):
+        with self.assertRaises(FBchatException):
             client.sendMessage('test_send_group_should_fail★', group_id, ThreadType.USER)
 
     def test_sendImages(self):
@@ -188,7 +189,6 @@ class TestFbchat(unittest.TestCase):
         client.setTypingStatus(TypingStatus.STOPPED, thread_id=user_id, thread_type=ThreadType.USER)
         client.setTypingStatus(TypingStatus.TYPING, thread_id=group_id, thread_type=ThreadType.GROUP)
         client.setTypingStatus(TypingStatus.STOPPED, thread_id=group_id, thread_type=ThreadType.GROUP)
-
 
 def start_test(param_client, param_group_id, param_user_id, tests=[]):
     global client
