@@ -638,7 +638,7 @@ class Client(object):
             }))
 
         j = self.graphql_requests(*queries)
-
+        
         for i, entry in enumerate(j):
             if entry.get('message_thread') is None:
                 # If you don't have an existing thread with this person, attempt to retrieve user data anyways
@@ -740,9 +740,10 @@ class Client(object):
             if k['thread_type'] == 1:
                 if k['other_user_fbid'] not in participants:
                     raise Exception('A thread was not in participants: {}'.format(j['payload']))
+                participants[k['other_user_fbid']].message_count = k['message_count']
                 entries.append(participants[k['other_user_fbid']])
             elif k['thread_type'] == 2:
-                entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name']))
+                entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], message_count=k['message_count']))
             else:
                 raise Exception('A thread had an unknown thread type: {}'.format(k))
 
