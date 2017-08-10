@@ -99,7 +99,8 @@ def graphql_to_user(user):
         emoji=c_info.get('emoji'),
         own_nickname=c_info.get('own_nickname'),
         photo=user['profile_picture'].get('uri'),
-        name=user.get('name')
+        name=user.get('name'),
+        message_count=user.get('messages_count')
     )
 
 def graphql_to_group(group):
@@ -113,7 +114,8 @@ def graphql_to_group(group):
         color=c_info.get('color'),
         emoji=c_info.get('emoji'),
         photo=group['image'].get('uri'),
-        name=group.get('name')
+        name=group.get('name'),
+        message_count=group.get('messages_count')
     )
 
 def graphql_to_page(page):
@@ -127,7 +129,8 @@ def graphql_to_page(page):
         city=page.get('city').get('name'),
         category=page.get('category_type'),
         photo=page['profile_picture'].get('uri'),
-        name=page.get('name')
+        name=page.get('name'),
+        message_count=page.get('messages_count')
     )
 
 def graphql_queries_to_json(*queries):

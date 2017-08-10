@@ -638,7 +638,7 @@ class Client(object):
             }))
 
         j = self.graphql_requests(*queries)
-
+        
         for i, entry in enumerate(j):
             if entry.get('message_thread') is None:
                 # If you don't have an existing thread with this person, attempt to retrieve user data anyways
