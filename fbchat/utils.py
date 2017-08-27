@@ -48,7 +48,7 @@ GENDERS = {
     11: 'unknown_plural',
 
     # For graphql requests
-    #'': 'unknown',
+    'UNKNOWN': 'unknown',
     'FEMALE': 'female_singular',
     'MALE': 'male_singular',
     #'': 'female_singular_guess',
