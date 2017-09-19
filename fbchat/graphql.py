@@ -146,8 +146,8 @@ def graphql_response_to_json(content):
     content = strip_to_json(content) # Usually only needed in some error cases
     try:
         j = json.loads(content, cls=ConcatJSONDecoder)
-    except Exception as e:
-        raise Exception('Error while parsing JSON: {}'.format(repr(content)), e)
+    except Exception:
+        raise FBchatException('Error while parsing JSON: {}'.format(repr(content)))
 
     rtn = [None]*(len(j))
     for x in j:
