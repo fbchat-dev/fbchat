@@ -157,7 +157,10 @@ class Client(object):
         self.payloadDefault = {}
         self.client_id = hex(int(random()*2147483648))[2:]
         self.start_time = now()
-        self.uid = str(self._session.cookies['c_user'])
+        self.uid = self._session.cookies.get_dict().get('c_user')
+        if self.uid is None:
+            raise Exception('Could not find c_user cookie')
+        self.uid = str(self.uid)
         self.user_channel = "p_" + self.uid
         self.ttstamp = ''
 

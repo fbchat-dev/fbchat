@@ -143,7 +143,11 @@ def graphql_queries_to_json(*queries):
     return json.dumps(rtn)
 
 def graphql_response_to_json(content):
-    j = json.loads(content, cls=ConcatJSONDecoder)
+    content = strip_to_json(content) # Usually only needed in some error cases
+    try:
+        j = json.loads(content, cls=ConcatJSONDecoder)
+    except Exception as e:
+        raise Exception('Error while parsing JSON: {}'.format(repr(content)), e)
 
     rtn = [None]*(len(j))
     for x in j:
