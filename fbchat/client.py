@@ -1438,17 +1438,17 @@ class Client(object):
         """
         try:
             if markAlive: self._ping(self.sticky, self.pool)
-            try:
-                content = self._pullMessage(self.sticky, self.pool)
-                if content: self._parseMessage(content)
-            except requests.exceptions.RequestException:
-                pass
-            except Exception as e:
-                return self.onListenError(exception=e)
+            content = self._pullMessage(self.sticky, self.pool)
+            if content:
+                self._parseMessage(content)
         except KeyboardInterrupt:
             return False
-        except requests.exceptions.Timeout:
+        except requests.Timeout:
             pass
+        except requests.ConnectionError:
+            time.sleep(30)
+        except Exception as e:
+            return self.onListenError(exception=e)
 
         return True
 
@@ -1509,8 +1509,10 @@ class Client(object):
         Called when an error was encountered while listening
 
         :param exception: The exception that was encountered
+        :return: Whether the loop should keep running
         """
         log.exception('Got exception while listening')
+        return True
 
 
     def onMessage(self, mid=None, author_id=None, message=None, thread_id=None, thread_type=ThreadType.USER, ts=None, metadata=None, msg={}):
