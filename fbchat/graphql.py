@@ -31,7 +31,7 @@ def graphql_color_to_enum(color):
     try:
         return ThreadColor('#{}'.format(color[2:].lower()))
     except ValueError:
-        raise Exception('Could not get ThreadColor from color: {}'.format(color))
+        raise FBchatException('Could not get ThreadColor from color: {}'.format(color))
 
 def get_customization_info(thread):
     if thread is None or thread.get('customization_info') is None:
@@ -176,7 +176,7 @@ class GraphQL(object):
                 'query_params': params
             }
         else:
-            raise Exception('A query or doc_id must be specified')
+            raise FBchatUserError('A query or doc_id must be specified')
 
 
     FRAGMENT_USER = """
