@@ -93,6 +93,16 @@ class ReqUrl(object):
     TYPING = "https://www.facebook.com/ajax/messaging/typ.php"
     GRAPHQL = "https://www.facebook.com/api/graphqlbatch/"
 
+    pull_channel = 0
+
+    def change_pull_channel(self, channel=None):
+        if channel is None:
+            self.pull_channel = (self.pull_channel + 1) % 5 # Pull channel will be 0-4
+        else:
+            self.pull_channel = channel
+        self.STICKY = "https://{}-edge-chat.facebook.com/pull".format(self.pull_channel)
+        self.PING = "https://{}-edge-chat.facebook.com/active_ping".format(self.pull_channel)
+
 
 facebookEncoding = 'UTF-8'
 
@@ -153,7 +163,7 @@ def check_json(j):
     else:
         raise FBchatFacebookError('Error {} when sending request'.format(j['error']), fb_error_code=j['error'])
 
-def checkRequest(r, do_json_check=True):
+def check_request(r, as_json=True):
     if not r.ok:
         raise FBchatFacebookError('Error when sending request: Got {} response'.format(r.status_code), request_error_code=r.status_code)
 
@@ -162,7 +172,7 @@ def checkRequest(r, do_json_check=True):
     if content is None or len(content) == 0:
         raise FBchatFacebookError('Error when sending request: Got empty response')
 
-    if do_json_check:
+    if as_json:
         content = strip_to_json(content)
         try:
             j = json.loads(content)
