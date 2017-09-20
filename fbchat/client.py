@@ -351,8 +351,8 @@ class Client(object):
             # Load cookies into current session
             self._session.cookies = requests.cookies.merge_cookies(self._session.cookies, session_cookies)
             self._postLogin()
-        except FBchatException as e:
-            self.exception('Failed loading session')
+        except Exception as e:
+            log.exception('Failed loading session')
             self._resetValues()
             return False
         return True
