@@ -220,7 +220,11 @@ class ImageAttachment(Attachment):
     animated_preview_height = int
 
     def __init__(self, original_extension=None, width=None, height=None, is_animated=None, thumbnail_url=None, preview=None, large_preview=None, animated_preview=None, **kwargs):
-        """Represents an image that has been sent as a Facebook attachment"""
+        """
+        Represents an image that has been sent as a Facebook attachment
+        To retrieve the full image url, use: :func:`fbchat.Client.fetchImageUrl`,
+        and pass it the uid of the image attachment
+        """
         super(ImageAttachment, self).__init__(**kwargs)
         self.original_extension = original_extension
         self.width = width

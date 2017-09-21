@@ -771,6 +771,23 @@ class Client(object):
             "unseen_threads": j['payload']['unseen_thread_ids']
         }
 
+    def fetchImageUrl(self, image_id):
+        """Fetches the url to the original image from an image attachment ID
+
+        :param image_id: The image you want to fethc
+        :type image_id: str
+        :return: An url where you can download the original image
+        :rtype: str
+        :raises: Exception if request failed
+        """
+        image_id = str(image_id)
+        j = checkRequest(self._get(ReqUrl.ATTACHMENT_PHOTO, query={'photo_id': str(image_id)}))
+
+        url = get_jsmods_require(j, 3)
+        if url is None:
+            raise Exception('Could not fetch image url from: {}'.format(j))
+        return url
+
     """
     END FETCH METHODS
     """
@@ -833,12 +850,10 @@ class Client(object):
         except (KeyError, IndexError) as e:
             raise Exception('Error when sending message: No message IDs could be found: {}'.format(j))
 
-        # update JS token if receive from response
-        if ('jsmods' in j) and ('require' in j['jsmods']):
-            try:
-                self.payloadDefault['fb_dtsg'] = j['jsmods']['require'][0][3][0]
-            except (KeyError, IndexError) as e:
-                log.warning("Error when update fb_dtsg. Facebook might have changed protocol.")
+        # update JS token if received in response
+        fb_dtsg = get_jsmods_require(j, 2)
+        if fb_dtsg is not None:
+            self.payloadDefault['fb_dtsg'] = fb_dtsg
 
         return message_id
 

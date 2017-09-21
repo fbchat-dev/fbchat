@@ -112,6 +112,7 @@ class ReqUrl(object):
     MESSAGE_REACTION = "https://www.facebook.com/webgraphql/mutation"
     TYPING = "https://www.facebook.com/ajax/messaging/typ.php"
     GRAPHQL = "https://www.facebook.com/api/graphqlbatch/"
+    ATTACHMENT_PHOTO = "https://www.facebook.com/mercury/attachments/photo/"
 
 
 facebookEncoding = 'UTF-8'
@@ -191,3 +192,11 @@ def checkRequest(r, do_json_check=True):
         return j
     else:
         return content
+
+def get_jsmods_require(j, index):
+    if j.get('jsmods') and j['jsmods'].get('require'):
+        try:
+            return j['jsmods']['require'][0][index][0]
+        except (KeyError, IndexError) as e:
+            log.warning('Error when getting jsmods_require: {}. Facebook might have changed protocol'.format(j))
+    return None
