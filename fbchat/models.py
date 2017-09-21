@@ -112,6 +112,10 @@ class Page(Thread):
 
 
 class Message(object):
+    #: The actual message
+    text = str
+    #: A list of :class:`Mention` objects
+    mentions = list
     #: The message ID
     uid = str
     #: ID of the sender
@@ -122,29 +126,185 @@ class Message(object):
     is_read = bool
     #: A list of message reactions
     reactions = list
-    #: The actual message
-    text = str
-    #: A list of :class:`Mention` objects
-    mentions = list
-    #: An ID of a sent sticker
-    sticker = str
+    #: A :class:`EmojiSize`. Size of a sent emoji
+    emoji_size = None
     #: A list of attachments
     attachments = list
-    #: An extensible attachment, e.g. share object
-    extensible_attachment = dict
 
-    def __init__(self, uid, author=None, timestamp=None, is_read=None, reactions=[], text=None, mentions=[], sticker=None, attachments=[], extensible_attachment={}):
+    def __init__(self, text=None, mentions=[], emoji_size=None):
         """Represents a Facebook message"""
-        self.uid = uid
-        self.author = author
-        self.timestamp = timestamp
-        self.is_read = is_read
-        self.reactions = reactions
         self.text = text
         self.mentions = mentions
-        self.sticker = sticker
-        self.attachments = attachments
-        self.extensible_attachment = extensible_attachment
+        self.emoji_size = emoji_size
+
+    def __repr__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return '<Message ({}): {}, mentions={} emoji_size={} attachments={}>'.format(self.uid, repr(self.text), self.mentions, self.emoji_size, self.attachments)
+
+class Attachment(object):
+    #: The attachment ID
+    uid = str
+
+    def __init__(self, uid=None, mime_type=None):
+        """Represents a Facebook attachment"""
+        self.uid = uid
+
+class StickerAttachment(Attachment):
+    def __init__(self, **kwargs):
+        """Represents a sticker that has been sent as a Facebook attachment - *Currently Incomplete!*"""
+        super(StickerAttachment, self).__init__(**kwargs)
+
+class ShareAttachment(Attachment):
+    def __init__(self, **kwargs):
+        """Represents a shared item (eg. URL) that has been sent as a Facebook attachment - *Currently Incomplete!*"""
+        super(ShareAttachment, self).__init__(**kwargs)
+
+class FileAttachment(Attachment):
+    #: Url where you can download the file
+    url = str
+    #: Size of the file in bytes
+    size = int
+    #: Name of the file
+    name = str
+    #: Whether Facebook determines that this file may be harmful
+    is_malicious = bool
+
+    def __init__(self, url=None, size=None, name=None, is_malicious=None, **kwargs):
+        """Represents a file that has been sent as a Facebook attachment"""
+        super(FileAttachment, self).__init__(**kwargs)
+        self.url = url
+        self.size = size
+        self.name = name
+        self.is_malicious = is_malicious
+
+class AudioAttachment(FileAttachment):
+    def __init__(self, **kwargs):
+        """Represents an audio file that has been sent as a Facebook attachment - *Currently Incomplete!*"""
+        super(StickerAttachment, self).__init__(**kwargs)
+
+class ImageAttachment(Attachment):
+    #: The extension of the original image (eg. 'png')
+    original_extension = str
+    #: Width of original image
+    width = int
+    #: Height of original image
+    height = int
+
+    #: Whether the image is animated
+    is_animated = bool
+
+    #: Url to a thumbnail of the image
+    thumbnail_url = str
+
+    #: URL to a medium preview of the image
+    preview_url = str
+    #: Width of the medium preview image
+    preview_width = int
+    #: Height of the medium preview image
+    preview_height = int
+
+    #: URL to a large preview of the image
+    large_preview_url = str
+    #: Width of the large preview image
+    large_preview_width = int
+    #: Height of the large preview image
+    large_preview_height = int
+
+    #: URL to an animated preview of the image (eg. for gifs)
+    animated_preview_url = str
+    #: Width of the animated preview image
+    animated_preview_width = int
+    #: Height of the animated preview image
+    animated_preview_height = int
+
+    def __init__(self, original_extension=None, width=None, height=None, is_animated=None, thumbnail_url=None, preview=None, large_preview=None, animated_preview=None, **kwargs):
+        """Represents an image that has been sent as a Facebook attachment"""
+        super(ImageAttachment, self).__init__(**kwargs)
+        self.original_extension = original_extension
+        self.width = width
+        self.height = height
+        self.is_animated = is_animated
+        self.thumbnail_url = thumbnail_url
+
+        if preview is None:
+            preview = {}
+        self.preview_url = preview.get('uri')
+        self.preview_width = preview.get('width')
+        self.preview_height = preview.get('height')
+
+        if large_preview is None:
+            large_preview = {}
+        self.large_preview_url = large_preview.get('uri')
+        self.large_preview_width = large_preview.get('width')
+        self.large_preview_height = large_preview.get('height')
+
+        if animated_preview is None:
+            animated_preview = {}
+        self.animated_preview_url = animated_preview.get('uri')
+        self.animated_preview_width = animated_preview.get('width')
+        self.animated_preview_height = animated_preview.get('height')
+
+class VideoAttachment(Attachment):
+    #: Size of the original video in bytes
+    size = int
+    #: Width of original video
+    width = int
+    #: Height of original video
+    height = int
+    #: Length of video in milliseconds
+    duration = int
+    #: URL to very compressed preview video
+    preview_url = str
+
+    #: URL to a small preview image of the video
+    small_image_url = str
+    #: Width of the small preview image
+    small_image_width = int
+    #: Height of the small preview image
+    small_image_height = int
+
+    #: URL to a medium preview image of the video
+    medium_image_url = str
+    #: Width of the medium preview image
+    medium_image_width = int
+    #: Height of the medium preview image
+    medium_image_height = int
+
+    #: URL to a large preview image of the video
+    large_image_url = str
+    #: Width of the large preview image
+    large_image_width = int
+    #: Height of the large preview image
+    large_image_height = int
+
+    def __init__(self, size=None, width=None, height=None, duration=None, preview_url=None, small_image=None, medium_image=None, large_image=None, **kwargs):
+        """Represents a video that has been sent as a Facebook attachment"""
+        super(VideoAttachment, self).__init__(**kwargs)
+        self.size = size
+        self.width = width
+        self.height = height
+        self.duration = duration
+        self.preview_url = preview_url
+
+        if small_image is None:
+            small_image = {}
+        self.small_image_url = small_image.get('uri')
+        self.small_image_width = small_image.get('width')
+        self.small_image_height = small_image.get('height')
+
+        if medium_image is None:
+            medium_image = {}
+        self.medium_image_url = medium_image.get('uri')
+        self.medium_image_width = medium_image.get('width')
+        self.medium_image_height = medium_image.get('height')
+
+        if large_image is None:
+            large_image = {}
+        self.large_image_url = large_image.get('uri')
+        self.large_image_width = large_image.get('width')
+        self.large_image_height = large_image.get('height')
 
 
 class Mention(object):
@@ -211,22 +371,3 @@ class MessageReaction(Enum):
     ANGRY = '😠'
     YES = '👍'
     NO = '👎'
-
-LIKES = {
-    'large': EmojiSize.LARGE,
-    'medium': EmojiSize.MEDIUM,
-    'small': EmojiSize.SMALL,
-    'l': EmojiSize.LARGE,
-    'm': EmojiSize.MEDIUM,
-    's': EmojiSize.SMALL
-}
-
-MessageReactionFix = {
-    '😍': ('0001f60d', '%F0%9F%98%8D'),
-    '😆': ('0001f606', '%F0%9F%98%86'),
-    '😮': ('0001f62e', '%F0%9F%98%AE'),
-    '😢': ('0001f622', '%F0%9F%98%A2'),
-    '😠': ('0001f620', '%F0%9F%98%A0'),
-    '👍': ('0001f44d', '%F0%9F%91%8D'),
-    '👎': ('0001f44e', '%F0%9F%91%8E')
-}

@@ -12,6 +12,7 @@ from .utils import *
 from .models import *
 from .graphql import *
 import time
+import json
 
 
 
@@ -638,7 +639,7 @@ class Client(object):
             }))
 
         j = self.graphql_requests(*queries)
-        
+
         for i, entry in enumerate(j):
             if entry.get('message_thread') is None:
                 # If you don't have an existing thread with this person, attempt to retrieve user data anyways
@@ -1279,7 +1280,7 @@ class Client(object):
                     delta_type = delta.get("type")
                     metadata = delta.get("messageMetadata")
 
-                    if metadata is not None:
+                    if metadata:
                         mid = metadata["messageId"]
                         author_id = str(metadata['actorFbId'])
                         ts = int(metadata.get("timestamp"))
@@ -1360,9 +1361,91 @@ class Client(object):
 
                     # New message
                     elif delta.get("class") == "NewMessage":
-                        message = delta.get('body', '')
+                        mentions = []
+                        if delta.get('data') and delta['data'].get('prng'):
+                            try:
+                                mentions = [Mention(str(mention.get('i')), offset=mention.get('o'), length=mention.get('l')) for mention in json.loads(delta['data']['prng'])]
+                            except Exception:
+                                log.exception('An exception occured while reading attachments')
+
+                        attachments = []
+                        if delta.get('attachments'):
+                            try:
+                                for a in delta['attachments']:
+                                    mercury = a['mercury']
+                                    blob = mercury.get('blob_attachment', {})
+                                    image_metadata = a.get('imageMetadata', {})
+                                    attach_type = mercury['attach_type']
+                                    if attach_type in ['photo', 'animated_image']:
+                                        attachments.append(ImageAttachment(
+                                            original_extension=blob.get('original_extension') or (blob['filename'].split('-')[0] if blob.get('filename') else None),
+                                            width=int(image_metadata['width']),
+                                            height=int(image_metadata['height']),
+                                            is_animated=attach_type=='animated_image',
+                                            thumbnail_url=mercury.get('thumbnail_url'),
+                                            preview=blob.get('preview') or blob.get('preview_image'),
+                                            large_preview=blob.get('large_preview'),
+                                            animated_preview=blob.get('animated_image'),
+                                            uid=a['id']
+                                        ))
+                                    elif attach_type == 'file':
+                                        # Add more data here for audio files
+                                        attachments.append(FileAttachment(
+                                            url=mercury.get('url'),
+                                            size=int(a['fileSize']),
+                                            name=mercury.get('name'),
+                                            is_malicious=blob.get('is_malicious'),
+                                            uid=a['id']
+                                        ))
+                                    elif attach_type == 'video':
+                                        attachments.append(VideoAttachment(
+                                            size=int(a['fileSize']),
+                                            width=int(image_metadata['width']),
+                                            height=int(image_metadata['height']),
+                                            duration=blob.get('playable_duration_in_ms'),
+                                            preview_url=blob.get('playable_url'),
+                                            small_image=blob.get('chat_image'),
+                                            medium_image=blob.get('inbox_image'),
+                                            large_image=blob.get('large_image'),
+                                            uid=a['id']
+                                        ))
+                                    elif attach_type == 'sticker':
+                                        # Add more data here for stickers
+                                        attachments.append(StickerAttachment(
+                                            uid=mercury.get('metadata', {}).get('stickerID')
+                                        ))
+                                    elif attach_type == 'share':
+                                        # Add more data here for shared stuff (URLs, events and so on)
+                                        attachments.append(ShareAttachment(
+                                            uid=a.get('id')
+                                        ))
+                                    else:
+                                        attachments.append(Attachment(
+                                            uid=a.get('id')
+                                        ))
+                            except Exception:
+                                log.exception('An exception occured while reading attachments: {}'.format(delta['attachments']))
+
+                        emoji_size = None
+                        if metadata and metadata.get('tags'):
+                            for tag in metadata['tags']:
+                                if tag.startswith('hot_emoji_size:'):
+                                    emoji_size = LIKES[tag.split(':')[1]]
+                                    break
+
+                        message = Message(
+                            text=delta.get('body'),
+                            mentions=mentions,
+                            emoji_size=emoji_size
+                        )
+                        message.uid = mid
+                        message.author = author_id
+                        message.timestamp = ts
+                        message.attachments = attachments
+                        #message.is_read = None
+                        #message.reactions = []
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
-                        self.onMessage(mid=mid, author_id=author_id, message=message,
+                        self.onMessage(mid=mid, author_id=author_id, message=delta.get('body', ''), message_object=message,
                                        thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
                     # Unknown message type
@@ -1509,21 +1592,23 @@ class Client(object):
         log.exception('Got exception while listening')
 
 
-    def onMessage(self, mid=None, author_id=None, message=None, thread_id=None, thread_type=ThreadType.USER, ts=None, metadata=None, msg={}):
+    def onMessage(self, mid=None, author_id=None, message=None, message_object=None, thread_id=None, thread_type=ThreadType.USER, ts=None, metadata=None, msg={}):
         """
         Called when the client is listening, and somebody sends a message
 
         :param mid: The message ID
         :param author_id: The ID of the author
-        :param message: The message
+        :param message: (deprecated. Use `message_object.text` instead)
+        :param message_object: The message (As a `Message` object)
         :param thread_id: Thread ID that the message was sent to. See :ref:`intro_threads`
         :param thread_type: Type of thread that the message was sent to. See :ref:`intro_threads`
         :param ts: The timestamp of the message
         :param metadata: Extra metadata about the message
         :param msg: A full set of the data recieved
+        :type message_object: models.Message
         :type thread_type: models.ThreadType
         """
-        log.info("Message from {} in {} ({}): {}".format(author_id, thread_id, thread_type.name, message))
+        log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
 
     def onColorChange(self, mid=None, author_id=None, new_color=None, thread_id=None, thread_type=ThreadType.USER, ts=None, metadata=None, msg={}):
         """

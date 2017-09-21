@@ -32,6 +32,26 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6"
 ]
 
+LIKES = {
+    'large': EmojiSize.LARGE,
+    'medium': EmojiSize.MEDIUM,
+    'small': EmojiSize.SMALL,
+    'l': EmojiSize.LARGE,
+    'm': EmojiSize.MEDIUM,
+    's': EmojiSize.SMALL
+}
+
+MessageReactionFix = {
+    '😍': ('0001f60d', '%F0%9F%98%8D'),
+    '😆': ('0001f606', '%F0%9F%98%86'),
+    '😮': ('0001f62e', '%F0%9F%98%AE'),
+    '😢': ('0001f622', '%F0%9F%98%A2'),
+    '😠': ('0001f620', '%F0%9F%98%A0'),
+    '👍': ('0001f44d', '%F0%9F%91%8D'),
+    '👎': ('0001f44e', '%F0%9F%91%8E')
+}
+
+
 GENDERS = {
     # For standard requests
     0: 'unknown',
