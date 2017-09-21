@@ -165,7 +165,7 @@ def check_json(j):
 
 def check_request(r, as_json=True):
     if not r.ok:
-        raise FBchatFacebookError('Error when sending request: Got {} response'.format(r.status_code), request_error_code=r.status_code)
+        raise FBchatFacebookError('Error when sending request: Got {} response'.format(r.status_code), request_status_code=r.status_code)
 
     content = get_decoded_r(r)
 

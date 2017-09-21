@@ -92,7 +92,7 @@ class Client(object):
         self.req_counter += 1
         return payload
 
-    def _fix_1357004(self, error_code):
+    def _fix_fb_errors(self, error_code):
         """
         This fixes "Please try closing and re-opening your browser window" errors (1357004)
         This error usually happens after 1-2 days of inactivity
@@ -112,7 +112,7 @@ class Client(object):
         try:
             return check_request(r, as_json=as_json)
         except FBchatFacebookError as e:
-            if error_retries > 0 and self._fix_1357004(e.fb_error_code):
+            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._get(url, query=query, timeout=timeout, fix_request=fix_request, as_json=as_json, error_retries=error_retries-1)
             raise e
 
@@ -124,7 +124,7 @@ class Client(object):
         try:
             return check_request(r, as_json=as_json)
         except FBchatFacebookError as e:
-            if error_retries > 0 and self._fix_1357004(e.fb_error_code):
+            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._post(url, query=query, timeout=timeout, fix_request=fix_request, as_json=as_json, error_retries=error_retries-1)
             raise e
 
@@ -133,7 +133,7 @@ class Client(object):
         try:
             return graphql_response_to_json(content)
         except FBchatFacebookError as e:
-            if error_retries > 0 and self._fix_1357004(e.fb_error_code):
+            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._graphql(payload, error_retries=error_retries-1)
             raise e
 
@@ -154,7 +154,7 @@ class Client(object):
         try:
             return check_request(r, as_json=as_json)
         except FBchatFacebookError as e:
-            if error_retries > 0 and self._fix_1357004(e.fb_error_code):
+            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._postFile(url, files=files, query=query, timeout=timeout, fix_request=fix_request, as_json=as_json, error_retries=error_retries-1)
             raise e
 
