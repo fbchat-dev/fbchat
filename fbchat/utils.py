@@ -114,6 +114,16 @@ class ReqUrl(object):
     GRAPHQL = "https://www.facebook.com/api/graphqlbatch/"
     ATTACHMENT_PHOTO = "https://www.facebook.com/mercury/attachments/photo/"
 
+    pull_channel = 0
+
+    def change_pull_channel(self, channel=None):
+        if channel is None:
+            self.pull_channel = (self.pull_channel + 1) % 5 # Pull channel will be 0-4
+        else:
+            self.pull_channel = channel
+        self.STICKY = "https://{}-edge-chat.facebook.com/pull".format(self.pull_channel)
+        self.PING = "https://{}-edge-chat.facebook.com/active_ping".format(self.pull_channel)
+
 
 facebookEncoding = 'UTF-8'
 
@@ -124,7 +134,7 @@ def strip_to_json(text):
     try:
         return text[text.index('{'):]
     except ValueError:
-        raise Exception('No JSON object found: {}, {}'.format(repr(text), text.index('{')))
+        raise FBchatException('No JSON object found: {}, {}'.format(repr(text), text.index('{')))
 
 def get_decoded_r(r):
     return get_decoded(r._content)
@@ -164,30 +174,31 @@ def generateOfflineThreadingID():
     return str(int(msgs, 2))
 
 def check_json(j):
-    if 'error' in j and j['error'] is not None:
-        if 'errorDescription' in j:
-            # 'errorDescription' is in the users own language!
-            raise Exception('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']))
-        elif 'debug_info' in j['error']:
-            raise Exception('Error #{} when sending request: {}'.format(j['error']['code'], repr(j['error']['debug_info'])))
-        else:
-            raise Exception('Error {} when sending request'.format(j['error']))
+    if j.get('error') is None:
+        return
+    if 'errorDescription' in j:
+        # 'errorDescription' is in the users own language!
+        raise FBchatFacebookError('Error #{} when sending request: {}'.format(j['error'], j['errorDescription']), fb_error_code=j['error'], fb_error_message=j['errorDescription'])
+    elif 'debug_info' in j['error'] and 'code' in j['error']:
+        raise FBchatFacebookError('Error #{} when sending request: {}'.format(j['error']['code'], repr(j['error']['debug_info'])), fb_error_code=j['error']['code'], fb_error_message=j['error']['debug_info'])
+    else:
+        raise FBchatFacebookError('Error {} when sending request'.format(j['error']), fb_error_code=j['error'])
 
-def checkRequest(r, do_json_check=True):
+def check_request(r, as_json=True):
     if not r.ok:
-        raise Exception('Error when sending request: Got {} response'.format(r.status_code))
+        raise FBchatFacebookError('Error when sending request: Got {} response'.format(r.status_code), request_status_code=r.status_code)
 
     content = get_decoded_r(r)
 
     if content is None or len(content) == 0:
-        raise Exception('Error when sending request: Got empty response')
+        raise FBchatFacebookError('Error when sending request: Got empty response')
 
-    if do_json_check:
+    if as_json:
         content = strip_to_json(content)
         try:
             j = json.loads(content)
-        except Exception as e:
-            raise Exception('Error while parsing JSON: {}'.format(repr(content)), e)
+        except ValueError:
+            raise FBchatFacebookError('Error while parsing JSON: {}'.format(repr(content)))
         check_json(j)
         return j
     else:
