@@ -824,14 +824,14 @@ class Client(object):
         :type image_id: str
         :return: An url where you can download the original image
         :rtype: str
-        :raises: Exception if request failed
+        :raises: FBChatException if request failed
         """
         image_id = str(image_id)
         j = checkRequest(self._get(ReqUrl.ATTACHMENT_PHOTO, query={'photo_id': str(image_id)}))
 
         url = get_jsmods_require(j, 3)
         if url is None:
-            raise Exception('Could not fetch image url from: {}'.format(j))
+            raise FBChatException('Could not fetch image url from: {}'.format(j))
         return url
 
     """
