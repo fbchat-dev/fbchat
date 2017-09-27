@@ -249,8 +249,9 @@ class Client(object):
         r = self._cleanPost(self.req_url.LOGIN, data)
 
         # Usually, 'Checkpoint' will refer to 2FA
-        if ('checkpoint' in r.url and
-            ('Enter Security Code to Continue' in r.text or 'Enter Login Code to Continue' in r.text)):
+        if ('checkpoint' in r.url
+                and ('enter security code to continue' in r.text.lower()
+                    or 'enter login code to continue' in r.text.lower())):
             r = self._2FA(r)
 
         # Sometimes Facebook tries to show the user a "Save Device" dialog
@@ -1541,7 +1542,7 @@ class Client(object):
 
     def on2FACode(self):
         """Called when a 2FA code is needed to progress"""
-        input('Please enter your 2FA code --> ')
+        return input('Please enter your 2FA code --> ')
 
     def onLoggedIn(self, email=None):
         """
