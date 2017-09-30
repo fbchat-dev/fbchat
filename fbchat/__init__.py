@@ -17,7 +17,7 @@ from .client import *
 
 
 __copyright__ = 'Copyright 2015 - {} by Taehoon Kim'.format(datetime.now().year)
-__version__ = '1.0.22'
+__version__ = '1.0.23'
 __license__ = 'BSD'
 __author__ = 'Taehoon Kim; Moreels Pieter-Jan; Mads Marquart'
 __email__ = 'carpedm20@gmail.com'

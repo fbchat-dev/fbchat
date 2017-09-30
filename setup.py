@@ -16,10 +16,12 @@ except ImportError:
 with open('README.rst') as f:
     readme_content = f.read().strip()
 
-try:
-    requirements = [line.rstrip('\n') for line in open(os.path.join('fbchat.egg-info', 'requires.txt'))]
-except IOError:
-    requirements = [line.rstrip('\n') for line in open('requirements.txt')]
+requirements = [
+    'requests',
+    'lxml',
+    'beautifulsoup4',
+    "enum34; python_version == '2.7'"
+]
 
 version = None
 author = None
