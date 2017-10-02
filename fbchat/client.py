@@ -1109,7 +1109,7 @@ class Client(object):
     def changeThreadColor(self, color, thread_id=None):
         """
         Changes thread color
-
+        
         :param color: New thread color
         :param thread_id: User/Group ID to change color of. See :ref:`intro_threads`
         :type color: models.ThreadColor
