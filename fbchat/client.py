@@ -748,11 +748,12 @@ class Client(object):
 
         return list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
 
-    def fetchThreadList(self, offset=0, limit=20):
+    def fetchThreadList(self, offset=0, limit=20, type='inbox'):
         """Get thread list of your facebook account
 
         :param offset: The offset, from where in the list to recieve threads from
         :param limit: Max. number of threads to retrieve. Capped at 20
+        :param type: (optional) "inbox", "pending", "archived"
         :type offset: int
         :type limit: int
         :return: :class:`models.Thread` objects
@@ -763,10 +764,16 @@ class Client(object):
         if limit > 20 or limit < 1:
             raise FBchatUserError('`limit` should be between 1 and 20')
 
+        if type in ['inbox', 'pending', 'archived']:
+            if type == 'archived':
+                type = 'action:archived'
+        else:
+            raise ValueError('thread_type must be "inbox", "pending" or "archived"')
+
         data = {
             'client' : self.client,
-            'inbox[offset]' : offset,
-            'inbox[limit]' : limit,
+            type + '[offset]' : offset,
+            type + '[limit]' : limit,
         }
 
         j = self._post(self.req_url.THREADS, data, fix_request=True, as_json=True)
@@ -774,25 +781,27 @@ class Client(object):
             raise FBchatException('Missing payload: {}, with data: {}'.format(j, data))
 
         participants = {}
-        for p in j['payload']['participants']:
-            if p['type'] == 'page':
-                participants[p['fbid']] = Page(p['fbid'], url=p['href'], photo=p['image_src'], name=p['name'])
-            elif p['type'] == 'user':
-                participants[p['fbid']] = User(p['fbid'], url=p['href'], first_name=p['short_name'], is_friend=p['is_friend'], gender=GENDERS[p['gender']], photo=p['image_src'], name=p['name'])
-            else:
-                raise FBchatException('A participant had an unknown type {}: {}'.format(p['type'], p))
+        if 'participants' in j['payload']:
+            for p in j['payload']['participants']:
+                if p['type'] == 'page':
+                    participants[p['fbid']] = Page(p['fbid'], url=p['href'], photo=p['image_src'], name=p['name'])
+                elif p['type'] == 'user':
+                    participants[p['fbid']] = User(p['fbid'], url=p['href'], first_name=p['short_name'], is_friend=p['is_friend'], gender=GENDERS[p['gender']], photo=p['image_src'], name=p['name'])
+                else:
+                    raise FBchatException('A participant had an unknown type {}: {}'.format(p['type'], p))
 
         entries = []
-        for k in j['payload']['threads']:
-            if k['thread_type'] == 1:
-                if k['other_user_fbid'] not in participants:
-                    raise FBchatException('The thread {} was not in participants: {}'.format(k, j['payload']))
-                participants[k['other_user_fbid']].message_count = k['message_count']
-                entries.append(participants[k['other_user_fbid']])
-            elif k['thread_type'] == 2:
-                entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], message_count=k['message_count']))
-            else:
-                raise FBchatException('A thread had an unknown thread type: {}'.format(k))
+        if 'threads' in j['payload']:
+            for k in j['payload']['threads']:
+                if k['thread_type'] == 1:
+                    if k['other_user_fbid'] not in participants:
+                        raise FBchatException('The thread {} was not in participants: {}'.format(k, j['payload']))
+                    participants[k['other_user_fbid']].message_count = k['message_count']
+                    entries.append(participants[k['other_user_fbid']])
+                elif k['thread_type'] == 2:
+                    entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], message_count=k['message_count']))
+                else:
+                    raise FBchatException('A thread had an unknown thread type: {}'.format(k))
 
         return entries
 
