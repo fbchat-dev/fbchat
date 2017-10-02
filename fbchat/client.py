@@ -748,12 +748,12 @@ class Client(object):
 
         return list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
 
-    def fetchThreadList(self, offset=0, limit=20, type='inbox'):
+    def fetchThreadList(self, offset=0, limit=20, thread_location=ThreadLocation.INBOX):
         """Get thread list of your facebook account
 
         :param offset: The offset, from where in the list to recieve threads from
         :param limit: Max. number of threads to retrieve. Capped at 20
-        :param type: (optional) "inbox", "pending", "archived"
+        :param thread_location: models.ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
         :type offset: int
         :type limit: int
         :return: :class:`models.Thread` objects
@@ -764,16 +764,15 @@ class Client(object):
         if limit > 20 or limit < 1:
             raise FBchatUserError('`limit` should be between 1 and 20')
 
-        if type in ['inbox', 'pending', 'archived']:
-            if type == 'archived':
-                type = 'action:archived'
+        if thread_location in ThreadLocation:
+            loc_str = thread_location.value
         else:
-            raise ValueError('thread_type must be "inbox", "pending" or "archived"')
+            raise FBchatUserError('"thread_location" must be a value of ThreadLocation')
 
         data = {
             'client' : self.client,
-            type + '[offset]' : offset,
-            type + '[limit]' : limit,
+            loc_str + '[offset]' : offset,
+            loc_str + '[limit]' : limit,
         }
 
         j = self._post(self.req_url.THREADS, data, fix_request=True, as_json=True)
