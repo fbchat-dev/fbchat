@@ -16,7 +16,7 @@ with open('README.rst') as f:
 requirements = [
     'requests',
     'lxml',
-    'beautifulsoup4',
+    'beautifulsoup4'
 ]
 
 extras_requirements = {
