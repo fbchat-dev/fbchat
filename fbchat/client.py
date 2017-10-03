@@ -957,9 +957,12 @@ class Client(object):
             )
         }, fix_request=True, as_json=True)
         # Return the image_id
-        return j['payload']['metadata'][0]['image_id']
+        if not mimetype == 'image/gif':
+            return j['payload']['metadata'][0]['image_id']
+        else:
+            return j['payload']['metadata'][0]['gif_id']
 
-    def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER):
+    def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER, is_gif=False):
         """
         Sends an already uploaded image to a thread. (Used by :func:`Client.sendRemoteImage` and :func:`Client.sendLocalImage`)
 
@@ -967,6 +970,7 @@ class Client(object):
         :param message: Additional message
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
+        :param is_gif: if sending GIF, True, else False
         :type thread_type: models.ThreadType
         :return: :ref:`Message ID <intro_message_ids>` of the sent image
         :raises: FBchatException if request failed
@@ -980,7 +984,10 @@ class Client(object):
         data['specific_to_list[0]'] = 'fbid:' + str(thread_id)
         data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
 
-        data['image_ids[0]'] = image_id
+        if not is_gif:
+            data['image_ids[0]'] = image_id
+        else:
+            data['gif_ids[0]'] = image_id
 
         return self._doSendRequest(data)
 
@@ -998,9 +1005,10 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         mimetype = guess_type(image_url)[0]
+        is_gif = (mimetype == 'image/gif')
         remote_image = requests.get(image_url).content
         image_id = self._uploadImage(image_url, remote_image, mimetype)
-        return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
+        return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type, is_gif=is_gif)
 
     def sendLocalImage(self, image_path, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
@@ -1016,8 +1024,9 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         mimetype = guess_type(image_path)[0]
+        is_gif = (mimetype == 'image/gif')
         image_id = self._uploadImage(image_path, open(image_path, 'rb'), mimetype)
-        return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
+        return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type, is_gif=is_gif)
 
     def addUsersToGroup(self, user_ids, thread_id=None):
         """
