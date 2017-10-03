@@ -4,14 +4,11 @@
 """
 Setup script for fbchat
 """
-
-
 import os
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
-
 
 with open('README.rst') as f:
     readme_content = f.read().strip()
@@ -19,9 +16,12 @@ with open('README.rst') as f:
 requirements = [
     'requests',
     'lxml',
-    'beautifulsoup4',
-    "enum34; python_version == '2.7'"
+    'beautifulsoup4'
 ]
+
+extras_requirements = {
+    ':python_version < "3.4"': ['enum34']
+}
 
 version = None
 author = None
@@ -77,6 +77,7 @@ setup(
     include_package_data=True,
     packages=['fbchat'],
     install_requires=requirements,
+    extras_require=extras_requirements,
     url=source,
     version=version,
     zip_safe=True,
