@@ -1197,7 +1197,7 @@ class Client(object):
         Sets an event reminder
 
         :param thread_id: :ref:`Thread ID <intro_thread_ids>` to send event to
-        :param time: Event time
+        :param time: Event time (unix time stamp)
         :param title: Event title
         :param location: Event location
         :param location_ir: Event location ID
