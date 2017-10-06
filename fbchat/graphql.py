@@ -42,7 +42,7 @@ def get_customization_info(thread):
         'emoji': info.get('emoji'),
         'color': graphql_color_to_enum(info.get('outgoing_bubble_color'))
     }
-    if thread.get('thread_type') == 'GROUP' or thread.get('is_group_thread') or thread.get('thread_key', {}).get('thread_fbid'):
+    if thread.get('thread_type') in ('GROUP', 'ROOM') or thread.get('is_group_thread') or thread.get('thread_key', {}).get('thread_fbid'):
         rtn['nicknames'] = {}
         for k in info.get('participant_customizations', []):
             rtn['nicknames'][k['participant_id']] = k.get('nickname')
@@ -116,6 +116,26 @@ def graphql_to_group(group):
         photo=group['image'].get('uri'),
         name=group.get('name'),
         message_count=group.get('messages_count')
+    )
+
+def graphql_to_room(room):
+    if room.get('image') is None:
+        room['image'] = {}
+    c_info = get_customization_info(room)
+    return Room(
+        room['thread_key']['thread_fbid'],
+        participants=set([node['messaging_actor']['id'] for node in room['all_participants']['nodes']]),
+        nicknames=c_info.get('nicknames'),
+        color=c_info.get('color'),
+        emoji=c_info.get('emoji'),
+        photo=room['image'].get('uri'),
+        name=room.get('name'),
+        message_count=room.get('messages_count'),
+        admins = set([node.get('id') for node in room.get('thread_admins')]),
+        approval_mode = bool(room.get('approval_mode')),
+        approval_requests = set([node.get('id') for node in room['thread_queue_metatdata'].get('approval_requests')),
+        join_link = room['joinable_mode'].get('link'),
+        privacy_mode = bool(room.get('privacy_mode')),
     )
 
 def graphql_to_page(page):

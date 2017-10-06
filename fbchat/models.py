@@ -109,6 +109,28 @@ class Group(Thread):
         self.emoji = emoji
 
 
+class Room(Group):
+    # Set containing user IDs of thread admins
+    admins = set
+    # True if users need approval to join
+    approval_mode = bool
+    # Set containing user IDs requesting to join
+    approval_requests = set
+    # Link for joining room
+    join_link = str
+    # True is room is not discoverable
+    privacy_mode = bool
+
+    def __init__(self, uid, admins=set(), approval_mode=None, approval_requests=set(), join_link=None, privacy_mode=None, **kwargs):
+        """Represents a Facebook room. Inherits `Group`"""
+        super(Room, self).__init__(ThreadType.ROOM, uid, **kwargs)
+        self.admins = admins
+        self.approval_mode = approval_mode
+        self.approval_requests = approval_requests
+        self.join_link = join_link
+        self.privacy_mode = privacy_mode
+
+
 class Page(Thread):
     #: The page's custom url
     url = str
@@ -192,6 +214,7 @@ class ThreadType(Enum):
     USER = 1
     GROUP = 2
     PAGE = 3
+    ROOM = 4
 
 class TypingStatus(Enum):
     """Used to specify whether the user is typing or has stopped typing"""

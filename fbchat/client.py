@@ -553,6 +553,7 @@ class Client(object):
             elif node['__typename'] == 'Group':
                 # We don't handle Facebook "Groups"
                 pass
+            # TODO Add Rooms
             else:
                 log.warning('Unknown __typename: {} in {}'.format(repr(node['__typename']), node))
 
@@ -707,6 +708,9 @@ class Client(object):
             if entry.get('thread_type') == 'GROUP':
                 _id = entry['thread_key']['thread_fbid']
                 rtn[_id] = graphql_to_group(entry)
+            elif entry.get('thread_type') == 'ROOM':
+                _id = entry['thread_key']['thread_fbid']
+                rtn[_id] = graphql_to_room(entry)
             elif entry.get('thread_type') == 'ONE_TO_ONE':
                 _id = entry['thread_key']['other_user_id']
                 if pages_and_users.get(_id) is None:
@@ -790,6 +794,9 @@ class Client(object):
                 participants[k['other_user_fbid']].message_count = k['message_count']
                 entries.append(participants[k['other_user_fbid']])
             elif k['thread_type'] == 2:
+                entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], message_count=k['message_count']))
+            # TODO
+            elif k['thread_type'] == 4:
                 entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], message_count=k['message_count']))
             else:
                 raise FBchatException('A thread had an unknown thread type: {}'.format(k))
