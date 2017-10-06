@@ -896,7 +896,8 @@ class Client(object):
 
         return message_id
 
-    def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
+    def sendMessage(self, message, mention=None, thread_id=None, 
+                    thread_type=ThreadType.USER):
         """
         Sends a message to a thread
 
@@ -904,6 +905,9 @@ class Client(object):
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
+        :mention is in this format {userID : (start, end)},
+         where start is relative start position of @mention in a message
+         and end is relative end position of @mention
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
         :raises: FBchatException if request failed
         """
@@ -912,6 +916,14 @@ class Client(object):
 
         data['action_type'] = 'ma-type:user-generated-message'
         data['body'] = message or ''
+        if mention:
+            n = 0
+            for key, value in mention.items():
+                data['profile_xmd[%d][id]'%n] = key
+                data['profile_xmd[%d][offset]'%n] = value[0]
+                data['profile_xmd[%d][length]'%n] = value[1] - value[0]
+                data['profile_xmd[%d][type]'%n] = 'p'
+                n += 1
         data['has_attachment'] = False
         data['specific_to_list[0]'] = 'fbid:' + thread_id
         data['specific_to_list[1]'] = 'fbid:' + self.uid
