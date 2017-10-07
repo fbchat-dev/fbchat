@@ -800,7 +800,7 @@ class Client(object):
                 elif k['thread_type'] == 3:
                     entries.append(Room(
                         k['thread_fbid'],
-                        participants = set(p.strip('fbid:') for p in k['participants']),
+                        participants = set(p.lstrip('fbid:') for p in k['participants']),
                         photo = k['image_src'],
                         name = k['name'],
                         message_count = k['message_count'],
