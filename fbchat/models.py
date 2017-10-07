@@ -221,6 +221,13 @@ class ThreadType(Enum):
     PAGE = 3
     ROOM = 4
 
+class ThreadLocation(Enum):
+    """Used to specify where a thread is located (inbox, pending, archived, other)."""
+    INBOX = 'inbox'
+    PENDING = 'pending'
+    ARCHIVED = 'action:archived'
+    OTHER = 'other'
+
 class TypingStatus(Enum):
     """Used to specify whether the user is typing or has stopped typing"""
     STOPPED = 0

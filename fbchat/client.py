@@ -753,11 +753,12 @@ class Client(object):
 
         return list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
 
-    def fetchThreadList(self, offset=0, limit=20):
+    def fetchThreadList(self, offset=0, limit=20, thread_location=ThreadLocation.INBOX):
         """Get thread list of your facebook account
 
         :param offset: The offset, from where in the list to recieve threads from
         :param limit: Max. number of threads to retrieve. Capped at 20
+        :param thread_location: models.ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
         :type offset: int
         :type limit: int
         :return: :class:`models.Thread` objects
@@ -768,10 +769,15 @@ class Client(object):
         if limit > 20 or limit < 1:
             raise FBchatUserError('`limit` should be between 1 and 20')
 
+        if thread_location in ThreadLocation:
+            loc_str = thread_location.value
+        else:
+            raise FBchatUserError('"thread_location" must be a value of ThreadLocation')
+
         data = {
             'client' : self.client,
-            'inbox[offset]' : offset,
-            'inbox[limit]' : limit,
+            loc_str + '[offset]' : offset,
+            loc_str + '[limit]' : limit,
         }
 
         j = self._post(self.req_url.THREADS, data, fix_request=True, as_json=True)
@@ -779,13 +785,14 @@ class Client(object):
             raise FBchatException('Missing payload: {}, with data: {}'.format(j, data))
 
         participants = {}
-        for p in j['payload']['participants']:
-            if p['type'] == 'page':
-                participants[p['fbid']] = Page(p['fbid'], url=p['href'], photo=p['image_src'], name=p['name'])
-            elif p['type'] == 'user':
-                participants[p['fbid']] = User(p['fbid'], url=p['href'], first_name=p['short_name'], is_friend=p['is_friend'], gender=GENDERS[p['gender']], photo=p['image_src'], name=p['name'])
-            else:
-                raise FBchatException('A participant had an unknown type {}: {}'.format(p['type'], p))
+        if 'participants' in j['payload']:
+            for p in j['payload']['participants']:
+                if p['type'] == 'page':
+                    participants[p['fbid']] = Page(p['fbid'], url=p['href'], photo=p['image_src'], name=p['name'])
+                elif p['type'] == 'user':
+                    participants[p['fbid']] = User(p['fbid'], url=p['href'], first_name=p['short_name'], is_friend=p['is_friend'], gender=GENDERS[p['gender']], photo=p['image_src'], name=p['name'])
+                else:
+                    raise FBchatException('A participant had an unknown type {}: {}'.format(p['type'], p))
 
         entries = []
         if 'threads' in j['payload']:
@@ -967,9 +974,12 @@ class Client(object):
             )
         }, fix_request=True, as_json=True)
         # Return the image_id
-        return j['payload']['metadata'][0]['image_id']
+        if not mimetype == 'image/gif':
+            return j['payload']['metadata'][0]['image_id']
+        else:
+            return j['payload']['metadata'][0]['gif_id']
 
-    def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER):
+    def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER, is_gif=False):
         """
         Sends an already uploaded image to a thread. (Used by :func:`Client.sendRemoteImage` and :func:`Client.sendLocalImage`)
 
@@ -977,6 +987,7 @@ class Client(object):
         :param message: Additional message
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
+        :param is_gif: if sending GIF, True, else False
         :type thread_type: models.ThreadType
         :return: :ref:`Message ID <intro_message_ids>` of the sent image
         :raises: FBchatException if request failed
@@ -990,7 +1001,10 @@ class Client(object):
         data['specific_to_list[0]'] = 'fbid:' + str(thread_id)
         data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
 
-        data['image_ids[0]'] = image_id
+        if not is_gif:
+            data['image_ids[0]'] = image_id
+        else:
+            data['gif_ids[0]'] = image_id
 
         return self._doSendRequest(data)
 
@@ -1008,9 +1022,10 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         mimetype = guess_type(image_url)[0]
+        is_gif = (mimetype == 'image/gif')
         remote_image = requests.get(image_url).content
         image_id = self._uploadImage(image_url, remote_image, mimetype)
-        return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
+        return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type, is_gif=is_gif)
 
     def sendLocalImage(self, image_path, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
@@ -1026,8 +1041,9 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         mimetype = guess_type(image_path)[0]
+        is_gif = (mimetype == 'image/gif')
         image_id = self._uploadImage(image_path, open(image_path, 'rb'), mimetype)
-        return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
+        return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type, is_gif=is_gif)
 
     def addUsersToGroup(self, user_ids, thread_id=None):
         """
