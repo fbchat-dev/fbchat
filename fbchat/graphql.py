@@ -167,7 +167,9 @@ def graphql_response_to_json(content):
     return rtn
 
 class GraphQL(object):
-    def __init__(self, query=None, doc_id=None, params={}):
+    def __init__(self, query=None, doc_id=None, params=None):
+        if params is None:
+            params = {}
         if query is not None:
             self.value = {
                 'priority': 0,

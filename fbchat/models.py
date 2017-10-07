@@ -100,10 +100,14 @@ class Group(Thread):
     #: The groups's default emoji
     emoji = str
 
-    def __init__(self, uid, participants=set(), nicknames=[], color=None, emoji=None, **kwargs):
+    def __init__(self, uid, participants=None, nicknames=None, color=None, emoji=None, **kwargs):
         """Represents a Facebook group. Inherits `Thread`"""
         super(Group, self).__init__(ThreadType.GROUP, uid, **kwargs)
+        if participants is None:
+            participants = set()
         self.participants = participants
+        if nicknames is None:
+            nicknames = []
         self.nicknames = nicknames
         self.color = color
         self.emoji = emoji
@@ -153,17 +157,25 @@ class Message(object):
     #: An extensible attachment, e.g. share object
     extensible_attachment = dict
 
-    def __init__(self, uid, author=None, timestamp=None, is_read=None, reactions=[], text=None, mentions=[], sticker=None, attachments=[], extensible_attachment={}):
+    def __init__(self, uid, author=None, timestamp=None, is_read=None, reactions=None, text=None, mentions=None, sticker=None, attachments=None, extensible_attachment=None):
         """Represents a Facebook message"""
         self.uid = uid
         self.author = author
         self.timestamp = timestamp
         self.is_read = is_read
+        if reactions is None:
+            reactions = []
         self.reactions = reactions
         self.text = text
+        if mentions is None:
+            mentions = []
         self.mentions = mentions
         self.sticker = sticker
+        if attachments is None:
+            attachments = []
         self.attachments = attachments
+        if extensible_attachment is None:
+            extensible_attachment = {}
         self.extensible_attachment = extensible_attachment
 
 
