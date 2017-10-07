@@ -513,6 +513,7 @@ class Client(object):
 
         return [graphql_to_page(node) for node in j[name]['pages']['nodes']]
 
+    # TODO intergrate Rooms
     def searchForGroups(self, name, limit=1):
         """
         Find and get group thread by its name
@@ -787,19 +788,29 @@ class Client(object):
                 raise FBchatException('A participant had an unknown type {}: {}'.format(p['type'], p))
 
         entries = []
-        for k in j['payload']['threads']:
-            if k['thread_type'] == 1:
-                if k['other_user_fbid'] not in participants:
-                    raise FBchatException('The thread {} was not in participants: {}'.format(k, j['payload']))
-                participants[k['other_user_fbid']].message_count = k['message_count']
-                entries.append(participants[k['other_user_fbid']])
-            elif k['thread_type'] == 2:
-                entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], message_count=k['message_count']))
-            # TODO
-            elif k['thread_type'] == 4:
-                entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], message_count=k['message_count']))
-            else:
-                raise FBchatException('A thread had an unknown thread type: {}'.format(k))
+        if 'threads' in j['payload']:
+            for k in j['payload']['threads']:
+                if k['thread_type'] == 1:
+                    if k['other_user_fbid'] not in participants:
+                        raise FBchatException('The thread {} was not in participants: {}'.format(k, j['payload']))
+                    participants[k['other_user_fbid']].message_count = k['message_count']
+                    entries.append(participants[k['other_user_fbid']])
+                elif k['thread_type'] == 2:
+                    entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], message_count=k['message_count']))
+                elif k['thread_type'] == 3:
+                    entries.append(Room(
+                        k['thread_fbid'],
+                        participants = set(p.strip('fbid:') for p in k['participants']),
+                        photo = k['image_src'],
+                        name = k['name'],
+                        message_count = k['message_count'],
+                        admins = set(p.lstrip('fbid:') for p in k['admin_ids']),
+                        approval_mode = k['approval_mode'],
+                        approval_requests = set(p.lstrip('fbid:') for p in k['approval_queue_ids']),
+                        join_link = k['joinable_mode']['link'],
+                        ))
+                else:
+                    raise FBchatException('A thread had an unknown thread type: {}'.format(k))
 
         return entries
 
