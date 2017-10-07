@@ -807,7 +807,7 @@ class Client(object):
                         admins = set(p.lstrip('fbid:') for p in k['admin_ids']),
                         approval_mode = k['approval_mode'],
                         approval_requests = set(p.lstrip('fbid:') for p in k['approval_queue_ids']),
-                        join_link = k['joinable_mode']['link'],
+                        join_link = k['joinable_mode']['link']
                         ))
                 else:
                     raise FBchatException('A thread had an unknown thread type: {}'.format(k))

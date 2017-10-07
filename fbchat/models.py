@@ -123,7 +123,8 @@ class Room(Group):
 
     def __init__(self, uid, admins=None, approval_mode=None, approval_requests=None, join_link=None, privacy_mode=None, **kwargs):
         """Represents a Facebook room. Inherits `Group`"""
-        super(Room, self).__init__(ThreadType.ROOM, uid, **kwargs)
+        super(Room, self).__init__(uid, **kwargs)
+        self.type = ThreadType.ROOM
         if admins is None:
             admins = set()
         self.admins = admins
