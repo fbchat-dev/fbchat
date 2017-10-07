@@ -121,11 +121,15 @@ class Room(Group):
     # True is room is not discoverable
     privacy_mode = bool
 
-    def __init__(self, uid, admins=set(), approval_mode=None, approval_requests=set(), join_link=None, privacy_mode=None, **kwargs):
+    def __init__(self, uid, admins=None, approval_mode=None, approval_requests=None, join_link=None, privacy_mode=None, **kwargs):
         """Represents a Facebook room. Inherits `Group`"""
         super(Room, self).__init__(ThreadType.ROOM, uid, **kwargs)
+        if admins is None:
+            admins = set()
         self.admins = admins
         self.approval_mode = approval_mode
+        if approval_requests is None:
+            approval_requests = set()
         self.approval_requests = approval_requests
         self.join_link = join_link
         self.privacy_mode = privacy_mode
