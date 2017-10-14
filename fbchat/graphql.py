@@ -119,8 +119,18 @@ def graphql_to_group(group):
     )
 
 def graphql_to_room(room):
-    return Room(
-        **vars(graphql_to_group(room)),
+    if room.get('image') is None:
+        room['image'] = {}
+    c_info = get_customization_info(room)
+    return room(
+        room['thread_key']['thread_fbid'],
+        participants=set([node['messaging_actor']['id'] for node in room['all_participants']['nodes']]),
+        nicknames=c_info.get('nicknames'),
+        color=c_info.get('color'),
+        emoji=c_info.get('emoji'),
+        photo=room['image'].get('uri'),
+        name=room.get('name'),
+        message_count=room.get('messages_count'),
         admins = set([node.get('id') for node in room.get('thread_admins')]),
         approval_mode = bool(room.get('approval_mode')),
         approval_requests = set(node.get('id') for node in room['thread_queue_metatdata'].get('approval_requests')),
