@@ -122,7 +122,7 @@ def graphql_to_room(room):
     if room.get('image') is None:
         room['image'] = {}
     c_info = get_customization_info(room)
-    return room(
+    return Room(
         room['thread_key']['thread_fbid'],
         participants=set([node['messaging_actor']['id'] for node in room['all_participants']['nodes']]),
         nicknames=c_info.get('nicknames'),
