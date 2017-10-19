@@ -133,7 +133,7 @@ def graphql_to_room(room):
         message_count=room.get('messages_count'),
         admins = set([node.get('id') for node in room.get('thread_admins')]),
         approval_mode = bool(room.get('approval_mode')),
-        approval_requests = set(node.get('id') for node in room['thread_queue_metadata'].get('approval_requests')),
+        approval_requests = set(node.get('id') for node in room['thread_queue_metadata'].get('approval_requests', {}).get('nodes')),
         join_link = room['joinable_mode'].get('link'),
         privacy_mode = bool(room.get('privacy_mode')),
     )
