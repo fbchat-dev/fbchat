@@ -31,7 +31,7 @@ class Client(object):
     Note: Modifying this results in undefined behaviour
     """
 
-    def __init__(self, email, password, user_agent=None, max_tries=5, session_cookies=None, logging_level=logging.INFO):
+    def __init__(self, email=None, password=None, user_agent=None, max_tries=5, session_cookies=None, logging_level=logging.INFO):
         """Initializes and logs in the client
 
         :param email: Facebook `email`, `id` or `phone number`
@@ -69,12 +69,14 @@ class Client(object):
 
         handler.setLevel(logging_level)
 
-        # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
-        if not session_cookies or not self.setSession(session_cookies) or not self.isLoggedIn():
-            self.login(email, password, max_tries)
-        else:
+        # If the session cookies have been set, properly loaded,
+        # and gives us a valid session, then save the login details
+        if session_cookies and self.setSession(session_cookies) and self.isLoggedIn():
             self.email = email
             self.password = password
+        # Otherwise login with the given details
+        else:
+            self.login(email, password, max_tries)
 
     """
     INTERNAL REQUEST METHODS
