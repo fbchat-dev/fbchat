@@ -5,7 +5,6 @@ import requests
 import urllib
 from uuid import uuid1
 from random import choice
-from datetime import datetime
 from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
 from .utils import *
@@ -730,7 +729,7 @@ class Client(object):
         """
         Get the last messages in a thread
 
-        :param thread_id: User/Group ID to default to. See :ref:`intro_threads`
+        :param thread_id: User/Group ID to get messages from. See :ref:`intro_threads`
         :param limit: Max. number of messages to retrieve
         :param before: A timestamp, indicating from which point to retrieve messages
         :type limit: int
@@ -739,6 +738,8 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
+
+        thread_id, thread_type = self._getThread(thread_id, None)
 
         j = self.graphql_request(GraphQL(doc_id='1386147188135407', params={
             'id': thread_id,
@@ -867,45 +868,53 @@ class Client(object):
     SEND METHODS
     """
 
-    def _getSendData(self, thread_id=None, thread_type=ThreadType.USER):
+    def _oldMessage(self, message):
+        return message if isinstance(message, Message) else Message(text=message)
+
+    def _getSendData(self, message=None, thread_id=None, thread_type=ThreadType.USER):
         """Returns the data needed to send a request to `SendURL`"""
         messageAndOTID = generateOfflineThreadingID()
         timestamp = now()
-        date = datetime.now()
         data = {
             'client': self.client,
             'author' : 'fbid:' + str(self.uid),
             'timestamp' : timestamp,
-            'timestamp_absolute' : 'Today',
-            'timestamp_relative' : str(date.hour) + ":" + str(date.minute).zfill(2),
-            'timestamp_time_passed' : '0',
-            'is_unread' : False,
-            'is_cleared' : False,
-            'is_forward' : False,
-            'is_filtered_content' : False,
-            'is_filtered_content_bh': False,
-            'is_filtered_content_account': False,
-            'is_filtered_content_quasar': False,
-            'is_filtered_content_invalid_app': False,
-            'is_spoof_warning' : False,
             'source' : 'source:chat:web',
-            'source_tags[0]' : 'source:chat',
-            'html_body' : False,
-            'ui_push_phase' : 'V3',
-            'status' : '0',
             'offline_threading_id': messageAndOTID,
             'message_id' : messageAndOTID,
             'threading_id': generateMessageID(self.client_id),
-            'ephemeral_ttl_mode:': '0',
-            'manual_retry_cnt' : '0',
-            'signatureID' : getSignatureID()
+            'ephemeral_ttl_mode:': '0'
         }
 
         # Set recipient
         if thread_type in [ThreadType.USER, ThreadType.PAGE]:
-            data["other_user_fbid"] = thread_id
+            data['other_user_fbid'] = thread_id
         elif thread_type == ThreadType.GROUP:
-            data["thread_fbid"] = thread_id
+            data['thread_fbid'] = thread_id
+
+        if message is None:
+            message = Message()
+
+        if message.text or message.sticker or message.emoji_size:
+            data['action_type'] = 'ma-type:user-generated-message'
+
+        if message.text:
+            data['body'] = message.text
+
+        for i, mention in enumerate(message.mentions):
+            data['profile_xmd[{}][id]'.format(i)] = mention.thread_id
+            data['profile_xmd[{}][offset]'.format(i)] = mention.offset
+            data['profile_xmd[{}][length]'.format(i)] = mention.length
+            data['profile_xmd[{}][type]'.format(i)] = 'p'
+
+        if message.emoji_size:
+            if message.text:
+                data['tags[0]'] = 'hot_emoji_size:' + message.emoji_size.name.lower()
+            else:
+                data['sticker_id'] = message.emoji_size.value
+
+        if message.sticker:
+            data['sticker_id'] = message.sticker.uid
 
         return data
 
@@ -928,67 +937,34 @@ class Client(object):
 
         return message_id
 
-    def sendMessage(self, message, mention=None, thread_id=None, 
-                    thread_type=ThreadType.USER):
+    def send(self, message, thread_id=None, thread_type=ThreadType.USER):
         """
         Sends a message to a thread
 
         :param message: Message to send
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
+        :type message: models.Message
         :type thread_type: models.ThreadType
-        :mention is in this format {userID : (start, end)},
-         where start is relative start position of @mention in a message
-         and end is relative end position of @mention
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(thread_id, thread_type)
-
-        data['action_type'] = 'ma-type:user-generated-message'
-        data['body'] = message or ''
-        if mention:
-            n = 0
-            for key, value in mention.items():
-                data['profile_xmd[%d][id]'%n] = key
-                data['profile_xmd[%d][offset]'%n] = value[0]
-                data['profile_xmd[%d][length]'%n] = value[1] - value[0]
-                data['profile_xmd[%d][type]'%n] = 'p'
-                n += 1
-        data['has_attachment'] = False
-        data['specific_to_list[0]'] = 'fbid:' + thread_id
-        data['specific_to_list[1]'] = 'fbid:' + self.uid
+        data = self._getSendData(message=message, thread_id=thread_id, thread_type=thread_type)
 
         return self._doSendRequest(data)
+
+    def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Deprecated. Use :func:`fbchat.Client.send` instead
+        """
+        return self.send(Message(text=message), thread_id=thread_id, thread_type=thread_type)
 
     def sendEmoji(self, emoji=None, size=EmojiSize.SMALL, thread_id=None, thread_type=ThreadType.USER):
         """
-        Sends an emoji to a thread
-
-        :param emoji: The chosen emoji to send. If not specified, the default `like` emoji is sent
-        :param size: If not specified, a small emoji is sent
-        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type size: models.EmojiSize
-        :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent emoji
-        :raises: FBchatException if request failed
+        Deprecated. Use :func:`fbchat.Client.send` instead
         """
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(thread_id, thread_type)
-        data['action_type'] = 'ma-type:user-generated-message'
-        data['has_attachment'] = False
-        data['specific_to_list[0]'] = 'fbid:' + thread_id
-        data['specific_to_list[1]'] = 'fbid:' + self.uid
-
-        if emoji:
-            data['body'] = emoji
-            data['tags[0]'] = 'hot_emoji_size:' + size.name.lower()
-        else:
-            data["sticker_id"] = size.value
-
-        return self._doSendRequest(data)
+        return self.send(Message(text=emoji, emoji_size=size), thread_id=thread_id, thread_type=thread_type)
 
     def _uploadImage(self, image_path, data, mimetype):
         """Upload an image and get the image_id for sending in a message"""
@@ -1008,25 +984,13 @@ class Client(object):
 
     def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER, is_gif=False):
         """
-        Sends an already uploaded image to a thread. (Used by :func:`Client.sendRemoteImage` and :func:`Client.sendLocalImage`)
-
-        :param image_id: ID of an image that's already uploaded to Facebook
-        :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :param is_gif: if sending GIF, True, else False
-        :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent image
-        :raises: FBchatException if request failed
+        Deprecated. Use :func:`fbchat.Client.send` instead
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(thread_id, thread_type)
+        data = self._getSendData(message=message, thread_id=thread_id, thread_type=thread_type)
 
         data['action_type'] = 'ma-type:user-generated-message'
-        data['body'] = message or ''
         data['has_attachment'] = True
-        data['specific_to_list[0]'] = 'fbid:' + str(thread_id)
-        data['specific_to_list[1]'] = 'fbid:' + str(self.uid)
 
         if not is_gif:
             data['image_ids[0]'] = image_id
@@ -1083,7 +1047,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
-        data = self._getSendData(thread_id, ThreadType.GROUP)
+        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
 
         data['action_type'] = 'ma-type:log-message'
         data['log_message_type'] = 'log:subscribe'
@@ -1138,7 +1102,7 @@ class Client(object):
             # The thread is a user, so we change the user's nickname
             return self.changeNickname(title, thread_id, thread_id=thread_id, thread_type=thread_type)
         else:
-            data = self._getSendData(thread_id, thread_type)
+            data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
 
             data['action_type'] = 'ma-type:log-message'
             data['log_message_data[name]'] = title
@@ -1240,11 +1204,17 @@ class Client(object):
         """
         Sets an event reminder
 
-        :param thread_id: :ref:`Thread ID <intro_thread_ids>` to send event to
+        ..warning::
+            Does not work in Python2.7
+
+        ..todo::
+            Make this work in Python2.7
+
+        :param thread_id: User/Group ID to send event to. See :ref:`intro_threads`
         :param time: Event time (unix time stamp)
         :param title: Event title
-        :param location: Event location
-        :param location_ir: Event location ID
+        :param location: Event location name
+        :param location_id: Event location ID
         :raises: FBchatException if request failed
         """
         full_data = {
@@ -1506,82 +1476,43 @@ class Client(object):
                             except Exception:
                                 log.exception('An exception occured while reading attachments')
 
+                        sticker = None
                         attachments = []
                         if delta.get('attachments'):
                             try:
                                 for a in delta['attachments']:
                                     mercury = a['mercury']
-                                    blob = mercury.get('blob_attachment', {})
-                                    image_metadata = a.get('imageMetadata', {})
-                                    attach_type = mercury['attach_type']
-                                    if attach_type in ['photo', 'animated_image']:
-                                        attachments.append(ImageAttachment(
-                                            original_extension=blob.get('original_extension') or (blob['filename'].split('-')[0] if blob.get('filename') else None),
-                                            width=int(image_metadata['width']),
-                                            height=int(image_metadata['height']),
-                                            is_animated=attach_type=='animated_image',
-                                            thumbnail_url=mercury.get('thumbnail_url'),
-                                            preview=blob.get('preview') or blob.get('preview_image'),
-                                            large_preview=blob.get('large_preview'),
-                                            animated_preview=blob.get('animated_image'),
-                                            uid=a['id']
-                                        ))
-                                    elif attach_type == 'file':
-                                        # Add more data here for audio files
-                                        attachments.append(FileAttachment(
-                                            url=mercury.get('url'),
-                                            size=int(a['fileSize']),
-                                            name=mercury.get('name'),
-                                            is_malicious=blob.get('is_malicious'),
-                                            uid=a['id']
-                                        ))
-                                    elif attach_type == 'video':
-                                        attachments.append(VideoAttachment(
-                                            size=int(a['fileSize']),
-                                            width=int(image_metadata['width']),
-                                            height=int(image_metadata['height']),
-                                            duration=blob.get('playable_duration_in_ms'),
-                                            preview_url=blob.get('playable_url'),
-                                            small_image=blob.get('chat_image'),
-                                            medium_image=blob.get('inbox_image'),
-                                            large_image=blob.get('large_image'),
-                                            uid=a['id']
-                                        ))
-                                    elif attach_type == 'sticker':
-                                        # Add more data here for stickers
-                                        attachments.append(StickerAttachment(
-                                            uid=mercury.get('metadata', {}).get('stickerID')
-                                        ))
-                                    elif attach_type == 'share':
-                                        # Add more data here for shared stuff (URLs, events and so on)
-                                        attachments.append(ShareAttachment(
-                                            uid=a.get('id')
-                                        ))
-                                    else:
-                                        attachments.append(Attachment(
-                                            uid=a.get('id')
-                                        ))
+                                    if mercury.get('attach_type'):
+                                        image_metadata = a.get('imageMetadata', {})
+                                        attach_type = mercury['attach_type']
+                                        attachment = graphql_to_attachment(mercury.get('blob_attachment', {}))
+
+                                        if attach_type == ['file', 'video']:
+                                            # TODO: Add more data here for audio files
+                                            attachment.size = int(a['fileSize'])
+                                        elif attach_type == 'share':
+                                            # TODO: Add more data here for shared stuff (URLs, events and so on)
+                                            pass
+                                        attachments.append(attachment)
+                                    if a['mercury'].get('sticker_attachment'):
+                                        sticker = graphql_to_sticker(a['mercury']['sticker_attachment'])
                             except Exception:
                                 log.exception('An exception occured while reading attachments: {}'.format(delta['attachments']))
 
-                        emoji_size = None
                         if metadata and metadata.get('tags'):
-                            for tag in metadata['tags']:
-                                if tag.startswith('hot_emoji_size:'):
-                                    emoji_size = LIKES[tag.split(':')[1]]
-                                    break
+                            emoji_size = get_emojisize_from_tags(metadata.get('tags'))
 
                         message = Message(
                             text=delta.get('body'),
                             mentions=mentions,
-                            emoji_size=emoji_size
+                            emoji_size=emoji_size,
+                            sticker=sticker,
+                            attachments=attachments
                         )
                         message.uid = mid
                         message.author = author_id
                         message.timestamp = ts
-                        message.attachments = attachments
-                        #message.is_read = None
-                        #message.reactions = []
+                        #message.reactions = {}
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onMessage(mid=mid, author_id=author_id, message=delta.get('body', ''), message_object=message,
                                        thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)

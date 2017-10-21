@@ -10,9 +10,9 @@ class EchoBot(Client):
 
         log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
 
-        # If you're not the author, and the message was a message containing text, echo
-        if author_id != self.uid and message_object.text is not None:
-            self.sendMessage(message_object.text, thread_id=thread_id, thread_type=thread_type)
+        # If you're not the author, echo
+        if author_id != self.uid:
+            self.send(message_object, thread_id=thread_id, thread_type=thread_type)
 
 client = EchoBot("<email>", "<password>")
 client.listen()

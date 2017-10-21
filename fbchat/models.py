@@ -164,51 +164,40 @@ class Page(Thread):
 
 class Message(object):
     #: The actual message
-    text = str
+    text = None
     #: A list of :class:`Mention` objects
-    mentions = list
-    #: The message ID
-    uid = str
-    #: ID of the sender
-    author = int
-    #: Timestamp of when the message was sent
-    timestamp = str
-    #: Whether the message is read
-    is_read = bool
-    #: A list of message reactions
-    reactions = list
-    #: The actual message
-    text = str
-    #: A list of :class:`Mention` objects
-    mentions = list
-    #: An ID of a sent sticker
-    sticker = str
+    mentions = []
     #: A :class:`EmojiSize`. Size of a sent emoji
     emoji_size = None
+    #: The message ID
+    uid = None
+    #: ID of the sender
+    author = None
+    #: Timestamp of when the message was sent
+    timestamp = None
+    #: Whether the message is read
+    is_read = None
+    #: A dict with user's IDs as keys, and their :class:`MessageReaction` as values
+    reactions = {}
+    #: The actual message
+    text = None
+    #: A :class:`Sticker`
+    sticker = None
     #: A list of attachments
-    attachments = list
+    attachments = []
 
-    def __init__(self, uid, author=None, timestamp=None, is_read=None, reactions=None, text=None, mentions=None, sticker=None, attachments=None, extensible_attachment=None, emoji_size=None):
+    def __init__(self, text=None, mentions=None, emoji_size=None, sticker=None, attachments=None):
         """Represents a Facebook message"""
-        self.uid = uid
-        self.author = author
-        self.timestamp = timestamp
-        self.is_read = is_read
-        if reactions is None:
-            reactions = []
-        self.reactions = reactions
         self.text = text
         if mentions is None:
             mentions = []
         self.mentions = mentions
+        self.emoji_size = emoji_size
         self.sticker = sticker
         if attachments is None:
             attachments = []
         self.attachments = attachments
-        if extensible_attachment is None:
-            extensible_attachment = {}
-        self.extensible_attachment = extensible_attachment
-        self.emoji_size = emoji_size
+        self.reactions = {}
 
     def __repr__(self):
         return self.__unicode__()
@@ -220,14 +209,40 @@ class Attachment(object):
     #: The attachment ID
     uid = str
 
-    def __init__(self, uid=None, mime_type=None):
+    def __init__(self, uid=None):
         """Represents a Facebook attachment"""
         self.uid = uid
 
-class StickerAttachment(Attachment):
-    def __init__(self, **kwargs):
-        """Represents a sticker that has been sent as a Facebook attachment - *Currently Incomplete!*"""
-        super(StickerAttachment, self).__init__(**kwargs)
+class Sticker(Attachment):
+    #: The sticker-pack's ID
+    pack = None
+    #: Whether the sticker is animated
+    is_animated = False
+
+    # If the sticker is animated, the following should be present
+    #: URL to a medium spritemap
+    medium_sprite_image = None
+    #: URL to a large spritemap
+    large_sprite_image = None
+    #: The amount of frames present in the spritemap pr. row
+    frames_per_row = None
+    #: The amount of frames present in the spritemap pr. coloumn
+    frames_per_col = None
+    #: The frame rate the spritemap is intended to be played in
+    frame_rate = None
+
+    #: URL to the sticker's image
+    url = None
+    #: Width of the sticker
+    width = None
+    #: Height of the sticker
+    height = None
+    #: The sticker's label/name
+    label = None
+
+    def __init__(self, *args, **kwargs):
+        """Represents a Facebook sticker that has been sent to a Facebook thread as an attachment"""
+        super(Sticker, self).__init__(*args, **kwargs)
 
 class ShareAttachment(Attachment):
     def __init__(self, **kwargs):
@@ -268,7 +283,7 @@ class ImageAttachment(Attachment):
     #: Whether the image is animated
     is_animated = bool
 
-    #: Url to a thumbnail of the image
+    #: URL to a thumbnail of the image
     thumbnail_url = str
 
     #: URL to a medium preview of the image
@@ -300,7 +315,11 @@ class ImageAttachment(Attachment):
         """
         super(ImageAttachment, self).__init__(**kwargs)
         self.original_extension = original_extension
+        if width is not None:
+            width = int(width)
         self.width = width
+        if height is not None:
+            height = int(height)
         self.height = height
         self.is_animated = is_animated
         self.thumbnail_url = thumbnail_url
@@ -385,18 +404,24 @@ class VideoAttachment(Attachment):
 
 
 class Mention(object):
-    #: The user ID the mention is pointing at
-    user_id = str
+    #: The thread ID the mention is pointing at
+    thread_id = str
     #: The character where the mention starts
     offset = int
     #: The length of the mention
     length = int
 
-    def __init__(self, user_id, offset=0, length=10):
+    def __init__(self, thread_id, offset=0, length=10):
         """Represents a @mention"""
-        self.user_id = user_id
+        self.thread_id = thread_id
         self.offset = offset
         self.length = length
+
+    def __repr__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return '<Mention {}: offset={} length={}>'.format(self.thread_id, self.offset, self.length)
 
 class Enum(enum.Enum):
     """Used internally by fbchat to support enumerations"""

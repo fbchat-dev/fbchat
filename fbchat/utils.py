@@ -215,3 +215,14 @@ def get_jsmods_require(j, index):
         except (KeyError, IndexError) as e:
             log.warning('Error when getting jsmods_require: {}. Facebook might have changed protocol'.format(j))
     return None
+
+def get_emojisize_from_tags(tags):
+    if tags is None:
+        return None
+    tmp = [tag for tag in tags if tag.startswith('hot_emoji_size:')]
+    if len(tmp) > 0:
+        try:
+            return LIKES[tmp[0].split(':')[1]]
+        except (KeyError, IndexError):
+            log.exception('Could not determine emoji size from {} - {}'.format(tags, tmp))
+    return None

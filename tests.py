@@ -22,6 +22,8 @@ Full documentation on https://fbchat.readthedocs.io/
 
 """
 
+test_sticker_id = '767334476626295'
+
 class CustomClient(Client):
     def __init__(self, *args, **kwargs):
         self.got_qprimer = False
@@ -64,16 +66,14 @@ class TestFbchat(unittest.TestCase):
 
     def test_defaultThread(self):
         # setDefaultThread
-        client.setDefaultThread(group_id, ThreadType.GROUP)
-        self.assertTrue(client.sendMessage('test_default_recipient★'))
-
-        client.setDefaultThread(user_id, ThreadType.USER)
-        self.assertTrue(client.sendMessage('test_default_recipient★'))
+        for thread in threads:
+            client.setDefaultThread(thread_id=thread['id'], thread_type=thread['type'])
+            self.assertTrue(client.send(Message(text='test_default_recipient★')))
 
         # resetDefaultThread
         client.resetDefaultThread()
         with self.assertRaises(ValueError):
-            client.sendMessage('should_not_send')
+            client.send(Message(text='should_not_send'))
 
     def test_fetchAllUsers(self):
         users = client.fetchAllUsers()
@@ -96,46 +96,43 @@ class TestFbchat(unittest.TestCase):
         groups = client.searchForGroups('té')
         self.assertGreater(len(groups), 0)
 
-    def test_sendEmoji(self):
-        self.assertIsNotNone(client.sendEmoji(size=EmojiSize.SMALL, thread_id=user_id, thread_type=ThreadType.USER))
-        self.assertIsNotNone(client.sendEmoji(size=EmojiSize.MEDIUM, thread_id=user_id, thread_type=ThreadType.USER))
-        self.assertIsNotNone(client.sendEmoji('😆', EmojiSize.LARGE, user_id, ThreadType.USER))
+    def test_send(self):
+        for thread in threads:
+            client.setDefaultThread(thread_id=thread['id'], thread_type=thread['type'])
 
-        self.assertIsNotNone(client.sendEmoji(size=EmojiSize.SMALL, thread_id=group_id, thread_type=ThreadType.GROUP))
-        self.assertIsNotNone(client.sendEmoji(size=EmojiSize.MEDIUM, thread_id=group_id, thread_type=ThreadType.GROUP))
-        self.assertIsNotNone(client.sendEmoji('😆', EmojiSize.LARGE, group_id, ThreadType.GROUP))
+            self.assertIsNotNone(client.send(Message(emoji_size=EmojiSize.SMALL)))
+            self.assertIsNotNone(client.send(Message(emoji_size=EmojiSize.MEDIUM)))
+            self.assertIsNotNone(client.send(Message(text='😆', emoji_size=EmojiSize.LARGE)))
 
-    def test_sendMessage(self):
-        self.assertIsNotNone(client.sendMessage('test_send_user★', user_id, ThreadType.USER))
-        self.assertIsNotNone(client.sendMessage('test_send_group★', group_id, ThreadType.GROUP))
-        with self.assertRaises(Exception):
-            client.sendMessage('test_send_user_should_fail★', user_id, ThreadType.GROUP)
-        with self.assertRaises(Exception):
-            client.sendMessage('test_send_group_should_fail★', group_id, ThreadType.USER)
+            self.assertIsNotNone(client.send(Message(text='test_send★')))
+            with self.assertRaises(FBchatFacebookError):
+                self.assertIsNotNone(client.send(Message(text='test_send_should_fail★'), thread_id=thread['id'], thread_type=(ThreadType.GROUP if thread['type'] == ThreadType.USER else ThreadType.USER)))
+
+            self.assertIsNotNone(client.send(Message(text='Hi there @user', mentions=[Mention(user_id, offset=9, length=5)])))
+            self.assertIsNotNone(client.send(Message(text='Hi there @group', mentions=[Mention(group_id, offset=9, length=6)])))
+
+            self.assertIsNotNone(client.send(Message(sticker=Sticker(test_sticker_id))))
 
     def test_sendImages(self):
         image_url = 'https://cdn4.iconfinder.com/data/icons/ionicons/512/icon-image-128.png'
         image_local_url = path.join(path.dirname(__file__), 'tests/image.png')
-        self.assertTrue(client.sendRemoteImage(image_url, 'test_send_user_images_remote★', user_id, ThreadType.USER))
-        self.assertTrue(client.sendRemoteImage(image_url, 'test_send_group_images_remote★', group_id, ThreadType.GROUP))
-        self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local★', user_id, ThreadType.USER))
-        self.assertTrue(client.sendLocalImage(image_local_url, 'test_send_group_images_local★', group_id, ThreadType.GROUP))
+        for thread in threads:
+            client.setDefaultThread(thread_id=thread['id'], thread_type=thread['type'])
+            mentions = [Mention(thread['id'], offset=26, length=4)]
+            self.assertTrue(client.sendRemoteImage(image_url, Message(text='test_send_image_remote_to_@you★', mentions=mentions)))
+            self.assertTrue(client.sendLocalImage(image_local_url, Message(text='test_send_image_local_to__@you★', mentions=mentions)))
 
     def test_fetchThreadList(self):
         client.fetchThreadList(offset=0, limit=20)
 
     def test_fetchThreadMessages(self):
-        client.sendMessage('test_user_getThreadInfo★', thread_id=user_id, thread_type=ThreadType.USER)
+        for thread in threads:
+            client.setDefaultThread(thread_id=thread['id'], thread_type=thread['type'])
+            client.send(Message(text='test_getThreadInfo★'))
 
-        messages = client.fetchThreadMessages(thread_id=user_id, limit=1)
-        self.assertEqual(messages[0].author, client.uid)
-        self.assertEqual(messages[0].text, 'test_user_getThreadInfo★')
-
-        client.sendMessage('test_group_getThreadInfo★', thread_id=group_id, thread_type=ThreadType.GROUP)
-
-        messages = client.fetchThreadMessages(thread_id=group_id, limit=1)
-        self.assertEqual(messages[0].author, client.uid)
-        self.assertEqual(messages[0].text, 'test_group_getThreadInfo★')
+            messages = client.fetchThreadMessages(limit=1)
+            self.assertEqual(messages[0].author, client.uid)
+            self.assertEqual(messages[0].text, 'test_getThreadInfo★')
 
     def test_listen(self):
         client.startListening()
@@ -156,48 +153,48 @@ class TestFbchat(unittest.TestCase):
         client.addUsersToGroup(user_id, thread_id=group_id)
 
     def test_changeThreadTitle(self):
-        client.changeThreadTitle('test_changeThreadTitle★', thread_id=group_id, thread_type=ThreadType.GROUP)
-        client.changeThreadTitle('test_changeThreadTitle★', thread_id=user_id, thread_type=ThreadType.USER)
+        for thread in threads:
+            client.changeThreadTitle('test_changeThreadTitle★', thread_id=thread['id'], thread_type=thread['type'])
 
     def test_changeNickname(self):
-        client.changeNickname('test_changeNicknameSelf★', client.uid, thread_id=user_id, thread_type=ThreadType.USER)
-        client.changeNickname('test_changeNicknameOther★', user_id, thread_id=user_id, thread_type=ThreadType.USER)
-        client.changeNickname('test_changeNicknameSelf★', client.uid, thread_id=group_id, thread_type=ThreadType.GROUP)
-        client.changeNickname('test_changeNicknameOther★', user_id, thread_id=group_id, thread_type=ThreadType.GROUP)
+        for thread in threads:
+            client.setDefaultThread(thread_id=thread['id'], thread_type=thread['type'])
+            client.changeNickname('test_changeNicknameSelf★', client.uid)
+            client.changeNickname('test_changeNicknameOther★', user_id)
 
     def test_changeThreadEmoji(self):
-        client.changeThreadEmoji('😀', group_id)
-        client.changeThreadEmoji('😀', user_id)
-        client.changeThreadEmoji('😆', group_id)
-        client.changeThreadEmoji('😆', user_id)
+        for thread in threads:
+            client.changeThreadEmoji('😀', thread_id=thread['id'])
+            client.changeThreadEmoji('😀', thread_id=thread['id'])
 
     def test_changeThreadColor(self):
-        client.changeThreadColor(ThreadColor.BRILLIANT_ROSE, group_id)
-        client.changeThreadColor(ThreadColor.MESSENGER_BLUE, group_id)
-        client.changeThreadColor(ThreadColor.BRILLIANT_ROSE, user_id)
-        client.changeThreadColor(ThreadColor.MESSENGER_BLUE, user_id)
+        for thread in threads:
+            client.setDefaultThread(thread_id=thread['id'], thread_type=thread['type'])
+            client.changeThreadColor(ThreadColor.BRILLIANT_ROSE)
+            client.changeThreadColor(ThreadColor.MESSENGER_BLUE)
 
     def test_reactToMessage(self):
-        mid = client.sendMessage('test_reactToMessage★', user_id, ThreadType.USER)
-        client.reactToMessage(mid, MessageReaction.LOVE)
-        mid = client.sendMessage('test_reactToMessage★', group_id, ThreadType.GROUP)
-        client.reactToMessage(mid, MessageReaction.LOVE)
+        for thread in threads:
+            mid = client.send(Message(text='test_reactToMessage★'), thread_id=thread['id'], thread_type=thread['type'])
+            client.reactToMessage(mid, MessageReaction.LOVE)
 
     def test_setTypingStatus(self):
-        client.setTypingStatus(TypingStatus.TYPING, thread_id=user_id, thread_type=ThreadType.USER)
-        client.setTypingStatus(TypingStatus.STOPPED, thread_id=user_id, thread_type=ThreadType.USER)
-        client.setTypingStatus(TypingStatus.TYPING, thread_id=group_id, thread_type=ThreadType.GROUP)
-        client.setTypingStatus(TypingStatus.STOPPED, thread_id=group_id, thread_type=ThreadType.GROUP)
+        for thread in threads:
+            client.setDefaultThread(thread_id=thread['id'], thread_type=thread['type'])
+            client.setTypingStatus(TypingStatus.TYPING)
+            client.setTypingStatus(TypingStatus.STOPPED)
 
 
-def start_test(param_client, param_group_id, param_user_id, tests=[]):
+def start_test(param_client, param_group_id, param_user_id, param_threads, tests=[]):
     global client
     global group_id
     global user_id
+    global threads
 
     client = param_client
     group_id = param_group_id
     user_id = param_user_id
+    threads = param_threads
 
     tests = ['test_' + test if 'test_' != test[:5] else test for test in tests]
 
@@ -220,19 +217,44 @@ if __name__ == '__main__':
 
     try:
         with open(path.join(path.dirname(__file__), 'tests/my_data.json'), 'r') as f:
-            json = json.load(f)
-        email = json['email']
-        password = json['password']
-        user_id = json['user_thread_id']
-        group_id = json['group_thread_id']
+            j = json.load(f)
+        email = j['email']
+        password = j['password']
+        user_id = j['user_thread_id']
+        group_id = j['group_thread_id']
+        session = j.get('session')
     except (IOError, IndexError) as e:
         email = input('Email: ')
         password = getpass()
         group_id = input('Please enter a group thread id (To test group functionality): ')
         user_id = input('Please enter a user thread id (To test kicking/adding functionality): ')
+    threads = [
+        {
+            'id': user_id,
+            'type': ThreadType.USER
+        },
+        {
+            'id': group_id,
+            'type': ThreadType.GROUP
+        }
+    ]
 
     print('Logging in...')
-    client = CustomClient(email, password, logging_level=logging_level)
+    client = CustomClient(email, password, logging_level=logging_level, session_cookies=session)
 
     # Warning! Taking user input directly like this could be dangerous! Use only for testing purposes!
-    start_test(client, group_id, user_id, argv[1:])
+    start_test(client, group_id, user_id, threads, argv[1:])
+
+    with open(path.join(path.dirname(__file__), 'tests/my_data.json'), 'w') as f:
+        session = None
+        try:
+            session = client.getSession()
+        except Exception:
+            print('Unable to fetch client session!')
+        json.dump({
+            'email': email,
+            'password': password,
+            'user_thread_id': user_id,
+            'group_thread_id': group_id,
+            'session': session
+        }, f)

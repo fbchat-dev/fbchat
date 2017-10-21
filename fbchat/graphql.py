@@ -61,26 +61,88 @@ def get_customization_info(thread):
                 rtn['own_nickname'] = pc[1].get('nickname')
     return rtn
 
+
+def graphql_to_sticker(s):
+    if not s:
+        return None
+    sticker = Sticker(
+        uid=s['id']
+    )
+    if s.get('pack'):
+        sticker.pack = s['pack'].get('id')
+    if s.get('sprite_image'):
+        sticker.is_animated = True
+        sticker.medium_sprite_image = s['sprite_image'].get('uri')
+        sticker.large_sprite_image = s['sprite_image_2x'].get('uri')
+        sticker.frames_per_row = s.get('frames_per_row')
+        sticker.frames_per_col = s.get('frames_per_column')
+        sticker.frame_rate = s.get('frame_rate')
+    sticker.url = s.get('url')
+    sticker.width = s.get('width')
+    sticker.height = s.get('height')
+    if s.get('label'):
+        sticker.label = s['label']
+    return sticker
+
+def graphql_to_attachment(a):
+    _type = a['__typename']
+    if _type in ['MessageImage', 'MessageAnimatedImage']:
+        return ImageAttachment(
+            original_extension=a.get('original_extension') or (a['filename'].split('-')[0] if a.get('filename') else None),
+            width=a.get('original_dimensions', {}).get('width'),
+            height=a.get('original_dimensions', {}).get('height'),
+            is_animated=_type=='MessageAnimatedImage',
+            thumbnail_url=a.get('thumbnail', {}).get('uri'),
+            preview=a.get('preview') or a.get('preview_image'),
+            large_preview=a.get('large_preview'),
+            animated_preview=a.get('animated_image'),
+            uid=a.get('legacy_attachment_id')
+        )
+    elif _type == 'MessageVideo':
+        return VideoAttachment(
+            width=a.get('original_dimensions', {}).get('width'),
+            height=a.get('original_dimensions', {}).get('height'),
+            duration=a.get('playable_duration_in_ms'),
+            preview_url=a.get('playable_url'),
+            small_image=a.get('chat_image'),
+            medium_image=a.get('inbox_image'),
+            large_image=a.get('large_image'),
+            uid=a.get('legacy_attachment_id')
+        )
+    elif _type == 'MessageFile':
+        return FileAttachment(
+            url=a.get('url'),
+            name=a.get('filename'),
+            is_malicious=a.get('is_malicious'),
+            uid=a.get('message_file_fbid')
+        )
+    else:
+        return Attachment(
+            uid=a.get('legacy_attachment_id')
+        )
+
 def graphql_to_message(message):
     if message.get('message_sender') is None:
         message['message_sender'] = {}
     if message.get('message') is None:
         message['message'] = {}
-    is_read = None
-    if message.get('unread') is not None:
-        is_read = not message['unread']
-    return Message(
-        message.get('message_id'),
-        author=message.get('message_sender').get('id'),
-        timestamp=message.get('timestamp_precise'),
-        is_read=is_read,
-        reactions=message.get('message_reactions'),
+    rtn = Message(
         text=message.get('message').get('text'),
         mentions=[Mention(m.get('entity', {}).get('id'), offset=m.get('offset'), length=m.get('length')) for m in message.get('message').get('ranges', [])],
-        sticker=message.get('sticker'),
-        attachments=message.get('blob_attachments'),
-        extensible_attachment=message.get('extensible_attachment')
+        emoji_size=get_emojisize_from_tags(message.get('tags_list')),
+        sticker=graphql_to_sticker(message.get('sticker'))
     )
+    rtn.uid = str(message.get('message_id'))
+    rtn.author = str(message.get('message_sender').get('id'))
+    rtn.timestamp = message.get('timestamp_precise')
+    if message.get('unread') is not None:
+        rtn.is_read = not message['unread']
+    rtn.reactions = {str(r['user']['id']):MessageReaction(r['reaction']) for r in message.get('message_reactions')}
+    if message.get('blob_attachments') is not None:
+        rtn.attachments = [graphql_to_attachment(attachment) for attachment in message['blob_attachments']]
+    # TODO: This is still missing parsing:
+    # message.get('extensible_attachment')
+    return rtn
 
 def graphql_to_user(user):
     if user.get('profile_picture') is None:
