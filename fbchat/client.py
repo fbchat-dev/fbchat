@@ -12,7 +12,6 @@ from .utils import *
 from .models import *
 from .graphql import *
 import time
-import json
 
 
 
@@ -1425,7 +1424,7 @@ class Client(object):
                         mentions = []
                         if delta.get('data') and delta['data'].get('prng'):
                             try:
-                                mentions = [Mention(str(mention.get('i')), offset=mention.get('o'), length=mention.get('l')) for mention in json.loads(delta['data']['prng'])]
+                                mentions = [Mention(str(mention.get('i')), offset=mention.get('o'), length=mention.get('l')) for mention in parse_json(delta['data']['prng'])]
                             except Exception:
                                 log.exception('An exception occured while reading attachments')
 

@@ -142,6 +142,9 @@ def get_decoded_r(r):
 def get_decoded(content):
     return content.decode(facebookEncoding)
 
+def parse_json(content):
+    return json.loads(content)
+
 def get_json(r):
     return json.loads(strip_to_json(get_decoded_r(r)))
 
