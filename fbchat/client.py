@@ -513,6 +513,7 @@ class Client(object):
 
         return [graphql_to_page(node) for node in j[name]['pages']['nodes']]
 
+    # TODO intergrate Rooms
     def searchForGroups(self, name, limit=1):
         """
         Find and get group thread by its name
@@ -553,6 +554,7 @@ class Client(object):
             elif node['__typename'] == 'Group':
                 # We don't handle Facebook "Groups"
                 pass
+            # TODO Add Rooms
             else:
                 log.warning('Unknown __typename: {} in {}'.format(repr(node['__typename']), node))
 
@@ -707,6 +709,9 @@ class Client(object):
             if entry.get('thread_type') == 'GROUP':
                 _id = entry['thread_key']['thread_fbid']
                 rtn[_id] = graphql_to_group(entry)
+            elif entry.get('thread_type') == 'ROOM':
+                _id = entry['thread_key']['thread_fbid']
+                rtn[_id] = graphql_to_room(entry)
             elif entry.get('thread_type') == 'ONE_TO_ONE':
                 _id = entry['thread_key']['other_user_id']
                 if pages_and_users.get(_id) is None:
@@ -799,6 +804,18 @@ class Client(object):
                     entries.append(participants[k['other_user_fbid']])
                 elif k['thread_type'] == 2:
                     entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], message_count=k['message_count']))
+                elif k['thread_type'] == 3:
+                    entries.append(Room(
+                        k['thread_fbid'],
+                        participants = set(p.lstrip('fbid:') for p in k['participants']),
+                        photo = k['image_src'],
+                        name = k['name'],
+                        message_count = k['message_count'],
+                        admins = set(p.lstrip('fbid:') for p in k['admin_ids']),
+                        approval_mode = k['approval_mode'],
+                        approval_requests = set(p.lstrip('fbid:') for p in k['approval_queue_ids']),
+                        join_link = k['joinable_mode']['link']
+                        ))
                 else:
                     raise FBchatException('A thread had an unknown thread type: {}'.format(k))
 
