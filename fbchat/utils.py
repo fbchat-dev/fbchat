@@ -92,6 +92,7 @@ class ReqUrl(object):
     MESSAGE_REACTION = "https://www.facebook.com/webgraphql/mutation"
     TYPING = "https://www.facebook.com/ajax/messaging/typ.php"
     GRAPHQL = "https://www.facebook.com/api/graphqlbatch/"
+    EVENT_REMINDER = "https://www.facebook.com/ajax/eventreminder/create"
 
     pull_channel = 0
 

@@ -1209,6 +1209,37 @@ class Client(object):
 
         j = self._post('{}/?{}'.format(self.req_url.MESSAGE_REACTION, url_part), fix_request=True, as_json=True)
 
+    def eventReminder(self, thread_id, time, title, location='', location_id=''):
+        """
+        Sets an event reminder
+
+        :param thread_id: :ref:`Thread ID <intro_thread_ids>` to send event to
+        :param time: Event time (unix time stamp)
+        :param title: Event title
+        :param location: Event location
+        :param location_ir: Event location ID
+        :raises: FBchatException if request failed
+        """
+        full_data = {
+            "event_type": "EVENT",
+            "dpr": 1,
+            "event_time" : time,
+            "title" : title,
+            "thread_id" : thread_id,
+            "location_id" : location_id,
+            "location_name" : location,
+            "acontext": {
+                "action_history": [{
+                    "surface": "messenger_chat_tab",
+                    "mechanism": "messenger_composer"
+                }]
+            }
+        }
+        url_part = urllib.parse.urlencode(full_data)
+
+        j = self._post('{}/?{}'.format(self.req_url.EVENT_REMINDER, url_part), fix_request=True, as_json=True)
+
+
     def setTypingStatus(self, status, thread_id=None, thread_type=None):
         """
         Sets users typing status in a thread
