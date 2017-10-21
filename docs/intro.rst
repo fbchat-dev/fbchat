@@ -175,8 +175,8 @@ meaning it will simply print information to the console when an event happens
 The event actions can be changed by subclassing the :class:`Client`, and then overwriting the event methods::
 
     class CustomClient(Client):
-        def onMessage(self, mid, author_id, message, thread_id, thread_type, ts, metadata, msg, **kwargs):
-            # Do something with the message here
+        def onMessage(self, mid, author_id, message_object, thread_id, thread_type, ts, metadata, msg, **kwargs):
+            # Do something with the message_object here
             pass
 
     client = CustomClient('<email>', '<password>')
@@ -184,13 +184,13 @@ The event actions can be changed by subclassing the :class:`Client`, and then ov
 **Notice:** The following snippet is as equally valid as the previous one::
 
     class CustomClient(Client):
-        def onMessage(self, message, author_id, thread_id, thread_type, **kwargs):
+        def onMessage(self, message_object, author_id, thread_id, thread_type, **kwargs):
             # Do something with the message here
             pass
 
     client = CustomClient('<email>', '<password>')
 
-The change was in the parameters that our `onMessage` method took: ``message`` and ``author_id`` got swapped,
+The change was in the parameters that our `onMessage` method took: ``message_object`` and ``author_id`` got swapped,
 and ``mid``, ``ts``, ``metadata`` and ``msg`` got removed, but the function still works, since we included ``**kwargs``
 
 .. note::

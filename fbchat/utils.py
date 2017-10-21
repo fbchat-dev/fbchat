@@ -32,6 +32,26 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6"
 ]
 
+LIKES = {
+    'large': EmojiSize.LARGE,
+    'medium': EmojiSize.MEDIUM,
+    'small': EmojiSize.SMALL,
+    'l': EmojiSize.LARGE,
+    'm': EmojiSize.MEDIUM,
+    's': EmojiSize.SMALL
+}
+
+MessageReactionFix = {
+    '😍': ('0001f60d', '%F0%9F%98%8D'),
+    '😆': ('0001f606', '%F0%9F%98%86'),
+    '😮': ('0001f62e', '%F0%9F%98%AE'),
+    '😢': ('0001f622', '%F0%9F%98%A2'),
+    '😠': ('0001f620', '%F0%9F%98%A0'),
+    '👍': ('0001f44d', '%F0%9F%91%8D'),
+    '👎': ('0001f44e', '%F0%9F%91%8E')
+}
+
+
 GENDERS = {
     # For standard requests
     0: 'unknown',
@@ -92,6 +112,7 @@ class ReqUrl(object):
     MESSAGE_REACTION = "https://www.facebook.com/webgraphql/mutation"
     TYPING = "https://www.facebook.com/ajax/messaging/typ.php"
     GRAPHQL = "https://www.facebook.com/api/graphqlbatch/"
+    ATTACHMENT_PHOTO = "https://www.facebook.com/mercury/attachments/photo/"
     EVENT_REMINDER = "https://www.facebook.com/ajax/eventreminder/create"
 
     pull_channel = 0
@@ -121,6 +142,9 @@ def get_decoded_r(r):
 
 def get_decoded(content):
     return content.decode(facebookEncoding)
+
+def parse_json(content):
+    return json.loads(content)
 
 def get_json(r):
     return json.loads(strip_to_json(get_decoded_r(r)))
@@ -183,3 +207,11 @@ def check_request(r, as_json=True):
         return j
     else:
         return content
+
+def get_jsmods_require(j, index):
+    if j.get('jsmods') and j['jsmods'].get('require'):
+        try:
+            return j['jsmods']['require'][0][index][0]
+        except (KeyError, IndexError) as e:
+            log.warning('Error when getting jsmods_require: {}. Facebook might have changed protocol'.format(j))
+    return None
