@@ -27,4 +27,8 @@ Installation:
 
     $ pip install fbchat
 
-Copyright 2015 - 2017 by Taehoon Kim / `@carpedm20 <http://carpedm20.github.io/about/>`__
+Maintainer
+----------
+
+- Mads Marquart / `@madsmtm <https://github.com/madsmtm>`__
+- Taehoon Kim / `@carpedm20 <http://carpedm20.github.io/about/>`__
