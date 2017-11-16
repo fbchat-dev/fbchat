@@ -1485,14 +1485,15 @@ class Client(object):
                                     if mercury.get('attach_type'):
                                         image_metadata = a.get('imageMetadata', {})
                                         attach_type = mercury['attach_type']
-                                        attachment = graphql_to_attachment(mercury.get('blob_attachment', {}))
+                                        if attach_type != 'share':
+                                            attachment = graphql_to_attachment(mercury.get('blob_attachment', {}))
+                                        else:
+                                            # TODO: Add more data here for shared stuff (URLs, events and so on)
+                                            pass
 
                                         if attach_type == ['file', 'video']:
                                             # TODO: Add more data here for audio files
                                             attachment.size = int(a['fileSize'])
-                                        elif attach_type == 'share':
-                                            # TODO: Add more data here for shared stuff (URLs, events and so on)
-                                            pass
                                         attachments.append(attachment)
                                     if a['mercury'].get('sticker_attachment'):
                                         sticker = graphql_to_sticker(a['mercury']['sticker_attachment'])
