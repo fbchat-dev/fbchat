@@ -853,7 +853,7 @@ class Client(object):
         :raises: FBChatException if request failed
         """
         image_id = str(image_id)
-        j = checkRequest(self._get(ReqUrl.ATTACHMENT_PHOTO, query={'photo_id': str(image_id)}))
+        j = check_request(self._get(ReqUrl.ATTACHMENT_PHOTO, query={'photo_id': str(image_id)}))
 
         url = get_jsmods_require(j, 3)
         if url is None:
