@@ -479,7 +479,7 @@ class Client(object):
                 if k['id'] in ['0', 0]:
                     # Skip invalid users
                     pass
-                users.append(User(k['id'], first_name=k.get('firstName'), url=k.get('uri'), photo=k.get('thumbSrc'), name=k.get('name'), is_friend=k.get('is_friend'), gender=GENDERS[k.get('gender')]))
+                users.append(User(k['id'], first_name=k.get('firstName'), url=k.get('uri'), photo=k.get('thumbSrc'), name=k.get('name'), is_friend=k.get('is_friend'), gender=GENDERS.get(k.get('gender'))))
 
         return users
 
@@ -791,7 +791,7 @@ class Client(object):
                 if p['type'] == 'page':
                     participants[p['fbid']] = Page(p['fbid'], url=p['href'], photo=p['image_src'], name=p['name'])
                 elif p['type'] == 'user':
-                    participants[p['fbid']] = User(p['fbid'], url=p['href'], first_name=p['short_name'], is_friend=p['is_friend'], gender=GENDERS[p['gender']], photo=p['image_src'], name=p['name'])
+                    participants[p['fbid']] = User(p['fbid'], url=p['href'], first_name=p['short_name'], is_friend=p['is_friend'], gender=GENDERS.get(p['gender']), photo=p['image_src'], name=p['name'])
                 else:
                     raise FBchatException('A participant had an unknown type {}: {}'.format(p['type'], p))
 

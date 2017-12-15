@@ -74,13 +74,12 @@ GENDERS = {
     #'': 'female_singular_guess',
     #'': 'male_singular_guess',
     #'': 'mixed',
-    #'': 'neuter_singular',
+    'NEUTER': 'neuter_singular',
     #'': 'unknown_singular',
     #'': 'female_plural',
     #'': 'male_plural',
     #'': 'neuter_plural',
     #'': 'unknown_plural',
-    None: None
 }
 
 class ReqUrl(object):

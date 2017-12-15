@@ -154,7 +154,7 @@ def graphql_to_user(user):
         first_name=user.get('first_name'),
         last_name=user.get('last_name'),
         is_friend=user.get('is_viewer_friend'),
-        gender=GENDERS[user.get('gender')],
+        gender=GENDERS.get(user.get('gender')),
         affinity=user.get('affinity'),
         nickname=c_info.get('nickname'),
         color=c_info.get('color'),
