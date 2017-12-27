@@ -5,9 +5,8 @@ from __future__ import unicode_literals
 import json
 import logging
 import unittest
-from os import environ
 from sys import argv
-from os import path, chdir
+from os import path, chdir, environ
 from glob import glob
 from fbchat import Client
 from fbchat.models import *

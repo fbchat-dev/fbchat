@@ -17,6 +17,6 @@ env:
 
 script: python -m unittest -q tests
 
-# cache: pip
+cache: pip
 
 sudo: false
