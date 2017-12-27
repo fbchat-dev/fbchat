@@ -6,7 +6,7 @@ from os import environ
 from fbchat import Client
 from fbchat.models import *
 
-logging.basicConfig(logging_level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 print('Attempting a login {}, password: {} (Will be changed!)...'.format(environ['FBCHAT_EMAIL'], environ['FBCHAT_PASSWORD']))
 client = Client(environ['FBCHAT_EMAIL'], environ['FBCHAT_PASSWORD'], logging_level=logging.DEBUG)
