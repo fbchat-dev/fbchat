@@ -1482,21 +1482,20 @@ class Client(object):
                             try:
                                 for a in delta['attachments']:
                                     mercury = a['mercury']
-                                    if mercury.get('attach_type'):
+                                    if mercury.get('blob_attachment'):
                                         image_metadata = a.get('imageMetadata', {})
-                                        attach_type = mercury['attach_type']
-                                        if attach_type != 'share':
-                                            attachment = graphql_to_attachment(mercury.get('blob_attachment', {}))
-                                        else:
-                                            # TODO: Add more data here for shared stuff (URLs, events and so on)
-                                            pass
+                                        attach_type = mercury['blob_attachment']['__typename']
+                                        attachment = graphql_to_attachment(mercury.get('blob_attachment', {}))
 
-                                        if attach_type == ['file', 'video']:
+                                        if attach_type == ['MessageFile', 'MessageVideo', 'MessageAudio']:
                                             # TODO: Add more data here for audio files
                                             attachment.size = int(a['fileSize'])
                                         attachments.append(attachment)
-                                    if a['mercury'].get('sticker_attachment'):
+                                    elif mercury.get('sticker_attachment'):
                                         sticker = graphql_to_sticker(a['mercury']['sticker_attachment'])
+                                    elif mercury.get('extensible_attachment'):
+                                        # TODO: Add more data here for shared stuff (URLs, events and so on)
+                                        pass
                             except Exception:
                                 log.exception('An exception occured while reading attachments: {}'.format(delta['attachments']))
 
