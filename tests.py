@@ -38,7 +38,7 @@ class TestFbchat(unittest.TestCase):
         self.email = environ['FBCHAT_EMAIL']
         self.password = environ['FBCHAT_PASSWORD']
         self.client = CustomClient(self.email, self.password, logging_level=logging_level)
-        self.user_id = '100023612812393'
+        self.user_id = '100023782141139'
         self.group_id = '1463789480385605'
         self.threads = [
             {
