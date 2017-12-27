@@ -8,7 +8,7 @@ from fbchat.models import *
 
 logging.basicConfig(level=logging.DEBUG)
 
-print('Attempting a login {}, password: {} (Will be changed!)...'.format(environ['FBCHAT_EMAIL'], environ['FBCHAT_PASSWORD']))
+logging.info('Attempting a login {}, password: {} (Will be changed!)...'.format(environ['FBCHAT_EMAIL'], environ['FBCHAT_PASSWORD']))
 client = Client(environ['FBCHAT_EMAIL'], environ['FBCHAT_PASSWORD'], logging_level=logging.DEBUG)
 
 client.send(Message(text='Test'), thread_id=client.uid, thread_type=ThreadType.USER)
