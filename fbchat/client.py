@@ -1526,10 +1526,10 @@ class Client(object):
                     self.onInbox(unseen=m["unseen"], unread=m["unread"], recent_unread=m["recent_unread"], msg=m)
 
                 # Typing
-                # elif mtype == "typ":
-                #     author_id = str(m.get("from"))
-                #     typing_status = TypingStatus(m.get("st"))
-                #     self.onTyping(author_id=author_id, typing_status=typing_status)
+                elif mtype == "typ":
+                    author_id = str(m.get("from"))
+                    typing_status = TypingStatus(m.get("st"))
+                    self.onTyping(author_id=author_id, typing_status=typing_status)
 
                 # Delivered
 
