@@ -1248,7 +1248,7 @@ class Client(object):
         :type thread_type: models.ThreadType
         :raises: FBchatException if request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
 
         data = {
             "typ": status.value,
@@ -1482,21 +1482,20 @@ class Client(object):
                             try:
                                 for a in delta['attachments']:
                                     mercury = a['mercury']
-                                    if mercury.get('attach_type'):
+                                    if mercury.get('blob_attachment'):
                                         image_metadata = a.get('imageMetadata', {})
-                                        attach_type = mercury['attach_type']
-                                        if attach_type != 'share':
-                                            attachment = graphql_to_attachment(mercury.get('blob_attachment', {}))
-                                        else:
-                                            # TODO: Add more data here for shared stuff (URLs, events and so on)
-                                            pass
+                                        attach_type = mercury['blob_attachment']['__typename']
+                                        attachment = graphql_to_attachment(mercury.get('blob_attachment', {}))
 
-                                        if attach_type == ['file', 'video']:
+                                        if attach_type == ['MessageFile', 'MessageVideo', 'MessageAudio']:
                                             # TODO: Add more data here for audio files
                                             attachment.size = int(a['fileSize'])
                                         attachments.append(attachment)
-                                    if a['mercury'].get('sticker_attachment'):
+                                    elif mercury.get('sticker_attachment'):
                                         sticker = graphql_to_sticker(a['mercury']['sticker_attachment'])
+                                    elif mercury.get('extensible_attachment'):
+                                        # TODO: Add more data here for shared stuff (URLs, events and so on)
+                                        pass
                             except Exception:
                                 log.exception('An exception occured while reading attachments: {}'.format(delta['attachments']))
 
@@ -1527,10 +1526,15 @@ class Client(object):
                     self.onInbox(unseen=m["unseen"], unread=m["unread"], recent_unread=m["recent_unread"], msg=m)
 
                 # Typing
-                # elif mtype == "typ":
-                #     author_id = str(m.get("from"))
-                #     typing_status = TypingStatus(m.get("st"))
-                #     self.onTyping(author_id=author_id, typing_status=typing_status)
+                elif mtype == "typ":
+                    author_id = str(m.get("from"))
+                    thread_id = str(m.get("to"))
+                    if thread_id == self.uid:
+                        thread_type = ThreadType.USER
+                    else:
+                        thread_type = ThreadType.GROUP
+                    typing_status = TypingStatus(m.get("st"))
+                    self.onTyping(author_id=author_id, status=typing_status, thread_id=thread_id, thread_type=thread_type, msg=m)
 
                 # Delivered
 
@@ -1849,6 +1853,20 @@ class Client(object):
         :param msg: A full set of the data recieved
         """
         log.info('Inbox event: {}, {}, {}'.format(unseen, unread, recent_unread))
+
+    def onTyping(self, author_id=None, status=None, thread_id=None, thread_type=None, msg=None):
+        """
+        Called when the client is listening, and somebody starts or stops typing into a chat
+
+        :param author_id: The ID of the person who sent the action
+        :param status: The typing status
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param msg: A full set of the data recieved
+        :type typing_status: models.TypingStatus
+        :type thread_type: models.ThreadType
+        """
+        pass
 
     def onQprimer(self, ts=None, msg=None):
         """
