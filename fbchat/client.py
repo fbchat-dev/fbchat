@@ -1248,7 +1248,7 @@ class Client(object):
         :type thread_type: models.ThreadType
         :raises: FBchatException if request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
 
         data = {
             "typ": status.value,
