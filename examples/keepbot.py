@@ -18,6 +18,12 @@ old_nicknames = {
 }
 
 class KeepBot(Client):
+    def onMessage(self, author_id, message, thread_id, thread_type, **kwargs):
+        self.markAsDelivered(author_id, thread_id)
+        if thread_type == ThreadType.GROUP:
+            self.markAsRead(thread_id)
+            log.info("Seen {} message from {}".format(author_id, thread_id))
+    
     def onColorChange(self, author_id, new_color, thread_id, thread_type, **kwargs):
         if old_thread_id == thread_id and old_color != new_color:
             log.info("{} changed the thread color. It will be changed back".format(author_id))
