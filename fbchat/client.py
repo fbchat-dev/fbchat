@@ -1528,8 +1528,13 @@ class Client(object):
                 # Typing
                 elif mtype == "typ":
                     author_id = str(m.get("from"))
+                    thread_id = str(m.get("to"))
+                    if thread_id == self.uid:
+                        thread_type = ThreadType.USER
+                    else:
+                        thread_type = ThreadType.GROUP
                     typing_status = TypingStatus(m.get("st"))
-                    self.onTyping(author_id=author_id, typing_status=typing_status)
+                    self.onTyping(author_id=author_id, status=typing_status, thread_id=thread_id, thread_type=thread_type, msg=m)
 
                 # Delivered
 
@@ -1848,6 +1853,20 @@ class Client(object):
         :param msg: A full set of the data recieved
         """
         log.info('Inbox event: {}, {}, {}'.format(unseen, unread, recent_unread))
+
+    def onTyping(self, author_id=None, status=None, thread_id=None, thread_type=None, msg=None):
+        """
+        Called when the client is listening, and somebody starts or stops typing into a chat
+
+        :param author_id: The ID of the person who sent the action
+        :param status: The typing status
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param msg: A full set of the data recieved
+        :type typing_status: models.TypingStatus
+        :type thread_type: models.ThreadType
+        """
+        pass
 
     def onQprimer(self, ts=None, msg=None):
         """
