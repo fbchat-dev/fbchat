@@ -9,11 +9,11 @@ class FBchatException(Exception):
 
 class FBchatFacebookError(FBchatException):
     #: The error code that Facebook returned
-    fb_error_code = str
+    fb_error_code = None
     #: The error message that Facebook returned (In the user's own language)
-    fb_error_message = str
+    fb_error_message = None
     #: The status code that was sent in the http response (eg. 404) (Usually only set if not successful, aka. not 200)
-    request_status_code = int
+    request_status_code = None
     def __init__(self, message, fb_error_code=None, fb_error_message=None, request_status_code=None):
         super(FBchatFacebookError, self).__init__(message)
         """Thrown by fbchat when Facebook returns an error"""
@@ -26,17 +26,17 @@ class FBchatUserError(FBchatException):
 
 class Thread(object):
     #: The unique identifier of the thread. Can be used a `thread_id`. See :ref:`intro_threads` for more info
-    uid = str
+    uid = None
     #: Specifies the type of thread. Can be used a `thread_type`. See :ref:`intro_threads` for more info
     type = None
-    #: The thread's picture
-    photo = str
+    #: A url to the thread's picture
+    photo = None
     #: The name of the thread
-    name = str
+    name = None
     #: Timestamp of last message
-    last_message_timestamp = str
+    last_message_timestamp = None
     #: Number of messages in the thread
-    message_count = int
+    message_count = None
     def __init__(self, _type, uid, photo=None, name=None, last_message_timestamp=None, message_count=None):
         """Represents a Facebook thread"""
         self.uid = str(uid)
@@ -55,25 +55,25 @@ class Thread(object):
 
 class User(Thread):
     #: The profile url
-    url = str
+    url = None
     #: The users first name
-    first_name = str
+    first_name = None
     #: The users last name
-    last_name = str
+    last_name = None
     #: Whether the user and the client are friends
-    is_friend = bool
+    is_friend = None
     #: The user's gender
-    gender = str
+    gender = None
     #: From 0 to 1. How close the client is to the user
-    affinity = float
+    affinity = None
     #: The user's nickname
-    nickname = str
+    nickname = None
     #: The clients nickname, as seen by the user
-    own_nickname = str
+    own_nickname = None
     #: A :class:`ThreadColor`. The message color
     color = None
     #: The default emoji
-    emoji = str
+    emoji = None
 
     def __init__(self, uid, url=None, first_name=None, last_name=None, is_friend=None, gender=None, affinity=None, nickname=None, own_nickname=None, color=None, emoji=None, **kwargs):
         """Represents a Facebook user. Inherits `Thread`"""
@@ -92,13 +92,13 @@ class User(Thread):
 
 class Group(Thread):
     #: Unique list (set) of the group thread's participant user IDs
-    participants = set
-    #: Dict, containing user nicknames mapped to their IDs
-    nicknames = dict
+    participants = None
+    #: A dict, containing user nicknames mapped to their IDs
+    nicknames = None
     #: A :class:`ThreadColor`. The groups's message color
     color = None
     #: The groups's default emoji
-    emoji = str
+    emoji = None
 
     def __init__(self, uid, participants=None, nicknames=None, color=None, emoji=None, **kwargs):
         """Represents a Facebook group. Inherits `Thread`"""
@@ -115,15 +115,15 @@ class Group(Thread):
 
 class Room(Group):
     # Set containing user IDs of thread admins
-    admins = set
+    admins = None
     # True if users need approval to join
-    approval_mode = bool
+    approval_mode = None
     # Set containing user IDs requesting to join
-    approval_requests = set
+    approval_requests = None
     # Link for joining room
-    join_link = str
+    join_link = None
     # True is room is not discoverable
-    privacy_mode = bool
+    privacy_mode = None
 
     def __init__(self, uid, admins=None, approval_mode=None, approval_requests=None, join_link=None, privacy_mode=None, **kwargs):
         """Represents a Facebook room. Inherits `Group`"""
@@ -142,15 +142,15 @@ class Room(Group):
 
 class Page(Thread):
     #: The page's custom url
-    url = str
+    url = None
     #: The name of the page's location city
-    city = str
+    city = None
     #: Amount of likes the page has
-    likes = int
+    likes = None
     #: Some extra information about the page
-    sub_title = str
+    sub_title = None
     #: The page's category
-    category = str
+    category = None
 
     def __init__(self, uid, url=None, city=None, likes=None, sub_title=None, category=None, **kwargs):
         """Represents a Facebook page. Inherits `Thread`"""
@@ -166,7 +166,7 @@ class Message(object):
     #: The actual message
     text = None
     #: A list of :class:`Mention` objects
-    mentions = []
+    mentions = None
     #: A :class:`EmojiSize`. Size of a sent emoji
     emoji_size = None
     #: The message ID
@@ -178,13 +178,13 @@ class Message(object):
     #: Whether the message is read
     is_read = None
     #: A dict with user's IDs as keys, and their :class:`MessageReaction` as values
-    reactions = {}
+    reactions = None
     #: The actual message
     text = None
     #: A :class:`Sticker`
     sticker = None
     #: A list of attachments
-    attachments = []
+    attachments = None
 
     def __init__(self, text=None, mentions=None, emoji_size=None, sticker=None, attachments=None):
         """Represents a Facebook message"""
@@ -207,7 +207,7 @@ class Message(object):
 
 class Attachment(object):
     #: The attachment ID
-    uid = str
+    uid = None
 
     def __init__(self, uid=None):
         """Represents a Facebook attachment"""
@@ -251,13 +251,13 @@ class ShareAttachment(Attachment):
 
 class FileAttachment(Attachment):
     #: Url where you can download the file
-    url = str
+    url = None
     #: Size of the file in bytes
-    size = int
+    size = None
     #: Name of the file
-    name = str
+    name = None
     #: Whether Facebook determines that this file may be harmful
-    is_malicious = bool
+    is_malicious = None
 
     def __init__(self, url=None, size=None, name=None, is_malicious=None, **kwargs):
         """Represents a file that has been sent as a Facebook attachment"""
@@ -274,38 +274,38 @@ class AudioAttachment(FileAttachment):
 
 class ImageAttachment(Attachment):
     #: The extension of the original image (eg. 'png')
-    original_extension = str
+    original_extension = None
     #: Width of original image
-    width = int
+    width = None
     #: Height of original image
-    height = int
+    height = None
 
     #: Whether the image is animated
-    is_animated = bool
+    is_animated = None
 
     #: URL to a thumbnail of the image
-    thumbnail_url = str
+    thumbnail_url = None
 
     #: URL to a medium preview of the image
-    preview_url = str
+    preview_url = None
     #: Width of the medium preview image
-    preview_width = int
+    preview_width = None
     #: Height of the medium preview image
-    preview_height = int
+    preview_height = None
 
     #: URL to a large preview of the image
-    large_preview_url = str
+    large_preview_url = None
     #: Width of the large preview image
-    large_preview_width = int
+    large_preview_width = None
     #: Height of the large preview image
-    large_preview_height = int
+    large_preview_height = None
 
     #: URL to an animated preview of the image (eg. for gifs)
-    animated_preview_url = str
+    animated_preview_url = None
     #: Width of the animated preview image
-    animated_preview_width = int
+    animated_preview_width = None
     #: Height of the animated preview image
-    animated_preview_height = int
+    animated_preview_height = None
 
     def __init__(self, original_extension=None, width=None, height=None, is_animated=None, thumbnail_url=None, preview=None, large_preview=None, animated_preview=None, **kwargs):
         """
@@ -344,36 +344,36 @@ class ImageAttachment(Attachment):
 
 class VideoAttachment(Attachment):
     #: Size of the original video in bytes
-    size = int
+    size = None
     #: Width of original video
-    width = int
+    width = None
     #: Height of original video
-    height = int
+    height = None
     #: Length of video in milliseconds
-    duration = int
+    duration = None
     #: URL to very compressed preview video
-    preview_url = str
+    preview_url = None
 
     #: URL to a small preview image of the video
-    small_image_url = str
+    small_image_url = None
     #: Width of the small preview image
-    small_image_width = int
+    small_image_width = None
     #: Height of the small preview image
-    small_image_height = int
+    small_image_height = None
 
     #: URL to a medium preview image of the video
-    medium_image_url = str
+    medium_image_url = None
     #: Width of the medium preview image
-    medium_image_width = int
+    medium_image_width = None
     #: Height of the medium preview image
-    medium_image_height = int
+    medium_image_height = None
 
     #: URL to a large preview image of the video
-    large_image_url = str
+    large_image_url = None
     #: Width of the large preview image
-    large_image_width = int
+    large_image_width = None
     #: Height of the large preview image
-    large_image_height = int
+    large_image_height = None
 
     def __init__(self, size=None, width=None, height=None, duration=None, preview_url=None, small_image=None, medium_image=None, large_image=None, **kwargs):
         """Represents a video that has been sent as a Facebook attachment"""
@@ -405,11 +405,11 @@ class VideoAttachment(Attachment):
 
 class Mention(object):
     #: The thread ID the mention is pointing at
-    thread_id = str
+    thread_id = None
     #: The character where the mention starts
-    offset = int
+    offset = None
     #: The length of the mention
-    length = int
+    length = None
 
     def __init__(self, thread_id, offset=0, length=10):
         """Represents a @mention"""
