@@ -109,6 +109,12 @@ def graphql_to_attachment(a):
             large_image=a.get('large_image'),
             uid=a.get('legacy_attachment_id')
         )
+    elif _type == 'MessageAudio':
+        return AudioAttachment(
+            filename=a.get('filename'),
+            playable_url=a.get('playable_url'),
+            duration=a.get('playable_duration_in_ms')
+        )
     elif _type == 'MessageFile':
         return FileAttachment(
             url=a.get('url'),
