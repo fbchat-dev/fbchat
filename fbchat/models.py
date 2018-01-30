@@ -267,10 +267,23 @@ class FileAttachment(Attachment):
         self.name = name
         self.is_malicious = is_malicious
 
-class AudioAttachment(FileAttachment):
-    def __init__(self, **kwargs):
-        """Represents an audio file that has been sent as a Facebook attachment - *Currently Incomplete!*"""
-        super(StickerAttachment, self).__init__(**kwargs)
+class AudioAttachment(Attachment):
+    #: Name of the file
+    filename = None
+    #: Url of the audio file
+    url = None
+    #: Duration of the audioclip in milliseconds
+    duration = None
+    #: Audio type
+    audio_type = None
+
+    def __init__(self, filename=None, url=None, duration=None, audio_type=None, **kwargs):
+        """Represents an audio file that has been sent as a Facebook attachment"""
+        super(AudioAttachment, self).__init__(**kwargs)
+        self.filename = filename
+        self.url = url
+        self.duration = duration
+        self.audio_type = audio_type
 
 class ImageAttachment(Attachment):
     #: The extension of the original image (eg. 'png')
