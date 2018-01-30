@@ -112,8 +112,9 @@ def graphql_to_attachment(a):
     elif _type == 'MessageAudio':
         return AudioAttachment(
             filename=a.get('filename'),
-            playable_url=a.get('playable_url'),
-            duration=a.get('playable_duration_in_ms')
+            url=a.get('playable_url'),
+            duration=a.get('playable_duration_in_ms'),
+            audio_type=a.get('audio_type')
         )
     elif _type == 'MessageFile':
         return FileAttachment(
