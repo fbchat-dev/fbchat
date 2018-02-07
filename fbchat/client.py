@@ -1543,9 +1543,9 @@ class Client(object):
                 #
                 #     self.onSeen(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
 
-                # elif mtype in ['jewel_requests_add']:
-                #         from_id = m['from']
-                #         self.on_friend_request(from_id)
+                elif mtype in ['jewel_requests_add']:
+                    from_id = m['from']
+                    self.onFriendRequest(from_id=from_id, msg=m)
 
                 # Happens on every login
                 elif mtype == "qprimer":
