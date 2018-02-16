@@ -17,7 +17,7 @@ except NameError:
 
 # Log settings
 log = logging.getLogger("client")
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 # Creates the console handler
 handler = logging.StreamHandler()
 log.addHandler(handler)
