@@ -122,6 +122,10 @@ class TestFbchat(unittest.TestCase):
             self.assertTrue(client.sendRemoteImage(image_url, Message(text='test_send_image_remote_to_@you★', mentions=mentions)))
             self.assertTrue(client.sendLocalImage(image_local_url, Message(text='test_send_image_local_to__@you★', mentions=mentions)))
 
+    def test_fetchThreadListGraphQL(self):
+        threads = client.fetchThreadListGraphQL(limit=10)
+        self.assertEqual(len(threads), 10)
+
     def test_fetchThreadList(self):
         client.fetchThreadList(offset=0, limit=20)
 
