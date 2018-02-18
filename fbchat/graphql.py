@@ -176,17 +176,26 @@ def graphql_to_thread(thread):
     if thread['thread_type'] == 'GROUP':
         return graphql_to_group(thread)
     elif thread['thread_type'] == 'ONE_TO_ONE':
-        if thread.get('image') is None:
-            thread['image'] = {}
+        if thread.get('big_image_src') is None:
+            thread['big_image_src'] = {}
         c_info = get_customization_info(thread)
-        return Group(
-            thread['thread_key']['other_user_id'],
-            participants=set([node['messaging_actor']['id'] for node in thread['all_participants']['nodes']]),
-            nicknames=c_info.get('nicknames'),
+        participants = [node['messaging_actor'] for node in thread['all_participants']['nodes']]
+        user = next(p for p in participants if p['id'] == thread['thread_key']['other_user_id'])
+
+        return User(
+            user['id'],
+            url=user.get('url'),
+            name=user.get('name'),
+            first_name=user.get('short_name'),
+            last_name=user.get('name').split(user.get('short_name'),1)[1].strip(),
+            is_friend=user.get('is_viewer_friend'),
+            gender=GENDERS.get(user.get('gender')),
+            affinity=user.get('affinity'),
+            nickname=c_info.get('nickname'),
             color=c_info.get('color'),
             emoji=c_info.get('emoji'),
-            photo=thread['image'].get('uri'),
-            name=thread.get('name'),
+            own_nickname=c_info.get('own_nickname'),
+            photo=user['big_image_src'].get('uri'),
             message_count=thread.get('messages_count')
         )
     else:
