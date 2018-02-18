@@ -754,18 +754,22 @@ class Client(object):
 
         return list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
 
-    def fetchThreadListGraphQL(self, limit=20, thread_location=ThreadLocation.INBOX, before=None):
+    def fetchThreadList(self, offset=0, limit=20, thread_location=ThreadLocation.INBOX, before=None):
         """Get thread list of your facebook account
 
+        :param offset: Deprecated. Do not use!
         :param limit: Max. number of threads to retrieve. Capped at 20
         :param thread_location: models.ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
-        :param before: A timestamp, indicating from which point to retrieve messages
+        :param before: A timestamp (in milliseconds), indicating from which point to retrieve threads
         :type limit: int
         :type before: int
         :return: :class:`models.Thread` objects
         :rtype: list
         :raises: FBchatException if request failed
         """
+
+        if offset is not None:
+            log.warning('Using `offset` in `fetchThreadList` is no longer supported, since Facebook migrated to the use of GraphQL in this request. Use `before` instead')
 
         if limit > 20 or limit < 1:
             raise FBchatUserError('`limit` should be between 1 and 20')
@@ -780,77 +784,10 @@ class Client(object):
             'tags': [loc_str],
             'before': before,
             'includeDeliveryReceipts': True,
-            'includeSeqID': False}))
+            'includeSeqID': False
+        }))
 
         return [graphql_to_thread(node) for node in j['viewer']['message_threads']['nodes']]
-
-    def fetchThreadList(self, offset=0, limit=20, thread_location=ThreadLocation.INBOX):
-        """Get thread list of your facebook account
-
-        :param offset: The offset, from where in the list to recieve threads from
-        :param limit: Max. number of threads to retrieve. Capped at 20
-        :param thread_location: models.ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
-        :type offset: int
-        :type limit: int
-        :return: :class:`models.Thread` objects
-        :rtype: list
-        :raises: FBchatException if request failed
-        """
-
-        if limit > 20 or limit < 1:
-            raise FBchatUserError('`limit` should be between 1 and 20')
-
-        if thread_location in ThreadLocation:
-            loc_str = thread_location.value
-        else:
-            raise FBchatUserError('"thread_location" must be a value of ThreadLocation')
-
-        data = {
-            'client' : self.client,
-            loc_str + '[offset]' : offset,
-            loc_str + '[limit]' : limit,
-        }
-
-        j = self._post(self.req_url.THREADS, data, fix_request=True, as_json=True)
-        if j.get('payload') is None:
-            raise FBchatException('Missing payload: {}, with data: {}'.format(j, data))
-
-        participants = {}
-        if 'participants' in j['payload']:
-            for p in j['payload']['participants']:
-                if p['type'] == 'page':
-                    participants[p['fbid']] = Page(p['fbid'], url=p['href'], photo=p['image_src'], name=p['name'])
-                elif p['type'] == 'user':
-                    participants[p['fbid']] = User(p['fbid'], url=p['href'], first_name=p['short_name'], is_friend=p['is_friend'], gender=GENDERS.get(p['gender']), photo=p['image_src'], name=p['name'])
-                else:
-                    raise FBchatException('A participant had an unknown type {}: {}'.format(p['type'], p))
-
-        entries = []
-        if 'threads' in j['payload']:
-            for k in j['payload']['threads']:
-                if k['thread_type'] == 1:
-                    if k['other_user_fbid'] not in participants:
-                        raise FBchatException('The thread {} was not in participants: {}'.format(k, j['payload']))
-                    participants[k['other_user_fbid']].message_count = k['message_count']
-                    entries.append(participants[k['other_user_fbid']])
-                elif k['thread_type'] == 2:
-                    entries.append(Group(k['thread_fbid'], participants=set([p.strip('fbid:') for p in k['participants']]), photo=k['image_src'], name=k['name'], message_count=k['message_count']))
-                elif k['thread_type'] == 3:
-                    entries.append(Room(
-                        k['thread_fbid'],
-                        participants = set(p.lstrip('fbid:') for p in k['participants']),
-                        photo = k['image_src'],
-                        name = k['name'],
-                        message_count = k['message_count'],
-                        admins = set(p.lstrip('fbid:') for p in k['admin_ids']),
-                        approval_mode = k['approval_mode'],
-                        approval_requests = set(p.lstrip('fbid:') for p in k['approval_queue_ids']),
-                        join_link = k['joinable_mode']['link']
-                        ))
-                else:
-                    raise FBchatException('A thread had an unknown thread type: {}'.format(k))
-
-        return entries
 
     def fetchUnread(self):
         """
