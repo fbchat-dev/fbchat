@@ -172,6 +172,35 @@ def graphql_to_user(user):
         message_count=user.get('messages_count')
     )
 
+def graphql_to_thread(thread):
+    if thread['thread_type'] == 'GROUP':
+        return graphql_to_group(thread)
+    elif thread['thread_type'] == 'ONE_TO_ONE':
+        if thread.get('big_image_src') is None:
+            thread['big_image_src'] = {}
+        c_info = get_customization_info(thread)
+        participants = [node['messaging_actor'] for node in thread['all_participants']['nodes']]
+        user = next(p for p in participants if p['id'] == thread['thread_key']['other_user_id'])
+
+        return User(
+            user['id'],
+            url=user.get('url'),
+            name=user.get('name'),
+            first_name=user.get('short_name'),
+            last_name=user.get('name').split(user.get('short_name'),1)[1].strip(),
+            is_friend=user.get('is_viewer_friend'),
+            gender=GENDERS.get(user.get('gender')),
+            affinity=user.get('affinity'),
+            nickname=c_info.get('nickname'),
+            color=c_info.get('color'),
+            emoji=c_info.get('emoji'),
+            own_nickname=c_info.get('own_nickname'),
+            photo=user['big_image_src'].get('uri'),
+            message_count=thread.get('messages_count')
+        )
+    else:
+        raise FBchatException('Unknown thread type: {}, with data: {}'.format(thread.get('thread_type'), thread))
+
 def graphql_to_group(group):
     if group.get('image') is None:
         group['image'] = {}

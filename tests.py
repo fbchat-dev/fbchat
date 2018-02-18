@@ -123,7 +123,8 @@ class TestFbchat(unittest.TestCase):
             self.assertTrue(client.sendLocalImage(image_local_url, Message(text='test_send_image_local_to__@you★', mentions=mentions)))
 
     def test_fetchThreadList(self):
-        client.fetchThreadList(offset=0, limit=20)
+        threads = client.fetchThreadList(limit=2)
+        self.assertEqual(len(threads), 2)
 
     def test_fetchThreadMessages(self):
         for thread in threads:
