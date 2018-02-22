@@ -451,10 +451,10 @@ class ThreadType(Enum):
 
 class ThreadLocation(Enum):
     """Used to specify where a thread is located (inbox, pending, archived, other)."""
-    INBOX = 'inbox'
-    PENDING = 'pending'
-    ARCHIVED = 'action:archived'
-    OTHER = 'other'
+    INBOX = 'INBOX'
+    PENDING = 'PENDING'
+    ARCHIVED = 'ARCHIVED'
+    OTHER = 'OTHER'
 
 class TypingStatus(Enum):
     """Used to specify whether the user is typing or has stopped typing"""
