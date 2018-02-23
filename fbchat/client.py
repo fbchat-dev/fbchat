@@ -754,7 +754,7 @@ class Client(object):
 
         return list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
 
-    def fetchThreadList(self, offset=0, limit=20, thread_location=ThreadLocation.INBOX, before=None):
+    def fetchThreadList(self, offset=None, limit=20, thread_location=ThreadLocation.INBOX, before=None):
         """Get thread list of your facebook account
 
         :param offset: Deprecated. Do not use!
