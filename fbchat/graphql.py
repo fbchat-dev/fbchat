@@ -181,6 +181,7 @@ def graphql_to_thread(thread):
         c_info = get_customization_info(thread)
         participants = [node['messaging_actor'] for node in thread['all_participants']['nodes']]
         user = next(p for p in participants if p['id'] == thread['thread_key']['other_user_id'])
+        last_message_timestamp = thread['last_message']['nodes'][0]['timestamp_precise']
 
         return User(
             user['id'],
@@ -196,7 +197,8 @@ def graphql_to_thread(thread):
             emoji=c_info.get('emoji'),
             own_nickname=c_info.get('own_nickname'),
             photo=user['big_image_src'].get('uri'),
-            message_count=thread.get('messages_count')
+            message_count=thread.get('messages_count'),
+            last_message_timestamp=last_message_timestamp
         )
     else:
         raise FBchatException('Unknown thread type: {}, with data: {}'.format(thread.get('thread_type'), thread))
@@ -205,6 +207,7 @@ def graphql_to_group(group):
     if group.get('image') is None:
         group['image'] = {}
     c_info = get_customization_info(group)
+    last_message_timestamp = group['last_message']['nodes'][0]['timestamp_precise']
     return Group(
         group['thread_key']['thread_fbid'],
         participants=set([node['messaging_actor']['id'] for node in group['all_participants']['nodes']]),
@@ -213,7 +216,8 @@ def graphql_to_group(group):
         emoji=c_info.get('emoji'),
         photo=group['image'].get('uri'),
         name=group.get('name'),
-        message_count=group.get('messages_count')
+        message_count=group.get('messages_count'),
+        last_message_timestamp=last_message_timestamp
     )
 
 def graphql_to_room(room):
