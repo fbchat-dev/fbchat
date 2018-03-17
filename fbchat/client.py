@@ -797,17 +797,31 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         form = {
-            'client': 'mercury_sync',
             'folders[0]': 'inbox',
+            'client': 'mercury',
             'last_action_timestamp': now() - 60*1000
             # 'last_action_timestamp': 0
         }
 
-        j = self._post(self.req_url.THREAD_SYNC, form, fix_request=True, as_json=True)
+        j = self._post(self.req_url.UNREAD_THREADS, form, fix_request=True, as_json=True)
 
         return {
-            "message_counts": j['payload']['message_counts'],
-            "unseen_threads": j['payload']['unseen_thread_ids']
+            "unread_threads": j['payload']['unread_thread_fbids']
+        }
+
+    def fetchUnseen(self):
+        """
+        .. todo::
+            Documenting this
+
+        :raises: FBchatException if request failed
+        """
+        form = {}
+
+        j = self._post(self.req_url.UNSEEN_THREADS, form, fix_request=True, as_json=True)
+
+        return {
+            "unseen_threads": j['payload']['unseen_thread_fbids']
         }
 
     def fetchImageUrl(self, image_id):
@@ -1230,28 +1244,29 @@ class Client(object):
     END SEND METHODS
     """
 
-    def markAsDelivered(self, userID, threadID):
+    def markAsDelivered(self, threadID, messageID):
         """
         .. todo::
             Documenting this
         """
         data = {
-            "message_ids[0]": threadID,
-            "thread_ids[%s][0]" % userID: threadID
+            "message_ids[0]": messageID,
+            "thread_ids[%s][0]" % threadID: messageID
         }
 
         r = self._post(self.req_url.DELIVERED, data)
         return r.ok
 
-    def markAsRead(self, userID):
+    def markAsRead(self, threadID):
         """
         .. todo::
             Documenting this
         """
         data = {
+            "ids[%s]" % threadID: True,
             "watermarkTimestamp": now(),
             "shouldSendReadReceipt": True,
-            "ids[%s]" % userID: True
+            "commerce_last_message_type": "",
         }
 
         r = self._post(self.req_url.READ_STATUS, data)
