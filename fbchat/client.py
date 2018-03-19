@@ -149,7 +149,7 @@ class Client(object):
         payload=self._generatePayload(query)
         # Removes 'Content-Type' from the header
         headers = dict((i, self._header[i]) for i in self._header if i != 'Content-Type')
-        r = self._session.post(url, headers=headers, data=encode_params(payload), timeout=timeout, files=files)
+        r = self._session.post(url, headers=headers, data=encode_params(payload), timeout=timeout, files=files, verify=self.ssl_verify)
         if not fix_request:
             return r
         try:
