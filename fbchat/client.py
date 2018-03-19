@@ -21,7 +21,7 @@ class Client(object):
     """
 
     ssl_verify = True
-    """Verify ssl certificate, set to False to allow debugging with Fiddler"""
+    """Verify ssl certificate, set to False to allow debugging with a proxy"""
     listening = False
     """Whether the client is listening. Used when creating an external event loop to determine when to stop listening"""
     uid = None
@@ -149,7 +149,7 @@ class Client(object):
         payload=self._generatePayload(query)
         # Removes 'Content-Type' from the header
         headers = dict((i, self._header[i]) for i in self._header if i != 'Content-Type')
-        r = self._session.post(url, headers=headers, data=payload, timeout=timeout, files=files)
+        r = self._session.post(url, headers=headers, data=encode_params(payload), timeout=timeout, files=files)
         if not fix_request:
             return r
         try:
@@ -793,9 +793,10 @@ class Client(object):
 
     def fetchUnread(self):
         """
-        .. todo::
-            Documenting this
+        Get the unread thread list
 
+        :return: List of unread thread ids
+        :rtype: list
         :raises: FBchatException if request failed
         """
         form = {
@@ -811,9 +812,10 @@ class Client(object):
 
     def fetchUnseen(self):
         """
-        .. todo::
-            Documenting this
+        Get the unseen (new) thread list
 
+        :return: List of unseen thread ids
+        :rtype: list
         :raises: FBchatException if request failed
         """
         j = self._post(self.req_url.UNSEEN_THREADS, None, fix_request=True, as_json=True)
