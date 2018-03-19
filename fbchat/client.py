@@ -1242,26 +1242,34 @@ class Client(object):
     END SEND METHODS
     """
 
-    def markAsDelivered(self, threadID, messageID):
+    def markAsDelivered(self, thread_id, message_id):
         """
-        .. todo::
-            Documenting this
+        Mark a message as delivered
+
+        :param thread_id: User/Group ID to which the message belongs. See :ref:`intro_threads`
+        :param message_id: Message ID to set as delivered. See :ref:`intro_threads`
+        :return: Whether the request was successful
+        :raises: FBchatException if request failed
         """
         data = {
-            "message_ids[0]": messageID,
-            "thread_ids[%s][0]" % threadID: messageID
+            "message_ids[0]": message_id,
+            "thread_ids[%s][0]" % thread_id: message_id
         }
 
         r = self._post(self.req_url.DELIVERED, data)
         return r.ok
 
-    def markAsRead(self, threadID):
+    def markAsRead(self, thread_id):
         """
-        .. todo::
-            Documenting this
+        Mark a thread as read
+        All messages inside the thread will be marked as read
+
+        :param thread_id: User/Group ID to set as read. See :ref:`intro_threads`
+        :return: Whether the request was successful
+        :raises: FBchatException if request failed
         """
         data = {
-            "ids[%s]" % threadID: True,
+            "ids[%s]" % thread_id: True,
             "watermarkTimestamp": now(),
             "shouldSendReadReceipt": True,
         }
