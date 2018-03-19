@@ -107,7 +107,7 @@ class Client(object):
 
     def _get(self, url, query=None, timeout=30, fix_request=False, as_json=False, error_retries=3):
         payload = self._generatePayload(query)
-        r = self._session.get(url, headers=self._header, params=encode_params(payload), timeout=timeout, verify=self.ssl_verify)
+        r = self._session.get(url, headers=self._header, params=payload, timeout=timeout, verify=self.ssl_verify)
         if not fix_request:
             return r
         try:
@@ -119,7 +119,7 @@ class Client(object):
 
     def _post(self, url, query=None, timeout=30, fix_request=False, as_json=False, error_retries=3):
         payload = self._generatePayload(query)
-        r = self._session.post(url, headers=self._header, data=encode_params(payload), timeout=timeout, verify=self.ssl_verify)
+        r = self._session.post(url, headers=self._header, data=payload, timeout=timeout, verify=self.ssl_verify)
         if not fix_request:
             return r
         try:
@@ -139,17 +139,17 @@ class Client(object):
             raise e
 
     def _cleanGet(self, url, query=None, timeout=30):
-        return self._session.get(url, headers=self._header, params=encode_params(query), timeout=timeout, verify=self.ssl_verify)
+        return self._session.get(url, headers=self._header, params=query, timeout=timeout, verify=self.ssl_verify)
 
     def _cleanPost(self, url, query=None, timeout=30):
         self.req_counter += 1
-        return self._session.post(url, headers=self._header, data=encode_params(query), timeout=timeout, verify=self.ssl_verify)
+        return self._session.post(url, headers=self._header, data=query, timeout=timeout, verify=self.ssl_verify)
 
     def _postFile(self, url, files=None, query=None, timeout=30, fix_request=False, as_json=False, error_retries=3):
         payload=self._generatePayload(query)
         # Removes 'Content-Type' from the header
         headers = dict((i, self._header[i]) for i in self._header if i != 'Content-Type')
-        r = self._session.post(url, headers=headers, data=encode_params(payload), timeout=timeout, files=files, verify=self.ssl_verify)
+        r = self._session.post(url, headers=headers, data=payload, timeout=timeout, files=files, verify=self.ssl_verify)
         if not fix_request:
             return r
         try:

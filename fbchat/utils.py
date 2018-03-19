@@ -233,35 +233,3 @@ def get_emojisize_from_tags(tags):
         except (KeyError, IndexError):
             log.exception('Could not determine emoji size from {} - {}'.format(tags, tmp))
     return None
-
-def encode_params(data):
-    """Encode parameters in a piece of data.
-
-    Will successfully encode parameters when passed as a dict or a list of
-    2-tuples. Order is retained if data is a list of 2-tuples but arbitrary
-    if parameters are supplied as a dict.
-    """
-
-    if isinstance(data, (str, bytes)):
-        return data
-    elif hasattr(data, 'read'):
-        return data
-    elif hasattr(data, '__iter__'):
-        result = []
-        for k, vs in list(data.items()):
-            if isinstance(vs, basestring) or not hasattr(vs, '__iter__'):
-                vs = [vs]
-            for v in vs:
-                if v is not None:
-                    if isinstance(v, bool):
-                        result.append(
-                            (k.encode('utf-8') if isinstance(k, str) else k,
-                             str(v).lower()))
-                    else:
-                        result.append(
-                            (k.encode('utf-8') if isinstance(k, str) else k,
-                             v.encode('utf-8') if isinstance(v, str) else v))
-        return urlencode(result, doseq=True)
-    else:
-        return data
-
