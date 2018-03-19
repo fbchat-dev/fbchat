@@ -9,6 +9,13 @@ import warnings
 import logging
 from .models import *
 
+try:
+    from urllib.parse import urlencode
+    basestring = (str, bytes)
+except ImportError:
+    from urllib import urlencode
+    basestring = basestring
+
 # Python 2's `input` executes the input, whereas `raw_input` just returns the input
 try:
     input = raw_input
@@ -87,7 +94,8 @@ class ReqUrl(object):
     SEARCH = "https://www.facebook.com/ajax/typeahead/search.php"
     LOGIN = "https://m.facebook.com/login.php?login_attempt=1"
     SEND = "https://www.facebook.com/messaging/send/"
-    THREAD_SYNC = "https://www.facebook.com/ajax/mercury/thread_sync.php"
+    UNREAD_THREADS = "https://www.facebook.com/ajax/mercury/unread_threads.php"
+    UNSEEN_THREADS = "https://www.facebook.com/mercury/unseen_thread_ids/"
     THREADS = "https://www.facebook.com/ajax/mercury/threadlist_info.php"
     MESSAGES = "https://www.facebook.com/ajax/mercury/thread_info.php"
     READ_STATUS = "https://www.facebook.com/ajax/mercury/change_read_status.php"
@@ -225,3 +233,35 @@ def get_emojisize_from_tags(tags):
         except (KeyError, IndexError):
             log.exception('Could not determine emoji size from {} - {}'.format(tags, tmp))
     return None
+
+def encode_params(data):
+    """Encode parameters in a piece of data.
+
+    Will successfully encode parameters when passed as a dict or a list of
+    2-tuples. Order is retained if data is a list of 2-tuples but arbitrary
+    if parameters are supplied as a dict.
+    """
+
+    if isinstance(data, (str, bytes)):
+        return data
+    elif hasattr(data, 'read'):
+        return data
+    elif hasattr(data, '__iter__'):
+        result = []
+        for k, vs in list(data.items()):
+            if isinstance(vs, basestring) or not hasattr(vs, '__iter__'):
+                vs = [vs]
+            for v in vs:
+                if v is not None:
+                    if isinstance(v, bool):
+                        result.append(
+                            (k.encode('utf-8') if isinstance(k, str) else k,
+                             str(v).lower()))
+                    else:
+                        result.append(
+                            (k.encode('utf-8') if isinstance(k, str) else k,
+                             v.encode('utf-8') if isinstance(v, str) else v))
+        return urlencode(result, doseq=True)
+    else:
+        return data
+

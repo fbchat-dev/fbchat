@@ -20,6 +20,8 @@ class Client(object):
     See https://fbchat.readthedocs.io for complete documentation of the API.
     """
 
+    ssl_verify = True
+    """Verify ssl certificate, set to False to allow debugging with a proxy"""
     listening = False
     """Whether the client is listening. Used when creating an external event loop to determine when to stop listening"""
     uid = None
@@ -105,7 +107,7 @@ class Client(object):
 
     def _get(self, url, query=None, timeout=30, fix_request=False, as_json=False, error_retries=3):
         payload = self._generatePayload(query)
-        r = self._session.get(url, headers=self._header, params=payload, timeout=timeout)
+        r = self._session.get(url, headers=self._header, params=encode_params(payload), timeout=timeout, verify=self.ssl_verify)
         if not fix_request:
             return r
         try:
@@ -117,7 +119,7 @@ class Client(object):
 
     def _post(self, url, query=None, timeout=30, fix_request=False, as_json=False, error_retries=3):
         payload = self._generatePayload(query)
-        r = self._session.post(url, headers=self._header, data=payload, timeout=timeout)
+        r = self._session.post(url, headers=self._header, data=encode_params(payload), timeout=timeout, verify=self.ssl_verify)
         if not fix_request:
             return r
         try:
@@ -137,17 +139,17 @@ class Client(object):
             raise e
 
     def _cleanGet(self, url, query=None, timeout=30):
-        return self._session.get(url, headers=self._header, params=query, timeout=timeout)
+        return self._session.get(url, headers=self._header, params=encode_params(query), timeout=timeout, verify=self.ssl_verify)
 
     def _cleanPost(self, url, query=None, timeout=30):
         self.req_counter += 1
-        return self._session.post(url, headers=self._header, data=query, timeout=timeout)
+        return self._session.post(url, headers=self._header, data=encode_params(query), timeout=timeout, verify=self.ssl_verify)
 
     def _postFile(self, url, files=None, query=None, timeout=30, fix_request=False, as_json=False, error_retries=3):
         payload=self._generatePayload(query)
         # Removes 'Content-Type' from the header
         headers = dict((i, self._header[i]) for i in self._header if i != 'Content-Type')
-        r = self._session.post(url, headers=headers, data=payload, timeout=timeout, files=files)
+        r = self._session.post(url, headers=headers, data=encode_params(payload), timeout=timeout, files=files, verify=self.ssl_verify)
         if not fix_request:
             return r
         try:
@@ -791,24 +793,34 @@ class Client(object):
 
     def fetchUnread(self):
         """
-        .. todo::
-            Documenting this
+        Get the unread thread list
 
+        :return: List of unread thread ids
+        :rtype: list
         :raises: FBchatException if request failed
         """
         form = {
-            'client': 'mercury_sync',
             'folders[0]': 'inbox',
+            'client': 'mercury',
             'last_action_timestamp': now() - 60*1000
             # 'last_action_timestamp': 0
         }
 
-        j = self._post(self.req_url.THREAD_SYNC, form, fix_request=True, as_json=True)
+        j = self._post(self.req_url.UNREAD_THREADS, form, fix_request=True, as_json=True)
 
-        return {
-            "message_counts": j['payload']['message_counts'],
-            "unseen_threads": j['payload']['unseen_thread_ids']
-        }
+        return j['payload']['unread_thread_fbids'][0]['other_user_fbids']
+
+    def fetchUnseen(self):
+        """
+        Get the unseen (new) thread list
+
+        :return: List of unseen thread ids
+        :rtype: list
+        :raises: FBchatException if request failed
+        """
+        j = self._post(self.req_url.UNSEEN_THREADS, None, fix_request=True, as_json=True)
+
+        return j['payload']['unseen_thread_fbids'][0]['other_user_fbids']
 
     def fetchImageUrl(self, image_id):
         """Fetches the url to the original image from an image attachment ID
@@ -1230,28 +1242,36 @@ class Client(object):
     END SEND METHODS
     """
 
-    def markAsDelivered(self, userID, threadID):
+    def markAsDelivered(self, thread_id, message_id):
         """
-        .. todo::
-            Documenting this
+        Mark a message as delivered
+
+        :param thread_id: User/Group ID to which the message belongs. See :ref:`intro_threads`
+        :param message_id: Message ID to set as delivered. See :ref:`intro_threads`
+        :return: Whether the request was successful
+        :raises: FBchatException if request failed
         """
         data = {
-            "message_ids[0]": threadID,
-            "thread_ids[%s][0]" % userID: threadID
+            "message_ids[0]": message_id,
+            "thread_ids[%s][0]" % thread_id: message_id
         }
 
         r = self._post(self.req_url.DELIVERED, data)
         return r.ok
 
-    def markAsRead(self, userID):
+    def markAsRead(self, thread_id):
         """
-        .. todo::
-            Documenting this
+        Mark a thread as read
+        All messages inside the thread will be marked as read
+
+        :param thread_id: User/Group ID to set as read. See :ref:`intro_threads`
+        :return: Whether the request was successful
+        :raises: FBchatException if request failed
         """
         data = {
+            "ids[%s]" % thread_id: True,
             "watermarkTimestamp": now(),
             "shouldSendReadReceipt": True,
-            "ids[%s]" % userID: True
         }
 
         r = self._post(self.req_url.READ_STATUS, data)
