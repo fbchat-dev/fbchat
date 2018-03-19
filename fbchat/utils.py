@@ -11,8 +11,10 @@ from .models import *
 
 try:
     from urllib.parse import urlencode
+    basestring = (str, bytes)
 except ImportError:
     from urllib import urlencode
+    basestring = basestring
 
 # Python 2's `input` executes the input, whereas `raw_input` just returns the input
 try:
