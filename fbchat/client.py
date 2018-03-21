@@ -1269,9 +1269,9 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {
-            "ids[%s]" % thread_id: True,
+            "ids[%s]" % thread_id: 'true',
             "watermarkTimestamp": now(),
-            "shouldSendReadReceipt": True,
+            "shouldSendReadReceipt": 'true',
         }
 
         r = self._post(self.req_url.READ_STATUS, data)
