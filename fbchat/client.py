@@ -1550,6 +1550,13 @@ class Client(object):
                         buddylist[_id] = payload.get('lat')
                     self.onChatTimestamp(buddylist=buddylist, msg=m)
 
+                # Buddylist Overlay
+                elif mtype == "buddylist_overlay":
+                    for user_id in m.get('overlay', {}):
+                        status = UserStatus(m['overlay'][user_id]['a'])
+                        last_active = m['overlay'][user_id]['la']
+                        self.onBuddylistOverlay(user_id=user_id, status=status, last_active=last_active, msg=m)
+
                 # Unknown message type
                 else:
                     self.onUnknownMesssageType(msg=m)
@@ -1872,6 +1879,17 @@ class Client(object):
         :param msg: A full set of the data recieved
         """
         log.debug('Chat Timestamps received: {}'.format(buddylist))
+
+    def onBuddylistOverlay(self, user_id=None, status=None, last_active=None, msg=None):
+        """
+        Called when the client receives a Buddylist Overlay message
+
+        :param user_id: friend id
+        :param status: friend status
+        :param last_active: last seen timestamp
+        :param msg: A full set of the data recieved
+        """
+        log.debug('Buddylist Overlay received: user_id = {}, status = {} and last_active = {}'.format(user_id, status, last_active))
 
     def onUnknownMesssageType(self, msg=None):
         """
