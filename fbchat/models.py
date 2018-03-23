@@ -494,3 +494,10 @@ class MessageReaction(Enum):
     ANGRY = '😠'
     YES = '👍'
     NO = '👎'
+
+class UserStatus(Enum):
+    """Define possible status for FB user"""
+    OFFLINE = 0
+    IDLE = 1
+    ACTIVE = 2
+    MOBILE = 3
