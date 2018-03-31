@@ -10,8 +10,8 @@ from mimetypes import guess_type
 from .utils import *
 from .models import *
 from .graphql import *
-import time
-
+from datetime import datetime
+import calendar
 
 
 class Client(object):
@@ -735,13 +735,15 @@ class Client(object):
         :param limit: Max. number of messages to retrieve
         :param before: A timestamp, indicating from which point to retrieve messages
         :type limit: int
-        :type before: int
+        :type before: datetime 
         :return: :class:`models.Message` objects
         :rtype: list
         :raises: FBchatException if request failed
         """
-
         thread_id, thread_type = self._getThread(thread_id, None)
+
+        if before is not None:
+            before = int(unix_time_millis(before))
 
         j = self.graphql_request(GraphQL(doc_id='1386147188135407', params={
             'id': thread_id,

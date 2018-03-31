@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 import re
 import json
+from datetime import datetime
 from time import time
 from random import random
 import warnings
@@ -28,6 +29,9 @@ log.setLevel(logging.DEBUG)
 # Creates the console handler
 handler = logging.StreamHandler()
 log.addHandler(handler)
+
+# Unix epoch
+epoch = datetime.utcfromtimestamp(0)
 
 #: Default list of user agents
 USER_AGENTS = [
@@ -233,3 +237,6 @@ def get_emojisize_from_tags(tags):
         except (KeyError, IndexError):
             log.exception('Could not determine emoji size from {} - {}'.format(tags, tmp))
     return None
+
+def unix_time_millis(dt):
+    return (dt - epoch).total_seconds() * 1000.0

@@ -144,8 +144,8 @@ def graphql_to_message(message):
     rtn.author = str(message.get('message_sender').get('id'))
     
     # timestamp is a string of an int in milliseconds, so divide by 1000 and convert it 
-    timestamp_raw = int(message.get('timestamp_precise'))
-    rtn.timestamp = datetime.fromtimestamp(timestamp_raw / 1000)
+    timestamp_raw = float(message.get('timestamp_precise')) / 1000
+    rtn.timestamp = datetime.fromtimestamp(timestamp_raw)
 
     if message.get('unread') is not None:
         rtn.is_read = not message['unread']
