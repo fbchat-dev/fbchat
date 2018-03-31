@@ -766,7 +766,7 @@ class Client(object):
         :param thread_location: models.ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
         :param before: A timestamp (in milliseconds), indicating from which point to retrieve threads
         :type limit: int
-        :type before: int
+        :type before: datetime
         :return: :class:`models.Thread` objects
         :rtype: list
         :raises: FBchatException if request failed
@@ -782,6 +782,9 @@ class Client(object):
             loc_str = thread_location.value
         else:
             raise FBchatUserError('"thread_location" must be a value of ThreadLocation')
+
+        if before is not None:
+            before = unix_time_millis(before) 
 
         j = self.graphql_request(GraphQL(doc_id='1349387578499440', params={
             'limit': limit,
