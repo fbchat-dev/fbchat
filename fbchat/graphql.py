@@ -143,9 +143,7 @@ def graphql_to_message(message):
     rtn.uid = str(message.get('message_id'))
     rtn.author = str(message.get('message_sender').get('id'))
     
-    # timestamp is a string of an int in milliseconds, so divide by 1000 and convert it 
-    timestamp_raw = float(message.get('timestamp_precise')) / 1000
-    rtn.timestamp = datetime.fromtimestamp(timestamp_raw)
+    rtn.timestamp = millis_to_datetime(message.get('timestamp_precise'))
 
     if message.get('unread') is not None:
         rtn.is_read = not message['unread']
@@ -188,7 +186,7 @@ def graphql_to_thread(thread):
         user = next(p for p in participants if p['id'] == thread['thread_key']['other_user_id'])
         last_message_timestamp = None
         if 'last_message' in thread:
-            last_message_timestamp = thread['last_message']['nodes'][0]['timestamp_precise']
+            last_message_timestamp = millis_to_datetime(thread['last_message']['nodes'][0]['timestamp_precise'])
 
         return User(
             user['id'],
@@ -216,7 +214,7 @@ def graphql_to_group(group):
     c_info = get_customization_info(group)
     last_message_timestamp = None
     if 'last_message' in group:
-        last_message_timestamp = group['last_message']['nodes'][0]['timestamp_precise']
+        last_message_timestamp = millis_to_datetime(group['last_message']['nodes'][0]['timestamp_precise'])
     return Group(
         group['thread_key']['thread_fbid'],
         participants=set([node['messaging_actor']['id'] for node in group['all_participants']['nodes']]),

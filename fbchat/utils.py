@@ -240,3 +240,8 @@ def get_emojisize_from_tags(tags):
 
 def unix_time_millis(dt):
     return (dt - epoch).total_seconds() * 1000.0
+
+def millis_to_datetime(t):
+    if isinstance(t, str):
+        t = float(t)
+    return datetime.fromtimestamp(t / 1000.0)
