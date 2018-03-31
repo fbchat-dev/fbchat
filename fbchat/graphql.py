@@ -5,6 +5,7 @@ import json
 import re
 from .models import *
 from .utils import *
+from datetime import datetime
 
 # Shameless copy from https://stackoverflow.com/a/8730674
 FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
@@ -141,7 +142,11 @@ def graphql_to_message(message):
     )
     rtn.uid = str(message.get('message_id'))
     rtn.author = str(message.get('message_sender').get('id'))
-    rtn.timestamp = message.get('timestamp_precise')
+    
+    # timestamp is a string of an int in milliseconds, so divide by 1000 and convert it 
+    timestamp_raw = int(message.get('timestamp_precise'))
+    rtn.timestamp = datetime.fromtimestamp(timestamp_raw / 1000)
+
     if message.get('unread') is not None:
         rtn.is_read = not message['unread']
     rtn.reactions = {str(r['user']['id']):MessageReaction(r['reaction']) for r in message.get('message_reactions')}
