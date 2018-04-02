@@ -10,9 +10,7 @@ from mimetypes import guess_type
 from .utils import *
 from .models import *
 from .graphql import *
-from datetime import datetime
-import calendar
-
+import time
 
 class Client(object):
     """A client for the Facebook Chat (Messenger).
