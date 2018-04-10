@@ -21,8 +21,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-import fbchat
-import tests
 from fbchat import __copyright__, __author__, __version__, __description__
 
 
@@ -39,7 +37,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
-    'sphinx.ext.viewcode'
+    'sphinx.ext.viewcode',
+    'sphinx.ext.napoleon'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -187,5 +186,14 @@ html_sidebars = {
 
 html_show_sphinx = False
 html_show_sourcelink = False
-autoclass_content = 'init'
+autoclass_content = 'class'
+autodoc_member_order = 'bysource'
+autodoc_default_flags = ['members']
 html_short_title = description
+napoleon_numpy_docstring = False
+napoleon_include_init_with_doc = True
+napoleon_use_rtype = False
+rst_prolog = '''
+.. module:: fbchat
+'''
+default_role = 'class'

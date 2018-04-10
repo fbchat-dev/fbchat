@@ -1,5 +1,3 @@
-.. highlight:: python
-.. module:: fbchat
 .. _faq:
 
 FAQ
