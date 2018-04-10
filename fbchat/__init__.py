@@ -1,29 +1,48 @@
 # -*- coding: UTF-8 -*-
 
+"""fbchat: Facebook Chat (Messenger) for Python.
+
+:copyright: (c) 2015 - 2018 by Taehoon Kim.
+:license: BSD, see LICENSE.txt for more details.
+"""
+
 from __future__ import unicode_literals
-from datetime import datetime
-from .client import *
+import logging
 
+from .models import *
 
-"""
-    fbchat
-    ~~~~~~
+from .base import Base
+from .get import Get
+from .listener import Listener
+from .message_management import MessageManagement
+from .search import Search
+from .send import Send
+from .thread_control import ThreadControl
+from .thread_interraction import ThreadInterraction
+from .thread_options import ThreadOptions
 
-    Facebook Chat (Messenger) for Python
+from .client import Client
 
-    :copyright: (c) 2015 by Taehoon Kim.
-    :license: BSD, see LICENSE for more details.
-"""
-
-
-__copyright__ = 'Copyright 2015 - {} by Taehoon Kim'.format(datetime.now().year)
-__version__ = '1.3.6'
+__copyright__ = 'Copyright 2015 - 2018 by Taehoon Kim'
+__version__ = '2.0.0'
 __license__ = 'BSD'
 __author__ = 'Taehoon Kim; Moreels Pieter-Jan; Mads Marquart'
-__email__ = 'carpedm20@gmail.com'
+__email__ = 'carpedm20@gmail.com; madsmtm@gmail.com'
 __source__ = 'https://github.com/carpedm20/fbchat/'
 __description__ = 'Facebook Chat (Messenger) for Python'
 
 __all__ = [
-    'Client',
+    'Message',
+    'Mention',
+
+    'Size',
+    'Colour',
+    'Color',
+
+    'Thread',
+    'User',
+    'Group',
+    'Page',
+
+    'Client'
 ]
