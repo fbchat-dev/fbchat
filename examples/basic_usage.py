@@ -7,10 +7,10 @@ from fbchat import *
 client = Client('<email>', '<password>')
 
 # Display data about you
-print(client, dict(client))
+print(client, vars(client))
 
 # Send a message to yourself
-m = client.send_text(client, 'Hi me!')
+message = client.send_text(client, 'Hi me!')
 
 # Display data about the sent message
-print(m, dict(m))
+print(message, vars(message))

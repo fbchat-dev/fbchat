@@ -62,3 +62,6 @@ class Base(User):
         Args:
             session (dict): A dictionay containing the session
         """
+
+    def update(self):
+        """Updates the cache"""

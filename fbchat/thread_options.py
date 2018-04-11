@@ -22,8 +22,8 @@ class ThreadOptions(Base):
             thread (`Thread`): Thread to ignore
         """
 
-    def un_ignore(self, thread):
-        """Un-ignore a thread
+    def unignore(self, thread):
+        """Unignore a thread
 
         Args:
             thread (`Thread`): Thread to stop ignoring

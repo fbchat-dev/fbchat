@@ -21,7 +21,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-from fbchat import __copyright__, __author__, __version__, __description__
+from fbchat import __copyright__, __author__, __version__, __description__ # noqa
 
 
 # -- General configuration ------------------------------------------------

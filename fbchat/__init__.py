@@ -1,9 +1,12 @@
 # -*- coding: UTF-8 -*-
 
-"""fbchat: Facebook Chat (Messenger) for Python.
+"""Facebook Chat (Messenger) for Python
 
-:copyright: (c) 2015 - 2018 by Taehoon Kim.
-:license: BSD, see LICENSE.txt for more details.
+Copyright:
+    (c) 2015 - 2018 by Taehoon Kim
+
+License:
+    BSD, see LICENSE.txt for more details
 """
 
 from __future__ import unicode_literals

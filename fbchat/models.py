@@ -11,14 +11,21 @@ class Enum(enum.Enum):
         return '{}.{}'.format(type(self).__name__, self.name)
 
 
+class FacebookError(Exception):
+    """Thrown by fbchat when Facebook returns an error"""
+
+    #: The error code that Facebook returned
+    fb_error_code = None
+    #: A localized error message that Facebook returned
+    fb_error_message = None
+
+
 class Thread(object):
-    """Represents a Facebook thread"""
+    """Represents a Facebook chat-thread"""
 
     #: The unique identifier of the thread
     id = None
-    #: The thread's Facebook url
-    url = None
-    #: A url to the thread's picture
+    #: A url to the thread's thumbnail/profile picture
     image = None
     #: The name of the thread
     name = None
@@ -39,7 +46,7 @@ class Thread(object):
 
 
 class User(Thread):
-    """Represents a Facebook user"""
+    """Represents a user and the chat-thread the client has with the user"""
 
     #: The user's first name
     first_name = None
@@ -54,10 +61,12 @@ class User(Thread):
 
 
 class Group(Thread):
-    """Represents a Facebook group-thread"""
+    """Represents a group-thread"""
 
     #: Unique list of `User`\s, denoting the group's admins
     admins = None
+    #: The group's custom title
+    title = None
 
 
 class Page(Thread):
@@ -74,7 +83,7 @@ class Page(Thread):
 
 
 class Message(object):
-    """Represents a Facebook message"""
+    """Represents a message"""
 
     #: The unique identifier of the message
     id = None
@@ -114,7 +123,7 @@ class Mention(object):
 
 
 class Attachment(object):
-    """"""
+    """Represents a Facebook attachment"""
 
     #: The attachment ID
     id = None
@@ -123,7 +132,7 @@ class Attachment(object):
 
 
 class Sticker(Attachment):
-    """"""
+    """Represents a sticker"""
 
     #: The sticker-pack's ID
     pack = None
@@ -136,7 +145,7 @@ class Sticker(Attachment):
 
 
 class AnimatedSticker(Sticker):
-    """"""
+    """Represents an animated sticker"""
 
     # If the sticker is animated, the following should be present
     #: URL to a medium spritemap
@@ -152,7 +161,7 @@ class AnimatedSticker(Sticker):
 
 
 class File(Attachment):
-    """"""
+    """Represents a file-attachment"""
 
     #: Url where you can download the file
     url = None
@@ -165,7 +174,7 @@ class File(Attachment):
 
 
 class Audio(File):
-    """"""
+    """Represents an audio-attachment"""
 
     #: Name of the file
     filename = None
@@ -178,7 +187,7 @@ class Audio(File):
 
 
 class Image(File):
-    """"""
+    """Represents an image-attachment"""
 
     #: Width of original image
     width = None
@@ -195,14 +204,14 @@ class Image(File):
 
 
 class AnimatedImage(Image):
-    """"""
+    """Represents an animated image-attachment"""
 
     #: URL to an animated preview of the image
     animated_preview = None
 
 
 class Video(File):
-    """"""
+    """Represents a video-attachment"""
 
     #: Width of original video
     width = None
