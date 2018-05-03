@@ -6,7 +6,7 @@ Copyright:
     (c) 2015 - 2018 by Taehoon Kim
 
 License:
-    BSD, see LICENSE.txt for more details
+    BSD, see LICENSE for more details
 """
 
 from __future__ import unicode_literals
@@ -14,15 +14,15 @@ import logging
 
 from .models import *
 
-from .base import Base
-from .get import Get
-from .listener import Listener
-from .message_management import MessageManagement
-from .search import Search
-from .send import Send
-from .thread_control import ThreadControl
-from .thread_interraction import ThreadInterraction
-from .thread_options import ThreadOptions
+from .base import Base # noqa
+from .get import Get # noqa
+from .listener import Listener # noqa
+from .message_management import MessageManagement # noqa
+from .search import Search # noqa
+from .send import Send # noqa
+from .thread_control import ThreadControl # noqa
+from .thread_interraction import ThreadInterraction # noqa
+from .thread_options import ThreadOptions # noqa
 
 from .client import Client
 
@@ -50,12 +50,4 @@ __all__ = [
     'Client'
 ]
 
-
-try:  # Python 2.7+
-    from logging import NullHandler
-except ImportError:
-    class NullHandler(logging.Handler):
-        def emit(self, record):
-            pass
-
-logging.getLogger(__name__).addHandler(NullHandler())
+logging.getLogger(__name__).addHandler(logging.NullHandler())
