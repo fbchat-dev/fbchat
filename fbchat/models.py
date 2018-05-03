@@ -12,221 +12,147 @@ class Enum(enum.Enum):
 
 
 class FacebookError(Exception):
-    """Thrown by fbchat when Facebook returns an error"""
+    """Thrown by fbchat when Facebook returns an error
 
-    #: The error code that Facebook returned
-    fb_error_code = None
-    #: A localized error message that Facebook returned
-    fb_error_message = None
+    Attributes:
+        fb_error_code (int): The error code that Facebook returned
+        fb_error_message: A localized error message that Facebook returned
+    """
 
 
 class Thread(object):
-    """Represents a Facebook chat-thread"""
+    """Represents a Facebook chat-thread
 
-    #: The unique identifier of the thread
-    id = None
-    #: A url to the thread's thumbnail/profile picture
-    image = None
-    #: The name of the thread
-    name = None
-    #: Timestamp of last message
-    last_message_timestamp = None
-    #: Number of messages in the thread
-    message_count = None
-    #: A dict, containing `User`\s and `Page`\s, mapped to their nicknames
-    nicknames = None
-    #: Unique list of `User`\s and `Page`\s, denoting the thread's participants
-    participants = None
-    #: The thread `Colour`
-    colour = None
-    #: Alias of :attr:`colour`
-    color = None
-    #: The thread's default emoji
-    emoji = None
+    Attributes:
+        id (int): The unique identifier of the thread
+        image: A url to the thread's thumbnail/profile picture
+        name: The name of the thread
+        last_message_timestamp: Timestamp of last message
+        message_count: Number of messages in the thread
+        nicknames: A dict, containing `User`\s and `Page`\s, mapped to their
+            nicknames
+        participants: Unique list of `User`\s and `Page`\s, denoting the
+            thread's participants
+        colour (`Colour`): The thread colour
+        color: Alias of :attr:`colour`
+        emoji: The thread's default emoji
+    """
 
 
 class User(Thread):
-    """Represents a user and the chat-thread the client has with the user"""
+    """Represents a user and the chat-thread the client has with the user
 
-    #: The user's first name
-    first_name = None
-    #: The user's last name
-    last_name = None
-    #: Whether the user and the client are friends
-    is_friend = None
-    #: The user's gender
-    gender = None
-    #: From 0 to 1. How close the client is to the user
-    affinity = None
+    Attributes:
+        first_name: The user's first name
+        last_name: The user's last name
+        is_friend (bool): Whether the user and the client are friends
+        gender: The user's gender
+        affinity (float): From 0 to 1. How close the client is to the user
+    """
 
 
 class Group(Thread):
-    """Represents a group-thread"""
+    """Represents a group-thread
 
-    #: Unique list of `User`\s, denoting the group's admins
-    admins = None
-    #: The group's custom title
-    title = None
+    Attributes:
+        admins (list): Unique list of `User`\s, denoting the group's admins
+        title: The group's custom title
+    """
 
 
 class Page(Thread):
-    """Represents a Facebook page"""
+    """Represents a Facebook page
 
-    #: The name of the page's location city
-    city = None
-    #: Amount of likes that the page has
-    likes = None
-    #: Some extra information about the page
-    sub_title = None
-    #: The page's category
-    category = None
+    Attributes:
+        city: The name of the page's location city
+        likes: Amount of likes that the page has
+        sub_title: Some extra information about the page
+        category: The page's category
+    """
 
 
 class Message(object):
-    """Represents a message"""
+    """Represents a message
 
-    #: The unique identifier of the message
-    id = None
-    #: The text-contents
-    text = None
-    #: A list of `Mention`\s
-    mentions = None
-    #: `Size` of a sent emoji
-    size = None
-    #: `User` or `Page`, denoting the sender
-    author = None
-    #: Float unix timestamp of when the message was sent
-    timestamp = None
-    #: Whether the message is read
-    is_read = None
-    #: A dict with `User`\s, mapped to their reaction
-    reactions = None
-    #: A `Sticker`
-    sticker = None
-    #: A list of `File`\s
-    files = None
-    #: A list of `Image`s. Subset of :attr:`files`
-    images = None
-    #: A list of `Video`s. Subset of :attr:`files`
-    videos = None
+    Attributes:
+        id (int): The unique identifier of the message
+        text: The text-contents
+        mentions (list of `Mention`\s):
+        size (`Size`): The size of a sent emoji
+        author (`User` or `Page`): The person who sent the message
+        timestamp: Unix timestamp of when the message was sent
+        is_read: Whether the message is read
+        reactions (dict): A dict with `User`\s, mapped to their reaction
+        sticker (`Sticker` or ``None``):
+        files (list of `File`\s):
+        images (list of `Image`\s): Subset of :attr:`files`
+        videos (list of `Video`\s): Subset of :attr:`files`
+    """
 
 
 class Mention(object):
-    """Represents a @mention"""
+    """Represents a @mention
 
-    #: `Thread` that the mention is pointing at
-    thread = None
-    #: The character where the mention starts
-    offset = None
-    #: The length of the mention
-    length = None
+    Attributes:
+        thread (`Thread`): Person that the mention is pointing at
+        offset (int): The character in the message where the mention starts
+        length (int): The length of the mention
+    """
 
 
 class Attachment(object):
-    """Represents a Facebook attachment"""
+    """Represents a Facebook attachment
 
-    #: The attachment ID
-    id = None
-    #: URL to the attachment
-    url = None
+    Attributes:
+        id (int): The attachment ID
+        url: URL to download the attachment
+    """
 
 
 class Sticker(Attachment):
-    """Represents a sticker"""
+    """Represents a sticker
 
-    #: The sticker-pack's ID
-    pack = None
-    #: Width of the sticker
-    width = None
-    #: Height of the sticker
-    height = None
-    #: The sticker's label/name
-    label = None
+    Attributes:
+        pack (`StickerPack`): The sticker's pack
+        width (int): Width of the sticker
+        height (int): Height of the sticker
+        name: The sticker's label/name
+    """
 
 
 class AnimatedSticker(Sticker):
-    """Represents an animated sticker"""
+    """Todo: This"""
 
-    # If the sticker is animated, the following should be present
-    #: URL to a medium spritemap
-    medium_sprite = None
-    #: URL to a large spritemap
-    large_sprite = None
-    #: The amount of frames present in the spritemap pr. row
-    frames_per_row = None
-    #: The amount of frames present in the spritemap pr. coloumn
-    frames_per_col = None
-    #: The frame rate the spritemap is intended to be played in
-    frame_rate = None
+
+class StickerPack(object):
+    """Todo: This"""
 
 
 class File(Attachment):
-    """Represents a file-attachment"""
+    """Represents a file-attachment
 
-    #: Url where you can download the file
-    url = None
-    #: Size of the file in bytes
-    size = None
-    #: Name of the file
-    name = None
-    #: Whether Facebook determines that this file may be harmful
-    is_malicious = None
+    Attributes:
+        size (int): Size of the file in bytes
+        name: Name of the file
+        is_malicious (bool): True if Facebook determines that this file may be
+            harmful
+    """
 
 
 class Audio(File):
-    """Represents an audio-attachment"""
-
-    #: Name of the file
-    filename = None
-    #: Url of the audio file
-    url = None
-    #: Duration of the audioclip in milliseconds
-    duration = None
-    #: Audio type
-    audio_type = None
+    """Todo: This"""
 
 
 class Image(File):
-    """Represents an image-attachment"""
-
-    #: Width of original image
-    width = None
-    #: Height of original image
-    height = None
-    #: URL to a thumbnail of the image
-    thumbnail = None
-    #: URL to a medium preview of the image
-    preview = None
-    #: URL to a large preview of the image
-    large_preview = None
-    #: The extension of the original image (eg. 'png')
-    original_extension = None
+    """Todo: This"""
 
 
 class AnimatedImage(Image):
-    """Represents an animated image-attachment"""
-
-    #: URL to an animated preview of the image
-    animated_preview = None
+    """Todo: This"""
 
 
 class Video(File):
-    """Represents a video-attachment"""
-
-    #: Width of original video
-    width = None
-    #: Height of original video
-    height = None
-    #: Length of video in milliseconds
-    duration = None
-    #: URL to very compressed preview video
-    preview = None
-    #: URL to a small preview image of the video
-    small_image = None
-    #: URL to a medium preview image of the video
-    medium_image = None
-    #: URL to a large preview image of the video
-    large_image = None
+    """Todo: This"""
 
 
 class Size(Enum):
