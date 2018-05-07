@@ -190,7 +190,7 @@ def graphql_to_thread(thread):
             url=user.get('url'),
             name=user.get('name'),
             first_name=user.get('short_name'),
-            last_name=user.get('name').split(user.get('short_name'),1)[1].strip(),
+            last_name=user.get('name').split(user.get('short_name'),1).pop().strip(),
             is_friend=user.get('is_viewer_friend'),
             gender=GENDERS.get(user.get('gender')),
             affinity=user.get('affinity'),
