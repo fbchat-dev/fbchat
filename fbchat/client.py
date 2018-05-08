@@ -138,8 +138,9 @@ class Client(object):
                 return self._graphql(payload, error_retries=error_retries-1)
             raise e
 
-    def _cleanGet(self, url, query=None, timeout=30):
-        return self._session.get(url, headers=self._header, params=query, timeout=timeout, verify=self.ssl_verify)
+    def _cleanGet(self, url, query=None, timeout=30, allow_redirects=True):
+        return self._session.get(url, headers=self._header, params=query, timeout=timeout, verify=self.ssl_verify,
+                                 allow_redirects=allow_redirects)
 
     def _cleanPost(self, url, query=None, timeout=30):
         self.req_counter += 1
@@ -335,8 +336,8 @@ class Client(object):
         :rtype: bool
         """
         # Send a request to the login url, to see if we're directed to the home page
-        r = self._cleanGet(self.req_url.LOGIN)
-        return 'home' in r.url
+        r = self._cleanGet(self.req_url.LOGIN, allow_redirects=False)
+        return 'home' in r.headers['Location']
 
     def getSession(self):
         """Retrieves session cookies
