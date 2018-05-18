@@ -217,7 +217,7 @@ class Client(object):
         else:
             self.fb_dtsg = re.search(r'name="fb_dtsg" value="(.*?)"', r.text).group(1)
 
-        
+
         fb_h_element = soup.find("input", {'name':'h'})
         if fb_h_element:
             self.fb_h = fb_h_element['value']
@@ -337,7 +337,7 @@ class Client(object):
         """
         # Send a request to the login url, to see if we're directed to the home page
         r = self._cleanGet(self.req_url.LOGIN, allow_redirects=False)
-        return 'home' in r.headers['Location']
+        return 'Location' in r.headers and 'home' in r.headers['Location']
 
     def getSession(self):
         """Retrieves session cookies
