@@ -480,6 +480,7 @@ class ThreadColor(Enum):
     LIGHT_CORAL = '#e68585'
     MEDIUM_SLATE_BLUE = '#7646ff'
     DEEP_SKY_BLUE = '#20cef5'
+    DARK_BLUE = '#00c517'
     FERN = '#67b868'
     CAMEO = '#d4a88c'
     BRILLIANT_ROSE = '#ff5ca1'
