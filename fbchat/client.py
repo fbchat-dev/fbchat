@@ -488,7 +488,7 @@ class Client(object):
             return []
         while True:
             lastThreadTimestamp = Threads[-1].last_message_timestamp
-            candidates = client.fetchThreadList(before=lastThreadTimestamp, thread_location=thread_location)  # return at max 20 threads before lastThreadTimestamp (included)
+            candidates = self.fetchThreadList(before=lastThreadTimestamp, thread_location=thread_location)  # return at max 20 threads before lastThreadTimestamp (included)
             if len(candidates) > 1:
                 Threads += candidates[1:]
             else:
