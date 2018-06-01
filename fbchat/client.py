@@ -483,7 +483,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         Threads = []
-        Threads += self.fetchThreadList(thread_location)
+        Threads += self.fetchThreadList(thread_location=thread_location)
         if len(Threads) == 0:
             return []
         while True:
