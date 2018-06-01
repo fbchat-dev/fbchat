@@ -9,6 +9,13 @@ import warnings
 import logging
 from .models import *
 
+try:
+    from urllib.parse import urlencode
+    basestring = (str, bytes)
+except ImportError:
+    from urllib import urlencode
+    basestring = basestring
+
 # Python 2's `input` executes the input, whereas `raw_input` just returns the input
 try:
     input = raw_input
@@ -87,7 +94,8 @@ class ReqUrl(object):
     SEARCH = "https://www.facebook.com/ajax/typeahead/search.php"
     LOGIN = "https://m.facebook.com/login.php?login_attempt=1"
     SEND = "https://www.facebook.com/messaging/send/"
-    THREAD_SYNC = "https://www.facebook.com/ajax/mercury/thread_sync.php"
+    UNREAD_THREADS = "https://www.facebook.com/ajax/mercury/unread_threads.php"
+    UNSEEN_THREADS = "https://www.facebook.com/mercury/unseen_thread_ids/"
     THREADS = "https://www.facebook.com/ajax/mercury/threadlist_info.php"
     MESSAGES = "https://www.facebook.com/ajax/mercury/thread_info.php"
     READ_STATUS = "https://www.facebook.com/ajax/mercury/change_read_status.php"
@@ -113,6 +121,7 @@ class ReqUrl(object):
     GRAPHQL = "https://www.facebook.com/api/graphqlbatch/"
     ATTACHMENT_PHOTO = "https://www.facebook.com/mercury/attachments/photo/"
     EVENT_REMINDER = "https://www.facebook.com/ajax/eventreminder/create"
+    MODERN_SETTINGS_MENU = "https://www.facebook.com/bluebar/modern_settings_menu/"
 
     pull_channel = 0
 

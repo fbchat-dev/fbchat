@@ -136,7 +136,7 @@ class TestFbchat(unittest.TestCase):
             self.assertIsNotNone(self.client.send(Message(sticker=Sticker(test_sticker_id))))
 
     def test_sendImages(self):
-        image_url = 'https://cdn4.iconfinder.com/data/icons/ionicons/512/icon-image-128.png'
+        image_url = 'https://github.com/carpedm20/fbchat/raw/master/tests/image.png'
         image_local_url = path.join(path.dirname(__file__), 'tests/image.png')
         for thread in self.threads:
             self.client.setDefaultThread(thread_id=thread['id'], thread_type=thread['type'])
@@ -145,7 +145,8 @@ class TestFbchat(unittest.TestCase):
             self.assertTrue(self.client.sendLocalImage(image_local_url, Message(text='test_send_image_local_to__@you★', mentions=mentions)))
 
     def test_fetchThreadList(self):
-        self.client.fetchThreadList(offset=0, limit=20)
+        threads = client.fetchThreadList(limit=2)
+        self.assertEqual(len(threads), 2)
 
     def test_fetchThreadMessages(self):
         for thread in self.threads:

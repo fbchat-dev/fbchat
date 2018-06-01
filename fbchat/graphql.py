@@ -109,6 +109,13 @@ def graphql_to_attachment(a):
             large_image=a.get('large_image'),
             uid=a.get('legacy_attachment_id')
         )
+    elif _type == 'MessageAudio':
+        return AudioAttachment(
+            filename=a.get('filename'),
+            url=a.get('playable_url'),
+            duration=a.get('playable_duration_in_ms'),
+            audio_type=a.get('audio_type')
+        )
     elif _type == 'MessageFile':
         return FileAttachment(
             url=a.get('url'),
@@ -165,10 +172,46 @@ def graphql_to_user(user):
         message_count=user.get('messages_count')
     )
 
+def graphql_to_thread(thread):
+    if thread['thread_type'] == 'GROUP':
+        return graphql_to_group(thread)
+    elif thread['thread_type'] == 'ONE_TO_ONE':
+        if thread.get('big_image_src') is None:
+            thread['big_image_src'] = {}
+        c_info = get_customization_info(thread)
+        participants = [node['messaging_actor'] for node in thread['all_participants']['nodes']]
+        user = next(p for p in participants if p['id'] == thread['thread_key']['other_user_id'])
+        last_message_timestamp = None
+        if 'last_message' in thread:
+            last_message_timestamp = thread['last_message']['nodes'][0]['timestamp_precise']
+
+        return User(
+            user['id'],
+            url=user.get('url'),
+            name=user.get('name'),
+            first_name=user.get('short_name'),
+            last_name=user.get('name').split(user.get('short_name'),1).pop().strip(),
+            is_friend=user.get('is_viewer_friend'),
+            gender=GENDERS.get(user.get('gender')),
+            affinity=user.get('affinity'),
+            nickname=c_info.get('nickname'),
+            color=c_info.get('color'),
+            emoji=c_info.get('emoji'),
+            own_nickname=c_info.get('own_nickname'),
+            photo=user['big_image_src'].get('uri'),
+            message_count=thread.get('messages_count'),
+            last_message_timestamp=last_message_timestamp
+        )
+    else:
+        raise FBchatException('Unknown thread type: {}, with data: {}'.format(thread.get('thread_type'), thread))
+
 def graphql_to_group(group):
     if group.get('image') is None:
         group['image'] = {}
     c_info = get_customization_info(group)
+    last_message_timestamp = None
+    if 'last_message' in group:
+        last_message_timestamp = group['last_message']['nodes'][0]['timestamp_precise']
     return Group(
         group['thread_key']['thread_fbid'],
         participants=set([node['messaging_actor']['id'] for node in group['all_participants']['nodes']]),
@@ -177,7 +220,8 @@ def graphql_to_group(group):
         emoji=c_info.get('emoji'),
         photo=group['image'].get('uri'),
         name=group.get('name'),
-        message_count=group.get('messages_count')
+        message_count=group.get('messages_count'),
+        last_message_timestamp=last_message_timestamp
     )
 
 def graphql_to_room(room):

@@ -24,7 +24,11 @@ develop-eggs
 # Sphinx documentation
 docs/_build/
 
-# Data for tests
+# Scripts and data for tests
+my_tests.py
 my_test_data.json
 my_data.json
 tests.data
+
+# Virtual environment
+venv/
