@@ -494,7 +494,29 @@ class Client(object):
             else:
                 break
         return Threads  # from newest to oldest
-
+    
+    def fetchAllUsersFromThreads(client, threads):
+        """
+        Get all users involved in threads.
+        
+        :param threads: models.Thread: List of threads to check for users
+        :return: :class:`models.User` objects
+        :rtype: list
+        :raises: FBchatException if request failed
+        """
+        Users = []
+        for thread in threads:
+            if thread.type == ThreadType.USER:
+                if thread.uid not in [user.uid for user in Users]:
+                    Users.append(thread)
+            elif thread.type == ThreadType.GROUP:
+                for userID in thread.participants:
+                    if userID not in [user.uid for user in Users]:
+                        Users.append(self.fetchUserInfo(userID)[userID])
+            else:
+                pass
+        return Users
+    
     def fetchAllUsers(self):
         """
         Gets all users the client is currently chatting with
