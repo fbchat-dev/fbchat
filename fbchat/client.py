@@ -472,6 +472,28 @@ class Client(object):
     """
     FETCH METHODS
     """
+    
+    def fetchThreads(self, thread_location):
+        """
+        Get all threads in thread_location.
+
+        :param thread_location: models.ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
+        :return: :class:`models.Thread` objects
+        :rtype: list
+        :raises: FBchatException if request failed
+        """
+        Threads = []
+        Threads += self.fetchThreadList(thread_location)
+        if len(Threads) == 0:
+            return []
+        while True:
+            lastThreadTimestamp = Threads[-1].last_message_timestamp
+            candidates = client.fetchThreadList(before=lastThreadTimestamp, thread_location=thread_location)  # return at max 20 threads before lastThreadTimestamp (included)
+            if len(candidates) > 1:
+                Threads += candidates[1:]
+            else:
+                break
+        return Threads  # from newest to oldest
 
     def fetchAllUsers(self):
         """
