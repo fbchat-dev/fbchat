@@ -469,7 +469,7 @@ class EmojiSize(Enum):
 
 class ThreadColor(Enum):
     """Used to specify a thread colors"""
-    MESSENGER_BLUE = ''
+    MESSENGER_BLUE = '#0084ff'
     VIKING = '#44bec7'
     GOLDEN_POPPY = '#ffc300'
     RADICAL_RED = '#fa3c4c'

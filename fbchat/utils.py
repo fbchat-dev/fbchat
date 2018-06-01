@@ -121,6 +121,7 @@ class ReqUrl(object):
     GRAPHQL = "https://www.facebook.com/api/graphqlbatch/"
     ATTACHMENT_PHOTO = "https://www.facebook.com/mercury/attachments/photo/"
     EVENT_REMINDER = "https://www.facebook.com/ajax/eventreminder/create"
+    MODERN_SETTINGS_MENU = "https://www.facebook.com/bluebar/modern_settings_menu/"
 
     pull_channel = 0
 

@@ -138,8 +138,9 @@ class Client(object):
                 return self._graphql(payload, error_retries=error_retries-1)
             raise e
 
-    def _cleanGet(self, url, query=None, timeout=30):
-        return self._session.get(url, headers=self._header, params=query, timeout=timeout, verify=self.ssl_verify)
+    def _cleanGet(self, url, query=None, timeout=30, allow_redirects=True):
+        return self._session.get(url, headers=self._header, params=query, timeout=timeout, verify=self.ssl_verify,
+                                 allow_redirects=allow_redirects)
 
     def _cleanPost(self, url, query=None, timeout=30):
         self.req_counter += 1
@@ -209,8 +210,18 @@ class Client(object):
 
         r = self._get(self.req_url.BASE)
         soup = bs(r.text, "lxml")
-        self.fb_dtsg = soup.find("input", {'name':'fb_dtsg'})['value']
-        self.fb_h = soup.find("input", {'name':'h'})['value']
+
+        fb_dtsg_element = soup.find("input", {'name': 'fb_dtsg'})
+        if fb_dtsg_element:
+            self.fb_dtsg = fb_dtsg_element['value']
+        else:
+            self.fb_dtsg = re.search(r'name="fb_dtsg" value="(.*?)"', r.text).group(1)
+
+
+        fb_h_element = soup.find("input", {'name':'h'})
+        if fb_h_element:
+            self.fb_h = fb_h_element['value']
+
         for i in self.fb_dtsg:
             self.ttstamp += str(ord(i))
         self.ttstamp += '2'
@@ -325,8 +336,8 @@ class Client(object):
         :rtype: bool
         """
         # Send a request to the login url, to see if we're directed to the home page
-        r = self._cleanGet(self.req_url.LOGIN)
-        return 'home' in r.url
+        r = self._cleanGet(self.req_url.LOGIN, allow_redirects=False)
+        return 'Location' in r.headers and 'home' in r.headers['Location']
 
     def getSession(self):
         """Retrieves session cookies
@@ -400,6 +411,11 @@ class Client(object):
         :return: True if the action was successful
         :rtype: bool
         """
+
+        if not hasattr(self, 'fb_h'):
+            h_r = self._post(self.req_url.MODERN_SETTINGS_MENU, {'pmid': '4'})
+            self.fb_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
+
         data = {
             'ref': "mb",
             'h': self.fb_h
