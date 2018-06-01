@@ -1529,9 +1529,9 @@ class Client(object):
                     self.onInbox(unseen=m["unseen"], unread=m["unread"], recent_unread=m["recent_unread"], msg=m)
 
                 # Typing
-                elif mtype == "typ":
+                elif mtype == "ttyp":
                     author_id = str(m.get("from"))
-                    thread_id = str(m.get("to"))
+                    thread_id = str(m.get("thread_fbid"))
                     if thread_id == self.uid:
                         thread_type = ThreadType.USER
                     else:
