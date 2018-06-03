@@ -35,7 +35,7 @@ def test_remove_from_and_add_to_group(client1, client2, group, catch_event):
         )
 
 
-@pytest.mark.skipif(not environ.get("EXPENSIVE_TESTS"), reason="Often rate limited")
+@pytest.mark.xfail(raises=FBchatFacebookError, reason="Apparently changeThreadTitle is broken")
 def test_change_title(client1, catch_event, group):
     title = random_hex()
     with catch_event("onTitleChange") as x:
@@ -84,8 +84,10 @@ def test_change_color(client, catch_event, compare, color):
     assert compare(x, new_color=color)
 
 
-@pytest.mark.xfail(raises=FBchatFacebookError)
-def test_change_colour_invalid(client):
+@pytest.mark.xfail(
+    raises=FBchatFacebookError, strict=False, reason="Should fail, but doesn't"
+)
+def test_change_color_invalid(client):
     class InvalidColor:
         value = "#0077ff"
 
