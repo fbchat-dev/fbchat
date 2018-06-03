@@ -16,9 +16,10 @@ env:
     - secure: "N3D/JixDBtue+aqF65eWZiop0MdK7ruQskhH6rRa08Ih7BUGI4D3LNmsVr1dUqxyjFwFgQAyd5NeKeU2dAaIpxE8EUpz54EpopSfsIyTOr1o4mt1J1qzNQEuDq0Tq2JIENI/n7HM4nemEmUI98YgiMvkd7hP7CMCn62sguJmJ0Zu4JJKS9fXpLYcTa07Z9zwv/OSCDC7x4IaKcQ8GKmV98IWcSCcfUqn7x55oCzn9xcJ5QCVal7vuo9jE6nLOCWr9hKLZsu0QtY7KJshURNAMFxuDFaVNXqcq7cyApIUgjWONT7+eg8H//qo0DVBter7gR0l7SDZX+DjrFzk+NLwxgOcfDlpr3TMrBFUYLFYDbVZMR8NqdlotKzZ8YgchqRL66XxpJ1x24Q+wbxE7vUTF9emqfo6JM1SDQREbdANYgB+tXSLVrJCKxZaxxdVp0tOJD6ukUHlpDoSR1owdKFUJkEYA9OqzlT3NZKDzlEXZ66RRE8eBfdYuJUtsAJWiGd62HRSekdLhRAkXs+KOs7IC9uAEiL6SjGVltISTxaABB9odhXeggP4+LIzZccMfokgafDSjbQb4FmIGrQV1C+AcG5l10crCTH340oXeGVt+uzULtLfgIpS2em92y1vWqqO/NGN0a8aBJDd3hUx3mY+zGhHj7iLYWgAzOw2fpLVtfk=" # client2_password
     - group_id=1463789480385605
 
-script:
+before_script:
   - if [[ "$TRAVIS_PYTHON_VERSION" = "2.7" ]]; then export PYTEST_ADDOPTS='-m ""'; fi; # expensive tests (otherwise disabled in pytest.ini)
   - if [[ "$TRAVIS_PULL_REQUEST" != false ]]; then export PYTEST_ADDOPTS='-m offline'; fi; # offline tests only
-  - python -m pytest || python -m pytest --lf; # Run failed tests twice
+
+script: python -m pytest || python -m pytest --lf; # Run failed tests twice
 
 cache: pip
