@@ -54,7 +54,7 @@ def test_send_emoji(client, catch_event, compare, emoji, emoji_size):
     )
 
 
-@pytest.mark.xfail(error=FBchatFacebookError)
+@pytest.mark.xfail(raises=FBchatFacebookError)
 @pytest.mark.parametrize("message", [Message("a" * 20001)])
 def test_send_invalid(client, message):
     client.send(message)
@@ -101,6 +101,8 @@ def test_send_sticker(client, catch_event, compare, sticker_id):
     ],
 )
 def test_send_images(client, catch_event, compare, method_name, url):
+    import ssl
+    print(ssl.OPENSSL_VERSION)
     text = "An image sent with {}".format(method_name)
     with catch_event("onMessage") as x:
         mid = getattr(client, method_name)(url, Message(text))

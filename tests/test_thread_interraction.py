@@ -64,7 +64,7 @@ def test_change_emoji(client, catch_event, compare, emoji):
     assert compare(x, new_emoji=emoji)
 
 
-@pytest.mark.xfail(FBchatFacebookError)
+@pytest.mark.xfail(raises=FBchatFacebookError)
 @pytest.mark.parametrize("emoji", ["🙃", "not an emoji"])
 def test_change_emoji_invalid(client, emoji):
     client.changeThreadEmoji(emoji)
@@ -78,13 +78,13 @@ def test_change_emoji_invalid(client, emoji):
 )
 def test_change_color(client, catch_event, compare, color):
     if color == ThreadColor.MESSENGER_BLUE:
-        pytest.mark.xfail("Apparently changing ThreadColor.MESSENGER_BLUE is broken")
+        pytest.xfail(reason="Apparently changing ThreadColor.MESSENGER_BLUE is broken")
     with catch_event("onColorChange") as x:
         client.changeThreadColor(color)
     assert compare(x, new_color=color)
 
 
-@pytest.mark.xfail(FBchatFacebookError)
+@pytest.mark.xfail(raises=FBchatFacebookError)
 def test_change_colour_invalid(client):
     class InvalidColor:
         value = "#0077ff"
