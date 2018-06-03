@@ -11,50 +11,89 @@ from fbchat.models import (
     TypingStatus,
     ThreadColor,
 )
-from utils import set_default_client, threads
+from utils import random_hex, subset
+from os import environ
 
 
-@pytest.mark.parametrize("thread", threads)
-def test_remove_from_and_add_to_group(client1, client2, thread):
-    if thread["type"] != ThreadType.GROUP:
-        return
+def test_remove_from_and_add_to_group(client1, client2, group, catch_event):
     # Test both methods, while ensuring that the user gets added to the group
     try:
-        client1.removeUserFromGroup(client2.uid, thread["id"])
+        with catch_event("onPersonRemoved") as x:
+            client1.removeUserFromGroup(client2.uid, group["id"])
+        assert subset(
+            x.res, removed_id=client2.uid, author_id=client1.uid, thread_id=group["id"]
+        )
     finally:
-        client1.addUsersToGroup(client2.uid, thread["id"])
+        with catch_event("onPeopleAdded") as x:
+            mid = client1.addUsersToGroup(client2.uid, group["id"])
+        assert subset(
+            x.res,
+            mid=mid,
+            added_ids=[client2.uid],
+            author_id=client1.uid,
+            thread_id=group["id"],
+        )
 
 
-@pytest.mark.skip("Blocked because of something")
-@pytest.mark.parametrize("thread", threads)
-def test_change_thread_title(client, thread):
-    with set_default_client(client, thread):
-        client.changeThreadTitle("A Title")
+@pytest.mark.skipif(not environ.get("EXPENSIVE_TESTS"), reason="Often rate limited")
+def test_change_title(client1, catch_event, group):
+    title = random_hex()
+    with catch_event("onTitleChange") as x:
+        mid = client1.changeThreadTitle(title, group["id"])
+    assert subset(
+        x.res,
+        mid=mid,
+        author_id=client1.uid,
+        new_title=title,
+        thread_id=group["id"],
+        thread_type=ThreadType.GROUP,
+    )
 
 
-@pytest.mark.parametrize("thread", threads)
-def test_change_nickname(client1, client2, thread):
-    with set_default_client(client1, thread):
-        client1.changeNickname("test_changeNicknameSelf★", client1.uid)
-        client1.changeNickname("test_changeNicknameOther★", client2.uid)
+def test_change_nickname(client, client_all, catch_event, compare):
+    nickname = random_hex()
+    with catch_event("onNicknameChange") as x:
+        client.changeNickname(nickname, client_all.uid)
+    assert compare(x, changed_for=client_all.uid, new_nickname=nickname)
 
 
-@pytest.mark.parametrize("thread", threads)
-def test_change_thread_emoji(client, thread):
-    with set_default_client(client, thread):
-        client.changeThreadEmoji("😀")
-        client.changeThreadEmoji("😀")
+@pytest.mark.parametrize("emoji", ["😀", "😂", "😕", "😍"])
+def test_change_emoji(client, catch_event, compare, emoji):
+    with catch_event("onEmojiChange") as x:
+        client.changeThreadEmoji(emoji)
+    assert compare(x, new_emoji=emoji)
 
 
-@pytest.mark.parametrize("thread", threads)
-def test_change_thread_colour(client, thread):
-    with set_default_client(client, thread):
-        client.changeThreadColor(ThreadColor.BRILLIANT_ROSE)
-        client.changeThreadColor(ThreadColor.MESSENGER_BLUE)
+@pytest.mark.xfail(FBchatFacebookError)
+@pytest.mark.parametrize("emoji", ["🙃", "not an emoji"])
+def test_change_emoji_invalid(client, emoji):
+    client.changeThreadEmoji(emoji)
 
 
-@pytest.mark.parametrize("thread", threads)
-def test_typing_status(client, thread):
-    with set_default_client(client, thread):
-        client.setTypingStatus(TypingStatus.TYPING)
-        client.setTypingStatus(TypingStatus.STOPPED)
+@pytest.mark.parametrize(
+    "color",
+    ThreadColor
+    if environ.get("EXPENSIVE_TESTS")
+    else [ThreadColor.MESSENGER_BLUE, ThreadColor.PUMPKIN],
+)
+def test_change_color(client, catch_event, compare, color):
+    with catch_event("onColorChange") as x:
+        client.changeThreadColor(color)
+    assert compare(x, new_color=color)
+
+
+@pytest.mark.xfail(FBchatFacebookError)
+def test_change_colour_invalid(client):
+    class InvalidColor:
+        value = "#0077ff"
+
+    client.changeThreadColor(InvalidColor())
+
+
+@pytest.mark.skip("Apparently onTyping is broken")
+@pytest.mark.parametrize("status", TypingStatus)
+def test_typing_status(client, catch_event, compare, status):
+    with catch_event("onTyping") as x:
+        client.setTypingStatus(status)
+        x.wait(40)
+    assert compare(x, status=status)

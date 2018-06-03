@@ -1,3 +1,4 @@
+sudo: false
 language: python
 python:
 #- 2.6
@@ -8,6 +9,11 @@ python:
 #- pypy
 #- pypy3
 
+matrix:
+  include:
+    - python: 2.7
+      env: EXPENSIVE_TESTS=1
+
 env:
   global:
     - secure: "F+sP5u7vs7ksu3QIYSBBCk5sBPeLezqPQ4jRJRyuOt1TmCe0HZ4mCOHGSAgJp+2Lj6mvFQ/vktHQSksPy7ij+a0zgdllhqNab5X+BNyPy7KapJC7jmzNjgVaXDmclGdeeh8F+2P+IPC8NgheWIznO43JglEaMvPs+4IjiTn+kLhvjl1N2yhHuFsECghocAnxm+/8mem9YZmgRC8i5c/RgTK+7aGwEftSSlm6zSjkaeRqhHCtBP4KzYL9x5CyB8bq6YmemXHWM5yx/DvJ3I/uiO/z46YHn+H4W/SwXscMLHFfRAB8GV/kEBKQIxHbVtpZTh6OvegR33b243H2WO9al5e+hRyvsiPh9WuH7EJtyTB0TPNxS8ti3ijfN3vMeIo++UFT7I/HgyqMARvHTntGErB/UO4CcQ4PHPI/I++4gzXIz54znAfuzncH6iyQEwXiYa/Qii1h0+a0+2i/D/Mn2e+kL8MEPAwARaSRavdkolUFhXgN6zZGQQ/x4o8cVNCw9/g8bMMqrESQlJaBbGT0LnyjXHSmm8w4wqzLWYvA+XelJzGkBkB5qENJW5rUrFPhVwo4vauABLAnnsBSSgDHA4FbsJREM9OAwkmh40dT+sz6xXmZMyhFFHWTF74/O1cPXOehqEokZ6jZKc0V9m0sc4sDFt7WSn3PHQiYfcKXigY=" # client1_email
@@ -15,8 +21,6 @@ env:
     - secure: "nV7pl8ZCMgISh1/DpHAnnKD2mKnE3lFouaFJx/Z+xx8KHpvWpULY6LfDwLv3reFywt9YGM5/nx0AX/69/W0poM28H+yudkQUpQ3CXOtV+3+dq6edqvTSm1kquQYqiBBydvk6trE8IrsDC9yFoIwEmKpWiqoteupt7RzbC3yWBzQ62qC3r51KsVA9avEp84Ypb5TXAMmWmJfrfaGYGPjVnNclsqQRFoPcPnz1t+RrC+fTl+SsioODqdpKJmJQH0jU5qcCIQ9T+Kzt1oBEAP3esTqfom1Umsu/Yewx/OFYllwtabXc/z8QZABmIKW0IOJOU1TyafaVHjI/a819PeWTHZpGER9ldNavHdnmK2LZw2ifUzju1/89z6X3iPo7yr1G4wi9ufaxQzuzsaci80DSV+7m/UttZ7hHSx4Dani8QB0pRaTkrToRBeAJj8vz+8DeUujY2zaCg2o/VG4EF3eG2M2QANrTeFSCUQ9GKK+oU25SByC25ATWs9eody92pcANElfDz3nYuWueGj/IZUhPLL1ibmaBw87rjmPXMsur+mO6e1bQ66IGS/i2NutYMOcRa8cePXnLTAfLQtrNwobpBHaZSJ77PNiU2FDkCo+5izswHtUCf0Z/hkeUqEjH9lz4PZFJ8NqJhWiuiY9ii1X7/RFgj1i6/fBZzFkMKz+eLWo=" # client2_email
     - secure: "N3D/JixDBtue+aqF65eWZiop0MdK7ruQskhH6rRa08Ih7BUGI4D3LNmsVr1dUqxyjFwFgQAyd5NeKeU2dAaIpxE8EUpz54EpopSfsIyTOr1o4mt1J1qzNQEuDq0Tq2JIENI/n7HM4nemEmUI98YgiMvkd7hP7CMCn62sguJmJ0Zu4JJKS9fXpLYcTa07Z9zwv/OSCDC7x4IaKcQ8GKmV98IWcSCcfUqn7x55oCzn9xcJ5QCVal7vuo9jE6nLOCWr9hKLZsu0QtY7KJshURNAMFxuDFaVNXqcq7cyApIUgjWONT7+eg8H//qo0DVBter7gR0l7SDZX+DjrFzk+NLwxgOcfDlpr3TMrBFUYLFYDbVZMR8NqdlotKzZ8YgchqRL66XxpJ1x24Q+wbxE7vUTF9emqfo6JM1SDQREbdANYgB+tXSLVrJCKxZaxxdVp0tOJD6ukUHlpDoSR1owdKFUJkEYA9OqzlT3NZKDzlEXZ66RRE8eBfdYuJUtsAJWiGd62HRSekdLhRAkXs+KOs7IC9uAEiL6SjGVltISTxaABB9odhXeggP4+LIzZccMfokgafDSjbQb4FmIGrQV1C+AcG5l10crCTH340oXeGVt+uzULtLfgIpS2em92y1vWqqO/NGN0a8aBJDd3hUx3mY+zGhHj7iLYWgAzOw2fpLVtfk=" # client2_password
 
-script: python -m pytest
+script: python -m pytest || python -m pytest --lf
 
 cache: pip
-
-sudo: false

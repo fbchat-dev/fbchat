@@ -5,8 +5,8 @@ from __future__ import unicode_literals
 from fbchat.models import ThreadType
 
 
-def test_search_for(client):
-    users = client.searchForUsers("Mark Zuckerberg")
+def test_search_for(client1):
+    users = client1.searchForUsers("Mark Zuckerberg")
     assert len(users) > 0
 
     u = users[0]

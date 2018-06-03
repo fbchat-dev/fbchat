@@ -6,10 +6,9 @@ import pytest
 import py_compile
 
 from glob import glob
-from os import path
+from os import path, environ
 from fbchat import Client
-from fbchat.models import FBchatFacebookError, Message
-from utils import threads
+from fbchat.models import FBchatUserError, Message
 
 
 def test_examples():
@@ -18,34 +17,38 @@ def test_examples():
         py_compile.compile(name)
 
 
-@pytest.mark.skip("Logging in multiple times in a row might disable the accounts")
-def test_login(client):
-    assert client.isLoggedIn()
+@pytest.mark.skipif(
+    not environ.get("EXPENSIVE_TESTS"),
+    reason="Logging in multiple times in a row might disable the accounts",
+)
+def test_login(client1):
+    assert client1.isLoggedIn()
+    email = client1.email
+    password = client1.password
 
-    client.logout()
+    client1.logout()
 
-    assert not client.isLoggedIn()
+    assert not client1.isLoggedIn()
 
-    with pytest.raises(FBchatFacebookError):
-        client.login("<invalid email>", "<invalid password>", max_tries=1)
+    with pytest.raises(FBchatUserError):
+        client1.login("<invalid email>", "<invalid password>", max_tries=1)
 
-    client.login(client.email, client.password)
+    client1.login(email, password)
 
-    assert client.isLoggedIn()
+    assert client1.isLoggedIn()
 
 
-def test_sessions(client):
-    session = client.getSession()
+def test_sessions(client1):
+    session = client1.getSession()
     Client("no email needed", "no password needed", session_cookies=session)
-    client.setSession(session)
-    assert client.isLoggedIn()
+    client1.setSession(session)
+    assert client1.isLoggedIn()
 
 
-@pytest.mark.parametrize("thread", threads)
-def test_default_thread(client, thread):
-    client.setDefaultThread(thread["id"], thread["type"])
-    assert client.send(Message(text="Sent to the specified thread"))
+def test_default_thread(client1, thread):
+    client1.setDefaultThread(thread["id"], thread["type"])
+    assert client1.send(Message(text="Sent to the specified thread"))
 
-    client.resetDefaultThread()
+    client1.resetDefaultThread()
     with pytest.raises(ValueError):
-        client.send(Message(text="Should not be sent"))
+        client1.send(Message(text="Should not be sent"))

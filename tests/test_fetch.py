@@ -5,8 +5,8 @@ from __future__ import unicode_literals
 import pytest
 
 from os import path
-from fbchat.models import ThreadType, Message
-from utils import set_default_client, threads, group
+from fbchat.models import ThreadType, Message, Mention, EmojiSize, Sticker
+from utils import subset
 
 
 def test_fetch_all_users(client):
@@ -19,32 +19,59 @@ def test_fetch_thread_list(client):
     assert len(threads) == 2
 
 
-@pytest.mark.parametrize("thread", threads)
-def test_fetch_thread_messages(client, thread):
+@pytest.mark.parametrize(
+    "emoji, emoji_size",
+    [
+        ("😆", EmojiSize.SMALL),
+        ("😆", EmojiSize.MEDIUM),
+        ("😆", EmojiSize.LARGE),
+        (None, EmojiSize.SMALL),
+        (None, EmojiSize.MEDIUM),
+        (None, EmojiSize.LARGE),
+    ],
+)
+def test_fetch_message_emoji(client, emoji, emoji_size):
+    mid = client.sendEmoji(emoji, emoji_size)
+    message, = client.fetchThreadMessages(limit=1)
+
+    assert subset(
+        vars(message), uid=mid, author=client.uid, text=emoji, emoji_size=emoji_size
+    )
+
+
+def test_fetch_message_mentions(client):
     text = "This is a test of fetchThreadMessages"
+    mentions = [Mention(client.uid, offset=10, length=4)]
 
-    with set_default_client(client, thread):
-        client.sendMessage(text)
-        messages = client.fetchThreadMessages(limit=1)
+    mid = client.send(Message(text, mentions=mentions))
+    message, = client.fetchThreadMessages(limit=1)
 
-    assert messages[0].author == client.uid
-    assert messages[0].text == text
+    assert subset(vars(message), uid=mid, author=client.uid, text=text)
+    for i, m in enumerate(mentions):
+        assert vars(message.mentions[i]) == vars(m)
 
 
-def test_fetch_info(client):
-    info = client.fetchUserInfo("4")["4"]
+@pytest.mark.parametrize("sticker_id", ["767334476626295"])
+def test_fetch_message_sticker(client, sticker_id):
+    mid = client.send(Message(sticker=Sticker(sticker_id)))
+    message, = client.fetchThreadMessages(limit=1)
+
+    assert subset(vars(message), uid=mid, author=client.uid)
+    assert subset(vars(message.sticker), uid=sticker_id)
+
+
+def test_fetch_info(client1, group):
+    info = client1.fetchUserInfo("4")["4"]
     assert info.name == "Mark Zuckerberg"
 
-    info = client.fetchGroupInfo(group["id"])[group["id"]]
+    info = client1.fetchGroupInfo(group["id"])[group["id"]]
     assert info.type == ThreadType.GROUP
 
 
-@pytest.mark.parametrize("thread", threads)
-def test_fetch_image_url(client, thread):
+def test_fetch_image_url(client):
     url = path.join(path.dirname(__file__), "image.png")
 
-    with set_default_client(client, thread):
-        client.sendLocalImage(url)
-        message, = client.fetchThreadMessages(limit=1)
+    client.sendLocalImage(url)
+    message, = client.fetchThreadMessages(limit=1)
 
     assert client.fetchImageUrl(message.attachments[0].uid)
