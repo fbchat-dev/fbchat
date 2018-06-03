@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import threading
 import logging
+import six
 
 from os import environ
 from random import randrange
@@ -33,7 +34,13 @@ class ClientThread(threading.Thread):
         self.client.stopListening()
 
 
-class CaughtValue(threading.Event):
+if six.PY2:
+    event_class = threading._Event
+else:
+    event_class = threading.Event
+
+
+class CaughtValue(event_class):
     def set(self, res):
         self.res = res
         super(CaughtValue, self).set()
