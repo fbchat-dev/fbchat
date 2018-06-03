@@ -30,6 +30,7 @@ deploy:
   password:
     secure: "DogYIZ6eZZUUwkuhnhxGZ1SR/NrNvQtadxk06oeNfIeZL1UdIkSAS+C+BD1xr4iu3JwSZKDgU43I/aj8TomG69HVxQ9lcEmteUOfMKIOrDtGluNOG+a7KnVltEygc7m55wdQcPdwy2d906fWlvPz9u2ko2S3CH8FDxzW7sj79WwFEPLd/JYk1Jgs6GeJ14XLHEGDIaGUkXKroVBx0JqBzyYCuHgY8iLT1Hzln04DQSuUGAoel6oYeznxJ2VHmUvjD9vCis6ydoi4LUJG16ebe/f4ifl1sjGOcd1YBf/JoMIP0C7ntyBJ0B23e98o/8ORYyCKIHVRTxN0q5lF/s/Oj/vfTAoM5w3sEi0kS3yLuug/jIW961iaz+Vrm1TDJdbCloeZyo3GvEqMO062i5EadaudAOfxreg+secYB8Ckc/x9NtXhc3YmG6YBk6qtZeJBSnF5/YqHPydYAndJ6o/3VjuJHrTLzFoukw8swmls5kTgvyDJFEodGLhnb5nZo7/5ZkwiqNgyYKqFnKvQDTJ2le/Gc3U1SO+V4pXv/7mrtB7gMogPOZtMinCPmDvRvXFj5QPRyyQVIGVESd8LthRw24YI54TJW9srvoYGN5Axjrrlt4Y+j/GWeWyHckkhsLDB5JBw5kHkP8M1Q2d05+1ZaA1aT0JSVE+DMn/IWNILRvI="
   on:
+    python: 3.6
     branch: master
     tags: true
   server: https://test.pypi.org/legacy/
