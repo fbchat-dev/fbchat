@@ -11,16 +11,15 @@ from fbchat import Client
 from fbchat.models import FBchatUserError, Message
 
 
+@pytest.mark.offline
 def test_examples():
     # Compiles the examples, to check for syntax errors
     for name in glob(path.join(path.dirname(__file__), "../examples", "*.py")):
         py_compile.compile(name)
 
 
-@pytest.mark.skipif(
-    not environ.get("EXPENSIVE_TESTS"),
-    reason="Logging in multiple times in a row might disable the accounts",
-)
+@pytest.mark.trylast
+@pytest.mark.expensive
 def test_login(client1):
     assert client1.isLoggedIn()
     email = client1.email
@@ -38,6 +37,7 @@ def test_login(client1):
     assert client1.isLoggedIn()
 
 
+@pytest.mark.trylast
 def test_sessions(client1):
     session = client1.getSession()
     Client("no email needed", "no password needed", session_cookies=session)
@@ -45,6 +45,7 @@ def test_sessions(client1):
     assert client1.isLoggedIn()
 
 
+@pytest.mark.tryfirst
 def test_default_thread(client1, thread):
     client1.setDefaultThread(thread["id"], thread["type"])
     assert client1.send(Message(text="Sent to the specified thread"))

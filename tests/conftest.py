@@ -16,8 +16,8 @@ def user(client2):
 
 
 @pytest.fixture(scope="session")
-def group():
-    return {"id": "1463789480385605", "type": ThreadType.GROUP}
+def group(pytestconfig):
+    return {"id": load_variable("group_id", pytestconfig.cache), "type": ThreadType.GROUP}
 
 
 @pytest.fixture(scope="session", params=["user", "group"])

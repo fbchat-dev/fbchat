@@ -35,7 +35,9 @@ def test_remove_from_and_add_to_group(client1, client2, group, catch_event):
         )
 
 
-@pytest.mark.xfail(raises=FBchatFacebookError, reason="Apparently changeThreadTitle is broken")
+@pytest.mark.xfail(
+    raises=FBchatFacebookError, reason="Apparently changeThreadTitle is broken"
+)
 def test_change_title(client1, catch_event, group):
     title = random_hex()
     with catch_event("onTitleChange") as x:
@@ -72,9 +74,16 @@ def test_change_emoji_invalid(client, emoji):
 
 @pytest.mark.parametrize(
     "color",
-    ThreadColor
-    if environ.get("EXPENSIVE_TESTS")
-    else [ThreadColor.MESSENGER_BLUE, ThreadColor.PUMPKIN],
+    [
+        pytest.mark.xfail(
+            x, reason="Apparently changing ThreadColor.MESSENGER_BLUE is broken"
+        )
+        if x == ThreadColor.MESSENGER_BLUE
+        else x
+        if x == ThreadColor.PUMPKIN
+        else pytest.mark.expensive(x)
+        for x in ThreadColor
+    ],
 )
 def test_change_color(client, catch_event, compare, color):
     if color == ThreadColor.MESSENGER_BLUE:
@@ -94,10 +103,10 @@ def test_change_color_invalid(client):
     client.changeThreadColor(InvalidColor())
 
 
-@pytest.mark.skip("Apparently onTyping is broken")
+@pytest.mark.xfail(reason="Apparently onTyping is broken")
 @pytest.mark.parametrize("status", TypingStatus)
 def test_typing_status(client, catch_event, compare, status):
     with catch_event("onTyping") as x:
         client.setTypingStatus(status)
-        x.wait(40)
+        # x.wait(40)
     assert compare(x, status=status)

@@ -50,20 +50,25 @@ class CaughtValue(event_class):
 
 
 def random_hex(length=20):
-    return '{:X}'.format(randrange(16**length))
+    return "{:X}".format(randrange(16 ** length))
 
 
 def subset(a, **b):
-    print(viewitems(b))
-    print(viewitems(a))
+    print(a)
+    print(b)
     return viewitems(b) <= viewitems(a)
 
 
 def load_variable(name, cache):
+    var = environ.get(name, None)
+    if var is not None:
+        if cache.get(name, None) != var:
+            cache.set(name, var)
+        return var
+
     var = cache.get(name, None)
     if var is None:
-        var = environ.get(name, None)
-        cache.set(name, var)
+        raise ValueError("Variable {!r} neither in environment nor cache".format(name))
     return var
 
 

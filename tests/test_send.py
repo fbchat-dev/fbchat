@@ -101,8 +101,6 @@ def test_send_sticker(client, catch_event, compare, sticker_id):
     ],
 )
 def test_send_images(client, catch_event, compare, method_name, url):
-    import ssl
-    print(ssl.OPENSSL_VERSION)
     text = "An image sent with {}".format(method_name)
     with catch_event("onMessage") as x:
         mid = getattr(client, method_name)(url, Message(text))

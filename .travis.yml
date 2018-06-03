@@ -1,21 +1,24 @@
 sudo: false
 language: python
-
-matrix:
-  include:
-    - python: 2.7
-      env: EXPENSIVE_TESTS=1
-    - python: 3.4
-    - python: 3.5
-    - python: 3.6
+python:
+- 2.7
+- 3.4
+- 3.5
+- 3.6
 
 env:
   global:
-    - secure: "F+sP5u7vs7ksu3QIYSBBCk5sBPeLezqPQ4jRJRyuOt1TmCe0HZ4mCOHGSAgJp+2Lj6mvFQ/vktHQSksPy7ij+a0zgdllhqNab5X+BNyPy7KapJC7jmzNjgVaXDmclGdeeh8F+2P+IPC8NgheWIznO43JglEaMvPs+4IjiTn+kLhvjl1N2yhHuFsECghocAnxm+/8mem9YZmgRC8i5c/RgTK+7aGwEftSSlm6zSjkaeRqhHCtBP4KzYL9x5CyB8bq6YmemXHWM5yx/DvJ3I/uiO/z46YHn+H4W/SwXscMLHFfRAB8GV/kEBKQIxHbVtpZTh6OvegR33b243H2WO9al5e+hRyvsiPh9WuH7EJtyTB0TPNxS8ti3ijfN3vMeIo++UFT7I/HgyqMARvHTntGErB/UO4CcQ4PHPI/I++4gzXIz54znAfuzncH6iyQEwXiYa/Qii1h0+a0+2i/D/Mn2e+kL8MEPAwARaSRavdkolUFhXgN6zZGQQ/x4o8cVNCw9/g8bMMqrESQlJaBbGT0LnyjXHSmm8w4wqzLWYvA+XelJzGkBkB5qENJW5rUrFPhVwo4vauABLAnnsBSSgDHA4FbsJREM9OAwkmh40dT+sz6xXmZMyhFFHWTF74/O1cPXOehqEokZ6jZKc0V9m0sc4sDFt7WSn3PHQiYfcKXigY=" # client1_email
+    # These two accounts are made specifically for this purpose, and the passwords are really only encrypted for obscurity
+    # In reality, you could probably still login with the accounts by looking at log output from travis-ci.org
+    - client1_email=travis.fbchat1@gmail.com # Facebook ID: 100023782141139
     - secure: "m8KWZixMEo8mPOb2Pb+q97S4Dt9+2aSwYzaAOHc97uO3Y1c0AFxUEkDhk5FPz8AGSLEDKEm/IeTSre3jwVY+VyziZmRQymVgLWONoZlhixODR3yH+8VG+Z6HqsAFFjWOnJ1yFDmnuRROFO+SSIgIfR42LHcV6JY0W9Qq9cR1ATj0Nqy2DtLEZXWP16NyM8YiGhzUMPIhC4/Ky+D8emR+UrVrQMkF0TMl8FdGv782Py/7/DhoPlgJtdYB5vqUuYjVUAVAWK+Yc57vjaMFnHMekAwELpI3v7kcohMkjqKSglMEGOTQkHwe65aDSvzjtGoQZkavGSX4sdnfh4tFY29JOQQUri29fhIxOC1aCxrwx90Q/VuJKnf2/yR5mL5v70B3aChdWb+NGpznp6QsEd906KIpEvZ3+YA0Lif8ztXm9iJ7cGJqyWtghTQrcbaRk1kZRLky+0+Ar1wFMjqs8KjQZ2skdPUAOSMPWT1g0rSk69klw4CX5vjsIOF90NI5+oJqWTnB2dFuQTvmle12W3jUkkAMjG0fwYsHOBH5xRj+Y1V9a1K2g4d99EoGhJvrSo6Rlg1WnJyj0KqhTpeTk83PXcYL80hhG63ELPfkBz1MDGnURyaF8oQDdTJXUglYGcKOznz6V78LTi6zBieSM9AUnw9yZnvLfO8539NNQ5HZNPE=" # client1_password
-    - secure: "nV7pl8ZCMgISh1/DpHAnnKD2mKnE3lFouaFJx/Z+xx8KHpvWpULY6LfDwLv3reFywt9YGM5/nx0AX/69/W0poM28H+yudkQUpQ3CXOtV+3+dq6edqvTSm1kquQYqiBBydvk6trE8IrsDC9yFoIwEmKpWiqoteupt7RzbC3yWBzQ62qC3r51KsVA9avEp84Ypb5TXAMmWmJfrfaGYGPjVnNclsqQRFoPcPnz1t+RrC+fTl+SsioODqdpKJmJQH0jU5qcCIQ9T+Kzt1oBEAP3esTqfom1Umsu/Yewx/OFYllwtabXc/z8QZABmIKW0IOJOU1TyafaVHjI/a819PeWTHZpGER9ldNavHdnmK2LZw2ifUzju1/89z6X3iPo7yr1G4wi9ufaxQzuzsaci80DSV+7m/UttZ7hHSx4Dani8QB0pRaTkrToRBeAJj8vz+8DeUujY2zaCg2o/VG4EF3eG2M2QANrTeFSCUQ9GKK+oU25SByC25ATWs9eody92pcANElfDz3nYuWueGj/IZUhPLL1ibmaBw87rjmPXMsur+mO6e1bQ66IGS/i2NutYMOcRa8cePXnLTAfLQtrNwobpBHaZSJ77PNiU2FDkCo+5izswHtUCf0Z/hkeUqEjH9lz4PZFJ8NqJhWiuiY9ii1X7/RFgj1i6/fBZzFkMKz+eLWo=" # client2_email
+    - client2_email=fbchat.travis2@gmail.com # Facebook ID: 100026538491708
     - secure: "N3D/JixDBtue+aqF65eWZiop0MdK7ruQskhH6rRa08Ih7BUGI4D3LNmsVr1dUqxyjFwFgQAyd5NeKeU2dAaIpxE8EUpz54EpopSfsIyTOr1o4mt1J1qzNQEuDq0Tq2JIENI/n7HM4nemEmUI98YgiMvkd7hP7CMCn62sguJmJ0Zu4JJKS9fXpLYcTa07Z9zwv/OSCDC7x4IaKcQ8GKmV98IWcSCcfUqn7x55oCzn9xcJ5QCVal7vuo9jE6nLOCWr9hKLZsu0QtY7KJshURNAMFxuDFaVNXqcq7cyApIUgjWONT7+eg8H//qo0DVBter7gR0l7SDZX+DjrFzk+NLwxgOcfDlpr3TMrBFUYLFYDbVZMR8NqdlotKzZ8YgchqRL66XxpJ1x24Q+wbxE7vUTF9emqfo6JM1SDQREbdANYgB+tXSLVrJCKxZaxxdVp0tOJD6ukUHlpDoSR1owdKFUJkEYA9OqzlT3NZKDzlEXZ66RRE8eBfdYuJUtsAJWiGd62HRSekdLhRAkXs+KOs7IC9uAEiL6SjGVltISTxaABB9odhXeggP4+LIzZccMfokgafDSjbQb4FmIGrQV1C+AcG5l10crCTH340oXeGVt+uzULtLfgIpS2em92y1vWqqO/NGN0a8aBJDd3hUx3mY+zGhHj7iLYWgAzOw2fpLVtfk=" # client2_password
+    - group_id=1463789480385605
 
-script: python -m pytest || python -m pytest --lf
+script:
+  - if [[ "$TRAVIS_PYTHON_VERSION" = "2.7" ]]; then export PYTEST_ADDOPTS='-m ""'; fi; # expensive tests (otherwise disabled in pytest.ini)
+  - if [[ "$TRAVIS_PULL_REQUEST" != false ]]; then export PYTEST_ADDOPTS='-m offline'; fi; # offline tests only
+  - python -m pytest || python -m pytest --lf; # Run failed tests twice
 
 cache: pip
