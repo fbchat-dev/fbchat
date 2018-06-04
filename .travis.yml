@@ -1,0 +1,35 @@
+sudo: false
+language: python
+python:
+- 2.7
+- 3.4
+- 3.5
+- 3.6
+
+env:
+  global:
+    # These two accounts are made specifically for this purpose, and the passwords are really only encrypted for obscurity
+    # In reality, you could probably still login with the accounts by looking at log output from travis-ci.org
+    - client1_email=travis.fbchat1@gmail.com # Facebook ID: 100023782141139
+    - secure: "JrQ8mrE7S8ActFiQF5ulICi9jXrluYTuEM0cHphI1N/Zj4pEw+k24hVhfGJvLLuIDRV12DxScc7dKgUIvqavc2Ko9cy0Ge7GTkjAjGYiyCPabxUUjgtPB173pK0x9nkjmyXdTbb2P4ZsaIfxPwSGPWS77jEkEboqia8Cqr/RhVA=" # client1_password
+    - client2_email=fbchat.travis2@gmail.com # Facebook ID: 100026538491708
+    - secure: "AGQfwIm6VP3EosnP/Mu7Em0+gb5638+INMqXaJ8HEr2kkV0c12C2G2aDRzsD7DjinKTfGsPAMvY3HPmtx8luU7urQeM55ArmOgeZbbLK+I+hmm08lubBc/Ik3OSehZc0u7IqKIHTxOxlYMzCgZCFQYT0QtOVZUt8Q529AzbUVv4=" # client2_password
+    - group_id=1463789480385605
+
+before_script:
+  - if [[ "$TRAVIS_PYTHON_VERSION" = "2.7" ]]; then export PYTEST_ADDOPTS='-m ""'; fi; # expensive tests (otherwise disabled in pytest.ini)
+  - if [[ "$TRAVIS_PULL_REQUEST" != false ]]; then export PYTEST_ADDOPTS='-m offline'; fi; # offline tests only
+
+script: python -m pytest || python -m pytest --lf; # Run failed tests twice
+
+cache: pip
+
+deploy:
+  provider: pypi
+  user: madsmtm
+  password:
+    secure: "fH7+JhSnhIh1FZPgt+TE5J+REVCHaasEuhXZmpV8NgOrIZMbTtGOAfbWcwZWNrgoODN+adZFAS0OMDBEKL4WDudM4aXtrX3W4efy4Btmrn10YiAIgGQhG2HtQeM8HMAWX6wyY+ZnQz2NcJYL/SQqRWfRnHtMJlQVYErzqubdB7Y="
+  on:
+    python: 3.6
+    branch: master
+    tags: true
