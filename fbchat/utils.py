@@ -122,8 +122,7 @@ class ReqUrl(object):
     ATTACHMENT_PHOTO = "https://www.facebook.com/mercury/attachments/photo/"
     EVENT_REMINDER = "https://www.facebook.com/ajax/eventreminder/create"
     MODERN_SETTINGS_MENU = "https://www.facebook.com/bluebar/modern_settings_menu/"
-    REMOVE_FRIENDFIRST = "https://m.facebook.com/removefriend.php?friend_id="
-    REMOVE_FRIENDSECOND = "https://m.facebook.com/a/removefriend.php"
+    REMOVE_FRIEND = "https://m.facebook.com/a/removefriend.php"
     
     pull_channel = 0
 
