@@ -469,7 +469,7 @@ class Client(object):
     END DEFAULT THREAD METHODS
     """ 
     def removeFriend(self, friend_id=None):
-        :param friend_id: The id of the friend that you want to remove
+        """param friend_id: The id of the friend that you want to remove"""
         payload = {
             "friend_id": friend_id,
             "unref": "none",
