@@ -468,30 +468,14 @@ class Client(object):
     """
     END DEFAULT THREAD METHODS
     """ 
-    def removefriend(self, friend_id=None):
-        r = self._get(self.req_url.REMOVE_FRIENDFIRST + friend_id)
-        soup = bs(r.text, "lxml")
-        fb_dtsg_value = soup.find('input', {'name': 'fb_dtsg'}).get('value')
-        print self._session.cookies.get_dict().get('c_user')
-        print self._session.cookies.get_dict().get('xs')
-        payload = [
-                {
-                "name": "fb_dtsg",
-                "value": fb_dtsg_value
-                 },
-                 {
-                "name": "friend_id",
-                "value": friend_id
-                },
-                 {
-                "name": "unref",
-                "value": "none"
-                 },
-                 {
-                "name": "confirm",
-                "value": "Confirm"
-              }]
-        r = self._post(self.req_url.REMOVE_FRIENDSECOND,payload)
+    def removeFriend(self, friend_id=None):
+        :param friend_id: The id of the friend that you want to remove
+        payload = {
+            "friend_id": friend_id,
+            "unref": "none",
+            "confirm": "Confirm",
+        }
+        r = self._post(self.req_url.REMOVE_FRIEND,payload)
         return r.ok
     """
     FETCH METHODS
