@@ -103,10 +103,8 @@ def test_change_color_invalid(client):
     client.changeThreadColor(InvalidColor())
 
 
-@pytest.mark.xfail(reason="Apparently onTyping is broken")
 @pytest.mark.parametrize("status", TypingStatus)
 def test_typing_status(client, catch_event, compare, status):
     with catch_event("onTyping") as x:
         client.setTypingStatus(status)
-        # x.wait(40)
     assert compare(x, status=status)
