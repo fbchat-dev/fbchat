@@ -1529,13 +1529,18 @@ class Client(object):
                     self.onInbox(unseen=m["unseen"], unread=m["unread"], recent_unread=m["recent_unread"], msg=m)
 
                 # Typing
-                elif mtype == "typ":
+                elif mtype == "typ" or mtype == "ttyp":
                     author_id = str(m.get("from"))
-                    thread_id = str(m.get("to"))
-                    if thread_id == self.uid:
-                        thread_type = ThreadType.USER
-                    else:
+                    thread_id = m.get("thread_fbid")
+                    if thread_id:
                         thread_type = ThreadType.GROUP
+                        thread_id = str(thread_id)
+                    else:
+                        thread_type = ThreadType.USER
+                        if author_id == self.uid:
+                            thread_id = m.get("to")
+                        else:
+                            thread_id = author_id
                     typing_status = TypingStatus(m.get("st"))
                     self.onTyping(author_id=author_id, status=typing_status, thread_id=thread_id, thread_type=thread_type, msg=m)
 
