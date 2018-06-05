@@ -75,19 +75,13 @@ def test_change_emoji_invalid(client, emoji):
 @pytest.mark.parametrize(
     "color",
     [
-        pytest.mark.xfail(
-            x, reason="Apparently changing ThreadColor.MESSENGER_BLUE is broken"
-        )
-        if x == ThreadColor.MESSENGER_BLUE
-        else x
-        if x == ThreadColor.PUMPKIN
+        x
+        if x in [ThreadColor.MESSENGER_BLUE, ThreadColor.PUMPKIN]
         else pytest.mark.expensive(x)
         for x in ThreadColor
     ],
 )
 def test_change_color(client, catch_event, compare, color):
-    if color == ThreadColor.MESSENGER_BLUE:
-        pytest.xfail(reason="Apparently changing ThreadColor.MESSENGER_BLUE is broken")
     with catch_event("onColorChange") as x:
         client.changeThreadColor(color)
     assert compare(x, new_color=color)

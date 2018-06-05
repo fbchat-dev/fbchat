@@ -1138,7 +1138,7 @@ class Client(object):
         thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {
-            'color_choice': color.value,
+            'color_choice': color.value if color != ThreadColor.MESSENGER_BLUE else '',
             'thread_or_other_fbid': thread_id
         }
 
