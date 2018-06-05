@@ -11,9 +11,9 @@ env:
     # These two accounts are made specifically for this purpose, and the passwords are really only encrypted for obscurity
     # In reality, you could probably still login with the accounts by looking at log output from travis-ci.org
     - client1_email=travis.fbchat1@gmail.com # Facebook ID: 100023782141139
-    - secure: "DUJwuvaHCfC5xOAoKGOrRfYDCZuLySGlvNQ4aQlJvSiligsyRMTkR4HmCS3u03nVx4nPiceTXzrXGVYPjb8Gkg+pQ4uG5M2AeNBEEi8JjM1T3QAVYjCF/A1CKPteHjrXtlWi9IhPcrOPf4Ve9V6TqZg3x/XNzq//ZOuBm21Lr8FtZyUnqwKNJ5qFY9+IQtW1lulBdP464+U5dUrJ8+xmCunI9a/mSJ9w06FEBRnBkso3X8bVIsfeTpZ9eedzCEWwfShoAhIs63818pN3GFqzAeO+r/PG/ZrVzoAKLAcnCJX/JZtfyq56j55CQQH7TJm2TPXWAO3Y4LXvjeraqfOCdD3w5Gefns3C1zshic9tN9k57D3INQ4KrN9dlTElKZC9W2Sx0nITfLv82IBvkDIX2cEJLjl185zAZKXfqhpZoTyRsDeb2TPK5D36yM+kPMxiPYsS99TOYz/noaHBSqZj5sTkc1MTAEwYBBK0bJy+iw8LZsLuy3UVUO6OUzSUE34BtwKyAHnkhggIxof40Ed8KWsMCaz65j3+MWjdEmF0ZUt7OFMuQ+IbbaacQD262E1AFv/BhwYmGPvBuU06p0g1uph7jCNfMAWoAjayP9q0vqGyen6aNgNcNEGGLB7IvIRugztzEdvmnXIU7ATM87MWSny0K9UL8kDrR7vSS/JtSJ8=" # client1_password
+    - secure: "W1NON6qaLnvYIOVoC93MXkmbAIkUkHcGREBwN0BSVM3cLuMduk4VVkz6PY2T8bnntGYVwicXwcn5aNJ6pDue17TBZqGPk/tdpws8mnAZUtBYhpkIFTTlyh5kJSZejx9fd5s4nceGpH6ofCCnNxPp2PdHKU8piqnQYZVQ4cFNNDE=" # client1_password
     - client2_email=fbchat.travis2@gmail.com # Facebook ID: 100026538491708
-    - secure: "AO9lE7H00bkgtyXiFfzUmkciFIZw957Z6OS/9GlmXfTO+KBQm7+wVMCLQUhx0+d6+EgpAiY0BQ+tFFyx5kuRrm4rI826EjY48cVM0tW4tnvWCHp036Muz0J7D3hmwtC2XYCySosL9evZm9cfRr02kUUltWqxBQHBRoWW1RoeYLBsTZ9YdDaj9VRk70TrC+jZ8bRi1647g7ssUZKI6x6gNxAWtwY0CwMIZvpUDgMTiyjHSlxu/qs+IjLsZa6z9IU2s0drbdLqnmNwCst9cjbPziDnMZfM+3/3Ty12nCCyagV/+2YU1CqLstvZIji+iH/DFtmq4PWpU2zpbZlPUWfR0e0nTfNVvNCzIic+guLScwvcgtc6fvQzNjog9Q1gVmsDaVwSTfbCOsosJtpCQS9DNQ2v9mn8PTMTNO1kWnfsEU1y3KWXPN0ixWKUx6EGQDr3H3cMOAweADyIMNwIutanJGBfDF+JAF8B/YNfmNfktN5QsmNS0P46F+04SFlYJNSD8Hbg9p45He46AQovedNS8mUnJ3AWhuScNlLF0GMZvwJet0FgCMqSOvUUh+6GHio1wPKNFKyD1sqiY1ZLMyZ2yavt+Ap6dmqb44e19FsqjYxlGLuDGTP7bF2m5VweWgnEIFZPFpTdhn67xQcX1eTzMqSPB0nOt8V/mqGn6uleduU=" # client2_password
+    - secure: "V7RB3go2Tc/DdW1x9DkMI+vCfnOgiS3ygmFCABs/GjfPZjZL7VLMJgYGlx0cjeeeN+Oxa2GrhczRAKeMdGB6Ss2lGGAVs6cjJ56ODuBHWT6/FNzLjtDkTnjD+Kfh0l8ZOdxTF3MQ6M/9hU6z5ek+XYGr7u+/7wOYZ5L2cK5MaQ0=" # client2_password
     - group_id=1463789480385605
 
 before_script:
@@ -28,7 +28,7 @@ deploy:
   provider: pypi
   user: madsmtm
   password:
-    secure: "D6RDwtfn4QhT/zMAW/7cSacdb0/6F0mpmSG9L4k3pLlxxXeXa12+do7dYMJFRSkzHmZ08P6xz/Gh/41QkNHN3AWRg11PNlVB2HfQBgzQz31Q2m5XgweTgVTkfx9HAGoa8DNKt/8Xay/hTyuKUyxJlLghLSTr2ZRK/EtNo1IdLPfUIV5S67bYQzbD5u7y5xfi65nd5RpgHCFl49LJ6CF++D9X/MvwTTyy8qceEij0XhIPZ6aFMb5Zf1pAAvgeWnPxmGD7RzL2zrfhizQTb1E+Vp/XVcdE1qF6YD7Wv3I2TCsELJIA3kO+RxHG3fWo7LQAKZe3zWKPLNBvf6w7p9W89CXjqAMA4X00ZCLNU3/VCxRcW/I9hc4/SzScaV22euR9+1hGkuD9I0LFk/SlH52f1i0QPdlm1P4UMS1FNSZal6gw75WWOCdGhJTmWv5JNZYFdUCl5pfSJTMexFgCmdawzRivaqGO+T3yrlPB2dttsesOaHTwTxu/aVaMC5c57kuataUJ5qwjOieTuAcBZ3v/WjxDtpj44FTEymtTuFHmNmq6uJFMROKdTVby9z0WGLJDnF6KM5wuaAC5IFPGuhOOPtbd3b4EMxaaPQY9jysBHStLF2Vc0YU/KO6XzKY8+LAUvQzeZaAuE11eVfx00q9VsDQ8P3qzBYQbmNf1d0f9OKI="
+    secure: "VA0MLSrwIW/T2KjMwjLZCzrLHw8pJT6tAvb48t7qpBdm8x192hax61pz1TaBZoJvlzyBPFKvluftuclTc7yEFwzXe7Gjqgd/ODKZl/wXDr36hQ7BBOLPZujdwmWLvTzMh3eJZlvkgcLCzrvK3j2oW8cM/+FZeVi/5/FhVuJ4ofs="
   on:
     python: 3.6
     branch: master
