@@ -25,13 +25,9 @@ def test_remove_from_and_add_to_group(client1, client2, group, catch_event):
         )
     finally:
         with catch_event("onPeopleAdded") as x:
-            mid = client1.addUsersToGroup(client2.uid, group["id"])
+            client1.addUsersToGroup(client2.uid, group["id"])
         assert subset(
-            x.res,
-            mid=mid,
-            added_ids=[client2.uid],
-            author_id=client1.uid,
-            thread_id=group["id"],
+            x.res, added_ids=[client2.uid], author_id=client1.uid, thread_id=group["id"]
         )
 
 

@@ -1038,7 +1038,6 @@ class Client(object):
         :param user_ids: One or more user IDs to add
         :param thread_id: Group ID to add people to. See :ref:`intro_threads`
         :type user_ids: list
-        :return: :ref:`Message ID <intro_message_ids>` of the executed action
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
