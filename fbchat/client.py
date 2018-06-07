@@ -495,7 +495,7 @@ class Client(object):
                 break
         return Threads  # from newest to oldest
     
-    def fetchAllUsersFromThreads(client, threads):
+    def fetchAllUsersFromThreads(self, threads):
         """
         Get all users involved in threads.
         
