@@ -484,7 +484,7 @@ class Client(object):
         """
         threads = []
         threads += self.fetchThreadList(thread_location=thread_location)
-        if len(threads) == 0:
+        if not threads:
             return []
         while True:
             lastThreadTimestamp = threads[-1].last_message_timestamp
