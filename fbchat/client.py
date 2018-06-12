@@ -482,18 +482,18 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-        Threads = []
-        Threads += self.fetchThreadList(thread_location=thread_location)
-        if len(Threads) == 0:
+        threads = []
+        threads += self.fetchThreadList(thread_location=thread_location)
+        if len(threads) == 0:
             return []
         while True:
-            lastThreadTimestamp = Threads[-1].last_message_timestamp
+            lastThreadTimestamp = threads[-1].last_message_timestamp
             candidates = self.fetchThreadList(before=lastThreadTimestamp, thread_location=thread_location)  # return at max 20 threads before lastThreadTimestamp (included)
             if len(candidates) > 1:
-                Threads += candidates[1:]
+                threads += candidates[1:]
             else:
                 break
-        return Threads  # from newest to oldest
+        return threads  # from newest to oldest
     
     def fetchAllUsersFromThreads(self, threads):
         """
@@ -504,18 +504,18 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-        Users = []
+        users = []
         for thread in threads:
             if thread.type == ThreadType.USER:
-                if thread.uid not in [user.uid for user in Users]:
-                    Users.append(thread)
+                if thread.uid not in [user.uid for user in users]:
+                    users.append(thread)
             elif thread.type == ThreadType.GROUP:
                 for userID in thread.participants:
-                    if userID not in [user.uid for user in Users]:
-                        Users.append(self.fetchUserInfo(userID)[userID])
+                    if userID not in [user.uid for user in users]:
+                        users.append(self.fetchUserInfo(userID)[userID])
             else:
                 pass
-        return Users
+        return users
     
     def fetchAllUsers(self):
         """
