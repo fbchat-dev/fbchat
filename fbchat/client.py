@@ -473,7 +473,7 @@ class Client(object):
     FETCH METHODS
     """
     
-    def fetchThreads(self, thread_location):
+    def fetchThreads(self, thread_location, after=None, limit=None):
         """
         Get all threads in thread_location.
 
@@ -505,16 +505,19 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         users = []
+        users_to_fetch = []  # It's more efficient to fetch all users in one request
         for thread in threads:
             if thread.type == ThreadType.USER:
                 if thread.uid not in [user.uid for user in users]:
                     users.append(thread)
             elif thread.type == ThreadType.GROUP:
-                for userID in thread.participants:
-                    if userID not in [user.uid for user in users]:
-                        users.append(self.fetchUserInfo(userID)[userID])
+                for user_id in thread.participants:
+                    if user_id not in [user.uid for user in users] and user_id not in users_to_fetch:
+                        users_to_fetch.append(user_id)
             else:
                 pass
+        for user_id,user in self.fetchUserInfo(*users_to_fetch).items():
+            users.append(user)
         return users
     
     def fetchAllUsers(self):
