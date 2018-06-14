@@ -209,7 +209,7 @@ class Client(object):
         self.ttstamp = ''
 
         r = self._get(self.req_url.BASE)
-        soup = bs(r.text, "lxml")
+        soup = bs(r.text, "html.parser")
 
         fb_dtsg_element = soup.find("input", {'name': 'fb_dtsg'})
         if fb_dtsg_element:
@@ -252,7 +252,7 @@ class Client(object):
         if not (self.email and self.password):
             raise FBchatUserError("Email and password not found.")
 
-        soup = bs(self._get(self.req_url.MOBILE).text, "lxml")
+        soup = bs(self._get(self.req_url.MOBILE).text, "html.parser")
         data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
         data['email'] = self.email
         data['pass'] = self.password
@@ -277,7 +277,7 @@ class Client(object):
             return False, r.url
 
     def _2FA(self, r):
-        soup = bs(r.text, "lxml")
+        soup = bs(r.text, "html.parser")
         data = dict()
 
         s = self.on2FACode()
