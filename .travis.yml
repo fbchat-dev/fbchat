@@ -5,6 +5,7 @@ python:
 - 3.4
 - 3.5
 - 3.6
+- pypy
 
 env:
   global:
@@ -22,7 +23,10 @@ before_script:
 
 script: python -m pytest || python -m pytest --lf; # Run failed tests twice
 
-cache: pip
+cache:
+  pip: true
+  directories:
+    - .pytest_cache
 
 deploy:
   provider: pypi
