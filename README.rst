@@ -31,6 +31,15 @@ Installation:
 
     $ pip install fbchat
 
+You can also install from source, by using `setuptools` (You need at least version 30.3.0):
+
+.. code-block:: console
+
+    $ git clone https://github.com/carpedm20/fbchat.git
+    $ cd fbchat
+    $ python setup.py install
+
+
 Maintainer
 ----------
 
