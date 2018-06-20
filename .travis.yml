@@ -7,15 +7,8 @@ python:
 - 3.6
 - pypy
 
-env:
-  global:
-    # These two accounts are made specifically for this purpose, and the passwords are really only encrypted for obscurity
-    # In reality, you could probably still login with the accounts by looking at log output from travis-ci.org
-    - client1_email=travis.fbchat1@gmail.com # Facebook ID: 100023782141139
-    - secure: "W1NON6qaLnvYIOVoC93MXkmbAIkUkHcGREBwN0BSVM3cLuMduk4VVkz6PY2T8bnntGYVwicXwcn5aNJ6pDue17TBZqGPk/tdpws8mnAZUtBYhpkIFTTlyh5kJSZejx9fd5s4nceGpH6ofCCnNxPp2PdHKU8piqnQYZVQ4cFNNDE=" # client1_password
-    - client2_email=fbchat.travis2@gmail.com # Facebook ID: 100026538491708
-    - secure: "V7RB3go2Tc/DdW1x9DkMI+vCfnOgiS3ygmFCABs/GjfPZjZL7VLMJgYGlx0cjeeeN+Oxa2GrhczRAKeMdGB6Ss2lGGAVs6cjJ56ODuBHWT6/FNzLjtDkTnjD+Kfh0l8ZOdxTF3MQ6M/9hU6z5ek+XYGr7u+/7wOYZ5L2cK5MaQ0=" # client2_password
-    - group_id=1463789480385605
+# There are two accounts made specifically for Travis, and the passwords are really only encrypted for obscurity
+# The global env variables `client1_email`, `client1_password`, `client2_email`, `client2_password` and `group_id` are set on the Travis Settings page
 
 install:
   - pip install -U -r requirements.txt
