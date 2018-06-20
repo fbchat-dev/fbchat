@@ -122,7 +122,8 @@ class ReqUrl(object):
     ATTACHMENT_PHOTO = "https://www.facebook.com/mercury/attachments/photo/"
     EVENT_REMINDER = "https://www.facebook.com/ajax/eventreminder/create"
     MODERN_SETTINGS_MENU = "https://www.facebook.com/bluebar/modern_settings_menu/"
-
+    REMOVE_FRIEND = "https://m.facebook.com/a/removefriend.php"
+    
     pull_channel = 0
 
     def change_pull_channel(self, channel=None):
