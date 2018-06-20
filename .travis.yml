@@ -5,6 +5,7 @@ python:
 - 3.4
 - 3.5
 - 3.6
+- pypy
 
 env:
   global:
@@ -16,20 +17,27 @@ env:
     - secure: "V7RB3go2Tc/DdW1x9DkMI+vCfnOgiS3ygmFCABs/GjfPZjZL7VLMJgYGlx0cjeeeN+Oxa2GrhczRAKeMdGB6Ss2lGGAVs6cjJ56ODuBHWT6/FNzLjtDkTnjD+Kfh0l8ZOdxTF3MQ6M/9hU6z5ek+XYGr7u+/7wOYZ5L2cK5MaQ0=" # client2_password
     - group_id=1463789480385605
 
+install:
+  - pip install -U -r requirements.txt
+  - pip install -U -r dev-requirements.txt
+
 before_script:
   - if [[ "$TRAVIS_PYTHON_VERSION" = "2.7" ]]; then export PYTEST_ADDOPTS='-m ""'; fi; # expensive tests (otherwise disabled in pytest.ini)
   - if [[ "$TRAVIS_PULL_REQUEST" != false ]]; then export PYTEST_ADDOPTS='-m offline'; fi; # offline tests only
 
 script: python -m pytest || python -m pytest --lf; # Run failed tests twice
 
-cache: pip
+cache:
+  pip: true
+  directories:
+    - .pytest_cache
 
 deploy:
   provider: pypi
   user: madsmtm
   password:
     secure: "VA0MLSrwIW/T2KjMwjLZCzrLHw8pJT6tAvb48t7qpBdm8x192hax61pz1TaBZoJvlzyBPFKvluftuclTc7yEFwzXe7Gjqgd/ODKZl/wXDr36hQ7BBOLPZujdwmWLvTzMh3eJZlvkgcLCzrvK3j2oW8cM/+FZeVi/5/FhVuJ4ofs="
+  distributions: sdist bdist_wheel
   on:
-    python: 3.6
     branch: master
     tags: true
