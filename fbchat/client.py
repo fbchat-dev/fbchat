@@ -212,7 +212,7 @@ class Client(object):
         self.ttstamp = ''
 
         r = self._get(self.req_url.BASE)
-        soup = bs(r.text, "lxml")
+        soup = bs(r.text, "html.parser")
 
         fb_dtsg_element = soup.find("input", {'name': 'fb_dtsg'})
         if fb_dtsg_element:
@@ -255,7 +255,7 @@ class Client(object):
         if not (self.email and self.password):
             raise FBchatUserError("Email and password not found.")
 
-        soup = bs(self._get(self.req_url.MOBILE).text, "lxml")
+        soup = bs(self._get(self.req_url.MOBILE).text, "html.parser")
         data = dict((elem['name'], elem['value']) for elem in soup.findAll("input") if elem.has_attr('value') and elem.has_attr('name'))
         data['email'] = self.email
         data['pass'] = self.password
@@ -280,7 +280,7 @@ class Client(object):
             return False, r.url
 
     def _2FA(self, r):
-        soup = bs(r.text, "lxml")
+        soup = bs(r.text, "html.parser")
         data = dict()
 
         s = self.on2FACode()
@@ -1041,7 +1041,6 @@ class Client(object):
         :param user_ids: One or more user IDs to add
         :param thread_id: Group ID to add people to. See :ref:`intro_threads`
         :type user_ids: list
-        :return: :ref:`Message ID <intro_message_ids>` of the executed action
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -1141,7 +1140,7 @@ class Client(object):
         thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {
-            'color_choice': color.value,
+            'color_choice': color.value if color != ThreadColor.MESSENGER_BLUE else '',
             'thread_or_other_fbid': thread_id
         }
 
@@ -1551,13 +1550,18 @@ class Client(object):
                     self.onInbox(unseen=m["unseen"], unread=m["unread"], recent_unread=m["recent_unread"], msg=m)
 
                 # Typing
-                elif mtype == "typ":
+                elif mtype == "typ" or mtype == "ttyp":
                     author_id = str(m.get("from"))
-                    thread_id = str(m.get("to"))
-                    if thread_id == self.uid:
-                        thread_type = ThreadType.USER
-                    else:
+                    thread_id = m.get("thread_fbid")
+                    if thread_id:
                         thread_type = ThreadType.GROUP
+                        thread_id = str(thread_id)
+                    else:
+                        thread_type = ThreadType.USER
+                        if author_id == self.uid:
+                            thread_id = m.get("to")
+                        else:
+                            thread_id = author_id
                     typing_status = TypingStatus(m.get("st"))
                     self.onTyping(author_id=author_id, status=typing_status, thread_id=thread_id, thread_type=thread_type, msg=m)
 
