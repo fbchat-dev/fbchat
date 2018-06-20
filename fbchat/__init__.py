@@ -15,7 +15,7 @@ from __future__ import unicode_literals
 from .client import *
 
 __title__ = 'fbchat'
-__version__ = '1.3.8'
+__version__ = '1.3.9'
 __description__ = 'Facebook Chat (Messenger) for Python'
 
 __copyright__ = 'Copyright 2015 - 2018 by Taehoon Kim'
