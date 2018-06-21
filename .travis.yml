@@ -55,7 +55,6 @@ jobs:
       if: not ((branch = master OR tag IS present) AND type != pull_request)
       stage: offline tests
       script: scripts/travis-offline
-      env: PYTEST_ADDOPTS='-m offline'
 
     # Run offline tests in all the supported python versions
       python: 2.7
