@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -ex
+
+echo travis_fold:start:pytest
+
+python -m pytest -m offline
+
+echo travis_fold:end:pytest

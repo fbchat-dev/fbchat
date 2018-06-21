@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -ex
+
+echo travis_fold:start:pytest
+
+if ! python -m pytest --tb=no --color=yes; then # --tb=no -> Don't print stack traces
+    echo 'Some tests failed. Rerunning them, since they can be kinda flaky.'
+    python -m pytest --last-failed --color=yes
+fi
+
+echo travis_fold:end:pytest
