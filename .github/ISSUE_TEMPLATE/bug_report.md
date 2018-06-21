@@ -1,35 +1,34 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Create a report if you're having trouble with `fbchat`
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+## Description of the problem
+Example: Logging in fails when the character `%` is in the password. A specific password that fails is `a_password_with_%`
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+## Code to reproduce
+```py
+# Example code
+from fbchat import Client
+client = Client("[REDACTED_USERNAME]", "a_password_with_%")
+```
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## Traceback
+```
+Traceback (most recent call last):
+  File "<test.py>", line 1, in <module>
+  File "[site-packages]/fbchat/client.py", line 78, in __init__
+    self.login(email, password, max_tries)
+  File "[site-packages]/fbchat/client.py", line 407, in login
+    raise FBchatUserError('Login failed. Check email/password. (Failed on url: {})'.format(login_url))
+fbchat.models.FBchatUserError: Login failed. Check email/password. (Failed on url: https://m.facebook.com/login.php?login_attempt=1)
+```
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+## Environment information
+- Python version
+- `fbchat` version
+- If relevant, output from `$ python -m pip list`
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
-
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
-
-**Additional context**
-Add any other context about the problem here.
+If you have done any research, include that.
+Make sure to redact all personal information.
