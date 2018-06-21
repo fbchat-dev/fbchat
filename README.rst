@@ -2,7 +2,7 @@ fbchat: Facebook Chat (Messenger) for Python
 ============================================
 
 .. image:: https://img.shields.io/badge/license-BSD-blue.svg
-    :target: LICENSE.txt
+    :target: https://github.com/carpedm20/fbchat/tree/master/LICENSE
     :alt: License: BSD
 
 .. image:: https://img.shields.io/badge/python-2.7%2C%203.4%2C%203.5%2C%203.6%20pypy-blue.svg
