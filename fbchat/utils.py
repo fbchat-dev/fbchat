@@ -123,7 +123,7 @@ class ReqUrl(object):
     EVENT_REMINDER = "https://www.facebook.com/ajax/eventreminder/create"
     MODERN_SETTINGS_MENU = "https://www.facebook.com/bluebar/modern_settings_menu/"
     REMOVE_FRIEND = "https://m.facebook.com/a/removefriend.php"
-    
+
     pull_channel = 0
 
     def change_pull_channel(self, channel=None):
@@ -144,7 +144,7 @@ def strip_to_json(text):
     try:
         return text[text.index('{'):]
     except ValueError:
-        raise FBchatException('No JSON object found: {}, {}'.format(repr(text), text.index('{')))
+        raise FBchatException('No JSON object found: {!r}'.format(text))
 
 def get_decoded_r(r):
     return get_decoded(r._content)
@@ -211,7 +211,7 @@ def check_request(r, as_json=True):
         try:
             j = json.loads(content)
         except ValueError:
-            raise FBchatFacebookError('Error while parsing JSON: {}'.format(repr(content)))
+            raise FBchatFacebookError('Error while parsing JSON: {!r}'.format(content))
         check_json(j)
         return j
     else:
