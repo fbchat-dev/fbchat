@@ -2,4 +2,4 @@
 
 set -ex
 
-python -m pytest -m offline
+python -m pytest -m offline --color=yes
