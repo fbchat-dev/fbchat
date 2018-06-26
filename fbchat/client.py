@@ -925,7 +925,7 @@ class Client(object):
             if len(message_ids) != 1:
                 log.warning("Got multiple message ids' back: {}".format(message_ids))
             message_id = message_ids[0]
-        except (KeyError, IndexError) as e:
+        except (KeyError, IndexError, TypeError) as e:
             raise FBchatException('Error when sending message: No message IDs could be found: {}'.format(j))
 
         # update JS token if received in response
