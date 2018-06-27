@@ -187,6 +187,10 @@ def generateOfflineThreadingID():
     return str(int(msgs, 2))
 
 def check_json(j):
+    if j.get('jsmods') is not None and j['jsmods'].get('require') is not None:
+        for x in j['jsmods']['require']:
+            if len(x) > 3 and x[0] == 'ServerRedirect' and x[1] == 'redirectPageTo':
+                return FBchatRedirectError('Redicrect when sending request: {}'.format(j), fb_redirect_url=x[3][0])
     if j.get('error') is None:
         return
     if 'errorDescription' in j:
@@ -216,7 +220,6 @@ def check_request(r, as_json=True):
         log.debug(j)
         return j
     else:
-        log.debug(content)
         return content
 
 def get_jsmods_require(j, index):
