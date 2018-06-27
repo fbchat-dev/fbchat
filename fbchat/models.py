@@ -25,7 +25,7 @@ class FBchatRedirectError(Exception):
     #: The url that Facebook redirected to
     fb_redirect_url = None
     def __init__(self, message, fb_redirect_url=None):
-        super(FBchatFacebookError, self).__init__(message)
+        super(FBchatException, self).__init__(message)
         """Thrown by fbchat when Facebook returns an unexpected redirect"""
         self.fb_redirect_url = str(fb_redirect_url)
 
