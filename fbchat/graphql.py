@@ -185,12 +185,18 @@ def graphql_to_thread(thread):
         if 'last_message' in thread:
             last_message_timestamp = thread['last_message']['nodes'][0]['timestamp_precise']
 
+        first_name = user.get('short_name')
+        if first_name is None:
+            last_name = None
+        else:
+            last_name = user.get('name').split(first_name, 1).pop().strip()
+
         return User(
             user['id'],
             url=user.get('url'),
             name=user.get('name'),
-            first_name=user.get('short_name'),
-            last_name=user.get('name').split(user.get('short_name'),1).pop().strip(),
+            first_name=first_name,
+            last_name=last_name,
             is_friend=user.get('is_viewer_friend'),
             gender=GENDERS.get(user.get('gender')),
             affinity=user.get('affinity'),
