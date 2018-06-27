@@ -96,13 +96,13 @@ class Client(object):
         self.req_counter += 1
         return payload
 
-    def _fix_fb_errors(self, error):
+    def _fix_fb_errors(self, error_code):
         """
         This fixes "Please try closing and re-opening your browser window" errors (1357004)
         This error usually happens after 1-2 days of inactivity
         It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
         """
-        if isinstanceof(error, FBchatFacebookError) and error.fb_error_code == '1357004':
+        if error_code == '1357004':
             log.warning('Got error #1357004. Doing a _postLogin, and resending request')
             self._postLogin()
             return True
@@ -115,8 +115,8 @@ class Client(object):
             return r
         try:
             return check_request(r, as_json=as_json)
-        except FBchatException as e:
-            if error_retries > 0 and self._fix_fb_errors(e):
+        except FBchatFacebookError as e:
+            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._get(url, query=query, timeout=timeout, fix_request=fix_request, as_json=as_json, error_retries=error_retries-1)
             raise e
 
@@ -127,8 +127,8 @@ class Client(object):
             return r
         try:
             return check_request(r, as_json=as_json)
-        except FBchatException as e:
-            if error_retries > 0 and self._fix_fb_errors(e):
+        except FBchatFacebookError as e:
+            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._post(url, query=query, timeout=timeout, fix_request=fix_request, as_json=as_json, error_retries=error_retries-1)
             raise e
 
@@ -136,8 +136,8 @@ class Client(object):
         content = self._post(self.req_url.GRAPHQL, payload, fix_request=True, as_json=False)
         try:
             return graphql_response_to_json(content)
-        except FBchatException as e:
-            if error_retries > 0 and self._fix_fb_errors(e):
+        except FBchatFacebookError as e:
+            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._graphql(payload, error_retries=error_retries-1)
             raise e
 
