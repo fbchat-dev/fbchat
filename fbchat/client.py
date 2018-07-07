@@ -1085,7 +1085,9 @@ class Client(object):
     
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         
-        if thread_type == ThreadType.GROUP:
+        if thread_type != ThreadType.GROUP:
+            raise FBchatUserError('Can only change the image of group threads')
+        else:
             data = {
                 'thread_image_id': image_id,
                 'thread_id': thread_id
@@ -1097,33 +1099,28 @@ class Client(object):
     
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         
-        if thread_type == ThreadType.GROUP:
+        if thread_type != ThreadType.GROUP:
+            raise FBchatUserError('Can only change the image of group threads')
+        else:
             mimetype = guess_type(image_url)[0]
             is_gif = (mimetype == 'image/gif')
             remote_image = requests.get(image_url).content
             image_id = self._uploadImage(image_url, remote_image, mimetype)
-            data = {
-                'thread_image_id': image_id,
-                'thread_id': thread_id
-            }
 
-            j = self._post(self.req_url.THREAD_IMAGE, data, fix_request=True, as_json=True)
+            self.changeThreadImage(image_id, thread_id, thread_type)
     
     def changeThreadImageLocal(self, image_path, thread_id=None, thread_type=ThreadType.USER):
         
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         
-        if thread_type == ThreadType.GROUP:
-        
+        if thread_type != ThreadType.GROUP:
+            raise FBchatUserError('Can only change the image of group threads')
+        else:
             mimetype = guess_type(image_path)[0]
             is_gif = (mimetype == 'image/gif')
             image_id = self._uploadImage(image_path, open(image_path, 'rb'), mimetype)
-            data = {
-                'thread_image_id': image_id,
-                'thread_id': thread_id
-            }
 
-            j = self._post(self.req_url.THREAD_IMAGE, data, fix_request=True, as_json=True)
+            self.changeThreadImage(image_id, thread_id, thread_type)
 
     def changeThreadTitle(self, title, thread_id=None, thread_type=ThreadType.USER):
         """
