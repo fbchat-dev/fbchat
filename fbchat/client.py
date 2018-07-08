@@ -1082,6 +1082,15 @@ class Client(object):
         j = self._post(self.req_url.REMOVE_USER, data, fix_request=True, as_json=True)
         
     def changeThreadImage(self, image_id, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Changes a thread image from an image id
+
+        :param image_id: ID of uploaded image
+        :param thread_id User/Group ID to change image. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :raises: FBchatException if request failed
+        """
     
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         
@@ -1096,6 +1105,15 @@ class Client(object):
             j = self._post(self.req_url.THREAD_IMAGE, data, fix_request=True, as_json=True)
     
     def changeThreadImageRemote(self, image_url, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Changes a thread image from a URL
+
+        :param image_url: URL of an image to upload and change
+        :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :raises: FBchatException if request failed
+        """
     
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         
@@ -1110,6 +1128,15 @@ class Client(object):
             self.changeThreadImage(image_id, thread_id, thread_type)
     
     def changeThreadImageLocal(self, image_path, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Changes a thread image from a local path
+
+        :param image_path: Path of an image to upload and change
+        :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :raises: FBchatException if request failed
+        """
         
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         
