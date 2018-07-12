@@ -1080,6 +1080,74 @@ class Client(object):
         }
 
         j = self._post(self.req_url.REMOVE_USER, data, fix_request=True, as_json=True)
+        
+    def changeThreadImage(self, image_id, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Changes a thread image from an image id
+
+        :param image_id: ID of uploaded image
+        :param thread_id User/Group ID to change image. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :raises: FBchatException if request failed
+        """
+    
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
+        
+        if thread_type != ThreadType.GROUP:
+            raise FBchatUserError('Can only change the image of group threads')
+        else:
+            data = {
+                'thread_image_id': image_id,
+                'thread_id': thread_id
+            }
+
+            j = self._post(self.req_url.THREAD_IMAGE, data, fix_request=True, as_json=True)
+    
+    def changeThreadImageRemote(self, image_url, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Changes a thread image from a URL
+
+        :param image_url: URL of an image to upload and change
+        :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :raises: FBchatException if request failed
+        """
+    
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
+        
+        if thread_type != ThreadType.GROUP:
+            raise FBchatUserError('Can only change the image of group threads')
+        else:
+            mimetype = guess_type(image_url)[0]
+            is_gif = (mimetype == 'image/gif')
+            remote_image = requests.get(image_url).content
+            image_id = self._uploadImage(image_url, remote_image, mimetype)
+
+            self.changeThreadImage(image_id, thread_id, thread_type)
+    
+    def changeThreadImageLocal(self, image_path, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Changes a thread image from a local path
+
+        :param image_path: Path of an image to upload and change
+        :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :raises: FBchatException if request failed
+        """
+        
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
+        
+        if thread_type != ThreadType.GROUP:
+            raise FBchatUserError('Can only change the image of group threads')
+        else:
+            mimetype = guess_type(image_path)[0]
+            is_gif = (mimetype == 'image/gif')
+            image_id = self._uploadImage(image_path, open(image_path, 'rb'), mimetype)
+
+            self.changeThreadImage(image_id, thread_id, thread_type)
 
     def changeThreadTitle(self, title, thread_id=None, thread_type=ThreadType.USER):
         """
@@ -1094,18 +1162,17 @@ class Client(object):
         """
 
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-
+        
         if thread_type == ThreadType.USER:
             # The thread is a user, so we change the user's nickname
             return self.changeNickname(title, thread_id, thread_id=thread_id, thread_type=thread_type)
         else:
-            data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+            data = {
+                'thread_name': title,
+                'thread_id': thread_id,
+            }
 
-            data['action_type'] = 'ma-type:log-message'
-            data['log_message_data[name]'] = title
-            data['log_message_type'] = 'log:thread-name'
-
-            return self._doSendRequest(data)
+            j = self._post(self.req_url.THREAD_NAME, data, fix_request=True, as_json=True)
 
     def changeNickname(self, nickname, user_id, thread_id=None, thread_type=ThreadType.USER):
         """
