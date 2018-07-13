@@ -1,43 +1,90 @@
 sudo: false
 language: python
-python:
-- 2.7
-- 3.4
-- 3.5
-- 3.6
-- pypy
+conditions: v1
 
-env:
-  global:
-    # These two accounts are made specifically for this purpose, and the passwords are really only encrypted for obscurity
-    # In reality, you could probably still login with the accounts by looking at log output from travis-ci.org
-    - client1_email=travis.fbchat1@gmail.com # Facebook ID: 100023782141139
-    - secure: "W1NON6qaLnvYIOVoC93MXkmbAIkUkHcGREBwN0BSVM3cLuMduk4VVkz6PY2T8bnntGYVwicXwcn5aNJ6pDue17TBZqGPk/tdpws8mnAZUtBYhpkIFTTlyh5kJSZejx9fd5s4nceGpH6ofCCnNxPp2PdHKU8piqnQYZVQ4cFNNDE=" # client1_password
-    - client2_email=fbchat.travis2@gmail.com # Facebook ID: 100026538491708
-    - secure: "V7RB3go2Tc/DdW1x9DkMI+vCfnOgiS3ygmFCABs/GjfPZjZL7VLMJgYGlx0cjeeeN+Oxa2GrhczRAKeMdGB6Ss2lGGAVs6cjJ56ODuBHWT6/FNzLjtDkTnjD+Kfh0l8ZOdxTF3MQ6M/9hU6z5ek+XYGr7u+/7wOYZ5L2cK5MaQ0=" # client2_password
-    - group_id=1463789480385605
+# There are two accounts made specifically for Travis, and the passwords are really only encrypted for obscurity
+# The global env variables `client1_email`, `client1_password`, `client2_email`, `client2_password` and `group_id`
+# are set on the Travis Settings page
+
+# The tests are run with `Limit concurrent jobs = 1`, since the tests can't use the clients simultaneously
 
 install:
   - pip install -U -r requirements.txt
   - pip install -U -r dev-requirements.txt
 
-before_script:
-  - if [[ "$TRAVIS_PYTHON_VERSION" = "2.7" ]]; then export PYTEST_ADDOPTS='-m ""'; fi; # expensive tests (otherwise disabled in pytest.ini)
-  - if [[ "$TRAVIS_PULL_REQUEST" != false ]]; then export PYTEST_ADDOPTS='-m offline'; fi; # offline tests only
-
-script: python -m pytest || python -m pytest --lf; # Run failed tests twice
-
 cache:
   pip: true
-  directories:
-    - .pytest_cache
+  # Pytest caching is disabled, since TravisCI instances have different public IPs. Facebook  doesn't like that,
+  # and redirects you to the url `/checkpoint/block`, where you have to change the account's password
+  # directories:
+  #   - .pytest_cache
 
-deploy:
-  provider: pypi
-  user: madsmtm
-  password:
-    secure: "VA0MLSrwIW/T2KjMwjLZCzrLHw8pJT6tAvb48t7qpBdm8x192hax61pz1TaBZoJvlzyBPFKvluftuclTc7yEFwzXe7Gjqgd/ODKZl/wXDr36hQ7BBOLPZujdwmWLvTzMh3eJZlvkgcLCzrvK3j2oW8cM/+FZeVi/5/FhVuJ4ofs="
-  distributions: sdist bdist_wheel
-  on:
-    branch: master
-    tags: true
+jobs:
+  include:
+    # The tests are split into online and offline versions.
+    # The online tests are only run against the master branch.
+    # Because:
+    # Travis caching is per-branch and per-job, so even though we cache the Facebook sessions via. `.pytest_cache`
+    # and in `tests.utils.load_client`, we need 6 new sessions per branch. This is usually the point where Facebook
+    # starts complaining, and we have to manually fix it
+
+    - &test-online
+      if: (branch = master OR tag IS present) AND type != pull_request
+      stage: online tests
+      script: scripts/travis-online
+
+    # Run online tests in all the supported python versions
+      python: 2.7
+    - <<: *test-online
+      python: 3.4
+    - <<: *test-online
+      python: 3.5
+    - <<: *test-online
+      python: 3.6
+    - <<: *test-online
+      python: pypy
+
+    # Run the expensive tests, with the python version most likely to break, aka. 2
+    - <<: *test-online
+      # Only run if the commit message includes [ci all] or [all ci]
+      if: commit_message =~ /\[ci\s+all\]|\[all\s+ci\]/
+      python: 2.7
+      env: PYTEST_ADDOPTS='-m expensive'
+
+    - &test-offline
+      # Ideally, it'd be nice to run the offline tests in every build, but since we can't run jobs concurrently (yet),
+      # we'll disable them when they're not needed, and include them inside the online tests instead
+      if: not ((branch = master OR tag IS present) AND type != pull_request)
+      stage: offline tests
+      script: scripts/travis-offline
+
+    # Run offline tests in all the supported python versions
+      python: 2.7
+    - <<: *test-offline
+      python: 3.4
+    - <<: *test-offline
+      python: 3.5
+    - <<: *test-offline
+      python: 3.6
+    - <<: *test-offline
+      python: 3.6
+    - <<: *test-offline
+      python: pypy
+
+    # Deploy to PyPI
+    - &deploy
+      stage: deploy
+      if: branch = master AND tag IS present
+      install: skip
+      deploy:
+        provider: pypi
+        user: madsmtm
+        password:
+          secure: "VA0MLSrwIW/T2KjMwjLZCzrLHw8pJT6tAvb48t7qpBdm8x192hax61pz1TaBZoJvlzyBPFKvluftuclTc7yEFwzXe7Gjqgd/ODKZl/wXDr36hQ7BBOLPZujdwmWLvTzMh3eJZlvkgcLCzrvK3j2oW8cM/+FZeVi/5/FhVuJ4ofs="
+        distributions: sdist bdist_wheel
+        skip_existing: true
+
+    # We need the bdist_wheels from both Python 2 and 3
+      python: 3.6
+    - <<: *deploy
+      python: 2.7
