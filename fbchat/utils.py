@@ -125,6 +125,7 @@ class ReqUrl(object):
     EVENT_REMINDER = "https://www.facebook.com/ajax/eventreminder/create"
     MODERN_SETTINGS_MENU = "https://www.facebook.com/bluebar/modern_settings_menu/"
     REMOVE_FRIEND = "https://m.facebook.com/a/removefriend.php"
+    CREATE_GROUP = "https://m.facebook.com/messages/send/?icm=1"
 
     pull_channel = 0
 
