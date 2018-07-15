@@ -265,8 +265,7 @@ class Client(object):
 
         # Usually, 'Checkpoint' will refer to 2FA
         if ('checkpoint' in r.url
-                and ('enter security code to continue' in r.text.lower()
-                    or 'enter login code to continue' in r.text.lower())):
+            and ('id="approvals_code"' in r.text.lower())):
             r = self._2FA(r)
 
         # Sometimes Facebook tries to show the user a "Save Device" dialog
