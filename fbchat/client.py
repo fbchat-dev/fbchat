@@ -1086,7 +1086,7 @@ class Client(object):
         Changes a thread image from an image id
 
         :param image_id: ID of uploaded image
-        :param thread_id User/Group ID to change image. See :ref:`intro_threads`
+        :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
         :raises: FBchatException if request failed
