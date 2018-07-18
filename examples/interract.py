@@ -1,61 +1,67 @@
 # -*- coding: UTF-8 -*-
 
-from fbchat import Client
-from fbchat.models import *
+from time import sleep
+from fbchat import Client, Group, Size, Sticker, Mention, Color
 
-client = Client("<email>", "<password>")
+c = Client("<email>", "<password>")
 
-thread_id = '1234567890'
-thread_type = ThreadType.GROUP
+# Get the thread from an ID
+thread = c.get_threads_from_ids(1234567890)
 
-# Will send a message to the thread
-client.send(Message(text='<message>'), thread_id=thread_id, thread_type=thread_type)
+user = c.get_threads_from_ids(12345678901)
 
-# Will send the default `like` emoji
-client.send(Message(emoji_size=EmojiSize.LARGE), thread_id=thread_id, thread_type=thread_type)
+# Send some text to the thread
+c.send_text(thread, 'This is a message!')
 
-# Will send the emoji `👍`
-client.send(Message(text='👍', emoji_size=EmojiSize.LARGE), thread_id=thread_id, thread_type=thread_type)
+# Send the thread's default emoji
+c.send_emoji(thread)
 
-# Will send the sticker with ID `767334476626295`
-client.send(Message(sticker=Sticker('767334476626295')), thread_id=thread_id, thread_type=thread_type)
+# Send the thumbs up emoji, in large version
+c.send_emoji(thread, '👍', size=Size.LARGE)
 
-# Will send a message with a mention
-client.send(Message(text='This is a @mention', mentions=[Mention(thread_id, offset=10, length=8)]), thread_id=thread_id, thread_type=thread_type)
+# Send the sticker with ID `767334476626295`
+c.send_sticker(thread, Sticker(767334476626295))
 
-# Will send the image located at `<image path>`
-client.sendLocalImage('<image path>', message=Message(text='This is a local image'), thread_id=thread_id, thread_type=thread_type)
+# Send a message with a mention
+c.send_text(thread, 'This is a @mention!',
+            mentions=[Mention(thread, offset=10, length=8)])
 
-# Will download the image at the url `<image url>`, and then send it
-client.sendRemoteImage('<image url>', message=Message(text='This is a remote image'), thread_id=thread_id, thread_type=thread_type)
-
+# Send the image located at `<image path>`
+c.send_file(thread, '<image path>', text='This is a local image')
 
 # Only do these actions if the thread is a group
-if thread_type == ThreadType.GROUP:
-    # Will remove the user with ID `<user id>` from the thread
-    client.removeUserFromGroup('<user id>', thread_id=thread_id)
+if isinstance(thread, Group):
+    # Remove the from the thread
+    c.remove_user(thread, user)
 
-    # Will add the user with ID `<user id>` to the thread
-    client.addUsersToGroup('<user id>', thread_id=thread_id)
+    # Add the user to the thread
+    c.add_user(thread, user)
 
-    # Will add the users with IDs `<1st user id>`, `<2nd user id>` and `<3th user id>` to the thread
-    client.addUsersToGroup(['<1st user id>', '<2nd user id>', '<3rd user id>'], thread_id=thread_id)
+    # Make the user an admin
+    c.add_admin(thread, user)
 
+    # Make the user no longer an admin
+    c.remove_admin(thread, user)
 
-# Will change the nickname of the user `<user_id>` to `<new nickname>`
-client.changeNickname('<new nickname>', '<user id>', thread_id=thread_id, thread_type=thread_type)
+    # Set the nickname of the user
+    c.set_nickname(thread, user, 'This is a nickname!')
 
-# Will change the title of the thread to `<title>`
-client.changeThreadTitle('<title>', thread_id=thread_id, thread_type=thread_type)
+# Set the title of the thread
+c.set_title(thread, 'This is a title!')
 
-# Will set the typing status of the thread to `TYPING`
-client.setTypingStatus(TypingStatus.TYPING, thread_id=thread_id, thread_type=thread_type)
+# Make it look like you started typing, and then sent a message
+c.start_typing(thread)
+sleep(5)
+c.send_text(thread, 'Some message')
+c.stop_typing(thread)
 
-# Will change the thread color to `MESSENGER_BLUE`
-client.changeThreadColor(ThreadColor.MESSENGER_BLUE, thread_id=thread_id)
+# Set the thread color to `MESSENGER_BLUE`
+c.set_colour(thread, Color.MESSENGER_BLUE)
 
-# Will change the thread emoji to `👍`
-client.changeThreadEmoji('👍', thread_id=thread_id)
+# Set the thread emoji to `👍`
+c.set_emoji(thread, '👍')
+
+message = c.send_text(thread, 'A message')
 
 # Will react to a message with a 😍 emoji
-client.reactToMessage('<message id>', MessageReaction.LOVE)
+c.set_reaction(message, '😍')

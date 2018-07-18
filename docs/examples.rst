@@ -1,4 +1,3 @@
-.. highlight:: python
 .. _examples:
 
 Examples
@@ -28,7 +27,7 @@ Fetching Information
 
 This will show the different ways of fetching information about users and threads
 
-.. literalinclude:: ../examples/fetch.py
+.. literalinclude:: ../examples/retrieve.py
 
 
 Echobot
@@ -36,7 +35,7 @@ Echobot
 
 This will reply to any message with the same message
 
-.. literalinclude:: ../examples/echobot.py
+.. literalinclude:: ../examples/echo_bot.py
 
 
 Remove Bot
@@ -44,7 +43,7 @@ Remove Bot
 
 This will remove a user from a group if they write the message `Remove me!`
 
-.. literalinclude:: ../examples/removebot.py
+.. literalinclude:: ../examples/remove_bot.py
 
 
 "Prevent changes"-Bot
@@ -53,4 +52,4 @@ This will remove a user from a group if they write the message `Remove me!`
 This will prevent chat color, emoji, nicknames and chat name from being changed.
 It will also prevent people from being added and removed
 
-.. literalinclude:: ../examples/keepbot.py
+.. literalinclude:: ../examples/keep_bot.py

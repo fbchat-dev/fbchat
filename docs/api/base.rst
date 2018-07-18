@@ -1,0 +1,4 @@
+Base class
+==========
+
+.. autoclass:: Base()
