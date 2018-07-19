@@ -1080,7 +1080,60 @@ class Client(object):
         }
 
         j = self._post(self.req_url.REMOVE_USER, data, fix_request=True, as_json=True)
-        
+    
+    def addGroupAdmin(self, user_id, thread_id=None):
+        """
+        Sets specifed user as a group admin.
+
+        :param user_id: User ID to set admin
+        :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
+        :raises: FBchatException if request failed
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+
+        data = {
+            "add": "true",
+            "admin_ids[0]": user_id,
+            "thread_fbid": thread_id
+        }
+
+        j = self._post(self.req_url.SAVE_ADMINS, data, fix_request=True, as_json=True)
+
+    def removeGroupAdmin(self, user_id, thread_id=None):
+        """
+        Removes group admin from specifed user.
+
+        :param user_id: User ID to remove admin
+        :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
+        :raises: FBchatException if request failed
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+
+        data = {
+            "add": "false",
+            "admin_ids[0]": user_id,
+            "thread_fbid": thread_id
+        }
+
+        j = self._post(self.req_url.SAVE_ADMINS, data, fix_request=True, as_json=True)
+
+    def changeGroupApprovalMode(self, approval_mode, thread_id=None):
+        """
+        Changes group's approval mode
+
+        :param approval_mode: True or False
+        :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
+        :raises: FBchatException if request failed
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+
+        data = {
+            "set_mode": int(approval_mode),
+            "thread_fbid": thread_id
+        }
+
+        j = self._post(self.req_url.APPROVAL_MODE, data, fix_request=True, as_json=True)
+
     def changeThreadImage(self, image_id, thread_id=None, thread_type=ThreadType.USER):
         """
         Changes a thread image from an image id
@@ -1403,6 +1456,68 @@ class Client(object):
             log.warning("Error while removing friend")
             return False
 
+    def blockUser(self, user_id=None):
+        """
+        Blocks messages from a specifed user
+        
+        :param user_id: The id of the user that you want to block
+        :return: Whether the request was successful
+        :raises: FBchatException if request failed
+        """
+        data = {
+            'fbid': user_id
+        }
+        r = self._post(self.req_url.BLOCK_USER, data)
+        return r.ok
+
+    def unblockUser(self, user_id=None):
+        """
+        Unblocks messages from a blocked user
+        
+        :param user_id: The id of the user that you want to unblock
+        :return: Whether the request was successful
+        :raises: FBchatException if request failed
+        """
+        data = {
+            'fbid': user_id
+        }
+        r = self._post(self.req_url.UNBLOCK_USER, data)
+        return r.ok
+    
+    def moveThread(self, location, thread_id=None):
+        """
+        Moves the thread to specifed location
+        
+        :param location: models.ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
+        :param thread_id: User/Group ID to change color of. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :return: Whether the request was successful
+        :raises: FBchatException if request failed
+        """
+        if location == ThreadLocation.PENDING:
+            location = ThreadLocation.OTHER
+        if location in ThreadLocation:
+            loc_str = location.value.lower()
+        else:
+            raise FBchatUserError('"location" must be a value of ThreadLocation')
+        if location == ThreadLocation.ARCHIVED:
+            data_archive = {
+                "ids[{}]".format(thread_id): 'true'
+            }
+            r_archive = self._post(self.req_url.ARCHIVED_STATUS, data_archive)
+            data_unpin = {
+                "ids[{}]".format(thread_id): 'false'
+            }
+            r_unpin = self._post(self.req_url.PINNED_STATUS, data_unpin)
+            return r_archive.ok and r_unpin.ok
+        else:
+            data = {
+                "{}[0]".format(loc_str): thread_id
+            }
+            r = self._post(self.req_url.MOVE_THREAD, data)
+            return r.ok
+
     """
     LISTEN METHODS
     """
@@ -1519,6 +1634,12 @@ class Client(object):
                         self.onTitleChange(mid=mid, author_id=author_id, new_title=new_title, thread_id=thread_id,
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
+                    # Thread image change
+                    elif delta.get("class") == "ForcedFetch":
+                        mid = delta.get("messageId")
+                        thread_id = str(delta['threadKey']['threadFbId'])
+                        self.onImageChange(mid=mid, thread_id=thread_id)
+
                     # Nickname change
                     elif delta_type == "change_thread_nickname":
                         changed_for = str(delta["untypedData"]["participant_id"])
@@ -1527,6 +1648,27 @@ class Client(object):
                         self.onNicknameChange(mid=mid, author_id=author_id, changed_for=changed_for,
                                               new_nickname=new_nickname,
                                               thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
+
+                    # Admin added to group thread
+                    elif delta.get("class") == "AdminAddedToGroupThread":
+                        thread_id = str(metadata['threadKey']['threadFbId'])
+                        added_ids = [str(x['userFbId']) for x in delta['addedAdmins']]
+                        self.onAdminsAdded(mid=mid, added_ids=added_ids, author_id=author_id, thread_id=thread_id,
+                                           ts=ts, msg=m)
+
+                    # Admin removed from group thread
+                    elif delta.get("class") == "AdminRemovedFromGroupThread":
+                        thread_id = str(metadata['threadKey']['threadFbId'])
+                        removed_ids = delta['removedAdminFbIds']
+                        self.onAdminsRemoved(mid=mid, removed_ids=removed_ids, author_id=author_id, thread_id=thread_id,
+                                           ts=ts, msg=m)
+
+                    # Group approval mode change
+                    elif delta_type == "change_thread_approval_mode":
+                        thread_id = str(metadata['threadKey']['threadFbId'])
+                        approval_mode = bool(int(delta['untypedData']['APPROVAL_MODE']))
+                        self.onApprovalModeChange(mid=mid, approval_mode=approval_mode, author_id=author_id, thread_id=thread_id,
+                                           ts=ts, msg=m)
 
                     # Message delivered
                     elif delta.get("class") == "DeliveryReceipt":
@@ -1840,6 +1982,19 @@ class Client(object):
         """
         log.info("Title change from {} in {} ({}): {}".format(author_id, thread_id, thread_type.name, new_title))
 
+
+    def onImageChange(self, mid=None, thread_id=None):
+        """
+        .. todo::
+            Add author_id and image_id
+        Called when the client is listening, and somebody changes the image of a thread
+        
+        :param mid: The action ID
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        """
+        log.info("Image change in {}".format(author_id, thread_id))
+
+
     def onNicknameChange(self, mid=None, author_id=None, changed_for=None, new_nickname=None, thread_id=None, thread_type=ThreadType.USER, ts=None, metadata=None, msg=None):
         """
         Called when the client is listening, and somebody changes the nickname of a person
@@ -1857,6 +2012,50 @@ class Client(object):
         """
         log.info("Nickname change from {} in {} ({}) for {}: {}".format(author_id, thread_id, thread_type.name, changed_for, new_nickname))
 
+
+    def onAdminsAdded(self, mid=None, added_ids=None, author_id=None, thread_id=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody adds admins to a group thread
+
+        :param mid: The action ID
+        :param added_ids: The IDs of the admins who got added
+        :param author_id: The ID of the person who added the admins
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        """
+        log.info("{} added admins: {} in {}".format(author_id, ', '.join(added_ids), thread_id))
+
+
+    def onAdminsRemoved(self, mid=None, removed_ids=None, author_id=None, thread_id=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody removes admins from a group thread
+
+        :param mid: The action ID
+        :param added_ids: The IDs of the admins who got removed
+        :param author_id: The ID of the person who removed the admins
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        """
+        log.info("{} removed admins: {} in {}".format(author_id, ', '.join(removed_ids), thread_id))
+
+
+    def onApprovalModeChange(self, mid=None, approval_mode=None, author_id=None, thread_id=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody removes admins from a group thread
+
+        :param mid: The action ID
+        :param approval_mode: True if approval mode is activated
+        :param author_id: The ID of the person who removed the admins
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        """
+        if approval_mode:
+            log.info("{} activated approval mode in {}".format(author_id, thread_id))
+        else:
+            log.info("{} disabled approval mode in {}".format(author_id, thread_id))
 
     def onMessageSeen(self, seen_by=None, thread_id=None, thread_type=ThreadType.USER, seen_ts=None, ts=None, metadata=None, msg=None):
         """
@@ -1914,7 +2113,7 @@ class Client(object):
         :param ts: A timestamp of the action
         :param msg: A full set of the data recieved
         """
-        log.info("{} added: {}".format(author_id, ', '.join(added_ids)))
+        log.info("{} added: {} in {}".format(author_id, ', '.join(added_ids), thread_id))
 
     def onPersonRemoved(self, mid=None, removed_id=None, author_id=None, thread_id=None, ts=None, msg=None):
         """
@@ -1927,7 +2126,7 @@ class Client(object):
         :param ts: A timestamp of the action
         :param msg: A full set of the data recieved
         """
-        log.info("{} removed: {}".format(author_id, removed_id))
+        log.info("{} removed: {} in {}".format(author_id, removed_id, thread_id))
 
     def onFriendRequest(self, from_id=None, msg=None):
         """
