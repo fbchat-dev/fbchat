@@ -97,6 +97,9 @@ class ReqUrl(object):
     UNREAD_THREADS = "https://www.facebook.com/ajax/mercury/unread_threads.php"
     UNSEEN_THREADS = "https://www.facebook.com/mercury/unseen_thread_ids/"
     THREADS = "https://www.facebook.com/ajax/mercury/threadlist_info.php"
+    MOVE_THREAD = "https://www.facebook.com/ajax/mercury/move_thread.php"
+    ARCHIVED_STATUS = "https://www.facebook.com/ajax/mercury/change_archived_status.php?dpr=1"
+    PINNED_STATUS = "https://www.facebook.com/ajax/mercury/change_pinned_status.php?dpr=1"
     MESSAGES = "https://www.facebook.com/ajax/mercury/thread_info.php"
     READ_STATUS = "https://www.facebook.com/ajax/mercury/change_read_status.php"
     DELIVERED = "https://www.facebook.com/ajax/mercury/delivery_receipts.php"
@@ -125,7 +128,11 @@ class ReqUrl(object):
     EVENT_REMINDER = "https://www.facebook.com/ajax/eventreminder/create"
     MODERN_SETTINGS_MENU = "https://www.facebook.com/bluebar/modern_settings_menu/"
     REMOVE_FRIEND = "https://m.facebook.com/a/removefriend.php"
-
+    BLOCK_USER = "https://www.facebook.com/messaging/block_messages/?dpr=1"
+    UNBLOCK_USER = "https://www.facebook.com/messaging/unblock_messages/?dpr=1"
+    SAVE_ADMINS = "https://www.facebook.com/messaging/save_admins/?dpr=1"
+    APPROVAL_MODE = "https://www.facebook.com/messaging/set_approval_mode/?dpr=1"
+    
     pull_channel = 0
 
     def change_pull_channel(self, channel=None):
@@ -146,7 +153,7 @@ def strip_to_json(text):
     try:
         return text[text.index('{'):]
     except ValueError:
-        raise FBchatException('No JSON object found: {!r}'.format(text))
+        raise FBchatException('No JSON object found: {}, {}'.format(repr(text), text.index('{')))
 
 def get_decoded_r(r):
     return get_decoded(r._content)
@@ -213,9 +220,8 @@ def check_request(r, as_json=True):
         try:
             j = json.loads(content)
         except ValueError:
-            raise FBchatFacebookError('Error while parsing JSON: {!r}'.format(content))
+            raise FBchatFacebookError('Error while parsing JSON: {}'.format(repr(content)))
         check_json(j)
-        log.debug(j)
         return j
     else:
         return content
