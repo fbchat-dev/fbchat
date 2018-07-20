@@ -1081,11 +1081,11 @@ class Client(object):
 
         j = self._post(self.req_url.REMOVE_USER, data, fix_request=True, as_json=True)
     
-    def addGroupAdmin(self, user_id, thread_id=None):
+    def addGroupAdmins(self, admin_ids, thread_id=None):
         """
         Sets specifed user as a group admin.
 
-        :param user_id: User ID to set admin
+        :param admin_ids: User ID to set admin
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
@@ -1093,17 +1093,25 @@ class Client(object):
 
         data = {
             "add": "true",
-            "admin_ids[0]": user_id,
             "thread_fbid": thread_id
         }
 
+        if type(admin_ids) is not list:
+            admin_ids = [admin_ids]
+
+        # Make list of admins unique
+        admin_ids = set(admin_ids)
+
+        for i, admin_id in enumerate(admin_ids):
+            data['admin_ids[' + str(i) + ']'] = str(admin_id)
+
         j = self._post(self.req_url.SAVE_ADMINS, data, fix_request=True, as_json=True)
 
-    def removeGroupAdmin(self, user_id, thread_id=None):
+    def removeGroupAdmins(self, admin_ids, thread_id=None):
         """
         Removes group admin from specifed user.
 
-        :param user_id: User ID to remove admin
+        :param admin_ids: User ID to remove admin
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
@@ -1111,9 +1119,17 @@ class Client(object):
 
         data = {
             "add": "false",
-            "admin_ids[0]": user_id,
             "thread_fbid": thread_id
         }
+
+        if type(admin_ids) is not list:
+            admin_ids = [admin_ids]
+
+        # Make list of admins unique
+        admin_ids = set(admin_ids)
+
+        for i, admin_id in enumerate(admin_ids):
+            data['admin_ids[' + str(i) + ']'] = str(admin_id)
 
         j = self._post(self.req_url.SAVE_ADMINS, data, fix_request=True, as_json=True)
 
