@@ -1085,7 +1085,7 @@ class Client(object):
         """
         Sets specifed user as a group admin.
 
-        :param admin_ids: User ID to set admin
+        :param admin_ids: One or more user IDs to set admin
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
@@ -1111,7 +1111,7 @@ class Client(object):
         """
         Removes group admin from specifed user.
 
-        :param admin_ids: User ID to remove admin
+        :param admin_ids: One or more user IDs to remove admin
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
