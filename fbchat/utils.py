@@ -222,6 +222,7 @@ def check_request(r, as_json=True):
         except ValueError:
             raise FBchatFacebookError('Error while parsing JSON: {!r}'.format(content))
         check_json(j)
+        log.debug(j)
         return j
     else:
         return content
