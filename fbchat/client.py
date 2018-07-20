@@ -2043,11 +2043,11 @@ class Client(object):
 
     def onApprovalModeChange(self, mid=None, approval_mode=None, author_id=None, thread_id=None, ts=None, msg=None):
         """
-        Called when the client is listening, and somebody removes admins from a group thread
+        Called when the client is listening, and somebody changes approval mode in a group thread
 
         :param mid: The action ID
         :param approval_mode: True if approval mode is activated
-        :param author_id: The ID of the person who removed the admins
+        :param author_id: The ID of the person who changed approval mode
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
         :param msg: A full set of the data recieved
