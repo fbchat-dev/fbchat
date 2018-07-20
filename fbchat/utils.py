@@ -153,7 +153,7 @@ def strip_to_json(text):
     try:
         return text[text.index('{'):]
     except ValueError:
-        raise FBchatException('No JSON object found: {}, {}'.format(repr(text), text.index('{')))
+        raise FBchatException('No JSON object found: {!r}'.format(text))
 
 def get_decoded_r(r):
     return get_decoded(r._content)
@@ -220,7 +220,7 @@ def check_request(r, as_json=True):
         try:
             j = json.loads(content)
         except ValueError:
-            raise FBchatFacebookError('Error while parsing JSON: {}'.format(repr(content)))
+            raise FBchatFacebookError('Error while parsing JSON: {!r}'.format(content))
         check_json(j)
         return j
     else:
