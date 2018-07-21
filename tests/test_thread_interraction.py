@@ -2,99 +2,78 @@
 
 from __future__ import unicode_literals
 
-import pytest
-
-from fbchat.models import (
-    Message,
-    ThreadType,
-    FBchatFacebookError,
-    TypingStatus,
-    ThreadColor,
-)
-from utils import random_hex, subset
-from os import environ
+from pytest import mark
+from fbchat.models import Message, FacebookError, Colour
 
 
-def test_remove_from_and_add_to_group(client1, client2, group, catch_event):
-    # Test both methods, while ensuring that the user gets added to the group
-    try:
-        with catch_event("onPersonRemoved") as x:
-            client1.removeUserFromGroup(client2.uid, group["id"])
-        assert subset(
-            x.res, removed_id=client2.uid, author_id=client1.uid, thread_id=group["id"]
-        )
-    finally:
-        with catch_event("onPeopleAdded") as x:
-            client1.addUsersToGroup(client2.uid, group["id"])
-        assert subset(
-            x.res, added_ids=[client2.uid], author_id=client1.uid, thread_id=group["id"]
-        )
+def random_hex(length=20):
+    return "{:X}".format(randrange(16 ** length))
 
 
-@pytest.mark.xfail(
-    raises=FBchatFacebookError, reason="Apparently changeThreadTitle is broken"
-)
-def test_change_title(client1, catch_event, group):
+@mark.parametrize("image", [])
+def test_set_image(listener, client, group, image):
+    with listener('on_image_set') as on_image_set:
+        client.set_image(group, image)
+    on_image_set.assert_called_once_with(group, client, old_image)
+
+
+def test_set_title(listener, client, group, title):
+    client.set_title(group, None)
     title = random_hex()
-    with catch_event("onTitleChange") as x:
-        mid = client1.changeThreadTitle(title, group["id"])
-    assert subset(
-        x.res,
-        mid=mid,
-        author_id=client1.uid,
-        new_title=title,
-        thread_id=group["id"],
-        thread_type=ThreadType.GROUP,
-    )
+    with listener('on_title_set') as on_title_set:
+        client.set_title(group, title)
+    on_title_set.assert_called_once_with(group, client, None)
+
+    with listener('on_title_set') as on_title_set:
+        client.set_title(group)
+    on_title_set.assert_called_once_with(group, client, title)
 
 
-def test_change_nickname(client, client_all, catch_event, compare):
+def test_set_nickname(listener, client, thread, a_client, random_hex):
+    client.set_nickname(thread, a_client, None)
     nickname = random_hex()
-    with catch_event("onNicknameChange") as x:
-        client.changeNickname(nickname, client_all.uid)
-    assert compare(x, changed_for=client_all.uid, new_nickname=nickname)
+
+    with listener('on_nickname_set') as on_nickname_set:
+        client.set_nickname(thread, a_client, nickname)
+    on_nickname_set.assert_called_once_with(thread, client, a_client, None)
+
+    with listener('on_nickname_set') as on_nickname_set:
+        client.set_nickname(thread, a_client)
+    on_nickname_set.assert_called_once_with(thread, client, a_client, nickname)
 
 
-@pytest.mark.parametrize("emoji", ["😀", "😂", "😕", "😍"])
-def test_change_emoji(client, catch_event, compare, emoji):
-    with catch_event("onEmojiChange") as x:
-        client.changeThreadEmoji(emoji)
-    assert compare(x, new_emoji=emoji)
+class FakeColour(object):
+    def __init__(self, value):
+        self.value = value
+
+@mark.parametrize("colour", [
+    mark.xfail(FakeColour("#0077ff"), raises=ValueError),
+    mark.xfail("not a colour", raises=ValueError),
+] + list(Colour))
+def test_set_colour(listener, client, thread, colour):
+    with listener('on_colour_set') as on_colour_set:
+        client.set_colour(thread, colour)
+    on_colour_set.assert_called_once_with(thread, client, old_colour)
 
 
-@pytest.mark.xfail(raises=FBchatFacebookError)
-@pytest.mark.parametrize("emoji", ["🙃", "not an emoji"])
-def test_change_emoji_invalid(client, emoji):
-    client.changeThreadEmoji(emoji)
+@mark.parametrize("emoji", [
+    mark.xfail("🙃", raises=FacebookError),
+    mark.xfail("not an emoji", raises=ValueError),
+    "😀",
+    "😂",
+    "😕",
+    "😍",
+])
+def test_set_emoji(listener, client, thread, emoji):
+    with listener('on_emoji_set') as on_emoji_set:
+        client.set_emoji(thread, emoji)
+    on_emoji_set.assert_called_once_with(thread, client, old_emoji)
 
 
-@pytest.mark.parametrize(
-    "color",
-    [
-        x
-        if x in [ThreadColor.MESSENGER_BLUE, ThreadColor.PUMPKIN]
-        else pytest.mark.expensive(x)
-        for x in ThreadColor
-    ],
-)
-def test_change_color(client, catch_event, compare, color):
-    with catch_event("onColorChange") as x:
-        client.changeThreadColor(color)
-    assert compare(x, new_color=color)
-
-
-@pytest.mark.xfail(
-    raises=FBchatFacebookError, strict=False, reason="Should fail, but doesn't"
-)
-def test_change_color_invalid(client):
-    class InvalidColor:
-        value = "#0077ff"
-
-    client.changeThreadColor(InvalidColor())
-
-
-@pytest.mark.parametrize("status", TypingStatus)
+'''
+@mark.parametrize("status", TypingStatus)
 def test_typing_status(client, catch_event, compare, status):
     with catch_event("onTyping") as x:
         client.setTypingStatus(status)
     assert compare(x, status=status)
+'''

@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import unicode_literals
+
 from .base import Base
 
 
@@ -14,19 +15,30 @@ class Listener(Base):
         message/event, and call the corresponding `on_` method
         """
 
+    def stop_listen(self):
+        """Stop the event listener"""
 
-    def start_listen(self):
-        """Prepare the event listener"""
 
-    def step_listen(self):
+    def init_listener(self):
+        """Prepare the event listener.
+
+        This method is useful if you want to control the listener from an
+        external event loop
+        """
+
+    def step_listener(self):
         """Do one cycle of the listening loop.
 
         This method is useful if you want to control the listener from an
         external event loop
         """
 
-    def stop_listen(self):
-        """Cleanup the event listener"""
+    def clean_listener(self):
+        """Cleanup the event listener.
+
+        This method is useful if you want to control the listener from an
+        external event loop
+        """
 
 
     def on_error(self, exception, msg):

@@ -2,54 +2,79 @@
 
 from __future__ import unicode_literals
 
-import pytest
 import py_compile
 
 from glob import glob
 from os import path, environ
-from fbchat import Client
-from fbchat.models import FBchatUserError, Message
+from pytest import mark
+from fbchat import Client, FacebookError
 
 
-@pytest.mark.offline
 def test_examples():
     # Compiles the examples, to check for syntax errors
     for name in glob(path.join(path.dirname(__file__), "../examples", "*.py")):
         py_compile.compile(name)
 
 
-@pytest.mark.trylast
-@pytest.mark.expensive
-def test_login(client1):
-    assert client1.isLoggedIn()
-    email = client1.email
-    password = client1.password
-
-    client1.logout()
-
-    assert not client1.isLoggedIn()
-
-    with pytest.raises(FBchatUserError):
-        client1.login("<invalid email>", "<invalid password>", max_tries=1)
-
-    client1.login(email, password)
-
-    assert client1.isLoggedIn()
+@mark.tryfirst
+def test_init(client, listener_client):
+    assert client.is_logged_in()
+    assert listener_client.is_logged_in()
 
 
-@pytest.mark.trylast
-def test_sessions(client1):
-    session = client1.getSession()
-    Client("no email needed", "no password needed", session_cookies=session)
-    client1.setSession(session)
-    assert client1.isLoggedIn()
+@mark.parametrize('email, password', [
+    mark.xfail(('<email>', '<password>'), raises=FacebookError),
+    mark.xfail((None, '<password>'), raises=ValueError),
+    mark.xfail(('<email>', None), raises=ValueError),
+    mark.xfail((None, None), raises=ValueError),
+])
+def test_init_invalid(email, password):
+    Client(email, password)
 
 
-@pytest.mark.tryfirst
-def test_default_thread(client1, thread):
-    client1.setDefaultThread(thread["id"], thread["type"])
-    assert client1.send(Message(text="Sent to the specified thread"))
+def test_init_session(mocker, client):
+    _login = mocker.patch.object(Client, '_login')
+    session = client.get_session()
+    c = Client("<email>", "<password>", session=session)
+    _login.assert_not_called()
+    assert c.is_logged_in()
 
-    client1.resetDefaultThread()
-    with pytest.raises(ValueError):
-        client1.send(Message(text="Should not be sent"))
+
+@mark.parametrize('max_tries', [
+    mark.xfail(None, raises=ValueError),
+    mark.xfail(-1, raises=ValueError),
+    mark.xfail(0, raises=ValueError),
+    1,
+    5,
+    10,
+])
+def test_init_max_tries(mocker, max_tries):
+    _login = mocker.patch.object(Client, '_login')
+    c = Client("<email>", "<password>", max_tries=max_tries)
+    assert _login.calls_count == max_tries
+    assert _login.mock_calls == [mocker.call("<email>", "<password>")] * max_tries
+
+
+'''
+@mark.parametrize('user_agent', [0, None, 5, 10])
+def test_init_user_agent(mocker, user_agent):
+    mocker.patch.object(Client._login)
+    c = Client('email', 'password', user_agent=user_agent)
+    assert c.s.user_agent == user_agent
+'''
+
+
+def test_session(client):
+    session = client.get_session()
+    client.set_session(session)
+    assert client.is_logged_in()
+
+
+@mark.trylast
+@mark.expensive
+def test_logout(client):
+    assert client.is_logged_in()
+
+    client.logout()
+
+    assert not client.is_logged_in()

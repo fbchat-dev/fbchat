@@ -7,7 +7,7 @@ from .listener import Listener
 class MessageManagement(Listener):
     """Enables the client to manage previous messages"""
 
-    def set_reaction(self, message, reaction):
+    def set_reaction(self, message, reaction=None):
         """React to a message
 
         If ``reaction`` is ``None``, the reaction will be removed
@@ -18,12 +18,12 @@ class MessageManagement(Listener):
                 😠, 👍, 👎 or ``None``
         """
 
-    def on_reaction_set(self, actor, message, old_reaction):
+    def on_reaction_set(self, message, actor, old_reaction):
         """Called when somebody reacts to/changes their reaction to a message
 
         Args:
-            actor (`Thread`): Person that caused the action
             message (`Message`): Message that was reacted to
+            actor (`Thread`): Person that caused the action
             old_reaction: Previous reaction emoji
         """
 

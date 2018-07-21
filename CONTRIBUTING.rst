@@ -12,11 +12,12 @@ Otherwise, just point it to ``master``.
 Testing Environment
 -------------------
 
-The tests use `pytest <https://docs.pytest.org/>`__, and to work they need two Facebook accounts, and a group thread between these.
+The tests use `pytest <https://docs.pytest.org/>`__ and `pytest-mock <https://github.com/nicoddemus/pytest-mock>`__,
+and to work they need two Facebook accounts, and a group thread between these.
 To set these up, you should export the following environment variables:
 
 ``client1_email``, ``client1_password``, ``client2_email``, ``client2_password`` and ``group_id``
 
-If you're not able to do this, consider simply running ``pytest -m offline``.
+If you're not able to do this, consider simply running ``python -m pytest``, and the offline tests will be run.
 
 And if you're adding new functionality, if possible, make sure to create a new test for it.

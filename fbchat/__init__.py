@@ -44,6 +44,8 @@ __all__ = [
     'Colour',
     'Color',
 
+    'FacebookError',
+
     'Thread',
     'User',
     'Group',

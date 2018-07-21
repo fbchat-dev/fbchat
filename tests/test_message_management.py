@@ -2,11 +2,31 @@
 
 from __future__ import unicode_literals
 
-import pytest
+from pytest import mark, fixture
+from fbchat.models import Message, Reaction
 
-from fbchat.models import Message, MessageReaction
+
+@fixture(scope='module')
+def message(client):
+    return client.send_text("This message will be reacted to")
 
 
-def test_set_reaction(client):
-    mid = client.send(Message(text="This message will be reacted to"))
-    client.reactToMessage(mid, MessageReaction.LOVE)
+@mark.parametrize("reaction", [
+    mark.xfail("😀", raises=ValueError),
+    mark.xfail("🎉", raises=ValueError),
+    mark.xfail("not an emoji", raises=ValueError),
+    None,
+    "😍",
+    "😆",
+    "😮",
+    "😢",
+    "😠",
+    "👍",
+    "👎",
+])
+def test_set_reaction(listener, client, message, reaction):
+    client.set_reaction(message, reaction)
+
+    with listener('on_reaction_set') as on_reaction_set:
+        client.set_reaction(message)
+    on_reaction_set.assert_called_once_with(message, client, reaction)

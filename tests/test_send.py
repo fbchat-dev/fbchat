@@ -2,109 +2,75 @@
 
 from __future__ import unicode_literals
 
-import pytest
-
 from os import path
-from fbchat.models import Message, Mention, EmojiSize, FBchatFacebookError, Sticker
-from utils import subset
+from pytest import mark
+from fbchat.models import Client, Message, Mention, Size, FacebookError, Sticker
 
 
-@pytest.mark.parametrize(
-    "text",
-    [
-        "test_send",
-        "😆",
-        "\\\n\t%?&'\"",
-        "ˁҭʚ¹Ʋջوװ՞ޱɣࠚԹБɑȑңКએ֭ʗыԈٌʼőԈ×௴nચϚࠖణٔє܅Ԇޑط",
-        "a" * 20000,  # Maximum amount of characters you can send
-    ],
-)
-def test_send_text(client, catch_event, compare, text):
-    with catch_event("onMessage") as x:
-        mid = client.sendMessage(text)
-
-    assert compare(x, mid=mid, message=text)
-    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=text)
+'''
+@fixture
+def client(mocker, client, thread):
+    send = mocker.spy(client, 'send')
+    yield client
+    assert send.return_value == *client.fetch_messages(thread, limit=1)
+    assert send.return_value == *client.get_messages(thread, limit=1)
+'''
 
 
-@pytest.mark.parametrize(
-    "emoji, emoji_size",
-    [
-        ("😆", EmojiSize.SMALL),
-        ("😆", EmojiSize.MEDIUM),
-        ("😆", EmojiSize.LARGE),
-        # These fail because the emoji is made into a sticker
-        # This should be fixed
-        pytest.mark.xfail((None, EmojiSize.SMALL)),
-        pytest.mark.xfail((None, EmojiSize.MEDIUM)),
-        pytest.mark.xfail((None, EmojiSize.LARGE)),
-    ],
-)
-def test_send_emoji(client, catch_event, compare, emoji, emoji_size):
-    with catch_event("onMessage") as x:
-        mid = client.sendEmoji(emoji, emoji_size)
-
-    assert compare(x, mid=mid, message=emoji)
-    assert subset(
-        vars(x.res["message_object"]),
-        uid=mid,
-        author=client.uid,
-        text=emoji,
-        emoji_size=emoji_size,
-    )
+@mark.parametrize("text", [
+    "test_send",
+    "😆",
+    "\\\n\t%?&'\"",
+    "ˁҭʚ¹Ʋջوװ՞ޱɣࠚԹБɑȑңКએ֭ʗыԈٌʼőԈ×௴nચϚࠖణٔє܅Ԇޑط",
+    "a" * 20000,
+    mark.xfail("a" * 20001, raises=FacebookError, reason="You can only send a maximum of 20000 characters")
+])
+def test_send_text(listener, client, thread, text):
+    with listener('on_text') as on_text:
+        client.send_text(thread, text)
+    on_text.assert_called_once_with(thread, client, text)
 
 
-@pytest.mark.xfail(raises=FBchatFacebookError)
-@pytest.mark.parametrize("message", [Message("a" * 20001)])
-def test_send_invalid(client, message):
-    client.send(message)
-
-
-def test_send_mentions(client, client2, thread, catch_event, compare):
+def test_send_mentions(listener, client, listener_client, thread):
     text = "Hi there @me, @other and @thread"
     mentions = [
-        dict(thread_id=client.uid, offset=9, length=3),
-        dict(thread_id=client2.uid, offset=14, length=6),
-        dict(thread_id=thread["id"], offset=26, length=7),
+        Mention(thread=client, offset=9, length=3),
+        Mention(thread=listener_client, offset=14, length=6),
+        Mention(thread=thread, offset=26, length=7),
     ]
-    with catch_event("onMessage") as x:
-        mid = client.send(Message(text, mentions=[Mention(**d) for d in mentions]))
-
-    assert compare(x, mid=mid, message=text)
-    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=text)
-    # The mentions are not ordered by offset
-    for m in x.res["message_object"].mentions:
-        assert vars(m) in mentions
+    with listener('on_text') as on_text:
+        client.send_text(thread, text, mentions=mentions)
+    on_text.assert_called_once_with(thread, client, text, mentions)
 
 
-@pytest.mark.parametrize(
-    "sticker_id",
-    ["767334476626295", pytest.mark.xfail("0", raises=FBchatFacebookError)],
-)
-def test_send_sticker(client, catch_event, compare, sticker_id):
-    with catch_event("onMessage") as x:
-        mid = client.send(Message(sticker=Sticker(sticker_id)))
-
-    assert compare(x, mid=mid)
-    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid)
-    assert subset(vars(x.res["message_object"].sticker), uid=sticker_id)
+@mark.parametrize("sticker", [
+    Sticker("767334476626295"),
+    mark.xfail(Sticker("0"), raises=FacebookError)
+])
+def test_send_sticker(listener, client, thread, sticker):
+    with listener('on_sticker') as on_sticker:
+        client.send_sticker(thread, sticker)
+    on_sticker.assert_called_once_with(thread, client, sticker)
 
 
-@pytest.mark.parametrize(
-    "method_name, url",
-    [
-        (
-            "sendRemoteImage",
-            "https://github.com/carpedm20/fbchat/raw/master/tests/image.png",
-        ),
-        ("sendLocalImage", path.join(path.dirname(__file__), "image.png")),
-    ],
-)
-def test_send_images(client, catch_event, compare, method_name, url):
-    text = "An image sent with {}".format(method_name)
-    with catch_event("onMessage") as x:
-        mid = getattr(client, method_name)(url, Message(text))
+@mark.parametrize("emoji, size", [
+    ("😆", Size.SMALL),
+    ("😆", Size.MEDIUM),
+    ("😆", Size.LARGE),
+    (None, Size.SMALL),
+    (None, Size.MEDIUM),
+    (None, Size.LARGE),
+])
+def test_send_emoji(listener, client, thread, emoji, size):
+    with listener('on_emoji') as on_emoji:
+        client.send_emoji(thread, emoji, size)
+    on_emoji.assert_called_once_with(thread, client, emoji, size)
 
-    assert compare(x, mid=mid, message=text)
-    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=text)
-    assert x.res["message_object"].attachments[0]
+
+@mark.parametrize("file", [
+    path.join(path.dirname(__file__), "image.png"),
+])
+def test_send_file(listener, client, thread, file):
+    with listener('on_file') as on_file:
+        client.send_file(thread, file)
+    on_file.assert_called_once_with(thread, author, 'the file')
