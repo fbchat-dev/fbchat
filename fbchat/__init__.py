@@ -10,46 +10,65 @@ License:
 """
 
 from __future__ import unicode_literals
+
 import logging
 
 from .models import *
 
-from .base import Base # noqa
-from .get import Get # noqa
-from .listener import Listener # noqa
-from .message_management import MessageManagement # noqa
-from .search import Search # noqa
-from .send import Send # noqa
-from .thread_control import ThreadControl # noqa
-from .thread_interraction import ThreadInterraction # noqa
-from .thread_options import ThreadOptions # noqa
+from .base import BaseClient, FacebookSession
+from .fetch import FetcherClient
+from .cache import CacherClient
+from .listen import ListenerClient
+from .get import GetterClient
+from .search import SearcherClient
+from .send import SenderClient
+from .control import GroupControllerClient
+from .interraction import ThreadInterracterClient
+from .config import ThreadConfigurerClient
 
-from .client import Client
+from .client import FacebookClient
+
+# from .async import AsyncClient
 
 __title__ = 'fbchat'
 __version__ = '2.0.0'
-__description__ = 'Facebook Chat (Messenger) for Python'
+__description__ = "Facebook Chat (Messenger) for Python"
 
-__copyright__ = 'Copyright 2015 - 2018 by Taehoon Kim'
-__license__ = 'BSD 3-Clause'
+__copyright__ = "Copyright 2015 - 2018 by Taehoon Kim"
+__license__ = "BSD 3-Clause"
 
-__author__ = 'Taehoon Kim; Moreels Pieter-Jan; Mads Marquart'
-__email__ = 'carpedm20@gmail.com'
+__author__ = "Taehoon Kim"
+__email__ = "carpedm20@gmail.com"
+
+
+class Client(object):
+    def __init__(self, *args, **kwargs):
+        raise Exception("""You've updated to version %s of the library, \
+which contains a lot of API changes and breaking changes. \
+Please update your code or downgrade to a previous version. \
+You can downgrade to a specific version using eg. `pip install fbchat=1.3.9`.\
+""" % __version__)
+
 
 __all__ = [
-    'Message',
-    'Mention',
-
-    'Size',
-    'Colour',
-    'Color',
-
-    'FacebookError',
+    #'Event',
+    #'Action',
+    #'Message',
 
     'Thread',
     'User',
     'Group',
     'Page',
+
+    'Sticker',
+    'Emoji',
+    'Text',
+
+    'FacebookError',
+    'FacebookSession',
+
+    'FacebookClient',
+    #'AsyncClient',
 
     'Client',
 ]

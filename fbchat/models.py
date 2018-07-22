@@ -1,14 +1,6 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import unicode_literals
-import enum
-
-
-class Enum(enum.Enum):
-    """Used internally by fbchat to support enumerations"""
-    def __repr__(self):
-        # For documentation:
-        return '{}.{}'.format(type(self).__name__, self.name)
 
 
 class FacebookError(Exception):
@@ -30,18 +22,47 @@ class Thread(object):
 
     Attributes:
         id (int): The unique identifier of the thread
-        image: A url to the thread's thumbnail/profile picture
         name: The name of the thread
-        last_message_timestamp: Timestamp of last message
-        message_count: Number of messages in the thread
-        nicknames: A dict, containing `User`\s and `Page`\s, mapped to their
-            nicknames
-        participants: Unique list of `User`\s and `Page`\s, denoting the
-            thread's participants
-        colour (`Colour`): The thread colour
-        color: Alias of :attr:`colour`
+        image: A url to the thread's thumbnail/profile picture
+        last_activity (`Time`): When the thread was last updated
+        message_count: Number of `Message`\s in the thread
+        nicknames (dict): `User`\s and `Page`\s, mapped to their nicknames
+        colour (`Thread.Colour`): The thread colour
         emoji: The thread's default emoji
     """
+
+    def __init__(self, id_):
+        if not id_ or id_ < 1:
+            raise ValueError("Invalid ID")
+        self.id = int(id_)
+
+    def __hash__(self):
+        return self.id
+
+    def __eq__(self, other):
+        return isinstance(other, Thread) and self.id == other.id
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+    class Colour(object):
+        """Used to specify thread colours"""
+        MESSENGER_BLUE = '#0084ff'
+        VIKING = '#44bec7'
+        GOLDEN_POPPY = '#ffc300'
+        RADICAL_RED = '#fa3c4c'
+        SHOCKING = '#d696bb'
+        PICTON_BLUE = '#6699cc'
+        FREE_SPEECH_GREEN = '#13cf13'
+        PUMPKIN = '#ff7e29'
+        LIGHT_CORAL = '#e68585'
+        MEDIUM_SLATE_BLUE = '#7646ff'
+        DEEP_SKY_BLUE = '#20cef5'
+        FERN = '#67b868'
+        CAMEO = '#d4a88c'
+        BRILLIANT_ROSE = '#ff5ca1'
+        BILOBA_FLOWER = '#a695c7'
 
 
 class User(Thread):
@@ -60,6 +81,7 @@ class Group(Thread):
     """Represents a group-thread
 
     Attributes:
+        participants (list): `User`\s, denoting the thread's participants
         admins (list): Unique list of `User`\s, denoting the group's admins
         title: The group's custom title
     """
@@ -76,71 +98,100 @@ class Page(Thread):
     """
 
 
-class Message(object):
+class Event(object):
+    """Represents an event in a Facebook thread
+
+    Attributes:
+        thread (`Thread`): The thread the event was sent to
+        author (`User` or `Page`): The person who sent the event
+        time (`Time`): When the event was sent
+        is_read (bool): Whether the event is read
+    """
+
+
+class Message(Event):
     """Represents a message
 
     Attributes:
         id (int): The unique identifier of the message
-        text: The text-contents
-        mentions (list of `Mention`\s):
-        size (`Size`): The size of a sent emoji
-        author (`User` or `Page`): The person who sent the message
-        timestamp: Unix timestamp of when the message was sent
-        is_read: Whether the message is read
-        reactions (dict): A dict with `User`\s, mapped to their reaction
-        sticker (`Sticker` or ``None``):
-        files (list of `File`\s):
-        images (list of `Image`\s): Subset of :attr:`files`
-        videos (list of `Video`\s): Subset of :attr:`files`
     """
 
 
-class Mention(object):
-    """Represents a @mention
-
-    Attributes:
-        thread (`Thread`): Person that the mention is pointing at
-        offset (int): The character in the message where the mention starts
-        length (int): The length of the mention
-    """
+class Action(Event):
+    """Represents an action in a thread"""
 
 
-class Attachment(object):
-    """Represents a Facebook attachment
-
-    Attributes:
-        id (int): The attachment ID
-        url: URL to download the attachment
-    """
-
-
-class Sticker(Attachment):
+class Sticker(Message):
     """Represents a sticker
 
     Attributes:
-        pack (`StickerPack`): The sticker's pack
+        sticker_id (int): The sticker's ID
+        name: The sticker's label/name
         width (int): Width of the sticker
         height (int): Height of the sticker
-        name: The sticker's label/name
+        pack (`Sticker.Pack`): The sticker's pack
     """
+
+    class Pack(object):
+        """TODO: This"""
 
 
 class AnimatedSticker(Sticker):
-    """Todo: This"""
+    """TODO: This"""
 
 
-class StickerPack(object):
-    """Todo: This"""
-
-
-class File(Attachment):
-    """Represents a file-attachment
+class Emoji(Message):
+    """Represents a sent emoji
 
     Attributes:
-        size (int): Size of the file in bytes
+        emoji: The actual emoji
+        size (`Emoji.Size`): The size of the emoji
+    """
+
+    class Size(object):
+        """Used to specify the size an emoji"""
+        SMALL = 'small'
+        MEDIUM = 'medium'
+        LARGE = 'large'
+
+
+class Text(Message):
+    """Represents a text message
+
+    Attributes:
+        text: The text-contents
+        mentions (list): `Mention`\s
+        reactions (dict): `User`\s, mapped to their reaction.
+            A reaction can be ``😍``, ``😆``, ``😮``, ``😢``, ``😠``, ``👍`` or ``👎``
+    """
+
+    class Mention(object):
+        """Represents a @mention
+
+        Attributes:
+            thread (`Thread`): Person/thread that the mention is pointing at
+            offset (int): The character in the message where the mention starts
+            length (int): The length of the mention
+        """
+
+
+class FileMessage(Text):
+    """Represents a text message with files / attachments
+
+    Attributes:
+        files (list): `File`\s
+    """
+
+
+class File(object):
+    """Represents a file / an attachment
+
+    Attributes:
+        id (int): The file ID
         name: Name of the file
-        is_malicious (bool): True if Facebook determines that this file may be
-            harmful
+        url: URL to download the attachment
+        size (int): Size of the file in bytes
+        is_malicious (bool): True if Facebook determines that this file may be harmful
     """
 
 
@@ -160,33 +211,78 @@ class Video(File):
     """Todo: This"""
 
 
-class Size(Enum):
-    """Used to specify the size an emoji"""
-    SMALL = 1
-    MEDIUM = 2
-    LARGE = 3
+class UsersAdded(Action):
+    """Represents an action where a person was added to a group
 
-
-class Colour(Enum):
-    """Used to specify thread colours
-
-    See #220 before implementing this
+    Attributes:
+        users (list): The added `User`\s
     """
-    MESSENGER_BLUE = ''
-    VIKING = '#44bec7'
-    GOLDEN_POPPY = '#ffc300'
-    RADICAL_RED = '#fa3c4c'
-    SHOCKING = '#d696bb'
-    PICTON_BLUE = '#6699cc'
-    FREE_SPEECH_GREEN = '#13cf13'
-    PUMPKIN = '#ff7e29'
-    LIGHT_CORAL = '#e68585'
-    MEDIUM_SLATE_BLUE = '#7646ff'
-    DEEP_SKY_BLUE = '#20cef5'
-    FERN = '#67b868'
-    CAMEO = '#d4a88c'
-    BRILLIANT_ROSE = '#ff5ca1'
-    BILOBA_FLOWER = '#a695c7'
 
 
-Color = Colour
+class UserRemoved(Action):
+    """Represents an action where a person was removed from a group
+
+    Attributes:
+        user (`User`): The removed user
+    """
+
+
+class AdminAdded(Action):
+    """Represents an action where a group admin was added
+
+    Attributes:
+        user (`User`): The promoted user
+    """
+
+
+class AdminRemoved(Action):
+    """Represents an action where a group admin was removed
+
+    Attributes:
+        user (`User`): The demoted user
+    """
+
+
+class ThreadAdded(Action):
+    """Represents an action where a thread was created"""
+
+
+class ImageSet(Action):
+    """Represents an action where a group image was changed
+
+    Attributes:
+        image (`Image`): The new image
+    """
+
+
+class TitleSet(Action):
+    """Represents an action where the group title was changed
+
+    Attributes:
+        title: The new title
+    """
+
+
+class NicknameSet(Action):
+    """Represents an action where a nickname was changed
+
+    Attributes:
+        actor (`User` or `Page`): Person whose nickname was changed
+        nickname: User's new nickname
+    """
+
+
+class ColourSet(Action):
+    """Represents an action where the thread colour was changed
+
+    Attributes:
+        colour (`Thread.Colour`): The new colour
+    """
+
+
+class EmojiSet(Action):
+    """Represents an action where the thread emoji was changed
+
+    Attributes:
+        emoji: The new emoji
+    """

@@ -8,6 +8,14 @@ from .listen import ListenerClient
 class ThreadInterracterClient(ListenerClient):
     """Enables the client to interract with threads and listen on those events"""
 
+    def on_action(self, action):
+        """Called when someone executes an action
+
+        Args:
+            action (`Action`): Action that was executed
+        """
+
+
     def set_reaction(self, message, reaction=None):
         """React to a message
 

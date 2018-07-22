@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import unicode_literals
-from .models import Size
 from .listen import ListenerClient
+from .models import Message, Emoji
 
 
 class SenderClient(ListenerClient):
@@ -48,7 +48,7 @@ class SenderClient(ListenerClient):
             names (list): Names of the files
 
         Return:
-            `Attachment`, denoting the uploaded file
+            `File`, denoting the uploaded file
         """
 
     def send_text(self, thread, text, mentions=None):
@@ -95,7 +95,7 @@ class SenderClient(ListenerClient):
             sticker (`Sticker`): Sticker that was sent
         """
 
-    def send_emoji(self, thread, emoji=None, size=Size.SMALL):
+    def send_emoji(self, thread, emoji=None, size=Emoji.Size.SMALL):
         """Send a emoji to a thread. Shortcut of `send`
 
         If ``emoji`` is ``None``, the thread's default emoji will be sent
@@ -103,7 +103,7 @@ class SenderClient(ListenerClient):
         Args:
             thread (`Thread`): Thread to send the emoji to
             emoji: Emoji to send
-            size (`Size`): Size of the emoji
+            size (`Emoji.Size`): Size of the emoji
 
         Return:
             `Message`, denoting the sent message
