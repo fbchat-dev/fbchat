@@ -1,0 +1,4 @@
+Caching information
+===================
+
+.. autoclass:: CacherClient()

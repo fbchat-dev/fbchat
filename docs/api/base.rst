@@ -1,4 +1,4 @@
 Base class
 ==========
 
-.. autoclass:: Base()
+.. autoclass:: BaseClient()

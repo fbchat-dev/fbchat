@@ -2,17 +2,18 @@
 
 from __future__ import unicode_literals
 
-from .base import Base
+from .base import BaseClient
+from .models import Event, Message, Action
 
 
-class Listener(Base):
+class ListenerClient(BaseClient):
     """Enables basic listening"""
 
     def listen(self):
         """Start listening for incoming messages or events
 
-        When this method recieves a message/an event, it will parse the
-        message/event, and call the corresponding `on_` method
+        When the client recieves an event, it will parse the event,
+        and call the corresponding `on_` method
         """
 
     def stop_listen(self):
@@ -52,7 +53,7 @@ class Listener(Base):
     def on_unknown(self, msg):
         """Called when some unknown data was recieved while listening
 
-        Useful for debugging, and figuring out missing features
+        Useful for debugging, and finding missing features / unclaimed potential
 
         Args:
             msg (dict): Dictionary containing the full json data recieved

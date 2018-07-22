@@ -1,4 +1,4 @@
 Sending messages
 ================
 
-.. autoclass:: Send(Listener)
+.. autoclass:: SenderClient()

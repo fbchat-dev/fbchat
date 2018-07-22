@@ -1,19 +1,19 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import unicode_literals
-from .listener import Listener
 from .models import Size
+from .listen import ListenerClient
 
 
-class Send(Listener):
+class SenderClient(ListenerClient):
     """Enables sending various messages to threads
 
     Every method in this class, except `send`, `on_message` and `upload`, are
     shortcuts of the aforementioned
-    """
 
-    #: Contains a list of all messages sent by the client
-    sent_messages = None
+    Attributes:
+        sent_messages (list): All messages sent by the client
+    """
 
     def send(self, thread, message):
         """Send the contents specified in a message object to a thread

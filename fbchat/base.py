@@ -77,7 +77,7 @@ class FacebookSession(Session):
         self.set_fb_dtsg_html(r)
 
 
-class Base(User):
+class BaseClient(User):
     """Base Facebook client"""
 
     def __init__(self, email, password, session=None, user_agent=None, max_tries=3):

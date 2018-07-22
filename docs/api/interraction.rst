@@ -1,4 +1,4 @@
 Interraction with Threads
 =========================
 
-.. autoclass:: ThreadInterraction(Listener)
+.. autoclass:: ThreadInterracterClient()

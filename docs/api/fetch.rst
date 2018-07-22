@@ -1,0 +1,4 @@
+Retrieving information
+======================
+
+.. autoclass:: FetcherClient()

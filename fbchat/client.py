@@ -1,18 +1,29 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import unicode_literals
-from .base import Base
-from .get import Get
-from .listener import Listener
-from .message_management import MessageManagement
-from .search import Search
-from .send import Send
-from .thread_control import ThreadControl
-from .thread_interraction import ThreadInterraction
-from .thread_options import ThreadOptions
+
+from .base import BaseClient
+from .fetch import FetcherClient
+from .cache import CacherClient
+from .listen import ListenerClient
+from .get import GetterClient
+from .search import SearcherClient
+from .send import SenderClient
+from .control import GroupControllerClient
+from .interraction import ThreadInterracterClient
+from .config import ThreadConfigurerClient
 
 
-# Actual order here is still to be determined
-class Client(ThreadOptions, ThreadInterraction, ThreadControl, Send, Search,
-             MessageManagement, Get, Listener, Base):
+class FacebookClient(
+        ThreadConfigurerClient,
+        ThreadInterracterClient,
+        GroupControllerClient,
+        SenderClient,
+        SearcherClient,
+        GetterClient,
+        ListenerClient,
+        CacherClient,
+        FetcherClient,
+        BaseClient
+    ):
     pass

@@ -1,10 +1,10 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import unicode_literals
-from .base import Base
+from .cache import CacherClient
 
 
-class Search(Base):
+class SearcherClient(CacherClient):
     """Enables fetching information about threads"""
 
     def search_for_thread(self, name, limit=None):

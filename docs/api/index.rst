@@ -3,14 +3,17 @@ API
 
 .. toctree::
 
+   client
+
    base
+   cache
+   config
+   control
+   fetch
    get
-   listener
-   message_management
+   interraction
+   listen
    search
    send
-   thread_control
-   thread_interraction
-   thread_options
 
    models

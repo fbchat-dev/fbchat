@@ -1,4 +1,4 @@
 Event Listening
 ===============
 
-.. autoclass:: Listener(Base)
+.. autoclass:: ListenerClient()

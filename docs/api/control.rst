@@ -1,4 +1,4 @@
 Controlling Threads
 ===================
 
-.. autoclass:: ThreadControl(Listener)
+.. autoclass:: GroupControllerClient()

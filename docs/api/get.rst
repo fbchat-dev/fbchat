@@ -1,4 +1,4 @@
-Retrieving information
-======================
+Retrieving information from cache
+=================================
 
-.. autoclass:: Get(Base)
+.. autoclass:: GetterClient()

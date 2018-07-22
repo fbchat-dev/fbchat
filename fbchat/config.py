@@ -1,10 +1,11 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import unicode_literals
-from .base import Base
+
+from .cache import CacherClient
 
 
-class ThreadOptions(Base):
+class ThreadConfigurerClient(CacherClient):
     """Enables the client to configure threads"""
 
     def archive(self, thread):

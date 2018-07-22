@@ -1,5 +1,8 @@
 Various Data Models
 ===================
 
-.. automodule:: fbchat.models
-	:undoc-members:
+.. autoclass:: FacebookError
+.. autoclass:: Thread
+.. autoclass:: User
+.. autoclass:: Group
+.. autoclass:: Page

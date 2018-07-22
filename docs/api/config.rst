@@ -1,4 +1,4 @@
 Configuring Thread Options
 ==========================
 
-.. autoclass:: ThreadOptions(Base)
+.. autoclass:: ThreadConfigurerClient()
