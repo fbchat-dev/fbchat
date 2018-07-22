@@ -19,6 +19,11 @@ class FacebookError(Exception):
         fb_error_message: A localized error message that Facebook returned
     """
 
+    def __init__(self, message, fb_error_code=None, fb_error_message=None):
+        super(FacebookError, self).__init__(message)
+        self.fb_error_code = int(fb_error_code)
+        self.fb_error_message = fb_error_message
+
 
 class Thread(object):
     """Represents a Facebook chat-thread

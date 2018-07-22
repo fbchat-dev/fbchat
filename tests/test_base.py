@@ -27,6 +27,8 @@ def test_init(client, listener_client):
     mark.xfail((None, '<password>'), raises=ValueError),
     mark.xfail(('<email>', None), raises=ValueError),
     mark.xfail((None, None), raises=ValueError),
+    mark.xfail(('', '<password>'), raises=ValueError),
+    mark.xfail((0, '<password>'), raises=ValueError),
 ])
 def test_init_invalid(email, password):
     Client(email, password)
@@ -44,6 +46,7 @@ def test_init_session(mocker, client):
     mark.xfail(None, raises=ValueError),
     mark.xfail(-1, raises=ValueError),
     mark.xfail(0, raises=ValueError),
+    mark.xfail('abc', raises=TypeError),
     1,
     5,
     10,
