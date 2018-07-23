@@ -6,7 +6,7 @@ import logging
 
 from requests import Session
 from requests.cookies import cookiejar_from_dict
-from random import choice, randint
+from random import choice
 from bs4 import BeautifulSoup as bs
 from six.moves.urllib_parse import urlparse, parse_qs
 from six.moves import input
@@ -47,6 +47,7 @@ class FacebookSession(Session):
 
 
     def request(self, method, url, include_payload=True, **kwargs):
+        # '__req': str_base(self.req_counter, 36),
         return super(self, FacebookSession).request(method, url, **kwargs)
 
 
@@ -74,6 +75,8 @@ class FacebookSession(Session):
             '__a': '1',
         }
 
+        # self.req_counter = 1
+
         self.set_fb_dtsg_html(r)
 
 
@@ -91,10 +94,6 @@ class BaseClient(User):
                 If ``None``, the user agent will be chosen randomly
             max_tries (int): Maximum number of times to try logging in
         """
-
-        #self.req_counter = 1
-        #self.seq = "0"
-        #self.client_id = hex(randint(2**31))[2:]
 
         if session:
             try:

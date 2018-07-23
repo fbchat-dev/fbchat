@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import unicode_literals
+
 from .listen import ListenerClient
 from .models import Message, Emoji
 
@@ -29,6 +30,11 @@ class SenderClient(ListenerClient):
         Return:
             New `Message`, denoting the sent message
         """
+
+    def on_event(self, event):
+        if isinstance(event, Message):
+            self.on_message(event)
+        super(self, SenderClient).on_event(event)
 
     def on_message(self, message):
         """Called when someone sends a message

@@ -3,10 +3,16 @@
 from __future__ import unicode_literals
 
 from .listen import ListenerClient
+from .models import Action
 
 
 class ThreadInterracterClient(ListenerClient):
     """Enables the client to interract with threads and listen on those events"""
+
+    def on_event(self, event):
+        if isinstance(event, Action):
+            self.on_action(event)
+        super(self, ThreadInterracterClient).on_event(event)
 
     def on_action(self, action):
         """Called when someone executes an action
