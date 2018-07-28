@@ -1033,7 +1033,25 @@ class Client(object):
         is_gif = (mimetype == 'image/gif')
         image_id = self._uploadImage(image_path, open(image_path, 'rb'), mimetype)
         return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type, is_gif=is_gif)
-
+    
+    def createGroup(self, message, person_ids=None):
+        """Creates a group with the given ids
+        :param person_ids: A list of people to create the group with.
+        :return: Returns error if couldn't create group, returns True when the group created.
+        """
+        payload = {
+            "send" : "send",
+            "body": message,
+            "ids" : person_ids
+        }
+        r = self._post(self.req_url.CREATE_GROUP, payload)
+        if "send_success" in r.url:
+            log.debug("The group was created successfully!")
+            return True
+        else:
+            log.warning("Error while creating group")
+            return False
+        
     def addUsersToGroup(self, user_ids, thread_id=None):
         """
         Adds users to a group.
