@@ -132,7 +132,8 @@ class ReqUrl(object):
     UNBLOCK_USER = "https://www.facebook.com/messaging/unblock_messages/?dpr=1"
     SAVE_ADMINS = "https://www.facebook.com/messaging/save_admins/?dpr=1"
     APPROVAL_MODE = "https://www.facebook.com/messaging/set_approval_mode/?dpr=1"
-    
+    CREATE_GROUP = "https://m.facebook.com/messages/send/?icm=1"
+  
     pull_channel = 0
 
     def change_pull_channel(self, channel=None):

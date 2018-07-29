@@ -14,8 +14,10 @@ install:
 
 cache:
   pip: true
-  directories:
-    - .pytest_cache
+  # Pytest caching is disabled, since TravisCI instances have different public IPs. Facebook  doesn't like that,
+  # and redirects you to the url `/checkpoint/block`, where you have to change the account's password
+  # directories:
+  #   - .pytest_cache
 
 jobs:
   include:
