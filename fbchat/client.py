@@ -11,6 +11,7 @@ from .utils import *
 from .models import *
 from .graphql import *
 import time
+import ast
 try:
     from urllib.parse import urlparse, parse_qs
 except ImportError:
@@ -184,6 +185,25 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         return self.graphql_requests(query)[0]
+
+    def _forcedFetch(self, thread_id, mid):
+        full_data = {
+            "av": self.uid,
+            "batch_name": "MessengerMessageDFFFetcher",
+            "queries": """{
+                "o0": {
+                    "doc_id": "1768656253222505",
+                    "query_params": {
+                        "thread_and_message_id": {
+                            "thread_id": "%s",
+                            "message_id": "%s"
+                        }
+                    }
+                }
+            }""" % (thread_id, mid)
+        }
+        r = self._post(self.req_url.GRAPHQL, full_data, fix_request=False, as_json=True)
+        return ast.literal_eval(get_decoded_r(r).replace("\n","").replace("\r","").replace(" ","").replace("}{", ",").replace(":null", ":None").replace("true", "True").replace("false", "False"))
 
     """
     END INTERNAL REQUEST METHODS
@@ -1066,7 +1086,7 @@ class Client(object):
         data['action_type'] = 'ma-type:log-message'
         data['log_message_type'] = 'log:subscribe'
 
-        if type(user_ids) is not list:
+        if not isinstance(user_ids, list):
             user_ids = [user_ids]
 
         # Make list of users unique
@@ -1098,6 +1118,25 @@ class Client(object):
 
         j = self._post(self.req_url.REMOVE_USER, data, fix_request=True, as_json=True)
     
+    def _adminStatus(self, admin_ids, admin, thread_id=None):
+        thread_id, thread_type = self._getThread(thread_id, None)
+
+        data = {
+            "add": str(admin).lower(),
+            "thread_fbid": thread_id
+        }
+
+        if not isinstance(admin_ids, list):
+            admin_ids = [admin_ids]
+
+        # Make list of admins unique
+        admin_ids = set(admin_ids)
+
+        for i, admin_id in enumerate(admin_ids):
+            data['admin_ids[' + str(i) + ']'] = str(admin_id)
+
+        j = self._post(self.req_url.SAVE_ADMINS, data, fix_request=True, as_json=True)
+    
     def addGroupAdmins(self, admin_ids, thread_id=None):
         """
         Sets specifed user as a group admin.
@@ -1106,49 +1145,17 @@ class Client(object):
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-
-        data = {
-            "add": "true",
-            "thread_fbid": thread_id
-        }
-
-        if type(admin_ids) is not list:
-            admin_ids = [admin_ids]
-
-        # Make list of admins unique
-        admin_ids = set(admin_ids)
-
-        for i, admin_id in enumerate(admin_ids):
-            data['admin_ids[' + str(i) + ']'] = str(admin_id)
-
-        j = self._post(self.req_url.SAVE_ADMINS, data, fix_request=True, as_json=True)
+        self._adminStatus(admin_ids, True, thread_id)
 
     def removeGroupAdmins(self, admin_ids, thread_id=None):
         """
-        Removes group admin from specifed user.
+        Removes admin status from specifed user.
 
         :param admin_ids: One or more user IDs to remove admin
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-
-        data = {
-            "add": "false",
-            "thread_fbid": thread_id
-        }
-
-        if type(admin_ids) is not list:
-            admin_ids = [admin_ids]
-
-        # Make list of admins unique
-        admin_ids = set(admin_ids)
-
-        for i, admin_id in enumerate(admin_ids):
-            data['admin_ids[' + str(i) + ']'] = str(admin_id)
-
-        j = self._post(self.req_url.SAVE_ADMINS, data, fix_request=True, as_json=True)
+        self._adminStatus(admin_ids, False, thread_id)
 
     def changeGroupApprovalMode(self, approval_mode, thread_id=None):
         """
@@ -1430,7 +1437,7 @@ class Client(object):
         r = self._post(self.req_url.DELIVERED, data)
         return r.ok
 
-    def markAsRead(self, thread_id):
+    def markAsRead(self, thread_id=None):
         """
         Mark a thread as read
         All messages inside the thread will be marked as read
@@ -1439,6 +1446,7 @@ class Client(object):
         :return: Whether the request was successful
         :raises: FBchatException if request failed
         """
+        thread_id, thread_type = self._getThread(thread_id, None)
         data = {
             "ids[%s]" % thread_id: 'true',
             "watermarkTimestamp": now(),
@@ -1517,7 +1525,7 @@ class Client(object):
         r = self._post(self.req_url.UNBLOCK_USER, data)
         return r.ok
     
-    def moveThread(self, location, thread_id=None):
+    def moveThreads(self, location, thread_ids=None):
         """
         Moves the thread to specifed location
         
@@ -1528,6 +1536,12 @@ class Client(object):
         :return: Whether the request was successful
         :raises: FBchatException if request failed
         """
+        if not isinstance(thread_ids, list):
+            thread_ids = [thread_ids]
+
+        # Make list of admins unique
+        thread_ids = set(thread_ids)
+
         if location == ThreadLocation.PENDING:
             location = ThreadLocation.OTHER
         if location in ThreadLocation:
@@ -1535,19 +1549,18 @@ class Client(object):
         else:
             raise FBchatUserError('"location" must be a value of ThreadLocation')
         if location == ThreadLocation.ARCHIVED:
-            data_archive = {
-                "ids[{}]".format(thread_id): 'true'
-            }
+            data_archive = dict()
+            data_unpin = dict()
+            for thread_id in thread_ids:
+                data_archive["ids[{}]".format(thread_id)] = 'true'
+                data_unpin["ids[{}]".format(thread_id)] = 'false'
             r_archive = self._post(self.req_url.ARCHIVED_STATUS, data_archive)
-            data_unpin = {
-                "ids[{}]".format(thread_id): 'false'
-            }
             r_unpin = self._post(self.req_url.PINNED_STATUS, data_unpin)
             return r_archive.ok and r_unpin.ok
         else:
-            data = {
-                "{}[0]".format(loc_str): thread_id
-            }
+            data = dict()
+            for i, thread_id in enumerate(thread_ids):
+                data["{}[{}]".format(loc_str, i)] = thread_id
             r = self._post(self.req_url.MOVE_THREAD, data)
             return r.ok
 
@@ -1667,11 +1680,18 @@ class Client(object):
                         self.onTitleChange(mid=mid, author_id=author_id, new_title=new_title, thread_id=thread_id,
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
-                    # Thread image change
+                    # Forced fetch
                     elif delta.get("class") == "ForcedFetch":
                         mid = delta.get("messageId")
                         thread_id = str(delta['threadKey']['threadFbId'])
-                        self.onImageChange(mid=mid, thread_id=thread_id)
+                        fetch_info = self._forcedFetch(thread_id, mid)
+                        fetch_data = fetch_info["o0"]["data"]["message"]
+                        author_id = fetch_data["message_sender"]["id"]
+                        ts = fetch_data["timestamp_precise"]
+                        if fetch_data.get("__typename") == "ThreadImageMessage":
+                            # Thread image change
+                            image_id = fetch_data["image_with_metadata"]["legacy_attachment_id"]
+                            self.onImageChange(mid=mid, image_id=image_id, author_id=author_id, thread_id=thread_id, ts=ts)
 
                     # Nickname change
                     elif delta_type == "change_thread_nickname":
@@ -1732,6 +1752,21 @@ class Client(object):
 
                         # thread_id, thread_type = getThreadIdAndThreadType(delta)
                         self.onMarkedSeen(threads=threads, seen_ts=seen_ts, ts=delivered_ts, metadata=delta, msg=m)
+                    
+                    # Game played
+                    elif delta.get("type") == "instant_game_update":
+                        game_id = delta["untypedData"]["game_id"]
+                        game_name = delta["untypedData"]["game_name"]
+                        score = delta["untypedData"].get("score")
+                        if score is not None:
+                            score = int(score)
+                        leaderboard = delta["untypedData"].get("leaderboard")
+                        if leaderboard is not None:
+                            leaderboard = ast.literal_eval(leaderboard.replace(":null",":None"))["scores"]
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
+                        self.onGamePlayed(mid=mid, author_id=author_id, game_id=game_id, game_name=game_name,
+                                           score=score, leaderboard=leaderboard, thread_id=thread_id,
+                                           thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
                     # New message
                     elif delta.get("class") == "NewMessage":
@@ -2016,16 +2051,17 @@ class Client(object):
         log.info("Title change from {} in {} ({}): {}".format(author_id, thread_id, thread_type.name, new_title))
 
 
-    def onImageChange(self, mid=None, thread_id=None):
+    def onImageChange(self, mid=None, image_id=None, author_id=None, thread_id=None, ts=None):
         """
-        .. todo::
-            Add author_id and image_id
         Called when the client is listening, and somebody changes the image of a thread
         
         :param mid: The action ID
+        :param image_id: The ID of the new image
+        :param author_id: The ID of the person who changed the image
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
         """
-        log.info("Image change in {}".format(author_id, thread_id))
+        log.info("{} changed thread image in {}".format(author_id, thread_id))
 
 
     def onNicknameChange(self, mid=None, author_id=None, changed_for=None, new_nickname=None, thread_id=None, thread_type=ThreadType.USER, ts=None, metadata=None, msg=None):
@@ -2195,6 +2231,24 @@ class Client(object):
         :type thread_type: models.ThreadType
         """
         pass
+    
+    def onGamePlayed(self, mid=None, author_id=None, game_id=None, game_name=None, score=None, leaderboard=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
+        """
+        Called when the client is listening, and somebody plays a game
+        
+        :param mid: The action ID
+        :param author_id: The ID of the person who played the game
+        :param game_id: The ID of the game
+        :param game_name: Name of the game
+        :param score: Score obtained in the game
+        :param leaderboard: Actual leaderboard of the game in the thread
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param metadata: Extra metadata about the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} played \"{}\" in {} ({})".format(author_id, game_name, thread_id, thread_type.name))
 
     def onQprimer(self, ts=None, msg=None):
         """
