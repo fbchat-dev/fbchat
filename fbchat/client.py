@@ -1361,10 +1361,10 @@ class Client(object):
         """
         Sets an event reminder
 
-        ..warning::
+        .. warning::
             Does not work in Python2.7
 
-        ..todo::
+        .. todo::
             Make this work in Python2.7
 
         :param thread_id: User/Group ID to send event to. See :ref:`intro_threads`
@@ -1480,7 +1480,7 @@ class Client(object):
     def removeFriend(self, friend_id=None):
         """Removes a specifed friend from your friend list
 
-        :param friend_id: The id of the friend that you want to remove
+        :param friend_id: The ID of the friend that you want to remove
         :return: Returns error if the removing was unsuccessful, returns True when successful.
         """
         payload = {
@@ -1501,7 +1501,7 @@ class Client(object):
         """
         Blocks messages from a specifed user
         
-        :param user_id: The id of the user that you want to block
+        :param user_id: The ID of the user that you want to block
         :return: Whether the request was successful
         :raises: FBchatException if request failed
         """
@@ -1515,7 +1515,7 @@ class Client(object):
         """
         Unblocks messages from a blocked user
         
-        :param user_id: The id of the user that you want to unblock
+        :param user_id: The ID of the user that you want to unblock
         :return: Whether the request was successful
         :raises: FBchatException if request failed
         """
@@ -1584,6 +1584,75 @@ class Client(object):
         r_unpin = self._post(self.req_url.PINNED_STATUS, data_unpin)
         r_delete = self._post(self.req_url.DELETE_THREAD, data_delete)
         return r_unpin.ok and r_delete.ok
+
+    def muteThread(self, mute_time=-1, thread_id=None):
+        """
+        Mutes thread
+
+        :param mute_time: Mute time in seconds, leave blank to mute forever
+        :param thread_id: User/Group ID to mute. See :ref:`intro_threads`
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+        data = {
+            "mute_settings": str(mute_time),
+            "thread_fbid": thread_id
+        }
+        r = self._post(self.req_url.MUTE_THREAD, data)
+        return r.ok
+    
+    def unmuteThread(self, thread_id=None):
+        """
+        Unmutes thread
+
+        :param thread_id: User/Group ID to unmute. See :ref:`intro_threads`
+        """
+        return self.muteThread(0, thread_id)
+    
+    def muteThreadReactions(self, mute=True, thread_id=None):
+        """
+        Mutes thread reactions
+
+        :param mute: Boolean. True to mute, False to unmute
+        :param thread_id: User/Group ID to mute. See :ref:`intro_threads`
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+        data = {
+            "reactions_mute_mode": int(mute),
+            "thread_fbid": thread_id
+        }
+        r = self._post(self.req_url.MUTE_REACTIONS, data)
+        return r.ok
+
+    def unmuteThreadReactions(self, thread_id=None):
+        """
+        Unmutes thread reactions
+
+        :param thread_id: User/Group ID to unmute. See :ref:`intro_threads`
+        """
+        return self.muteThreadReactions(False, thread_id)
+
+    def muteThreadMentions(self, mute=True, thread_id=None):
+        """
+        Mutes thread mentions
+
+        :param mute: Boolean. True to mute, False to unmute
+        :param thread_id: User/Group ID to mute. See :ref:`intro_threads`
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+        data = {
+            "mentions_mute_mode": int(mute),
+            "thread_fbid": thread_id
+        }
+        r = self._post(self.req_url.MUTE_MENTIONS, data)
+        return r.ok
+
+    def unmuteThreadMentions(self, thread_id=None):
+        """
+        Unmutes thread mentions
+
+        :param thread_id: User/Group ID to unmute. See :ref:`intro_threads`
+        """
+        return self.muteThreadMentions(False, thread_id)
 
     """
     LISTEN METHODS
