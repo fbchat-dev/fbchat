@@ -1905,6 +1905,26 @@ class Client(object):
                                            score=score, leaderboard=leaderboard, thread_id=thread_id,
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
+                    # Group call started/ended
+                    elif delta.get("type") == "rtc_call_log":
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
+                        call_status = delta["untypedData"]["event"]
+                        call_duration = int(delta["untypedData"]["call_duration"])
+                        is_video_call = bool(int(delta["untypedData"]["is_video_call"]))
+                        if call_status == "call_started":
+                            self.onCallStarted(mid=mid, caller_id=author_id, is_video_call=is_video_call, 
+                                                thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
+                        elif call_status == "call_ended":
+                            self.onCallEnded(mid=mid, caller_id=author_id, is_video_call=is_video_call, call_duration=call_duration,
+                                                thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
+
+                    # User joined to group call
+                    elif delta.get("type") == "participant_joined_group_call":
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
+                        is_video_call = bool(int(delta["untypedData"]["group_call_type"]))
+                        self.onUserJoinedCall(mid=mid, joined_id=author_id, is_video_call=is_video_call, 
+                                            thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
+
                     # New message
                     elif delta.get("class") == "NewMessage":
                         mentions = []
@@ -2379,6 +2399,7 @@ class Client(object):
         :param game_name: Name of the game
         :param score: Score obtained in the game
         :param leaderboard: Actual leaderboard of the game in the thread
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
         :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
         :param metadata: Extra metadata about the action
@@ -2421,6 +2442,61 @@ class Client(object):
         :param msg: A full set of the data recieved
         """
         log.exception('Exception in parsing of {}'.format(msg))
+
+    def onCallStarted(self, mid=None, caller_id=None, is_video_call=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
+        """
+        .. todo::
+            Make this work with private calls
+
+        Called when the client is listening, and somebody starts a call in a group
+        
+        :param mid: The action ID
+        :param caller_id: The ID of the person who started the call
+        :param is_video_call: True if it's video call
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param metadata: Extra metadata about the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} started call in {} ({})".format(caller_id, thread_id, thread_type.name))
+
+    def onCallEnded(self, mid=None, caller_id=None, is_video_call=None, call_duration=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
+        """
+        .. todo::
+            Make this work with private calls
+
+        Called when the client is listening, and somebody ends a call in a group
+        
+        :param mid: The action ID
+        :param caller_id: The ID of the person who ended the call
+        :param is_video_call: True if it was video call
+        :param call_duration: Call duration in seconds
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param metadata: Extra metadata about the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} ended call in {} ({})".format(caller_id, thread_id, thread_type.name))
+
+    def onUserJoinedCall(self, mid=None, joined_id=None, is_video_call=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
+        """
+        Called when the client is listening, and somebody joins group call
+        
+        :param mid: The action ID
+        :param joined_id: The ID of the person who joined the call
+        :param is_video_call: True if it's video call
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param metadata: Extra metadata about the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} joined call in {} ({})".format(joined_id, thread_id, thread_type.name))
 
     """
     END EVENTS
