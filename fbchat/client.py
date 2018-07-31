@@ -1781,7 +1781,8 @@ class Client(object):
                         if fetch_data.get("__typename") == "ThreadImageMessage":
                             # Thread image change
                             image_id = fetch_data["image_with_metadata"]["legacy_attachment_id"]
-                            self.onImageChange(mid=mid, author_id=author_id, new_image=image_id, thread_id=thread_id, ts=ts)
+                            self.onImageChange(mid=mid, author_id=author_id, new_image=image_id, thread_id=thread_id,
+                                               thread_type=ThreadType.GROUP, ts=ts)
 
                     # Nickname change
                     elif delta_type == "change_thread_nickname":
@@ -1794,24 +1795,24 @@ class Client(object):
 
                     # Admin added to group thread
                     elif delta.get("class") == "AdminAddedToGroupThread":
-                        thread_id = str(metadata['threadKey']['threadFbId'])
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         added_ids = [str(x['userFbId']) for x in delta['addedAdmins']]
                         self.onAdminsAdded(mid=mid, added_ids=added_ids, author_id=author_id, thread_id=thread_id,
-                                           ts=ts, msg=m)
+                                           thread_type=thread_type, ts=ts, msg=m)
 
                     # Admin removed from group thread
                     elif delta.get("class") == "AdminRemovedFromGroupThread":
-                        thread_id = str(metadata['threadKey']['threadFbId'])
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         removed_ids = delta['removedAdminFbIds']
                         self.onAdminsRemoved(mid=mid, removed_ids=removed_ids, author_id=author_id, thread_id=thread_id,
-                                           ts=ts, msg=m)
+                                           thread_type=thread_type, ts=ts, msg=m)
 
                     # Group approval mode change
                     elif delta_type == "change_thread_approval_mode":
-                        thread_id = str(metadata['threadKey']['threadFbId'])
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         approval_mode = bool(int(delta['untypedData']['APPROVAL_MODE']))
                         self.onApprovalModeChange(mid=mid, approval_mode=approval_mode, author_id=author_id, thread_id=thread_id,
-                                           ts=ts, msg=m)
+                                           thread_type=thread_type, ts=ts, msg=m)
 
                     # Message delivered
                     elif delta.get("class") == "DeliveryReceipt":
