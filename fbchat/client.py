@@ -1139,7 +1139,7 @@ class Client(object):
     
     def addGroupAdmins(self, admin_ids, thread_id=None):
         """
-        Sets specifed user as a group admin.
+        Sets specifed users as group admins.
 
         :param admin_ids: One or more user IDs to set admin
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
@@ -1149,7 +1149,7 @@ class Client(object):
 
     def removeGroupAdmins(self, admin_ids, thread_id=None):
         """
-        Removes admin status from specifed user.
+        Removes admin status from specifed users.
 
         :param admin_ids: One or more user IDs to remove admin
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
@@ -1497,7 +1497,7 @@ class Client(object):
             log.warning("Error while removing friend")
             return False
 
-    def blockUser(self, user_id=None):
+    def blockUser(self, user_id):
         """
         Blocks messages from a specifed user
         
@@ -1511,7 +1511,7 @@ class Client(object):
         r = self._post(self.req_url.BLOCK_USER, data)
         return r.ok
 
-    def unblockUser(self, user_id=None):
+    def unblockUser(self, user_id):
         """
         Unblocks messages from a blocked user
         
@@ -1525,14 +1525,12 @@ class Client(object):
         r = self._post(self.req_url.UNBLOCK_USER, data)
         return r.ok
     
-    def moveThreads(self, location, thread_ids=None):
+    def moveThreads(self, location, thread_ids):
         """
-        Moves the thread to specifed location
+        Moves threads to specifed location
         
         :param location: models.ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
-        :param thread_id: User/Group ID to change color of. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
+        :param thread_ids: Thread IDs to move. See :ref:`intro_threads`
         :return: Whether the request was successful
         :raises: FBchatException if request failed
         """
@@ -1563,6 +1561,29 @@ class Client(object):
                 data["{}[{}]".format(loc_str, i)] = thread_id
             r = self._post(self.req_url.MOVE_THREAD, data)
             return r.ok
+
+    def deleteThreads(self, thread_ids):
+        """
+        Deletes threads
+
+        :param thread_ids: Thread IDs to delete. See :ref:`intro_threads`
+        :return: Whether the request was successful
+        :raises: FBchatException if request failed
+        """
+        if not isinstance(thread_ids, list):
+            thread_ids = [thread_ids]
+
+        # Make list of admins unique
+        thread_ids = set(thread_ids)
+
+        data_unpin = dict()
+        data_delete = dict()
+        for i, thread_id in enumerate(thread_ids):
+            data_unpin["ids[{}]".format(thread_id)] = "false"
+            data_delete["ids[{}]".format(i)] = thread_id
+        r_unpin = self._post(self.req_url.PINNED_STATUS, data_unpin)
+        r_delete = self._post(self.req_url.DELETE_THREAD, data_delete)
+        return r_unpin.ok and r_delete.ok
 
     """
     LISTEN METHODS
