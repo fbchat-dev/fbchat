@@ -2142,7 +2142,7 @@ class Client(object):
         log.info("Title change from {} in {} ({}): {}".format(author_id, thread_id, thread_type.name, new_title))
 
 
-    def onImageChange(self, mid=None, author_id=None, new_image=None, thread_id=None, ts=None):
+    def onImageChange(self, mid=None, author_id=None, new_image=None, thread_id=None, thread_type=ThreadType.USER, ts=None):
         """
         Called when the client is listening, and somebody changes the image of a thread
         
@@ -2173,7 +2173,7 @@ class Client(object):
         log.info("Nickname change from {} in {} ({}) for {}: {}".format(author_id, thread_id, thread_type.name, changed_for, new_nickname))
 
 
-    def onAdminsAdded(self, mid=None, added_ids=None, author_id=None, thread_id=None, ts=None, msg=None):
+    def onAdminsAdded(self, mid=None, added_ids=None, author_id=None, thread_id=None, thread_type=ThreadType.USER, ts=None, msg=None):
         """
         Called when the client is listening, and somebody adds admins to a group thread
 
@@ -2187,7 +2187,7 @@ class Client(object):
         log.info("{} added admins: {} in {}".format(author_id, ', '.join(added_ids), thread_id))
 
 
-    def onAdminsRemoved(self, mid=None, removed_ids=None, author_id=None, thread_id=None, ts=None, msg=None):
+    def onAdminsRemoved(self, mid=None, removed_ids=None, author_id=None, thread_id=None, thread_type=ThreadType.USER, ts=None, msg=None):
         """
         Called when the client is listening, and somebody removes admins from a group thread
 
@@ -2201,7 +2201,7 @@ class Client(object):
         log.info("{} removed admins: {} in {}".format(author_id, ', '.join(removed_ids), thread_id))
 
 
-    def onApprovalModeChange(self, mid=None, approval_mode=None, author_id=None, thread_id=None, ts=None, msg=None):
+    def onApprovalModeChange(self, mid=None, approval_mode=None, author_id=None, thread_id=None, thread_type=ThreadType.USER, ts=None, msg=None):
         """
         Called when the client is listening, and somebody changes approval mode in a group thread
 
