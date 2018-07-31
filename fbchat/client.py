@@ -1781,7 +1781,7 @@ class Client(object):
                         if fetch_data.get("__typename") == "ThreadImageMessage":
                             # Thread image change
                             image_id = fetch_data["image_with_metadata"]["legacy_attachment_id"]
-                            self.onImageChange(mid=mid, image_id=image_id, author_id=author_id, thread_id=thread_id, ts=ts)
+                            self.onImageChange(mid=mid, author_id=author_id, new_image=image_id, thread_id=thread_id, ts=ts)
 
                     # Nickname change
                     elif delta_type == "change_thread_nickname":
@@ -2141,12 +2141,12 @@ class Client(object):
         log.info("Title change from {} in {} ({}): {}".format(author_id, thread_id, thread_type.name, new_title))
 
 
-    def onImageChange(self, mid=None, image_id=None, author_id=None, thread_id=None, ts=None):
+    def onImageChange(self, mid=None, author_id=None, new_image=None, thread_id=None, ts=None):
         """
         Called when the client is listening, and somebody changes the image of a thread
         
         :param mid: The action ID
-        :param image_id: The ID of the new image
+        :param new_image: The ID of the new image
         :param author_id: The ID of the person who changed the image
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
