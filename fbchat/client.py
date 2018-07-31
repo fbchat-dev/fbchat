@@ -867,6 +867,23 @@ class Client(object):
             raise FBChatException('Could not fetch image url from: {}'.format(j))
         return url
 
+    def fetchMessageInfo(self, mid, thread_id=None):
+        """
+        Fetches :class:`models.Message` object from the message id
+
+        :param mid: Message ID to fetch from
+        :param thread_id: User/Group ID to get message info from. See :ref:`intro_threads`
+        :return: :class:`models.Message` object
+        :rtype: object
+        :raises: FBChatException if request failed
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+        message_info = self._forcedFetch(thread_id, mid).get("message")
+        message = graphql_to_message(message_info)
+        if message is None:
+            raise FBChatException('Could not fetch message: {}'.format(mid))
+        return message
+
     """
     END FETCH METHODS
     """
@@ -1808,7 +1825,8 @@ class Client(object):
                         ts = fetch_data["timestamp_precise"]
                         if fetch_data.get("__typename") == "ThreadImageMessage":
                             # Thread image change
-                            image_id = fetch_data["image_with_metadata"]["legacy_attachment_id"]
+                            image_metadata = fetch_data.get("image_with_metadata")
+                            image_id = None if image_metadata is None else image_metadata["legacy_attachment_id"]
                             self.onImageChange(mid=mid, author_id=author_id, new_image=image_id, thread_id=thread_id,
                                                thread_type=ThreadType.GROUP, ts=ts)
 
