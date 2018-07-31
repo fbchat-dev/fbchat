@@ -186,25 +186,6 @@ class Client(object):
         """
         return self.graphql_requests(query)[0]
 
-    def _forcedFetch(self, thread_id, mid):
-        full_data = {
-            "av": self.uid,
-            "batch_name": "MessengerMessageDFFFetcher",
-            "queries": """{
-                "o0": {
-                    "doc_id": "1768656253222505",
-                    "query_params": {
-                        "thread_and_message_id": {
-                            "thread_id": "%s",
-                            "message_id": "%s"
-                        }
-                    }
-                }
-            }""" % (thread_id, mid)
-        }
-        r = self._post(self.req_url.GRAPHQL, full_data, fix_request=False, as_json=True)
-        return ast.literal_eval(get_decoded_r(r).replace("\n","").replace("\r","").replace(" ","").replace("}{", ",").replace(":null", ":None").replace("true", "True").replace("false", "False"))
-
     """
     END INTERNAL REQUEST METHODS
     """
@@ -494,6 +475,15 @@ class Client(object):
     """
     FETCH METHODS
     """
+
+    def _forcedFetch(self, thread_id, mid):
+        j = self.graphql_request(GraphQL(doc_id='1768656253222505', params={
+            'thread_and_message_id': {
+                'thread_id': thread_id,
+                'message_id': mid
+            }
+        }))
+        return j
 
     def fetchAllUsers(self):
         """
@@ -1174,6 +1164,44 @@ class Client(object):
 
         j = self._post(self.req_url.APPROVAL_MODE, data, fix_request=True, as_json=True)
 
+    def _usersApproval(self, user_ids, approve, thread_id=None):
+        thread_id, thread_type = self._getThread(thread_id, None)
+        if not isinstance(user_ids, list):
+            user_ids = [user_ids]
+
+        # Make list of users unique
+        user_ids = list(set(user_ids))
+        j = self.graphql_request(GraphQL(doc_id='1574519202665847', params={
+            'data': {
+                'client_mutation_id': '0',
+                'actor_id': self.uid,
+                'thread_fbid': thread_id,
+                'user_ids': user_ids,
+                'response': 'ACCEPT' if approve else 'DENY',
+                'surface': 'ADMIN_MODEL_APPROVAL_CENTER'
+            }
+        }))
+
+    def acceptUsersToGroup(self, user_ids, thread_id=None):
+        """
+        Accepts users to the group from the group's approval
+
+        :param user_ids: One or more user IDs to accept
+        :param thread_id: Group ID to accept users to. See :ref:`intro_threads`
+        :raises: FBchatException if request failed
+        """
+        self._usersApproval(user_ids, True, thread_id)
+
+    def denyUsersFromGroup(self, user_ids, thread_id=None):
+        """
+        Denies users from the group's approval
+
+        :param user_ids: One or more user IDs to deny
+        :param thread_id: Group ID to deny users from. See :ref:`intro_threads`
+        :raises: FBchatException if request failed
+        """
+        self._usersApproval(user_ids, False, thread_id)
+
     def changeThreadImage(self, image_id, thread_id=None, thread_type=ThreadType.USER):
         """
         Changes a thread image from an image id
@@ -1775,7 +1803,7 @@ class Client(object):
                         mid = delta.get("messageId")
                         thread_id = str(delta['threadKey']['threadFbId'])
                         fetch_info = self._forcedFetch(thread_id, mid)
-                        fetch_data = fetch_info["o0"]["data"]["message"]
+                        fetch_data = fetch_info["message"]
                         author_id = fetch_data["message_sender"]["id"]
                         ts = fetch_data["timestamp_precise"]
                         if fetch_data.get("__typename") == "ThreadImageMessage":
