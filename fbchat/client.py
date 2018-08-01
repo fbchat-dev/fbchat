@@ -1630,6 +1630,25 @@ class Client(object):
         r_delete = self._post(self.req_url.DELETE_THREAD, data_delete)
         return r_unpin.ok and r_delete.ok
 
+    def deleteMessages(self, message_ids):
+        """
+        Deletes specifed messages
+
+        :param message_ids: Message IDs to delete
+        :return: Whether the request was successful
+        :raises: FBchatException if request failed
+        """
+        if not isinstance(message_ids, list):
+            message_ids = [message_ids]
+
+        # Make list of admins unique
+        message_ids = set(message_ids)
+        data = dict()
+        for i, message_id in enumerate(message_ids):
+            data["message_ids[{}]".format(i)] = message_id
+        r = self._post(self.req_url.DELETE_MESSAGES, data)
+        return r.ok
+
     def muteThread(self, mute_time=-1, thread_id=None):
         """
         Mutes thread
