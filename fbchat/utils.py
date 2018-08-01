@@ -134,6 +134,7 @@ class ReqUrl(object):
     APPROVAL_MODE = "https://www.facebook.com/messaging/set_approval_mode/?dpr=1"
     CREATE_GROUP = "https://m.facebook.com/messages/send/?icm=1"
     DELETE_THREAD = "https://www.facebook.com/ajax/mercury/delete_thread.php?dpr=1"
+    DELETE_MESSAGES = "https://www.facebook.com/ajax/mercury/delete_messages.php?dpr=1"
     MUTE_THREAD = "https://www.facebook.com/ajax/mercury/change_mute_thread.php?dpr=1"
     MUTE_REACTIONS = "https://www.facebook.com/ajax/mercury/change_reactions_mute_thread/?dpr=1"
     MUTE_MENTIONS = "https://www.facebook.com/ajax/mercury/change_mentions_mute_thread/?dpr=1"
