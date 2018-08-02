@@ -990,6 +990,26 @@ class Client(object):
         """
         return self.send(Message(text=emoji, emoji_size=size), thread_id=thread_id, thread_type=thread_type)
 
+    def waveToThread(self, wave_first=True, thread_id=None, thread_type=None):
+        """
+        Says hello with a wave to a thread!
+
+        :param wave_first: Wheter to wave first or wave back
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+        :raises: FBchatException if request failed
+        """
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
+        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        data['action_type'] = 'ma-type:user-generated-message'
+        data['lightweight_action_attachment[lwa_state]'] = "INITIATED" if init else "RECIPROCATED"
+        data['lightweight_action_attachment[lwa_type]'] = "WAVE"
+        if thread_type == ThreadType.USER:
+            data['specific_to_list[0]'] = "fbid:{}".format(thread_id)
+        return self._doSendRequest(data)
+
     def _uploadImage(self, image_path, data, mimetype):
         """Upload an image and get the image_id for sending in a message"""
 
@@ -1482,6 +1502,16 @@ class Client(object):
         r = self._post(self.req_url.DELIVERED, data)
         return r.ok
 
+    def _readStatus(self, read, thread_id):
+        thread_id, thread_type = self._getThread(thread_id, None)
+        data = {
+            "ids[%s]" % thread_id: str(read).lower(),
+            "watermarkTimestamp": now(),
+            "shouldSendReadReceipt": 'true',
+        }
+        r = self._post(self.req_url.READ_STATUS, data)
+        return r.ok
+
     def markAsRead(self, thread_id=None):
         """
         Mark a thread as read
@@ -1491,15 +1521,18 @@ class Client(object):
         :return: Whether the request was successful
         :raises: FBchatException if request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-        data = {
-            "ids[%s]" % thread_id: 'true',
-            "watermarkTimestamp": now(),
-            "shouldSendReadReceipt": 'true',
-        }
+        self._readStatus(True, thread_id)
+    
+    def markAsUnread(self, thread_id=None):
+        """
+        Mark a thread as unread
+        All messages inside the thread will be marked as unread
 
-        r = self._post(self.req_url.READ_STATUS, data)
-        return r.ok
+        :param thread_id: User/Group ID to set as unread. See :ref:`intro_threads`
+        :return: Whether the request was successful
+        :raises: FBchatException if request failed
+        """
+        self._readStatus(False, thread_id)
 
     def markAsSeen(self):
         """
