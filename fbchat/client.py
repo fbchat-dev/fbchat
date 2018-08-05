@@ -883,6 +883,23 @@ class Client(object):
         if message is None:
             raise FBChatException('Could not fetch message: {}'.format(mid))
         return message
+    
+    def fetchPollOptions(self, poll_id):
+        """
+        Fetches list of :class:`models.PollOption` objects from the poll id
+
+        :param poll_id: Poll ID to fetch from
+        :rtype: list
+        :raises: FBChatException if request failed
+        """
+        data = {
+            "dpr": 1,
+            "question_id": poll_id
+        }
+        url_part = urllib.parse.urlencode(data)
+        j = self._post('{}/?{}'.format(self.req_url.GET_POLL_OPTIONS, url_part), fix_request=True, as_json=True)
+
+        return [graphql_to_poll_option(m) for m in j["payload"]]
 
     """
     END FETCH METHODS
@@ -994,7 +1011,7 @@ class Client(object):
         """
         Says hello with a wave to a thread!
 
-        :param wave_first: Wheter to wave first or wave back
+        :param wave_first: Whether to wave first or wave back
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
@@ -1011,13 +1028,14 @@ class Client(object):
         return self._doSendRequest(data)
 
     def _upload(self, file_path, data, mimetype):
-        j = self._postFile(self.req_url.UPLOAD, {
+        data = {
             'file': (
                 file_path,
                 data,
                 mimetype
             )
-        }, fix_request=True, as_json=True)
+        }
+        j = self._postFile(self.req_url.UPLOAD, data, fix_request=True, as_json=True)
         return j
 
     def _uploadFile(self, file_path, data, mimetype):
@@ -1615,7 +1633,7 @@ class Client(object):
 
         j = self._post('{}/?{}'.format(self.req_url.MESSAGE_REACTION, url_part), fix_request=True, as_json=True)
 
-    def eventReminder(self, thread_id, time, title, location='', location_id=''):
+    def eventReminder(self, time, title, location='', location_id='', thread_id=None):
         """
         Sets an event reminder
 
@@ -1625,13 +1643,15 @@ class Client(object):
         .. todo::
             Make this work in Python2.7
 
-        :param thread_id: User/Group ID to send event to. See :ref:`intro_threads`
         :param time: Event time (unix time stamp)
         :param title: Event title
         :param location: Event location name
         :param location_id: Event location ID
+        :param thread_id: User/Group ID to send event to. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
+        thread_id, thread_type = self._getThread(thread_id, None)
+
         full_data = {
             "event_type": "EVENT",
             "dpr": 1,
@@ -1651,6 +1671,56 @@ class Client(object):
 
         j = self._post('{}/?{}'.format(self.req_url.EVENT_REMINDER, url_part), fix_request=True, as_json=True)
 
+    def createPoll(self, poll, thread_id=None, thread_type=None):
+        """
+        Creates poll in a group thread
+
+        :param poll: Poll to create
+        :param thread_id: User/Group ID to change status in. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type poll: models.Poll
+        :type thread_type: models.ThreadType
+        :raises: FBchatException if request failed
+        """
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
+
+        if thread_type != ThreadType.GROUP:
+            raise FBchatUserError('Can only create poll in group threads')
+        else:
+            data = {
+                "question_text": poll.title,
+                "target_id": thread_id
+            }
+
+            for i, option in enumerate(poll.options):
+                data["option_text_array[{}]".format(i)] = option.text
+                data["option_is_selected_array[{}]".format(i)] = str(int(option.vote))
+
+            j = self._post(self.req_url.CREATE_POLL, data, fix_request=True, as_json=True)
+    
+    def updatePollVote(self, poll_id, option_ids=[], new_options=[]):
+        """
+        Updates a poll vote
+
+        :param poll_id: ID of the poll to update vote
+        :param option_ids: List of the option IDs to vote
+        :param new_options: List of the new option names
+        :param thread_id: User/Group ID to change status in. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :raises: FBchatException if request failed
+        """
+        data = {
+            "question_id": poll_id
+        }
+
+        for i, option_id in enumerate(option_ids):
+            data["selected_options[{}]".format(i)] = option_id
+
+        for i, option_text in enumerate(new_options):
+            data["new_options[{}]".format(i)] = option_text
+
+        j = self._post(self.req_url.UPDATE_VOTE, data, fix_request=True, as_json=True)
 
     def setTypingStatus(self, status, thread_id=None, thread_type=None):
         """
@@ -2169,6 +2239,23 @@ class Client(object):
                         is_video_call = bool(int(delta["untypedData"]["group_call_type"]))
                         self.onUserJoinedCall(mid=mid, joined_id=author_id, is_video_call=is_video_call, 
                                             thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
+
+                    # Group poll event
+                    elif delta.get("type") == "group_poll":
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
+                        event_type = delta["untypedData"]["event_type"]
+                        poll_json = ast.literal_eval(delta["untypedData"]["question_json"])
+                        poll = graphql_to_poll(poll_json)
+                        if event_type == "question_creation":
+                            # User created group poll
+                            self.onPollCreated(mid=mid, poll=poll, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
+                                               ts=ts, metadata=metadata, msg=m)
+                        elif event_type == "update_vote":
+                            # User voted on group poll
+                            self.onPollVoted(mid=mid, poll=poll, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
+                                               ts=ts, metadata=metadata, msg=m)
+
+                    
 
                     # New message
                     elif delta.get("class") == "NewMessage":
@@ -2729,7 +2816,7 @@ class Client(object):
 
     def onUserJoinedCall(self, mid=None, joined_id=None, is_video_call=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
-        Called when the client is listening, and somebody joins group call
+        Called when the client is listening, and somebody joins a group call
         
         :param mid: The action ID
         :param joined_id: The ID of the person who joined the call
@@ -2742,6 +2829,40 @@ class Client(object):
         :type thread_type: models.ThreadType
         """
         log.info("{} joined call in {} ({})".format(joined_id, thread_id, thread_type.name))
+
+    def onPollCreated(self, mid=None, poll=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
+        """
+        Called when the client is listening, and somebody creates a group poll
+
+        :param mid: The action ID
+        :param poll: Created poll
+        :param author_id: The ID of the person who created the poll
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param metadata: Extra metadata about the action
+        :param msg: A full set of the data recieved
+        :type poll: models.Poll
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} created poll {} in {} ({})".format(author_id, poll, thread_id, thread_type.name))
+    
+    def onPollVoted(self, mid=None, poll=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
+        """
+        Called when the client is listening, and somebody votes in a group poll
+
+        :param mid: The action ID
+        :param poll: Poll, that user voted in
+        :param author_id: The ID of the person who voted in the poll
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param metadata: Extra metadata about the action
+        :param msg: A full set of the data recieved
+        :type poll: models.Poll
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} voted in poll {} in {} ({})".format(author_id, poll, thread_id, thread_type.name))
 
     """
     END EVENTS
