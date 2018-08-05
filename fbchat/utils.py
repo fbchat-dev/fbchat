@@ -138,6 +138,9 @@ class ReqUrl(object):
     MUTE_THREAD = "https://www.facebook.com/ajax/mercury/change_mute_thread.php?dpr=1"
     MUTE_REACTIONS = "https://www.facebook.com/ajax/mercury/change_reactions_mute_thread/?dpr=1"
     MUTE_MENTIONS = "https://www.facebook.com/ajax/mercury/change_mentions_mute_thread/?dpr=1"
+    CREATE_POLL = "https://www.facebook.com/messaging/group_polling/create_poll/?dpr=1"
+    UPDATE_VOTE = "https://www.facebook.com/messaging/group_polling/update_vote/?dpr=1"
+    GET_POLL_OPTIONS = "https://www.facebook.com/ajax/mercury/get_poll_options"
   
     pull_channel = 0
 
