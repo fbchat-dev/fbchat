@@ -127,6 +127,25 @@ def graphql_to_attachment(a):
         return Attachment(
             uid=a.get('legacy_attachment_id')
         )
+    
+def graphql_to_poll(a):
+    rtn = Poll(
+        title=a.get('title'),
+        options=[graph_to_poll_option(m) for m in a.get('options')]
+    )
+    rtn.uid = a.get("id")
+    rnt.options_count = a.get("total_count")
+    return rtn
+
+def graphql_to_poll_option(a):
+    rtn = PollOption(
+        text=a.get('text'),
+        vote=a.get('viewer_has_voted') == 'true' if isinstance(a.get('viewer_has_voted'), str) else a.get('viewer_has_voted')
+    )
+    rtn.uid = a.get('id')
+    rtn.voters = list(map(lambda x:x.get('node').get('id'), a.get('voters').get('edges'))) if isinstance(a.get('voters'), dict) else a.get('voters')
+    rnt.votes_count = a.get('voters').get('count') if isinstance(a.get('voters'), dict) else a.get('total_count')
+    return rtn
 
 def graphql_to_message(message):
     if message.get('message_sender') is None:
