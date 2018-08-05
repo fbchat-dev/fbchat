@@ -130,11 +130,11 @@ def graphql_to_attachment(a):
     
 def graphql_to_poll(a):
     rtn = Poll(
-        title=a.get('title'),
-        options=[graph_to_poll_option(m) for m in a.get('options')]
+        title=a.get('title') if a.get('title') else a.get("text"),
+        options=[graphql_to_poll_option(m) for m in a.get('options')]
     )
     rtn.uid = a.get("id")
-    rnt.options_count = a.get("total_count")
+    rtn.options_count = a.get("total_count")
     return rtn
 
 def graphql_to_poll_option(a):
@@ -144,7 +144,7 @@ def graphql_to_poll_option(a):
     )
     rtn.uid = a.get('id')
     rtn.voters = list(map(lambda x:x.get('node').get('id'), a.get('voters').get('edges'))) if isinstance(a.get('voters'), dict) else a.get('voters')
-    rnt.votes_count = a.get('voters').get('count') if isinstance(a.get('voters'), dict) else a.get('total_count')
+    rtn.votes_count = a.get('voters').get('count') if isinstance(a.get('voters'), dict) else a.get('total_count')
     return rtn
 
 def graphql_to_message(message):
