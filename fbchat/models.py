@@ -37,7 +37,9 @@ class Thread(object):
     last_message_timestamp = None
     #: Number of messages in the thread
     message_count = None
-    def __init__(self, _type, uid, photo=None, name=None, last_message_timestamp=None, message_count=None):
+    #: List of :class:`Event`
+    event_reminders = None
+    def __init__(self, _type, uid, photo=None, name=None, last_message_timestamp=None, message_count=None, event_reminders=[]):
         """Represents a Facebook thread"""
         self.uid = str(uid)
         self.type = _type
@@ -45,6 +47,7 @@ class Thread(object):
         self.name = name
         self.last_message_timestamp = last_message_timestamp
         self.message_count = message_count
+        self.event_reminders = event_reminders
 
     def __repr__(self):
         return self.__unicode__()
@@ -464,7 +467,7 @@ class PollOption(object):
     text = None
     #: Whether vote when creating or client voted
     vote = None
-    #: ID's of the persons who voted for this poll option
+    #: ID of the users who voted for this poll option
     voters = None
     #: Votes count
     votes_count = None
@@ -479,6 +482,43 @@ class PollOption(object):
 
     def __unicode__(self):
         return '<PollOption ({}): {} voters={}>'.format(self.uid, repr(self.text), self.voters)
+
+class Event(object):
+    #: ID of the event
+    uid = None
+    #: Event time (unix time stamp)
+    time = None
+    #: Event title
+    title = None
+    #: Event location name
+    location = None
+    #: Event location ID
+    location_id = None
+    #: ID of the event creator
+    creator_id = None
+    #: List of the people IDs who will take part in the event
+    going = None
+    #: List of the people IDs who won't take part in the event
+    declined = None
+    #: List of the people IDs who are invited to the event
+    invited = None
+
+    def __init__(self, time, title, location='', location_id=''):
+        """Represents a event"""
+        self.time = time
+        self.title = title
+        self.location = location
+        self.location_id = location_id
+        self.creator_id = None
+        self.going = []
+        self.declined = []
+        self.invited = []
+    
+    def __repr__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return '<Event ({}): {} time={}, location={}, location_id={}>'.format(self.uid, repr(self.title), self.time, repr(self.location), repr(self.location_id))
 
 class Enum(enum.Enum):
     """Used internally by fbchat to support enumerations"""
