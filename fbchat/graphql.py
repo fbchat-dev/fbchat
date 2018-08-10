@@ -214,7 +214,7 @@ def graphql_to_user(user):
     if user.get('profile_picture') is None:
         user['profile_picture'] = {}
     c_info = get_customization_info(user)
-    event_reminders = [graphql_to_event(event) for event in user['event_reminders']['nodes']]
+    event_reminders = [graphql_to_event(event) for event in user['event_reminders']['nodes']] if user.get('event_reminders') is not None else []
     return User(
         user['id'],
         url=user.get('url'),
@@ -252,7 +252,7 @@ def graphql_to_thread(thread):
         else:
             last_name = user.get('name').split(first_name, 1).pop().strip()
 
-        event_reminders = [graphql_to_event(event) for event in thread['event_reminders']['nodes']]
+        event_reminders = [graphql_to_event(event) for event in thread['event_reminders']['nodes']] if thread.get('event_reminders') is not None else []
 
         return User(
             user['id'],
@@ -282,7 +282,7 @@ def graphql_to_group(group):
     last_message_timestamp = None
     if 'last_message' in group:
         last_message_timestamp = group['last_message']['nodes'][0]['timestamp_precise']
-    event_reminders = [graphql_to_event(event) for event in group['event_reminders']['nodes']]
+    event_reminders = [graphql_to_event(event) for event in group['event_reminders']['nodes']] if group.get('event_reminders') is not None else []
     return Group(
         group['thread_key']['thread_fbid'],
         participants=set([node['messaging_actor']['id'] for node in group['all_participants']['nodes']]),
@@ -300,7 +300,7 @@ def graphql_to_room(room):
     if room.get('image') is None:
         room['image'] = {}
     c_info = get_customization_info(room)
-    event_reminders = [graphql_to_event(event) for event in room['event_reminders']['nodes']]
+    event_reminders = [graphql_to_event(event) for event in room['event_reminders']['nodes']] if room.get('event_reminders') is not None else []
     return Room(
         room['thread_key']['thread_fbid'],
         participants=set([node['messaging_actor']['id'] for node in room['all_participants']['nodes']]),
@@ -323,6 +323,7 @@ def graphql_to_page(page):
         page['profile_picture'] = {}
     if page.get('city') is None:
         page['city'] = {}
+    event_reminders = [graphql_to_event(event) for event in room['event_reminders']['nodes']] if room.get('event_reminders') is not None else []
     return Page(
         page['id'],
         url=page.get('url'),
@@ -330,7 +331,8 @@ def graphql_to_page(page):
         category=page.get('category_type'),
         photo=page['profile_picture'].get('uri'),
         name=page.get('name'),
-        message_count=page.get('messages_count')
+        message_count=page.get('messages_count'),
+        event_reminders=event_reminders
     )
 
 def graphql_queries_to_json(*queries):
