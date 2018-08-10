@@ -588,6 +588,53 @@ class Client(object):
                 log.warning('Unknown __typename: {} in {}'.format(repr(node['__typename']), node))
 
         return rtn
+    
+    def searchForMessageIDs(self, query, offset=0, limit=5, thread_id=None):
+        """
+        Find and get message IDs by query
+
+        :param query: Text to search for
+        :param offset: Number of messages to skip
+        :param limit: Max. number of messages to retrieve
+        :param thread_id: User/Group ID to search in. See :ref:`intro_threads`
+        :type offset: int
+        :type limit: int
+        :return: Found Message IDs
+        :rtype: list
+        :raises: FBchatException if request failed
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+        data = {
+            "query": query,
+            "snippetOffset": offset,
+            "snippetLimit": limit,
+            "identifier": "thread_fbid",
+            "thread_fbid": thread_id
+        }
+        j = self._post(self.req_url.SEARCH_MESSAGES, data, fix_request=True, as_json=True)
+        snippets = j["payload"]["search_snippets"][query][thread_id]["snippets"]
+        return [snippet["message_id"] for snippet in snippets]
+    
+    def searchForMessages(self, query, offset=0, limit=5, thread_id=None):
+        """
+        .. warning::
+            This method sends request for every found message ID and it's very slow.
+        
+        Find and get :class:`models.Message` object by query
+
+        :param query: Text to search for
+        :param offset: Number of messages to skip
+        :param limit: Max. number of messages to retrieve
+        :param thread_id: User/Group ID to search in. See :ref:`intro_threads`
+        :type offset: int
+        :type limit: int
+        :return: Found :class:`models.Message` objects
+        :rtype: list
+        :raises: FBchatException if request failed
+        """
+        message_ids = self.searchForMessageIDs(query, offset, limit, thread_id)
+        result = [self.fetchMessageInfo(mid, thread_id) for mid in message_ids]
+        return result
 
     def _fetchInfo(self, *ids):
         data = {
@@ -1765,7 +1812,7 @@ class Client(object):
         Creates poll in a group thread
 
         :param poll: Poll to create
-        :param thread_id: User/Group ID to change status in. See :ref:`intro_threads`
+        :param thread_id: User/Group ID to create poll in. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
         :type poll: models.Poll
         :type thread_type: models.ThreadType
