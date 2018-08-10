@@ -144,6 +144,7 @@ class ReqUrl(object):
     CREATE_POLL = "https://www.facebook.com/messaging/group_polling/create_poll/?dpr=1"
     UPDATE_VOTE = "https://www.facebook.com/messaging/group_polling/update_vote/?dpr=1"
     GET_POLL_OPTIONS = "https://www.facebook.com/ajax/mercury/get_poll_options"
+    SEARCH_MESSAGES = "https://www.facebook.com/ajax/mercury/search_snippets.php?dpr=1"
   
     pull_channel = 0
 
