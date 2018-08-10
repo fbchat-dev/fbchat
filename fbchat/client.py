@@ -1940,6 +1940,18 @@ class Client(object):
         """
         r = self._post(self.req_url.MARK_SEEN, {"seen_timestamp": 0})
         return r.ok
+    
+    def markAsSpam(self, thread_id=None):
+        """
+        Mark a thread as spam and delete it
+
+        :param thread_id: User/Group ID to mark as spam. See :ref:`intro_threads`
+        :return: Whether the request was successful
+        :raises: FBchatException if request failed
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+        r = self._post(self.req_url.MARK_SPAM, {"id": thread_id})
+        return r.ok
 
     def friendConnect(self, friend_id):
         """
