@@ -323,7 +323,7 @@ def graphql_to_page(page):
         page['profile_picture'] = {}
     if page.get('city') is None:
         page['city'] = {}
-    event_reminders = [graphql_to_event(event) for event in room['event_reminders']['nodes']] if room.get('event_reminders') is not None else []
+    event_reminders = [graphql_to_event(event) for event in page['event_reminders']['nodes']] if page.get('event_reminders') is not None else []
     return Page(
         page['id'],
         url=page.get('url'),
