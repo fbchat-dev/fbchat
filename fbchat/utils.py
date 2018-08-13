@@ -146,7 +146,7 @@ class ReqUrl(object):
     GET_POLL_OPTIONS = "https://www.facebook.com/ajax/mercury/get_poll_options"
     SEARCH_MESSAGES = "https://www.facebook.com/ajax/mercury/search_snippets.php?dpr=1"
     MARK_SPAM = "https://www.facebook.com/ajax/mercury/mark_spam.php?dpr=1"
-  
+
     pull_channel = 0
 
     def change_pull_channel(self, channel=None):

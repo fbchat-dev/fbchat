@@ -453,7 +453,7 @@ class Poll(object):
         """Represents a poll"""
         self.title = title
         self.options = options
-    
+
     def __repr__(self):
         return self.__unicode__()
 
@@ -476,7 +476,7 @@ class PollOption(object):
         """Represents a poll option"""
         self.text = text
         self.vote = vote
-    
+
     def __repr__(self):
         return self.__unicode__()
 
@@ -513,7 +513,7 @@ class Event(object):
         self.going = []
         self.declined = []
         self.invited = []
-    
+
     def __repr__(self):
         return self.__unicode__()
 

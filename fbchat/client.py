@@ -588,7 +588,7 @@ class Client(object):
                 log.warning('Unknown __typename: {} in {}'.format(repr(node['__typename']), node))
 
         return rtn
-    
+
     def searchForMessageIDs(self, query, offset=0, limit=5, thread_id=None):
         """
         Find and get message IDs by query
@@ -614,12 +614,12 @@ class Client(object):
         j = self._post(self.req_url.SEARCH_MESSAGES, data, fix_request=True, as_json=True)
         snippets = j["payload"]["search_snippets"][query][thread_id]["snippets"]
         return [snippet["message_id"] for snippet in snippets]
-    
+
     def searchForMessages(self, query, offset=0, limit=5, thread_id=None):
         """
         .. warning::
             This method sends request for every found message ID and it's very slow.
-        
+
         Find and get :class:`models.Message` object by query
 
         :param query: Text to search for
@@ -930,7 +930,7 @@ class Client(object):
         if message is None:
             raise FBChatException('Could not fetch message: {}'.format(mid))
         return message
-    
+
     def fetchPollOptions(self, poll_id):
         """
         Fetches list of :class:`models.PollOption` objects from the poll id
@@ -947,7 +947,7 @@ class Client(object):
         j = self._post('{}/?{}'.format(self.req_url.GET_POLL_OPTIONS, url_part), fix_request=True, as_json=True)
 
         return [graphql_to_poll_option(m) for m in j["payload"]]
-    
+
     def fetchEventInfo(self, event_id):
         """
         Fetches :class:`models.Event` object from the event id
@@ -1126,7 +1126,7 @@ class Client(object):
             return j['payload']['metadata'][0]['image_id']
         else:
             return j['payload']['metadata'][0]['gif_id']
-    
+
     def _uploadVideo(self, video_path, data, mimetype):
         """Upload an video and get the video_id for sending in a message"""
 
@@ -1187,7 +1187,7 @@ class Client(object):
         mimetype = guess_type(file_path)[0]
         file_id = self._uploadFile(file_path, open(file_path, 'rb'), mimetype)
         return self.sendFile(file_id=file_id, message=message, thread_id=thread_id, thread_type=thread_type)
-    
+
     def sendAudio(self, audio_id, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
         Sends an audio from an audio ID to a thread
@@ -1301,7 +1301,7 @@ class Client(object):
         is_gif = (mimetype == 'image/gif')
         image_id = self._uploadImage(image_path, open(image_path, 'rb'), mimetype)
         return self.sendImage(image_id=image_id, message=message, thread_id=thread_id, thread_type=thread_type, is_gif=is_gif)
-    
+
     def sendVideo(self, video_id, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
         Sends an video from an video ID to a thread
@@ -1355,7 +1355,7 @@ class Client(object):
         mimetype = guess_type(video_path)[0]
         video_id = self._uploadVideo(video_path, open(video_path, 'rb'), mimetype)
         return self.sendVideo(video_id=video_id, message=message, thread_id=thread_id, thread_type=thread_type)
-    
+
     def createGroup(self, message, person_ids=None):
         """Creates a group with the given ids
         :param person_ids: A list of people to create the group with.
@@ -1373,7 +1373,7 @@ class Client(object):
         else:
             log.warning("Error while creating group")
             return False
-        
+
     def addUsersToGroup(self, user_ids, thread_id=None):
         """
         Adds users to a group.
@@ -1420,7 +1420,7 @@ class Client(object):
         }
 
         j = self._post(self.req_url.REMOVE_USER, data, fix_request=True, as_json=True)
-    
+
     def _adminStatus(self, admin_ids, admin, thread_id=None):
         thread_id, thread_type = self._getThread(thread_id, None)
 
@@ -1439,7 +1439,7 @@ class Client(object):
             data['admin_ids[' + str(i) + ']'] = str(admin_id)
 
         j = self._post(self.req_url.SAVE_ADMINS, data, fix_request=True, as_json=True)
-    
+
     def addGroupAdmins(self, admin_ids, thread_id=None):
         """
         Sets specifed users as group admins.
@@ -1525,9 +1525,9 @@ class Client(object):
         :type thread_type: models.ThreadType
         :raises: FBchatException if request failed
         """
-    
+
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        
+
         if thread_type != ThreadType.GROUP:
             raise FBchatUserError('Can only change the image of group threads')
         else:
@@ -1537,7 +1537,7 @@ class Client(object):
             }
 
             j = self._post(self.req_url.THREAD_IMAGE, data, fix_request=True, as_json=True)
-    
+
     def changeThreadImageRemote(self, image_url, thread_id=None, thread_type=ThreadType.USER):
         """
         Changes a thread image from a URL
@@ -1548,9 +1548,9 @@ class Client(object):
         :type thread_type: models.ThreadType
         :raises: FBchatException if request failed
         """
-    
+
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        
+
         if thread_type != ThreadType.GROUP:
             raise FBchatUserError('Can only change the image of group threads')
         else:
@@ -1560,7 +1560,7 @@ class Client(object):
             image_id = self._uploadImage(image_url, remote_image, mimetype)
 
             self.changeThreadImage(image_id, thread_id, thread_type)
-    
+
     def changeThreadImageLocal(self, image_path, thread_id=None, thread_type=ThreadType.USER):
         """
         Changes a thread image from a local path
@@ -1571,9 +1571,9 @@ class Client(object):
         :type thread_type: models.ThreadType
         :raises: FBchatException if request failed
         """
-        
+
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        
+
         if thread_type != ThreadType.GROUP:
             raise FBchatUserError('Can only change the image of group threads')
         else:
@@ -1596,7 +1596,7 @@ class Client(object):
         """
 
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        
+
         if thread_type == ThreadType.USER:
             # The thread is a user, so we change the user's nickname
             return self.changeNickname(title, thread_id, thread_id=thread_id, thread_type=thread_type)
@@ -1733,7 +1733,7 @@ class Client(object):
         url_part = urllib.parse.urlencode(full_data)
 
         j = self._post('{}/?{}'.format(self.req_url.EVENT_REMINDER, url_part), fix_request=True, as_json=True)
-    
+
     def editEventReminder(self, event_id, event):
         """
         Edits an event reminder
@@ -1761,7 +1761,7 @@ class Client(object):
         url_part = urllib.parse.urlencode(full_data)
 
         j = self._post('{}/?{}'.format(self.req_url.EVENT_CHANGE, url_part), fix_request=True, as_json=True)
-    
+
     def deleteEventReminder(self, event_id):
         """
         Deletes an event reminder
@@ -1783,7 +1783,7 @@ class Client(object):
         url_part = urllib.parse.urlencode(full_data)
 
         j = self._post('{}/?{}'.format(self.req_url.EVENT_CHANGE, url_part), fix_request=True, as_json=True)
-    
+
     def changeEventParticipation(self, event_id, take_part=True):
         """
         Changes an event reminder participation
@@ -1833,7 +1833,7 @@ class Client(object):
                 data["option_is_selected_array[{}]".format(i)] = str(int(option.vote))
 
             j = self._post(self.req_url.CREATE_POLL, data, fix_request=True, as_json=True)
-    
+
     def updatePollVote(self, poll_id, option_ids=[], new_options=[]):
         """
         Updates a poll vote
@@ -1921,7 +1921,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         self._readStatus(True, thread_id)
-    
+
     def markAsUnread(self, thread_id=None):
         """
         Mark a thread as unread
@@ -1940,7 +1940,7 @@ class Client(object):
         """
         r = self._post(self.req_url.MARK_SEEN, {"seen_timestamp": 0})
         return r.ok
-    
+
     def markAsSpam(self, thread_id=None):
         """
         Mark a thread as spam and delete it
@@ -1989,7 +1989,7 @@ class Client(object):
     def blockUser(self, user_id):
         """
         Blocks messages from a specifed user
-        
+
         :param user_id: The ID of the user that you want to block
         :return: Whether the request was successful
         :raises: FBchatException if request failed
@@ -2003,7 +2003,7 @@ class Client(object):
     def unblockUser(self, user_id):
         """
         Unblocks messages from a blocked user
-        
+
         :param user_id: The ID of the user that you want to unblock
         :return: Whether the request was successful
         :raises: FBchatException if request failed
@@ -2013,11 +2013,11 @@ class Client(object):
         }
         r = self._post(self.req_url.UNBLOCK_USER, data)
         return r.ok
-    
+
     def moveThreads(self, location, thread_ids):
         """
         Moves threads to specifed location
-        
+
         :param location: models.ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
         :param thread_ids: Thread IDs to move. See :ref:`intro_threads`
         :return: Whether the request was successful
@@ -2107,7 +2107,7 @@ class Client(object):
         }
         r = self._post(self.req_url.MUTE_THREAD, data)
         return r.ok
-    
+
     def unmuteThread(self, thread_id=None):
         """
         Unmutes thread
@@ -2115,7 +2115,7 @@ class Client(object):
         :param thread_id: User/Group ID to unmute. See :ref:`intro_threads`
         """
         return self.muteThread(0, thread_id)
-    
+
     def muteThreadReactions(self, mute=True, thread_id=None):
         """
         Mutes thread reactions
@@ -2352,7 +2352,7 @@ class Client(object):
 
                         # thread_id, thread_type = getThreadIdAndThreadType(delta)
                         self.onMarkedSeen(threads=threads, seen_ts=seen_ts, ts=delivered_ts, metadata=delta, msg=m)
-                    
+
                     # Game played
                     elif delta.get("type") == "instant_game_update":
                         game_id = delta["untypedData"]["game_id"]
@@ -2375,7 +2375,7 @@ class Client(object):
                         call_duration = int(delta["untypedData"]["call_duration"])
                         is_video_call = bool(int(delta["untypedData"]["is_video_call"]))
                         if call_status == "call_started":
-                            self.onCallStarted(mid=mid, caller_id=author_id, is_video_call=is_video_call, 
+                            self.onCallStarted(mid=mid, caller_id=author_id, is_video_call=is_video_call,
                                                 thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
                         elif call_status == "call_ended":
                             self.onCallEnded(mid=mid, caller_id=author_id, is_video_call=is_video_call, call_duration=call_duration,
@@ -2385,7 +2385,7 @@ class Client(object):
                     elif delta.get("type") == "participant_joined_group_call":
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         is_video_call = bool(int(delta["untypedData"]["group_call_type"]))
-                        self.onUserJoinedCall(mid=mid, joined_id=author_id, is_video_call=is_video_call, 
+                        self.onUserJoinedCall(mid=mid, joined_id=author_id, is_video_call=is_video_call,
                                             thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
                     # Group poll event
@@ -2409,14 +2409,14 @@ class Client(object):
                         event = graphql_to_event(delta["untypedData"])
                         self.onEventCreated(mid=mid, event=event, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
                                             ts=ts, metadata=metadata, msg=m)
-                    
+
                     # Event reminder ended
                     elif delta.get("type") == "lightweight_event_notify":
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         event = graphql_to_event(delta["untypedData"])
                         self.onEventEnded(mid=mid, event=event, thread_id=thread_id, thread_type=thread_type,
                                             ts=ts, metadata=metadata, msg=m)
-                    
+
                     # Event reminder edited
                     elif delta.get("type") == "lightweight_event_update":
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
@@ -2430,7 +2430,7 @@ class Client(object):
                         event = graphql_to_event(delta["untypedData"])
                         self.onEventDeleted(mid=mid, event=event, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
                                             ts=ts, metadata=metadata, msg=m)
-                    
+
                      # Event reminder participation change
                     elif delta.get("type") == "lightweight_event_rsvp":
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
@@ -2725,7 +2725,7 @@ class Client(object):
     def onImageChange(self, mid=None, author_id=None, new_image=None, thread_id=None, thread_type=ThreadType.USER, ts=None):
         """
         Called when the client is listening, and somebody changes the image of a thread
-        
+
         :param mid: The action ID
         :param new_image: The ID of the new image
         :param author_id: The ID of the person who changed the image
@@ -2902,11 +2902,11 @@ class Client(object):
         :type thread_type: models.ThreadType
         """
         pass
-    
+
     def onGamePlayed(self, mid=None, author_id=None, game_id=None, game_name=None, score=None, leaderboard=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
         Called when the client is listening, and somebody plays a game
-        
+
         :param mid: The action ID
         :param author_id: The ID of the person who played the game
         :param game_id: The ID of the game
@@ -2963,7 +2963,7 @@ class Client(object):
             Make this work with private calls
 
         Called when the client is listening, and somebody starts a call in a group
-        
+
         :param mid: The action ID
         :param caller_id: The ID of the person who started the call
         :param is_video_call: True if it's video call
@@ -2982,7 +2982,7 @@ class Client(object):
             Make this work with private calls
 
         Called when the client is listening, and somebody ends a call in a group
-        
+
         :param mid: The action ID
         :param caller_id: The ID of the person who ended the call
         :param is_video_call: True if it was video call
@@ -2999,7 +2999,7 @@ class Client(object):
     def onUserJoinedCall(self, mid=None, joined_id=None, is_video_call=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
         Called when the client is listening, and somebody joins a group call
-        
+
         :param mid: The action ID
         :param joined_id: The ID of the person who joined the call
         :param is_video_call: True if it's video call
@@ -3028,7 +3028,7 @@ class Client(object):
         :type thread_type: models.ThreadType
         """
         log.info("{} created poll {} in {} ({})".format(author_id, poll, thread_id, thread_type.name))
-    
+
     def onPollVoted(self, mid=None, poll=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
         Called when the client is listening, and somebody votes in a group poll
@@ -3045,7 +3045,7 @@ class Client(object):
         :type thread_type: models.ThreadType
         """
         log.info("{} voted in poll {} in {} ({})".format(author_id, poll, thread_id, thread_type.name))
-    
+
     def onEventCreated(self, mid=None, event=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
         Called when the client is listening, and somebody creates an event reminder
@@ -3062,7 +3062,7 @@ class Client(object):
         :type thread_type: models.ThreadType
         """
         log.info("{} created event reminder {} in {} ({})".format(author_id, event, thread_id, thread_type.name))
-    
+
     def onEventEnded(self, mid=None, event=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
         Called when the client is listening, and an event reminder ends
@@ -3078,7 +3078,7 @@ class Client(object):
         :type thread_type: models.ThreadType
         """
         log.info("Event reminder {} has ended in {} ({})".format(event, thread_id, thread_type.name))
-    
+
     def onEventEdited(self, mid=None, event=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
         Called when the client is listening, and somebody edits an event reminder
@@ -3095,7 +3095,7 @@ class Client(object):
         :type thread_type: models.ThreadType
         """
         log.info("{} edited event reminder {} in {} ({})".format(author_id, event, thread_id, thread_type.name))
-    
+
     def onEventDeleted(self, mid=None, event=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
         Called when the client is listening, and somebody deletes an event reminder
@@ -3112,7 +3112,7 @@ class Client(object):
         :type thread_type: models.ThreadType
         """
         log.info("{} deleted event reminder {} in {} ({})".format(author_id, event, thread_id, thread_type.name))
-    
+
     def onEventParticipationChange(self, mid=None, event=None, take_part=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
         Called when the client is listening, and somebody takes part in an event or not
@@ -3133,7 +3133,7 @@ class Client(object):
             log.info("{} will take part in {} in {} ({})".format(author_id, event, thread_id, thread_type.name))
         else:
             log.info("{} won't take part in {} in {} ({})".format(author_id, event, thread_id, thread_type.name))
- 
+
     """
     END EVENTS
     """

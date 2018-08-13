@@ -128,7 +128,7 @@ def graphql_to_attachment(a):
         return Attachment(
             uid=a.get('legacy_attachment_id')
         )
-    
+
 def graphql_to_poll(a):
     rtn = Poll(
         title=a.get('title') if a.get('title') else a.get("text"),
