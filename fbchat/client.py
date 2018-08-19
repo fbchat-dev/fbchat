@@ -921,7 +921,7 @@ class Client(object):
         :param mid: Message ID to fetch from
         :param thread_id: User/Group ID to get message info from. See :ref:`intro_threads`
         :return: :class:`models.Message` object
-        :rtype: object
+        :rtype: models.Message
         :raises: FBChatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -948,23 +948,22 @@ class Client(object):
 
         return [graphql_to_poll_option(m) for m in j["payload"]]
 
-    def fetchEventInfo(self, event_id):
+    def fetchPlanInfo(self, plan_id):
         """
-        Fetches :class:`models.Event` object from the event id
+        Fetches a :class:`models.Plan` object from the plan id
 
-        :param event_id: Event ID to fetch from
-        :return: :class:`models.Event` object
-        :rtype: object
+        :param plan_id: Plan ID to fetch from
+        :return: :class:`models.Plan` object
+        :rtype: models.Plan
         :raises: FBChatException if request failed
         """
         data = {
-            "event_reminder_id": event_id
+            "event_reminder_id": plan_id
         }
         url_part = urllib.parse.urlencode(data)
-        j = self._post('{}/?{}'.format(self.req_url.EVENT_INFO, url_part), fix_request=True, as_json=True)
-        event = graphql_to_event(j["payload"], event_id)
-        event.uid = event_id
-        return event
+        j = self._post('{}/?{}'.format(self.req_url.PLAN_INFO, url_part), fix_request=True, as_json=True)
+        plan = graphql_to_plan(j["payload"])
+        return plan
 
     """
     END FETCH METHODS
@@ -1698,9 +1697,9 @@ class Client(object):
 
         j = self._post('{}/?{}'.format(self.req_url.MESSAGE_REACTION, url_part), fix_request=True, as_json=True)
 
-    def createEventReminder(self, event, thread_id=None):
+    def createPlan(self, plan, thread_id=None):
         """
-        Sets an event reminder
+        Sets a plan
 
         .. warning::
             Does not work in Python2.7
@@ -1708,9 +1707,9 @@ class Client(object):
         .. todo::
             Make this work in Python2.7
 
-        :param event: Event to set
-        :param thread_id: User/Group ID to send event to. See :ref:`intro_threads`
-        :type event: models.Event
+        :param plan: Plan to set
+        :param thread_id: User/Group ID to send plan to. See :ref:`intro_threads`
+        :type plan: models.Plan
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -1718,11 +1717,11 @@ class Client(object):
         full_data = {
             "event_type": "EVENT",
             "dpr": 1,
-            "event_time" : event.time,
-            "title" : event.title,
+            "event_time" : plan.time,
+            "title" : plan.title,
             "thread_id" : thread_id,
-            "location_id" : event.location_id,
-            "location_name" : event.location,
+            "location_id" : plan.location_id or '',
+            "location_name" : plan.location or '',
             "acontext": {
                 "action_history": [{
                     "surface": "messenger_chat_tab",
@@ -1732,25 +1731,25 @@ class Client(object):
         }
         url_part = urllib.parse.urlencode(full_data)
 
-        j = self._post('{}/?{}'.format(self.req_url.EVENT_REMINDER, url_part), fix_request=True, as_json=True)
+        j = self._post('{}/?{}'.format(self.req_url.PLAN_CREATE, url_part), fix_request=True, as_json=True)
 
-    def editEventReminder(self, event_id, event):
+    def editPlan(self, plan, new_plan):
         """
-        Edits an event reminder
+        Edits a plan
 
-        :param event_id: Event ID to edit
-        :param event: New event
-        :type event: models.Event
+        :param plan: Plan to edit
+        :param new_plan: New plan
+        :type plan: models.Plan
         :raises: FBchatException if request failed
         """
         full_data = {
             "dpr": 1,
-            "event_reminder_id": event_id,
+            "event_reminder_id": plan.uid,
             "delete": "false",
-            "date": event.time,
-            "location_name": event.location,
-            "location_id": event.location_id,
-            "title": event.title,
+            "date": new_plan.time,
+            "location_name": new_plan.location or '',
+            "location_id": new_plan.location_id or '',
+            "title": new_plan.title,
             "acontext": {
                 "action_history": [{
                     "surface": "messenger_chat_tab",
@@ -1760,18 +1759,18 @@ class Client(object):
         }
         url_part = urllib.parse.urlencode(full_data)
 
-        j = self._post('{}/?{}'.format(self.req_url.EVENT_CHANGE, url_part), fix_request=True, as_json=True)
+        j = self._post('{}/?{}'.format(self.req_url.PLAN_CHANGE, url_part), fix_request=True, as_json=True)
 
-    def deleteEventReminder(self, event_id):
+    def deletePlan(self, plan):
         """
-        Deletes an event reminder
+        Deletes a plan
 
-        :param event_id: Event ID to delete
+        :param plan: Plan to delete
         :raises: FBchatException if request failed
         """
         full_data = {
             "dpr": 1,
-            "event_reminder_id": event_id,
+            "event_reminder_id": plan.uid,
             "delete": "true",
             "acontext": {
                 "action_history": [{
@@ -1782,19 +1781,19 @@ class Client(object):
         }
         url_part = urllib.parse.urlencode(full_data)
 
-        j = self._post('{}/?{}'.format(self.req_url.EVENT_CHANGE, url_part), fix_request=True, as_json=True)
+        j = self._post('{}/?{}'.format(self.req_url.PLAN_DELETE, url_part), fix_request=True, as_json=True)
 
-    def changeEventParticipation(self, event_id, take_part=True):
+    def changePlanParticipation(self, plan, take_part=True):
         """
-        Changes an event reminder participation
+        Changes participation in a plan
 
-        :param event_id: Event ID
-        :param take_part: Whether to take part in the event
+        :param plan: Plan to take part in or not
+        :param take_part: Whether to take part in the plan
         :raises: FBchatException if request failed
         """
         full_data = {
             "dpr": 1,
-            "event_reminder_id": event_id,
+            "event_reminder_id": plan.uid,
             "guest_state": "GOING" if take_part else "DECLINED",
             "acontext": {
                 "action_history": [{
@@ -1805,7 +1804,7 @@ class Client(object):
         }
         url_part = urllib.parse.urlencode(full_data)
 
-        j = self._post('{}/?{}'.format(self.req_url.EVENT_PARTICIPATION, url_part), fix_request=True, as_json=True)
+        j = self._post('{}/?{}'.format(self.req_url.PLAN_PARTICIPATION, url_part), fix_request=True, as_json=True)
 
     def createPoll(self, poll, thread_id=None, thread_type=None):
         """
@@ -2203,7 +2202,7 @@ class Client(object):
             "msgs_recv": 0,
             "sticky_token": sticky,
             "sticky_pool": pool,
-            "clientid": self.client_id,
+            "clientid": self.client_id
         }
 
         j = self._get(ReqUrl.STICKY, data, fix_request=True, as_json=True)
@@ -2403,41 +2402,38 @@ class Client(object):
                             self.onPollVoted(mid=mid, poll=poll, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
                                                ts=ts, metadata=metadata, msg=m)
 
-                    # Event reminder created
+                    # Plan created
                     elif delta.get("type") == "lightweight_event_create":
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
-                        event = graphql_to_event(delta["untypedData"])
-                        self.onEventCreated(mid=mid, event=event, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
-                                            ts=ts, metadata=metadata, msg=m)
+                        plan = graphql_to_plan(delta["untypedData"])
+                        self.onPlanCreated(mid=mid, plan=plan, author_id=author_id, thread_id=thread_id, thread_type=                   thread_type, ts=ts, metadata=metadata, msg=m)
 
-                    # Event reminder ended
+                    # Plan ended
                     elif delta.get("type") == "lightweight_event_notify":
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
-                        event = graphql_to_event(delta["untypedData"])
-                        self.onEventEnded(mid=mid, event=event, thread_id=thread_id, thread_type=thread_type,
+                        plan = graphql_to_plan(delta["untypedData"])
+                        self.onPlanEnded(mid=mid, plan=plan, thread_id=thread_id, thread_type=thread_type,
                                             ts=ts, metadata=metadata, msg=m)
 
-                    # Event reminder edited
+                    # Plan edited
                     elif delta.get("type") == "lightweight_event_update":
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
-                        event = graphql_to_event(delta["untypedData"])
-                        self.onEventEdited(mid=mid, event=event, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
-                                            ts=ts, metadata=metadata, msg=m)
+                        plan = graphql_to_plan(delta["untypedData"])
+                        self.onPlanEdited(mid=mid, plan=plan, author_id=author_id, thread_id=thread_id, thread_type=                   thread_type, ts=ts, metadata=metadata, msg=m)
 
-                    # Event reminder deleted
+                    # Plan deleted
                     elif delta.get("type") == "lightweight_event_delete":
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
-                        event = graphql_to_event(delta["untypedData"])
-                        self.onEventDeleted(mid=mid, event=event, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
-                                            ts=ts, metadata=metadata, msg=m)
+                        plan = graphql_to_plan(delta["untypedData"])
+                        self.onPlanDeleted(mid=mid, plan=plan, author_id=author_id, thread_id=thread_id, thread_type=                   thread_type, ts=ts, metadata=metadata, msg=m)
 
-                     # Event reminder participation change
+                     # Plan participation change
                     elif delta.get("type") == "lightweight_event_rsvp":
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
-                        event = graphql_to_event(delta["untypedData"])
+                        plan = graphql_to_plan(delta["untypedData"])
                         take_part = delta["untypedData"]["guest_status"] == "GOING"
-                        self.onEventParticipationChange(mid=mid, event=event, take_part=take_part, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
-                                            ts=ts, metadata=metadata, msg=m)
+                        self.onPlanParticipation(mid=mid, plan=plan, take_part=take_part, author_id=author_id,                         thread_id=thread_id, thread_type=thread_type, ts=ts,
+                                                  metadata=metadata, msg=m)
 
                     # New message
                     elif delta.get("class") == "NewMessage":
@@ -3046,93 +3042,93 @@ class Client(object):
         """
         log.info("{} voted in poll {} in {} ({})".format(author_id, poll, thread_id, thread_type.name))
 
-    def onEventCreated(self, mid=None, event=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
+    def onPlanCreated(self, mid=None, plan=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
-        Called when the client is listening, and somebody creates an event reminder
+        Called when the client is listening, and somebody creates a plan
 
         :param mid: The action ID
-        :param event: Created event reminder
-        :param author_id: The ID of the person who created the event reminder
+        :param plan: Created plan
+        :param author_id: The ID of the person who created the plan
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
         :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
         :param metadata: Extra metadata about the action
         :param msg: A full set of the data recieved
-        :type event: models.Event
+        :type plan: models.Plan
         :type thread_type: models.ThreadType
         """
-        log.info("{} created event reminder {} in {} ({})".format(author_id, event, thread_id, thread_type.name))
+        log.info("{} created plan {} in {} ({})".format(author_id, plan, thread_id, thread_type.name))
 
-    def onEventEnded(self, mid=None, event=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
+    def onPlanEnded(self, mid=None, plan=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
-        Called when the client is listening, and an event reminder ends
+        Called when the client is listening, and a plan ends
 
         :param mid: The action ID
-        :param event: Ended event reminder
+        :param plan: Ended plan
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
         :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
         :param metadata: Extra metadata about the action
         :param msg: A full set of the data recieved
-        :type event: models.Event
+        :type plan: models.Plan
         :type thread_type: models.ThreadType
         """
-        log.info("Event reminder {} has ended in {} ({})".format(event, thread_id, thread_type.name))
+        log.info("Plan {} has ended in {} ({})".format(plan, thread_id, thread_type.name))
 
-    def onEventEdited(self, mid=None, event=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
+    def onPlanEdited(self, mid=None, plan=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
-        Called when the client is listening, and somebody edits an event reminder
+        Called when the client is listening, and somebody edits a plan
 
         :param mid: The action ID
-        :param event: Edited event reminder
-        :param author_id: The ID of the person who edited the event reminder
+        :param plan: Edited plan
+        :param author_id: The ID of the person who edited the plan
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
         :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
         :param metadata: Extra metadata about the action
         :param msg: A full set of the data recieved
-        :type event: models.Event
+        :type plan: models.Plan
         :type thread_type: models.ThreadType
         """
-        log.info("{} edited event reminder {} in {} ({})".format(author_id, event, thread_id, thread_type.name))
+        log.info("{} edited plan {} in {} ({})".format(author_id, plan, thread_id, thread_type.name))
 
-    def onEventDeleted(self, mid=None, event=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
+    def onPlanDeleted(self, mid=None, plan=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
-        Called when the client is listening, and somebody deletes an event reminder
+        Called when the client is listening, and somebody deletes a plan
 
         :param mid: The action ID
-        :param event: Deleted event reminder
-        :param author_id: The ID of the person who deleted the event reminder
+        :param plan: Deleted plan
+        :param author_id: The ID of the person who deleted the plan
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
         :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
         :param metadata: Extra metadata about the action
         :param msg: A full set of the data recieved
-        :type event: models.Event
+        :type plan: models.Plan
         :type thread_type: models.ThreadType
         """
-        log.info("{} deleted event reminder {} in {} ({})".format(author_id, event, thread_id, thread_type.name))
+        log.info("{} deleted plan {} in {} ({})".format(author_id, plan, thread_id, thread_type.name))
 
-    def onEventParticipationChange(self, mid=None, event=None, take_part=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
+    def onPlanParticipation(self, mid=None, plan=None, take_part=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
-        Called when the client is listening, and somebody takes part in an event or not
+        Called when the client is listening, and somebody takes part in a plan or not
 
         :param mid: The action ID
-        :param event: Event reminder
-        :param take_part: Whether the person takes part in the event or not
-        :param author_id: The ID of the person who deleted the event reminder
+        :param plan: Plan
+        :param take_part: Whether the person takes part in the plan or not
+        :param author_id: The ID of the person who will participate in the plan or not
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
         :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
         :param metadata: Extra metadata about the action
         :param msg: A full set of the data recieved
-        :type event: models.Event
+        :type plan: models.Plan
         :type thread_type: models.ThreadType
         """
         if take_part:
-            log.info("{} will take part in {} in {} ({})".format(author_id, event, thread_id, thread_type.name))
+            log.info("{} will take part in {} in {} ({})".format(author_id, plan, thread_id, thread_type.name))
         else:
-            log.info("{} won't take part in {} in {} ({})".format(author_id, event, thread_id, thread_type.name))
+            log.info("{} won't take part in {} in {} ({})".format(author_id, plan, thread_id, thread_type.name))
 
     """
     END EVENTS
