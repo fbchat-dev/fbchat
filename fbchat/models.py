@@ -37,9 +37,9 @@ class Thread(object):
     last_message_timestamp = None
     #: Number of messages in the thread
     message_count = None
-    #: List of :class:`Event`
-    event_reminders = None
-    def __init__(self, _type, uid, photo=None, name=None, last_message_timestamp=None, message_count=None, event_reminders=[]):
+    #: Set :class:`Plan`
+    plan = None
+    def __init__(self, _type, uid, photo=None, name=None, last_message_timestamp=None, message_count=None, plan=None):
         """Represents a Facebook thread"""
         self.uid = str(uid)
         self.type = _type
@@ -47,7 +47,7 @@ class Thread(object):
         self.name = name
         self.last_message_timestamp = last_message_timestamp
         self.message_count = message_count
-        self.event_reminders = event_reminders
+        self.plan = plan
 
     def __repr__(self):
         return self.__unicode__()
@@ -483,33 +483,33 @@ class PollOption(object):
     def __unicode__(self):
         return '<PollOption ({}): {} voters={}>'.format(self.uid, repr(self.text), self.voters)
 
-class Event(object):
-    #: ID of the event
+class Plan(object):
+    #: ID of the plan
     uid = None
-    #: Event time (unix time stamp)
+    #: Plan time (unix time stamp)
     time = None
-    #: Event title
+    #: Plan title
     title = None
-    #: Event location name
+    #: Plan location name
     location = None
-    #: Event location ID
+    #: Plan location ID
     location_id = None
-    #: ID of the event creator
-    creator_id = None
-    #: List of the people IDs who will take part in the event
+    #: ID of the plan creator
+    author_id = None
+    #: List of the people IDs who will take part in the plan
     going = None
-    #: List of the people IDs who won't take part in the event
+    #: List of the people IDs who won't take part in the plan
     declined = None
-    #: List of the people IDs who are invited to the event
+    #: List of the people IDs who are invited to the plan
     invited = None
 
     def __init__(self, time, title, location='', location_id=''):
-        """Represents a event"""
+        """Represents a plan"""
         self.time = time
         self.title = title
         self.location = location
         self.location_id = location_id
-        self.creator_id = None
+        self.author_id = None
         self.going = []
         self.declined = []
         self.invited = []
@@ -518,7 +518,7 @@ class Event(object):
         return self.__unicode__()
 
     def __unicode__(self):
-        return '<Event ({}): {} time={}, location={}, location_id={}>'.format(self.uid, repr(self.title), self.time, repr(self.location), repr(self.location_id))
+        return '<Plan ({}): {} time={}, location={}, location_id={}>'.format(self.uid, repr(self.title), self.time, repr(self.location), repr(self.location_id))
 
 class Enum(enum.Enum):
     """Used internally by fbchat to support enumerations"""
