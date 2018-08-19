@@ -148,30 +148,31 @@ def graphql_to_poll_option(a):
     rtn.votes_count = a.get('voters').get('count') if isinstance(a.get('voters'), dict) else a.get('total_count')
     return rtn
 
-def graphql_to_event(a):
-    if a.get('event_members') is not None:
-        rtn = Event(
+def graphql_to_plan(a):
+    if a.get('event_members'):
+        rtn = Plan(
             time=a.get('event_time'),
             title=a.get('title'),
             location=a.get('location_name')
         )
         if a.get('location_id') != 0:
             rtn.location_id = str(a.get('location_id'))
-        rtn.creator_id = a.get('creator_id')
+        rtn.uid = a.get('oid')
+        rtn.author_id = a.get('creator_id')
         guests = a.get("event_members")
         rtn.going = [uid for uid in guests if guests[uid] == "GOING"]
         rtn.declined = [uid for uid in guests if guests[uid] == "DECLINED"]
         rtn.invited = [uid for uid in guests if guests[uid] == "INVITED"]
         return rtn
     elif a.get('id') is None:
-        rtn = Event(
+        rtn = Plan(
             time=a.get('event_time'),
             title=a.get('event_title'),
             location=a.get('event_location_name'),
             location_id=a.get('event_location_id')
         )
         rtn.uid = a.get('event_id')
-        rtn.creator_id = a.get('event_creator_id')
+        rtn.author_id = a.get('event_creator_id')
         guests = ast.literal_eval(a.get('guest_state_list'))
     else:
         rtn = Event(
@@ -180,7 +181,7 @@ def graphql_to_event(a):
             location=a.get('location_name')
         )
         rtn.uid = a.get('id')
-        rtn.creator_id = a.get('lightweight_event_creator').get('id')
+        rtn.author_id = a.get('lightweight_event_creator').get('id')
         guests = a.get('event_reminder_members').get('edges')
     rtn.going = [m.get('node').get('id') for m in guests if m.get('guest_list_state') == "GOING"]
     rtn.declined = [m.get('node').get('id') for m in guests if m.get('guest_list_state') == "DECLINED"]
@@ -214,7 +215,7 @@ def graphql_to_user(user):
     if user.get('profile_picture') is None:
         user['profile_picture'] = {}
     c_info = get_customization_info(user)
-    event_reminders = [graphql_to_event(event) for event in user['event_reminders']['nodes']] if user.get('event_reminders') is not None else []
+    plan = graphql_to_plan(user['event_reminders']['nodes'][0]) if user.get('event_reminders') else []
     return User(
         user['id'],
         url=user.get('url'),
@@ -230,7 +231,7 @@ def graphql_to_user(user):
         photo=user['profile_picture'].get('uri'),
         name=user.get('name'),
         message_count=user.get('messages_count'),
-        event_reminders=event_reminders
+        plan=plan,
     )
 
 def graphql_to_thread(thread):
@@ -252,7 +253,7 @@ def graphql_to_thread(thread):
         else:
             last_name = user.get('name').split(first_name, 1).pop().strip()
 
-        event_reminders = [graphql_to_event(event) for event in thread['event_reminders']['nodes']] if thread.get('event_reminders') is not None else []
+        plan = graphql_to_plan(thread['event_reminders']['nodes'][0]) if thread.get('event_reminders') else []
 
         return User(
             user['id'],
@@ -270,7 +271,7 @@ def graphql_to_thread(thread):
             photo=user['big_image_src'].get('uri'),
             message_count=thread.get('messages_count'),
             last_message_timestamp=last_message_timestamp,
-            event_reminders=event_reminders
+            plan=plan,
         )
     else:
         raise FBchatException('Unknown thread type: {}, with data: {}'.format(thread.get('thread_type'), thread))
@@ -282,7 +283,7 @@ def graphql_to_group(group):
     last_message_timestamp = None
     if 'last_message' in group:
         last_message_timestamp = group['last_message']['nodes'][0]['timestamp_precise']
-    event_reminders = [graphql_to_event(event) for event in group['event_reminders']['nodes']] if group.get('event_reminders') is not None else []
+    plan = graphql_to_plan(group['event_reminders']['nodes'][0]) if group.get('event_reminders') else []
     return Group(
         group['thread_key']['thread_fbid'],
         participants=set([node['messaging_actor']['id'] for node in group['all_participants']['nodes']]),
@@ -293,14 +294,14 @@ def graphql_to_group(group):
         name=group.get('name'),
         message_count=group.get('messages_count'),
         last_message_timestamp=last_message_timestamp,
-        event_reminders=event_reminders
+        plan=plan,
     )
 
 def graphql_to_room(room):
     if room.get('image') is None:
         room['image'] = {}
     c_info = get_customization_info(room)
-    event_reminders = [graphql_to_event(event) for event in room['event_reminders']['nodes']] if room.get('event_reminders') is not None else []
+    plan = graphql_to_plan(room['event_reminders']['nodes'][0]) if room.get('event_reminders') else []
     return Room(
         room['thread_key']['thread_fbid'],
         participants=set([node['messaging_actor']['id'] for node in room['all_participants']['nodes']]),
@@ -315,7 +316,7 @@ def graphql_to_room(room):
         approval_requests = set(node.get('id') for node in room['thread_queue_metadata'].get('approval_requests', {}).get('nodes')),
         join_link = room['joinable_mode'].get('link'),
         privacy_mode = bool(room.get('privacy_mode')),
-        event_reminders=event_reminders
+        plan=plan,
     )
 
 def graphql_to_page(page):
@@ -323,7 +324,7 @@ def graphql_to_page(page):
         page['profile_picture'] = {}
     if page.get('city') is None:
         page['city'] = {}
-    event_reminders = [graphql_to_event(event) for event in page['event_reminders']['nodes']] if page.get('event_reminders') is not None else []
+    plan = graphql_to_plan(page['event_reminders']['nodes'][0]) if page.get('event_reminders') else []
     return Page(
         page['id'],
         url=page.get('url'),
@@ -332,7 +333,7 @@ def graphql_to_page(page):
         photo=page['profile_picture'].get('uri'),
         name=page.get('name'),
         message_count=page.get('messages_count'),
-        event_reminders=event_reminders
+        plan=plan,
     )
 
 def graphql_queries_to_json(*queries):
