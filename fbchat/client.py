@@ -473,20 +473,6 @@ class Client(object):
     """
 
     """
-    UTILS METHODS
-    """
-
-    def _requireList(self, list_):
-        if isinstance(list_, list):
-            return set(list_)
-        else:
-            return set([list_])
-
-    """
-    END UTILS METHODS
-    """
-
-    """
     FETCH METHODS
     """
 
@@ -1113,39 +1099,18 @@ class Client(object):
 
         return j['payload']['metadata'][0]['{}_id'.format(type_)]
     
-    def _sendFiles(self, file_ids, type_="file", message=None, thread_id=None, thread_type=ThreadType.USER):
+    def _sendFiles(self, files, message=None, thread_id=None, thread_type=ThreadType.USER):
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(message=self._oldMessage(message), thread_id=thread_id, thread_type=thread_type)
-        file_ids = self._requireList(file_ids)
 
         data['action_type'] = 'ma-type:user-generated-message'
         data['has_attachment'] = True
 
-        for i, file_id in enumerate(file_ids):
-            data['{}_ids[{}]'.format(type_, i)] = file_id
+        for type_ in files:
+            for i, file_id in enumerate(files[type_]):
+                data['{}_ids[{}]'.format(type_, i)] = file_id
 
         return self._doSendRequest(data)
-    
-    def _sendRemoteFiles(self, file_urls, type_="file", message=None, thread_id=None, thread_type=ThreadType.USER):
-        file_urls = self._requireList(file_urls)
-        file_ids = list()
-
-        for file_url in file_urls:
-            mimetype = guess_type(file_url)[0]
-            remote_file = requests.get(file_url).content
-            file_ids.append(self._upload(file_url, remote_file, mimetype, type_=type_))
-
-        return self._sendFiles(file_ids=file_ids, type_=type_, message=message, thread_id=thread_id, thread_type=thread_type)
-
-    def _sendLocalFiles(self, file_paths, type_="file", message=None, thread_id=None, thread_type=ThreadType.USER):
-        file_paths = self._requireList(file_paths)
-        file_ids = list()
-
-        for file_path in file_paths:  
-            mimetype = guess_type(file_path)[0]
-            file_ids.append(self._upload(file_path, open(file_path, 'rb'), mimetype, type_=type_))
-
-        return self._sendFiles(file_ids=file_ids, type_=type_, message=message, thread_id=thread_id, thread_type=thread_type)
 
     def sendFiles(self, file_ids, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
@@ -1159,35 +1124,8 @@ class Client(object):
         :return: :ref:`Message ID <intro_message_ids>` of the sent files
         :raises: FBchatException if request failed
         """
-        return self._sendFiles(file_ids=file_ids, message=message, thread_id=thread_id, thread_type=thread_type)
-
-    def sendRemoteFiles(self, file_urls, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Sends files from URLs to a thread
-
-        :param file_urls: URL of a file to upload and send
-        :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent files
-        :raises: FBchatException if request failed
-        """
-        return self._sendRemoteFiles(file_urls=file_urls, message=message, thread_id=thread_id, thread_type=thread_type)
-
-    def sendLocalFiles(self, file_paths, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Sends local files to a thread
-
-        :param file_path: Paths of files to upload and send
-        :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent files
-        :raises: FBchatException if request failed
-        """
-        return self._sendLocalFiles(file_paths=file_paths, message=message, thread_id=thread_id, thread_type=thread_type)
+        file_ids = require_list(file_ids)
+        return self._sendFiles(files={'file': file_ids}, message=None, thread_id=None, thread_type=ThreadType.USER)
 
     def sendAudios(self, audio_ids, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
@@ -1201,35 +1139,8 @@ class Client(object):
         :return: :ref:`Message ID <intro_message_ids>` of the sent audios
         :raises: FBchatException if request failed
         """
-        return self._sendFiles(file_ids=audio_ids, type_="audio", message=message, thread_id=thread_id, thread_type=thread_type)
-
-    def sendRemoteAudios(self, audio_urls, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Sends audios from a URLs to a thread
-
-        :param audio_urls: URLs of audios to upload and send
-        :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent audios
-        :raises: FBchatException if request failed
-        """
-        return self._sendRemoteFiles(file_urls=audio_urls, type_="audio", message=message, thread_id=thread_id, thread_type=thread_type)
-
-    def sendLocalAudios(self, audio_paths, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Sends local audios to a thread
-
-        :param audio_paths: Paths of audios to upload and send
-        :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent audios
-        :raises: FBchatException if request failed
-        """
-        return self._sendLocalFiles(file_paths=audio_paths, type_="audio", message=message, thread_id=thread_id, thread_type=thread_type)
+        audio_ids = require_list(audio_ids)
+        return self._sendFiles(files={'audio': audio_ids}, message=None, thread_id=None, thread_type=ThreadType.USER)
 
     def sendImages(self, image_ids, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
@@ -1243,35 +1154,7 @@ class Client(object):
         :return: :ref:`Message ID <intro_message_ids>` of the sent images
         :raises: FBchatException if request failed
         """
-        return self._sendFiles(file_ids=image_ids, type_="image", message=message, thread_id=thread_id, thread_type=thread_type)
-
-    def sendRemoteImages(self, image_urls, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Sends images from URLs to a thread
-
-        :param image_urls: URLs of images to upload and send
-        :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent images
-        :raises: FBchatException if request failed
-        """
-        return self._sendRemoteFiles(file_urls=image_urls, type_="image", message=message, thread_id=thread_id, thread_type=thread_type)
-
-    def sendLocalImages(self, image_paths, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Sends local images to a thread
-
-        :param image_paths: Paths of images to upload and send
-        :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent images
-        :raises: FBchatException if request failed
-        """
-        return self._sendLocalFiles(file_paths=image_paths, type_="image", message=message, thread_id=thread_id, thread_type=thread_type)
+        return self._sendFiles(files={'image': image_ids}, message=None, thread_id=None, thread_type=ThreadType.USER)
 
     def sendGifs(self, gif_ids, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
@@ -1285,56 +1168,7 @@ class Client(object):
         :return: :ref:`Message ID <intro_message_ids>` of the sent image
         :raises: FBchatException if request failed
         """
-        return self._sendFiles(file_ids=gif_ids, type_="gif", message=message, thread_id=thread_id, thread_type=thread_type, is_gif=is_gif)
-
-    def sendRemoteGifs(self, gif_urls, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Sends gifs from a URL to a thread
-
-        :param gif_urls: URLs of gifs to upload and send
-        :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent gifs
-        :raises: FBchatException if request failed
-        """
-        return self._sendRemoteFiles(file_urls=gif_urls, type_="gif", message=message, thread_id=thread_id, thread_type=thread_type)
-
-    def sendLocalGif(self, gif_paths, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Sends local gifs to a thread
-
-        :param gif_paths: Paths of gifs to upload and send
-        :param message: Additional message
-        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent gifs
-        :raises: FBchatException if request failed
-        """
-        return self._sendLocalFiles(file_paths=gif_paths, type_="gif", message=message, thread_id=thread_id, thread_type=thread_type)
-
-    def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER, is_gif=False):
-        """
-        Deprecated. Use :func:`fbchat.Client.sendImages` instead
-        """
-        if is_gif:
-            return self.sendGifs(image_ids=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
-        else:
-            return self.sendImages(image_ids=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
-
-    def sendRemoteImage(self, image_url, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Deprecated. Use :func:`fbchat.Client.sendRemoteImages` instead
-        """
-        return self.sendRemoteImages(image_urls=image_url, message=message, thread_id=thread_id, thread_type=thread_type)
-    
-    def sendLocalImage(self, image_path, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Deprecated. Use :func:`fbchat.Client.sendLocalImages` instead
-        """
-        return self.sendLocalImages(image_paths=image_path, message=message, thread_id=thread_id, thread_type=thread_type)
+        return self._sendFiles(files={'gif': gif_ids}, message=None, thread_id=None, thread_type=ThreadType.USER)
 
     def sendVideos(self, video_ids, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
@@ -1348,35 +1182,79 @@ class Client(object):
         :return: :ref:`Message ID <intro_message_ids>` of the sent videos
         :raises: FBchatException if request failed
         """
-        return self._sendFiles(file_ids=video_ids, type_="video", message=message, thread_id=thread_id, thread_type=thread_type)
+        return self._sendFiles(files={'video': video_ids}, message=None, thread_id=None, thread_type=ThreadType.USER)
 
-    def sendRemoteVideos(self, video_urls, message=None, thread_id=None, thread_type=ThreadType.USER):
+    def sendRemoteFiles(self, file_urls, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
-        Sends an video from a URL to a thread
+        Sends files from URLs to a thread
 
-        :param video_urls: URLs of videos to upload and send
+        :param file_urls: URLs of files to upload and send
         :param message: Additional message
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent videos
+        :return: :ref:`Message ID <intro_message_ids>` of the sent files
         :raises: FBchatException if request failed
         """
-        return self._sendRemoteFiles(file_urls=video_urls, type_="video", message=message, thread_id=thread_id, thread_type=thread_type)
+        file_urls = require_list(file_urls)
+        file_ids = list()
+        files = {'image':[], 'gif':[], 'video':[], 'audio':[], 'file':[]}
 
-    def sendLocalVideos(self, video_paths, message=None, thread_id=None, thread_type=ThreadType.USER):
+        for file_url in file_urls:
+            mimetype = guess_type(file_url)[0]
+            type_ = mimetype.split('/')[0]
+            type_ =  'file' if files.get(type_) is None else 'gif' if mimetype == "image/gif" else type_
+            remote_file = requests.get(file_url).content
+            file_id = self._upload(file_url, remote_file, mimetype, type_=type_)
+            files[type_].append(file_id)
+
+        return self._sendFiles(files=files, message=message, thread_id=thread_id, thread_type=thread_type)
+
+    def sendLocalFiles(self, file_paths, message=None, thread_id=None, thread_type=ThreadType.USER):
         """
-        Sends a local video to a thread
+        Sends local files to a thread
 
-        :param video_paths: Paths of videos to upload and send
+        :param file_path: Paths of files to upload and send
         :param message: Additional message
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
-        :return: :ref:`Message ID <intro_message_ids>` of the sent videos
+        :return: :ref:`Message ID <intro_message_ids>` of the sent files
         :raises: FBchatException if request failed
         """
-        return self._sendLocalFiles(file_paths=video_paths, type_="video", message=message, thread_id=thread_id, thread_type=thread_type)
+        file_paths = require_list(file_paths)
+        file_ids = list()
+        files = {'image':[], 'gif':[], 'video':[], 'audio':[], 'file':[]}
+
+        for file_path in file_paths:  
+            mimetype = guess_type(file_path)[0]
+            type_ = mimetype.split('/')[0]
+            type_ =  'file' if files.get(type_) is None else 'gif' if mimetype == "image/gif" else type_
+            file_id = self._upload(file_path, open(file_path, 'rb'), mimetype, type_=type_)
+            files[type_].append(file_id)
+
+        return self._sendFiles(files=files, message=message, thread_id=thread_id, thread_type=thread_type)
+
+    def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER, is_gif=False):
+        """
+        Deprecated. Use :func:`fbchat.Client.sendFiles` instead
+        """
+        if is_gif:
+            return self.sendGifs(image_ids=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
+        else:
+            return self.sendImages(image_ids=image_id, message=message, thread_id=thread_id, thread_type=thread_type)
+
+    def sendRemoteImage(self, image_url, message=None, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Deprecated. Use :func:`fbchat.Client.sendRemoteFiles` instead
+        """
+        return self.sendRemoteFiles(file_urls=image_url, message=message, thread_id=thread_id, thread_type=thread_type)
+    
+    def sendLocalImage(self, image_path, message=None, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Deprecated. Use :func:`fbchat.Client.sendLocalFiles` instead
+        """
+        return self.sendLocalFiles(file_paths=image_path, message=message, thread_id=thread_id, thread_type=thread_type)
 
     def createGroup(self, message, person_ids=None):
         """Creates a group with the given ids
@@ -1411,7 +1289,7 @@ class Client(object):
         data['action_type'] = 'ma-type:log-message'
         data['log_message_type'] = 'log:subscribe'
 
-        user_ids = self._requireList(user_ids)
+        user_ids = require_list(user_ids)
 
         for i, user_id in enumerate(user_ids):
             if user_id == self.uid:
@@ -1447,7 +1325,7 @@ class Client(object):
             "thread_fbid": thread_id
         }
 
-        admin_ids = self._requireList(admin_ids)
+        admin_ids = require_list(admin_ids)
 
         for i, admin_id in enumerate(admin_ids):
             data['admin_ids[' + str(i) + ']'] = str(admin_id)
@@ -1494,7 +1372,7 @@ class Client(object):
     def _usersApproval(self, user_ids, approve, thread_id=None):
         thread_id, thread_type = self._getThread(thread_id, None)
 
-        user_ids = self._requireList(user_ids)
+        user_ids = require_list(user_ids)
 
         j = self.graphql_request(GraphQL(doc_id='1574519202665847', params={
             'data': {
@@ -1892,7 +1770,7 @@ class Client(object):
         return r.ok
 
     def _readStatus(self, read, thread_ids):
-        thread_ids = self._requireList(thread_ids)
+        thread_ids = require_list(thread_ids)
         
         data = {
             "watermarkTimestamp": now(),
@@ -2006,7 +1884,7 @@ class Client(object):
         :return: Whether the request was successful
         :raises: FBchatException if request failed
         """
-        thread_ids = self._requireList(thread_ids)
+        thread_ids = require_list(thread_ids)
 
         if location == ThreadLocation.PENDING:
             location = ThreadLocation.OTHER
@@ -2035,7 +1913,7 @@ class Client(object):
         :return: Whether the request was successful
         :raises: FBchatException if request failed
         """
-        thread_ids = self._requireList(thread_ids)
+        thread_ids = require_list(thread_ids)
 
         data_unpin = dict()
         data_delete = dict()
@@ -2066,7 +1944,7 @@ class Client(object):
         :return: Whether the request was successful
         :raises: FBchatException if request failed
         """
-        message_ids = self._requireList(message_ids)
+        message_ids = require_list(message_ids)
         data = dict()
         for i, message_id in enumerate(message_ids):
             data["message_ids[{}]".format(i)] = message_id
@@ -2198,7 +2076,6 @@ class Client(object):
 
         for m in content["ms"]:
             mtype = m.get("type")
-            print(json.dumps(m, indent=4))
             try:
                 # Things that directly change chat
                 if mtype == "delta":
