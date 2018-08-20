@@ -259,3 +259,9 @@ def get_emojisize_from_tags(tags):
         except (KeyError, IndexError):
             log.exception('Could not determine emoji size from {} - {}'.format(tags, tmp))
     return None
+
+def require_list(list_):
+    if isinstance(list_, list):
+        return set(list_)
+    else:
+        return set([list_])
