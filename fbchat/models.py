@@ -444,7 +444,7 @@ class Poll(object):
     uid = None
     #: Title of the poll
     title = None
-    #: List of :class:`PollOption`
+    #: List of :class:`PollOption`, can be fetched with :func:`fbchat.Client.fetchPollOptions`
     options = None
     #: Options count
     options_count = None
