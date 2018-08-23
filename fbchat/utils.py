@@ -5,8 +5,12 @@ import re
 import json
 from time import time
 from random import random
+from contextlib import contextmanager
+from mimetypes import guess_type
+from os.path import basename
 import warnings
 import logging
+import requests
 from .models import *
 
 try:
@@ -265,3 +269,41 @@ def require_list(list_):
         return set(list_)
     else:
         return set([list_])
+
+def mimetype_to_key(mimetype):
+    if not mimetype:
+        return "file_id"
+    if mimetype == "image/gif":
+        return "gif_id"
+    x = mimetype.split("/")
+    if x[0] in ["video", "image", "audio"]:
+        return "%s_id" % x[0]
+    return "file_id"
+
+
+def get_files_from_urls(file_urls):
+    files = []
+    for file_url in file_urls:
+        r = requests.get(file_url)
+        # We could possibly use r.headers.get('Content-Disposition'), see
+        # https://stackoverflow.com/a/37060758
+        files.append((
+            basename(file_url),
+            r.content,
+            r.headers.get('Content-Type') or guess_type(file_url)[0],
+        ))
+    return files
+
+
+@contextmanager
+def get_files_from_paths(filenames):
+    files = []
+    for filename in filenames:
+        files.append((
+            basename(filename),
+            open(filename, 'rb'),
+            guess_type(filename)[0],
+        ))
+    yield files
+    for fn, fp, ft in files:
+        fp.close()
