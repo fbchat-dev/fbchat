@@ -1156,7 +1156,7 @@ class Client(object):
 
     def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER, is_gif=False):
         """
-        Deprecated. Use :func:`fbchat.Client.sendFiles` instead
+        Deprecated. Use :func:`fbchat.Client._sendFiles` instead
         """
         if is_gif:
             return self._sendFiles(files=[(image_id, "image/png")], message=message, thread_id=thread_id, thread_type=thread_type)
