@@ -1581,6 +1581,12 @@ class Client(object):
 
         j = self._post(self.req_url.PLAN_PARTICIPATION, full_data, fix_request=True, as_json=True)
 
+    def eventReminder(self, thread_id, time, title, location='', location_id=''):
+        """
+        Deprecated. Use :func:`fbchat.Client.createPlan` instead
+        """
+        self.createPlan(plan=Plan(time=time, title=title, location=location, location_id=location_id), thread_id=thread_id)
+
     def createPoll(self, poll, thread_id=None, thread_type=None):
         """
         Creates poll in a group thread
