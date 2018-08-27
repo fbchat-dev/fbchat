@@ -603,6 +603,7 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
+        thread_id, thread_type = self._getThread(thread_id, None)
         data = {
             "query": query,
             "snippetOffset": offset,
@@ -1275,14 +1276,14 @@ class Client(object):
         """
         Changes group's approval mode
 
-        :param approval_mode: True or False
+        :param require_admin_approval: True or False
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {
-            "set_mode": int(approval_mode),
+            "set_mode": int(require_admin_approval),
             "thread_fbid": thread_id
         }
 
@@ -1813,7 +1814,7 @@ class Client(object):
         else:
             data = dict()
             for i, thread_id in enumerate(thread_ids):
-                data["{}[{}]".format(loc_str, i)] = thread_id
+                data["{}[{}]".format(location.name.lower(), i)] = thread_id
             r = self._post(self.req_url.MOVE_THREAD, data)
             return r.ok
 
