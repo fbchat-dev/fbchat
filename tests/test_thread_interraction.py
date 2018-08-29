@@ -50,10 +50,9 @@ def test_remove_from_and_add_admins_to_group(client1, client2, group, catch_even
 def test_change_title(client1, group, catch_event):
     title = random_hex()
     with catch_event("onTitleChange") as x:
-        mid = client1.changeThreadTitle(title, group["id"])
+        client1.changeThreadTitle(title, group["id"], thread_type=ThreadType.GROUP)
     assert subset(
         x.res,
-        mid=mid,
         author_id=client1.uid,
         new_title=title,
         thread_id=group["id"],
@@ -138,3 +137,18 @@ def test_change_approval_mode(client1, group, catch_event, require_admin_approva
         author_id=client1.uid,
         thread_id=group["id"],
     )
+
+@pytest.mark.parametrize("mute_time", [0, 10, 100, 1000, -1])
+def test_mute_thread(client, mute_time):
+    assert client.muteThread(mute_time)
+    assert client.unmuteThread()
+
+
+def test_mute_thread_reactions(client):
+    assert client.muteThreadReactions()
+    assert client.unmuteThreadReactions()
+
+
+def test_mute_thread_mentions(client):
+    assert client.muteThreadMentions()
+    assert client.unmuteThreadMentions()

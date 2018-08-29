@@ -9,13 +9,13 @@ from fbchat.models import ThreadType, Message, Mention, EmojiSize, Sticker
 from utils import subset, STICKER_LIST, EMOJI_LIST
 
 
-def test_fetch_all_users(client):
-    users = client.fetchAllUsers()
+def test_fetch_all_users(client1):
+    users = client1.fetchAllUsers()
     assert len(users) > 0
 
 
-def test_fetch_thread_list(client):
-    threads = client.fetchThreadList(limit=2)
+def test_fetch_thread_list(client1):
+    threads = client1.fetchThreadList(limit=2)
     assert len(threads) == 2
 
 
