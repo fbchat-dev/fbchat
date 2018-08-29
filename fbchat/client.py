@@ -1906,7 +1906,7 @@ class Client(object):
             "thread_fbid": thread_id
         }
         r = self._post(self.req_url.MUTE_THREAD, data)
-        return r.ok
+        r.raise_for_status()
 
     def unmuteThread(self, thread_id=None):
         """
@@ -1929,7 +1929,7 @@ class Client(object):
             "thread_fbid": thread_id
         }
         r = self._post(self.req_url.MUTE_REACTIONS, data)
-        return r.ok
+        r.raise_for_status()
 
     def unmuteThreadReactions(self, thread_id=None):
         """
@@ -1952,7 +1952,7 @@ class Client(object):
             "thread_fbid": thread_id
         }
         r = self._post(self.req_url.MUTE_MENTIONS, data)
-        return r.ok
+        r.raise_for_status()
 
     def unmuteThreadMentions(self, thread_id=None):
         """
