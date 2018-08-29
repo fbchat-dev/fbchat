@@ -486,7 +486,7 @@ class PollOption(object):
 class Plan(object):
     #: ID of the plan
     uid = None
-    #: Plan time (unix time stamp)
+    #: Plan time (unix time stamp), only precise down to the minute
     time = None
     #: Plan title
     title = None
@@ -503,12 +503,12 @@ class Plan(object):
     #: List of the people IDs who are invited to the plan
     invited = None
 
-    def __init__(self, time, title, location='', location_id=''):
+    def __init__(self, time, title, location=None, location_id=None):
         """Represents a plan"""
-        self.time = time
+        self.time = int(time)
         self.title = title
-        self.location = location
-        self.location_id = location_id
+        self.location = location or ''
+        self.location_id = location_id or ''
         self.author_id = None
         self.going = []
         self.declined = []

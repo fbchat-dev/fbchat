@@ -20,7 +20,7 @@ def group(pytestconfig):
     return {"id": load_variable("group_id", pytestconfig.cache), "type": ThreadType.GROUP}
 
 
-@pytest.fixture(params=["user", "group", pytest.mark.xfail("none")])
+@pytest.fixture(scope="session", params=["user", "group", pytest.mark.xfail("none")])
 def thread(request, user, group):
     return {
         "user": user,
@@ -41,7 +41,7 @@ def client2(pytestconfig):
         yield c
 
 
-@pytest.fixture  # (scope="session")
+@pytest.fixture(scope="module")
 def client(client1, thread):
     client1.setDefaultThread(thread["id"], thread["type"])
     yield client1
@@ -89,7 +89,7 @@ def catch_event(client2):
         t.join()
 
 
-@pytest.fixture  # (scope="session")
+@pytest.fixture(scope="module")
 def compare(client, thread):
     def inner(caught_event, **kwargs):
         d = {
