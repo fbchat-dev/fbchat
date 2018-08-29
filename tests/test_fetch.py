@@ -6,7 +6,7 @@ import pytest
 
 from os import path
 from fbchat.models import ThreadType, Message, Mention, EmojiSize, Sticker
-from utils import subset
+from utils import subset, STICKER_LIST, EMOJI_LIST
 
 
 def test_fetch_all_users(client):
@@ -19,19 +19,7 @@ def test_fetch_thread_list(client):
     assert len(threads) == 2
 
 
-@pytest.mark.parametrize(
-    "emoji, emoji_size",
-    [
-        ("😆", EmojiSize.SMALL),
-        ("😆", EmojiSize.MEDIUM),
-        ("😆", EmojiSize.LARGE),
-        # These fail because the emoji is made into a sticker
-        # This should be fixed
-        pytest.mark.xfail((None, EmojiSize.SMALL)),
-        pytest.mark.xfail((None, EmojiSize.MEDIUM)),
-        pytest.mark.xfail((None, EmojiSize.LARGE)),
-    ],
-)
+@pytest.mark.parametrize("emoji, emoji_size", EMOJI_LIST)
 def test_fetch_message_emoji(client, emoji, emoji_size):
     mid = client.sendEmoji(emoji, emoji_size)
     message, = client.fetchThreadMessages(limit=1)
@@ -53,13 +41,13 @@ def test_fetch_message_mentions(client):
         assert vars(message.mentions[i]) == vars(m)
 
 
-@pytest.mark.parametrize("sticker_id", ["767334476626295"])
-def test_fetch_message_sticker(client, sticker_id):
-    mid = client.send(Message(sticker=Sticker(sticker_id)))
+@pytest.mark.parametrize("sticker", STICKER_LIST)
+def test_fetch_message_sticker(client, sticker):
+    mid = client.send(Message(sticker=sticker))
     message, = client.fetchThreadMessages(limit=1)
 
     assert subset(vars(message), uid=mid, author=client.uid)
-    assert subset(vars(message.sticker), uid=sticker_id)
+    assert subset(vars(message.sticker), uid=sticker.uid)
 
 
 def test_fetch_info(client1, group):

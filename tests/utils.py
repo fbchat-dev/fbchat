@@ -5,15 +5,44 @@ from __future__ import unicode_literals
 import threading
 import logging
 import six
+import pytest
 
 from os import environ
 from random import randrange
 from contextlib import contextmanager
 from six import viewitems
 from fbchat import Client
-from fbchat.models import ThreadType
+from fbchat.models import ThreadType, EmojiSize, FBchatFacebookError, Sticker
 
 log = logging.getLogger("fbchat.tests").addHandler(logging.NullHandler())
+
+
+EMOJI_LIST = [
+    ("😆", EmojiSize.SMALL),
+    ("😆", EmojiSize.MEDIUM),
+    ("😆", EmojiSize.LARGE),
+    # These fail in `catch_event` because the emoji is made into a sticker
+    # This should be fixed
+    pytest.mark.xfail((None, EmojiSize.SMALL)),
+    pytest.mark.xfail((None, EmojiSize.MEDIUM)),
+    pytest.mark.xfail((None, EmojiSize.LARGE)),
+]
+
+STICKER_LIST = [
+    Sticker("767334476626295"),
+    pytest.mark.xfail(Sticker("0"), raises=FBchatFacebookError),
+    pytest.mark.xfail(Sticker(None), raises=FBchatFacebookError),
+]
+
+TEXT_LIST = [
+    "test_send",
+    "😆",
+    "\\\n\t%?&'\"",
+    "ˁҭʚ¹Ʋջوװ՞ޱɣࠚԹБɑȑңКએ֭ʗыԈٌʼőԈ×௴nચϚࠖణٔє܅Ԇޑط",
+    "a" * 20000,  # Maximum amount of characters you can send
+    pytest.mark.xfail("a" * 20001, raises=FBchatFacebookError),
+    pytest.mark.xfail(None, raises=FBchatFacebookError),
+]
 
 
 class ClientThread(threading.Thread):
