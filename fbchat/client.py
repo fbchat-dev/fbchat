@@ -1028,24 +1028,25 @@ class Client(object):
 
         return data
 
-    def _doSendRequest(self, data):
+    def _doSendRequest(self, data, get_thread_id=False):
         """Sends the data to `SendURL`, and returns the message ID or None on failure"""
         j = self._post(self.req_url.SEND, data, fix_request=True, as_json=True)
-
-        try:
-            message_ids = [action['message_id'] for action in j['payload']['actions'] if 'message_id' in action]
-            if len(message_ids) != 1:
-                log.warning("Got multiple message ids' back: {}".format(message_ids))
-            message_id = message_ids[0]
-        except (KeyError, IndexError, TypeError) as e:
-            raise FBchatException('Error when sending message: No message IDs could be found: {}'.format(j))
 
         # update JS token if received in response
         fb_dtsg = get_jsmods_require(j, 2)
         if fb_dtsg is not None:
             self.payloadDefault['fb_dtsg'] = fb_dtsg
 
-        return message_id
+        try:
+            message_ids = [(action['message_id'], action['thread_fbid']) for action in j['payload']['actions'] if 'message_id' in action]
+            if len(message_ids) != 1:
+                log.warning("Got multiple message ids' back: {}".format(message_ids))
+            if get_thread_id:
+                return message_ids[0]
+            else:
+                return message_ids[0][0]
+        except (KeyError, IndexError, TypeError) as e:
+            raise FBchatException('Error when sending message: No message IDs could be found: {}'.format(j))
 
     def send(self, message, thread_id=None, thread_type=ThreadType.USER):
         """
@@ -1184,23 +1185,27 @@ class Client(object):
         """
         return self.sendLocalFiles(file_paths=[image_path], message=message, thread_id=thread_id, thread_type=thread_type)
 
-    def createGroup(self, message, person_ids=None):
-        """Creates a group with the given ids
-        :param person_ids: A list of people to create the group with.
-        :return: Returns error if couldn't create group, returns True when the group created.
+    def createGroup(self, message, user_ids):
         """
-        payload = {
-            "send" : "send",
-            "body": message,
-            "ids" : person_ids
-        }
-        r = self._post(self.req_url.CREATE_GROUP, payload)
-        if "send_success" in r.url:
-            log.debug("The group was created successfully!")
-            return True
-        else:
-            log.warning("Error while creating group")
-            return False
+        Creates a group with the given ids
+
+        :param message: The initial message
+        :param user_ids: A list of users to create the group with.
+        :return: ID of the new group
+        :raises: FBchatException if request failed
+        """
+        data = self._getSendData(message=self._oldMessage(message))
+
+        if len(user_ids) < 2:
+            raise FBchatUserError("Error when creating group: Not enough participants")
+
+        for i, user_id in enumerate(user_ids + [self.uid]):
+            data['specific_to_list[{}]'.format(i)] = 'fbid:{}'.format(user_id)
+
+        message_id, thread_id = self._doSendRequest(data, get_thread_id=True)
+        if not thread_id:
+            raise FBchatException("Error when creating group: No thread_id could be found")
+        return thread_id
 
     def addUsersToGroup(self, user_ids, thread_id=None):
         """
