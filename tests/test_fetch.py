@@ -29,22 +29,49 @@ def test_fetch_message_emoji(client, emoji, emoji_size):
     )
 
 
-def test_fetch_message_mentions(client):
-    text = "This is a test of fetchThreadMessages"
-    mentions = [Mention(client.uid, offset=10, length=4)]
+@pytest.mark.parametrize("emoji, emoji_size", EMOJI_LIST)
+def test_fetch_message_info_emoji(client, thread, emoji, emoji_size):
+    mid = client.sendEmoji(emoji, emoji_size)
+    message = client.fetchMessageInfo(mid, thread_id=thread["id"])
 
-    mid = client.send(Message(text, mentions=mentions))
+    assert subset(
+        vars(message), uid=mid, author=client.uid, text=emoji, emoji_size=emoji_size
+    )
+
+
+def test_fetch_message_mentions(client, thread, message_with_mentions):
+    mid = client.send(message_with_mentions)
     message, = client.fetchThreadMessages(limit=1)
 
-    assert subset(vars(message), uid=mid, author=client.uid, text=text)
-    for i, m in enumerate(mentions):
-        assert vars(message.mentions[i]) == vars(m)
+    assert subset(vars(message), uid=mid, author=client.uid, text=message_with_mentions.text)
+    # The mentions are not ordered by offset
+    for m in message.mentions:
+        assert vars(m) in [vars(x) for x in message_with_mentions.mentions]
+
+
+def test_fetch_message_info_mentions(client, thread, message_with_mentions):
+    mid = client.send(message_with_mentions)
+    message = client.fetchMessageInfo(mid, thread_id=thread["id"])
+
+    assert subset(vars(message), uid=mid, author=client.uid, text=message_with_mentions.text)
+    # The mentions are not ordered by offset
+    for m in message.mentions:
+        assert vars(m) in [vars(x) for x in message_with_mentions.mentions]
 
 
 @pytest.mark.parametrize("sticker", STICKER_LIST)
 def test_fetch_message_sticker(client, sticker):
     mid = client.send(Message(sticker=sticker))
     message, = client.fetchThreadMessages(limit=1)
+
+    assert subset(vars(message), uid=mid, author=client.uid)
+    assert subset(vars(message.sticker), uid=sticker.uid)
+
+
+@pytest.mark.parametrize("sticker", STICKER_LIST)
+def test_fetch_message_info_sticker(client, thread, sticker):
+    mid = client.send(Message(sticker=sticker))
+    message = client.fetchMessageInfo(mid, thread_id=thread["id"])
 
     assert subset(vars(message), uid=mid, author=client.uid)
     assert subset(vars(message.sticker), uid=sticker.uid)

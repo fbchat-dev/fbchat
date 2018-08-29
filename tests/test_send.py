@@ -33,17 +33,6 @@ def test_send_emoji(client, catch_event, compare, emoji, emoji_size):
     )
 
 
-@pytest.fixture
-def message_with_mentions(client, client2, thread):
-    text = "Hi there @me, @other and @thread"
-    mentions = [
-        dict(thread_id=client.uid, offset=9, length=3),
-        dict(thread_id=client2.uid, offset=14, length=6),
-        dict(thread_id=thread["id"], offset=26, length=7),
-    ]
-    return Message(text, mentions=[Mention(**d) for d in mentions])
-
-
 def test_send_mentions(client, catch_event, compare, message_with_mentions):
     with catch_event("onMessage") as x:
         mid = client.send(message_with_mentions)

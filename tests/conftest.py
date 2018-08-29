@@ -7,7 +7,7 @@ import json
 
 from utils import *
 from contextlib import contextmanager
-from fbchat.models import ThreadType
+from fbchat.models import ThreadType, Message, Mention
 
 
 @pytest.fixture(scope="session")
@@ -99,3 +99,21 @@ def compare(client, thread):
         return subset(caught_event.res, **d)
 
     return inner
+
+
+@pytest.fixture(params=["me", "other", "me other"])
+def message_with_mentions(request, client, client2, group):
+    text = "Hi there ["
+    mentions = []
+    if 'me' in request.param:
+        mentions.append(Mention(thread_id=client.uid, offset=len(text), length=2))
+        text += "me, "
+    if 'other' in request.param:
+        mentions.append(Mention(thread_id=client2.uid, offset=len(text), length=5))
+        text += "other, "
+    # Unused, because Facebook don't properly support sending mentions with groups as targets
+    if 'group' in request.param:
+        mentions.append(Mention(thread_id=group["id"], offset=len(text), length=5))
+        text += "group, "
+    text += "nothing]"
+    return Message(text, mentions=mentions)
