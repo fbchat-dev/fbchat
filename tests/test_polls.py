@@ -45,7 +45,7 @@ def test_create_poll(client1, group, catch_event, poll_data):
     )
     assert subset(vars(event["poll"]), title=poll.title, options_count=len(poll.options))
     for recv_option in event["poll"].options:  # The recieved options may not be the full list
-        old_option = list(filter(lambda o: o.text == recv_option.text, poll.options))[0]
+        old_option, = list(filter(lambda o: o.text == recv_option.text, poll.options))
         voters = [client1.uid] if old_option.vote else []
         assert subset(vars(recv_option), voters=voters, votes_count=len(voters), vote=False)
 
@@ -57,6 +57,7 @@ def test_fetch_poll_options(client1, group, catch_event, poll_data):
         assert subset(vars(option))
 
 
+@pytest.mark.trylast
 def test_update_poll_vote(client1, group, catch_event, poll_data):
     event, poll, options = poll_data
     new_vote_ids = [o.uid for o in options[0:len(options):2] if not o.vote]

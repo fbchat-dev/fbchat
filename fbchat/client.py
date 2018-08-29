@@ -7,6 +7,7 @@ from uuid import uuid1
 from random import choice
 from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
+from collections import OrderedDict
 from .utils import *
 from .models import *
 from .graphql import *
@@ -55,7 +56,8 @@ class Client(object):
         self._session = requests.session()
         self.req_counter = 1
         self.seq = "0"
-        self.payloadDefault = {}
+        # See `createPoll` for the reason for using `OrderedDict` here
+        self.payloadDefault = OrderedDict()
         self.client = 'mercury'
         self.default_thread_id = None
         self.default_thread_type = None
@@ -195,14 +197,14 @@ class Client(object):
     """
 
     def _resetValues(self):
-        self.payloadDefault={}
+        self.payloadDefault = OrderedDict()
         self._session = requests.session()
         self.req_counter = 1
         self.seq = "0"
         self.uid = None
 
     def _postLogin(self):
-        self.payloadDefault = {}
+        self.payloadDefault = OrderedDict()
         self.client_id = hex(int(random()*2147483648))[2:]
         self.start_time = now()
         self.uid = self._session.cookies.get_dict().get('c_user')
@@ -610,7 +612,7 @@ class Client(object):
             "snippetOffset": offset,
             "snippetLimit": limit,
             "identifier": "thread_fbid",
-            "thread_fbid": thread_id
+            "thread_fbid": thread_id,
         }
         j = self._post(self.req_url.SEARCH_MESSAGES, data, fix_request=True, as_json=True)
 
@@ -643,7 +645,7 @@ class Client(object):
     def search(self, query, fetch_messages=False, thread_limit=5, message_limit=5):
         """
         Searches for messages in all threads
-        
+
         :param query: Text to search for
         :param fetch_messages: Whether to fetch :class:`models.Message` objects or IDs only
         :param thread_limit: Max. number of threads to retrieve
@@ -1624,10 +1626,17 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
-        data = {
-            "question_text": poll.title,
-            "target_id": thread_id
-        }
+        # We're using ordered dicts, because the Facebook endpoint that parses the POST
+        # parameters is badly implemented, and deals with ordering the options wrongly.
+        # This also means we had to change `client.payloadDefault` to an ordered dict,
+        # since that's being copied in between this point and the `requests` call
+        #
+        # If you can find a way to fix this for the endpoint, or if you find another
+        # endpoint, please do suggest it ;)
+        data = OrderedDict([
+            ("question_text", poll.title),
+            ("target_id", thread_id),
+        ])
 
         for i, option in enumerate(poll.options):
             data["option_text_array[{}]".format(i)] = option.text

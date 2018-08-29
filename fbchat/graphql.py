@@ -138,9 +138,15 @@ def graphql_to_poll(a):
     return rtn
 
 def graphql_to_poll_option(a):
+    if a.get('viewer_has_voted') is None:
+        vote = None
+    elif isinstance(a['viewer_has_voted'], bool):
+        vote = a['viewer_has_voted']
+    else:
+        vote = a['viewer_has_voted'] == 'true'
     rtn = PollOption(
         text=a.get('text'),
-        vote=a.get('viewer_has_voted') == 'true' if isinstance(a.get('viewer_has_voted'), str) else a.get('viewer_has_voted')
+        vote=vote
     )
     rtn.uid = int(a["id"])
     rtn.voters = [m.get('node').get('id') for m in a.get('voters').get('edges')] if isinstance(a.get('voters'), dict) else a.get('voters')

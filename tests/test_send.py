@@ -54,7 +54,7 @@ def test_send_sticker(client, catch_event, compare, sticker):
     assert subset(vars(x.res["message_object"].sticker), uid=sticker.uid)
 
 
-# Kept for backwards compatability
+# Kept for backwards compatibility
 @pytest.mark.parametrize(
     "method_name, url",
     [
@@ -80,7 +80,7 @@ def test_send_local_files(client, catch_event, compare):
     text = "Files sent locally"
     with catch_event("onMessage") as x:
         mid = client.sendLocalFiles(
-            [path.join(path.dirname(__file__), "resources", x) for x in files],
+            [path.join(path.dirname(__file__), "resources", f) for f in files],
             message=Message(text),
         )
 
@@ -95,7 +95,7 @@ def test_send_remote_files(client, catch_event, compare):
     text = "Files sent from remote"
     with catch_event("onMessage") as x:
         mid = client.sendRemoteFiles(
-            ["https://github.com/carpedm20/fbchat/raw/master/tests/{}".format(x) for x in files],
+            ["https://github.com/carpedm20/fbchat/raw/master/tests/{}".format(f) for f in files],
             message=Message(text),
         )
 
