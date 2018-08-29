@@ -31,6 +31,22 @@ def test_remove_from_and_add_to_group(client1, client2, group, catch_event):
         )
 
 
+def test_remove_from_and_add_admins_to_group(client1, client2, group, catch_event):
+    # Test both methods, while ensuring that the user gets added as group admin
+    try:
+        with catch_event("onAdminRemoved") as x:
+            client1.removeGroupAdmins(client2.uid, group["id"])
+        assert subset(
+            x.res, removed_id=client2.uid, author_id=client1.uid, thread_id=group["id"]
+        )
+    finally:
+        with catch_event("onAdminAdded") as x:
+            client1.addGroupAdmins(client2.uid, group["id"])
+        assert subset(
+            x.res, added_id=client2.uid, author_id=client1.uid, thread_id=group["id"]
+        )
+
+
 @pytest.mark.xfail(
     raises=FBchatFacebookError, reason="Apparently changeThreadTitle is broken"
 )

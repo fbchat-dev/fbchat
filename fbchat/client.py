@@ -2090,10 +2090,10 @@ class Client(object):
                         target_id = delta["untypedData"]["TARGET_ID"]
                         admin_event = delta["untypedData"]["ADMIN_EVENT"]
                         if admin_event == "add_admin":
-                            self.onAdminsAdded(mid=mid, added_id=target_id, author_id=author_id, thread_id=thread_id,
+                            self.onAdminAdded(mid=mid, added_id=target_id, author_id=author_id, thread_id=thread_id,
                                                thread_type=thread_type, ts=ts, msg=m)
                         elif admin_event == "remove_admin":
-                            self.onAdminsRemoved(mid=mid, removed_id=target_id, author_id=author_id, thread_id=thread_id,
+                            self.onAdminRemoved(mid=mid, removed_id=target_id, author_id=author_id, thread_id=thread_id,
                                                  thread_type=thread_type, ts=ts, msg=m)
 
                     # Group approval mode change
@@ -2537,35 +2537,35 @@ class Client(object):
         log.info("Nickname change from {} in {} ({}) for {}: {}".format(author_id, thread_id, thread_type.name, changed_for, new_nickname))
 
 
-    def onAdminsAdded(self, mid=None, added_ids=None, author_id=None, thread_id=None, thread_type=ThreadType.USER, ts=None, msg=None):
+    def onAdminAdded(self, mid=None, added_id=None, author_id=None, thread_id=None, thread_type=ThreadType.GROUP, ts=None, msg=None):
         """
-        Called when the client is listening, and somebody adds admins to a group thread
+        Called when the client is listening, and somebody adds an admin to a group thread
 
         :param mid: The action ID
-        :param added_ids: The IDs of the admins who got added
+        :param added_id: The ID of the admin who got added
         :param author_id: The ID of the person who added the admins
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
         :param msg: A full set of the data recieved
         """
-        log.info("{} added admins: {} in {}".format(author_id, ', '.join(added_ids), thread_id))
+        log.info("{} added admin: {} in {}".format(author_id, added_id, thread_id))
 
 
-    def onAdminsRemoved(self, mid=None, removed_ids=None, author_id=None, thread_id=None, thread_type=ThreadType.USER, ts=None, msg=None):
+    def onAdminRemoved(self, mid=None, removed_id=None, author_id=None, thread_id=None, thread_type=ThreadType.GROUP, ts=None, msg=None):
         """
-        Called when the client is listening, and somebody removes admins from a group thread
+        Called when the client is listening, and somebody removes an admin from a group thread
 
         :param mid: The action ID
-        :param added_ids: The IDs of the admins who got removed
+        :param removed_id: The ID of the admin who got removed
         :param author_id: The ID of the person who removed the admins
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
         :param msg: A full set of the data recieved
         """
-        log.info("{} removed admins: {} in {}".format(author_id, ', '.join(removed_ids), thread_id))
+        log.info("{} removed admin: {} in {}".format(author_id, removed_id, thread_id))
 
 
-    def onApprovalModeChange(self, mid=None, approval_mode=None, author_id=None, thread_id=None, thread_type=ThreadType.USER, ts=None, msg=None):
+    def onApprovalModeChange(self, mid=None, approval_mode=None, author_id=None, thread_id=None, thread_type=ThreadType.GROUP, ts=None, msg=None):
         """
         Called when the client is listening, and somebody changes approval mode in a group thread
 
