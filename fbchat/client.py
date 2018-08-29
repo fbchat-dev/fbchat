@@ -1300,7 +1300,7 @@ class Client(object):
     def _usersApproval(self, user_ids, approve, thread_id=None):
         thread_id, thread_type = self._getThread(thread_id, None)
 
-        user_ids = require_list(user_ids)
+        user_ids = list(require_list(user_ids))
 
         j = self.graphql_request(GraphQL(doc_id='1574519202665847', params={
             'data': {
@@ -1333,7 +1333,7 @@ class Client(object):
         """
         self._usersApproval(user_ids, False, thread_id)
 
-    def changeThreadImage(self, image_id, thread_id=None, thread_type=ThreadType.USER):
+    def changeThreadImage(self, image_id, thread_id=None, thread_type=ThreadType.GROUP):
         """
         Changes a thread image from an image id
 
@@ -1348,15 +1348,16 @@ class Client(object):
 
         if thread_type != ThreadType.GROUP:
             raise FBchatUserError('Can only change the image of group threads')
-        else:
-            data = {
-                'thread_image_id': image_id,
-                'thread_id': thread_id
-            }
 
-            j = self._post(self.req_url.THREAD_IMAGE, data, fix_request=True, as_json=True)
+        data = {
+            'thread_image_id': image_id,
+            'thread_id': thread_id
+        }
 
-    def changeThreadImageRemote(self, image_url, thread_id=None, thread_type=ThreadType.USER):
+        j = self._post(self.req_url.THREAD_IMAGE, data, fix_request=True, as_json=True)
+        return image_id
+
+    def changeThreadImageRemote(self, image_url, thread_id=None, thread_type=ThreadType.GROUP):
         """
         Changes a thread image from a URL
 
@@ -1367,12 +1368,10 @@ class Client(object):
         :raises: FBchatException if request failed
         """
 
-        with get_files_from_urls([image_url]) as files:
-            (image_id, mimetype), = self._upload(files)
+        (image_id, mimetype), = self._upload(get_files_from_urls([image_url]))
+        return self.changeThreadImage(image_id, thread_id, thread_type)
 
-        self.changeThreadImage(image_id, thread_id, thread_type)
-
-    def changeThreadImageLocal(self, image_path, thread_id=None, thread_type=ThreadType.USER):
+    def changeThreadImageLocal(self, image_path, thread_id=None, thread_type=ThreadType.GROUP):
         """
         Changes a thread image from a local path
 
@@ -1386,7 +1385,7 @@ class Client(object):
         with get_files_from_paths([image_path]) as files:
             (image_id, mimetype), = self._upload(files)
 
-        self.changeThreadImage(image_id, thread_id, thread_type)
+        return self.changeThreadImage(image_id, thread_id, thread_type)
 
     def changeThreadTitle(self, title, thread_id=None, thread_type=ThreadType.USER):
         """
@@ -2071,7 +2070,7 @@ class Client(object):
                             if fetch_data.get("__typename") == "ThreadImageMessage":
                                 # Thread image change
                                 image_metadata = fetch_data.get("image_with_metadata")
-                                image_id = image_metadata["legacy_attachment_id"] if image_metadata else None
+                                image_id = int(image_metadata["legacy_attachment_id"]) if image_metadata else None
                                 self.onImageChange(mid=mid, author_id=author_id, new_image=image_id, thread_id=thread_id,
                                                    thread_type=ThreadType.GROUP, ts=ts)
 

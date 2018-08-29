@@ -12,7 +12,7 @@ from fbchat.models import (
     ThreadColor,
 )
 from utils import random_hex, subset
-from os import environ
+from os import path
 
 
 def test_remove_from_and_add_to_group(client1, client2, group, catch_event):
@@ -47,10 +47,7 @@ def test_remove_from_and_add_admins_to_group(client1, client2, group, catch_even
         )
 
 
-@pytest.mark.xfail(
-    raises=FBchatFacebookError, reason="Apparently changeThreadTitle is broken"
-)
-def test_change_title(client1, catch_event, group):
+def test_change_title(client1, group, catch_event):
     title = random_hex()
     with catch_event("onTitleChange") as x:
         mid = client1.changeThreadTitle(title, group["id"])
@@ -71,17 +68,33 @@ def test_change_nickname(client, client_all, catch_event, compare):
     assert compare(x, changed_for=client_all.uid, new_nickname=nickname)
 
 
-@pytest.mark.parametrize("emoji", ["😀", "😂", "😕", "😍"])
+@pytest.mark.parametrize("emoji", [
+    "😀",
+    "😂",
+    "😕",
+    "😍",
+    pytest.mark.xfail("🙃", raises=FBchatFacebookError),
+    pytest.mark.xfail("not an emoji", raises=FBchatFacebookError)
+])
 def test_change_emoji(client, catch_event, compare, emoji):
     with catch_event("onEmojiChange") as x:
         client.changeThreadEmoji(emoji)
     assert compare(x, new_emoji=emoji)
 
 
-@pytest.mark.xfail(raises=FBchatFacebookError)
-@pytest.mark.parametrize("emoji", ["🙃", "not an emoji"])
-def test_change_emoji_invalid(client, emoji):
-    client.changeThreadEmoji(emoji)
+def test_change_thread_image_local(client1, group, catch_event):
+    url = path.join(path.dirname(__file__), "resources", "image.png")
+    with catch_event("onImageChange") as x:
+        image_id = client1.changeThreadImageLocal(url, group["id"])
+    assert subset(x.res, new_image=image_id, author_id=client1.uid, thread_id=group["id"])
+
+
+# To be changed when merged into master
+def test_change_thread_image_remote(client1, group, catch_event):
+    url = "https://github.com/carpedm20/fbchat/raw/master/tests/image.png"
+    with catch_event("onImageChange") as x:
+        image_id = client1.changeThreadImageRemote(url, group["id"])
+    assert subset(x.res, new_image=image_id, author_id=client1.uid, thread_id=group["id"])
 
 
 @pytest.mark.parametrize(
@@ -99,9 +112,7 @@ def test_change_color(client, catch_event, compare, color):
     assert compare(x, new_color=color)
 
 
-@pytest.mark.xfail(
-    raises=FBchatFacebookError, strict=False, reason="Should fail, but doesn't"
-)
+@pytest.mark.xfail(raises=FBchatFacebookError, reason="Should fail, but doesn't")
 def test_change_color_invalid(client):
     class InvalidColor:
         value = "#0077ff"
@@ -114,3 +125,16 @@ def test_typing_status(client, catch_event, compare, status):
     with catch_event("onTyping") as x:
         client.setTypingStatus(status)
     assert compare(x, status=status)
+
+
+@pytest.mark.parametrize('require_admin_approval', [True, False])
+def test_change_approval_mode(client1, group, catch_event, require_admin_approval):
+    with catch_event("onApprovalModeChange") as x:
+        client1.changeGroupApprovalMode(require_admin_approval, group["id"])
+
+    assert subset(
+        x.res,
+        approval_mode=require_admin_approval,
+        author_id=client1.uid,
+        thread_id=group["id"],
+    )
