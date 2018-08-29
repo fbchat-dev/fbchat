@@ -59,7 +59,7 @@ def test_fetch_info(client1, group):
 
 
 def test_fetch_image_url(client):
-    url = path.join(path.dirname(__file__), "image.png")
+    url = path.join(path.dirname(__file__), "resources", "image.png")
 
     client.sendLocalImage(url)
     message, = client.fetchThreadMessages(limit=1)

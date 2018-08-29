@@ -65,6 +65,7 @@ def test_send_sticker(client, catch_event, compare, sticker):
     assert subset(vars(x.res["message_object"].sticker), uid=sticker.uid)
 
 
+# Kept for backwards compatability
 @pytest.mark.parametrize(
     "method_name, url",
     [
@@ -72,7 +73,7 @@ def test_send_sticker(client, catch_event, compare, sticker):
             "sendRemoteImage",
             "https://github.com/carpedm20/fbchat/raw/master/tests/image.png",
         ),
-        ("sendLocalImage", path.join(path.dirname(__file__), "image.png")),
+        ("sendLocalImage", path.join(path.dirname(__file__), "resources", "image.png")),
     ],
 )
 def test_send_images(client, catch_event, compare, method_name, url):
@@ -83,3 +84,32 @@ def test_send_images(client, catch_event, compare, method_name, url):
     assert compare(x, mid=mid, message=text)
     assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=text)
     assert x.res["message_object"].attachments[0]
+
+
+def test_send_local_files(client, catch_event, compare):
+    files = ["image.png", "image.jpg", "image.gif", "file.json", "file.txt", "audio.mp3", "video.mp4"]
+    text = "Files sent locally"
+    with catch_event("onMessage") as x:
+        mid = client.sendLocalFiles(
+            [path.join(path.dirname(__file__), "resources", x) for x in files],
+            message=Message(text),
+        )
+
+    assert compare(x, mid=mid, message=text)
+    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=text)
+    assert len(x.res["message_object"].attachments) == len(files)
+
+
+# To be changed when merged into master
+def test_send_remote_files(client, catch_event, compare):
+    files = ["image.png", "data.json"]
+    text = "Files sent from remote"
+    with catch_event("onMessage") as x:
+        mid = client.sendRemoteFiles(
+            ["https://github.com/carpedm20/fbchat/raw/master/tests/{}".format(x) for x in files],
+            message=Message(text),
+        )
+
+    assert compare(x, mid=mid, message=text)
+    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=text)
+    assert len(x.res["message_object"].attachments) == len(files)

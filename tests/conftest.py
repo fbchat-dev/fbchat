@@ -80,7 +80,7 @@ def catch_event(client2):
     try:
         # Make the client send a messages to itself, so the blocking pull request will return
         # This is probably not safe, since the client is making two requests simultaneously
-        client2.sendMessage("Shutdown", client2.uid)
+        client2.sendMessage(random_hex(), client2.uid)
     finally:
         t.join()
 
