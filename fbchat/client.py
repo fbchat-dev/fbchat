@@ -589,47 +589,42 @@ class Client(object):
 
         return rtn
 
-    def searchForMessageIDs(self, query, offset=0, limit=5, thread_id=None, threads_limit=5):
+    def searchForMessageIDs(self, query, offset=0, limit=5, thread_id=None):
         """
         Find and get message IDs by query
-
-        .. warning:
-            Searching in all threads sends request for every thread and it's very slow
 
         :param query: Text to search for
         :param offset: Number of messages to skip
         :param limit: Max. number of messages to retrieve
-        :param thread_id: User/Group ID to search in. If empty searches in all threads. See :ref:`intro_threads`
-        :param threads_limit: Max. number of threads to retrieve
+        :param thread_id: User/Group ID to search in. See :ref:`intro_threads`
         :type offset: int
         :type limit: int
-        :type threads_limit: int
         :return: Found Message IDs
-        :rtype: list
+        :rtype: generator
         :raises: FBchatException if request failed
         """
+        thread_id, thread_type = self._getThread(thread_id, None)
+
         data = {
             "query": query,
-            "snippetOffset": offset if thread_id else 0,
-            "snippetLimit": limit if thread_id else thread_limit,
+            "snippetOffset": offset,
+            "snippetLimit": limit,
             "identifier": "thread_fbid",
             "thread_fbid": thread_id
         }
         j = self._post(self.req_url.SEARCH_MESSAGES, data, fix_request=True, as_json=True)
-        result = j["payload"]["search_snippets"][query]
-        if thread_id is None:
-            message_ids = [mid for l in [self.searchForMessageIDs(query, offset=offset, limit=limit, thread_id=id) for id in result] for mid in l]
-            return message_ids
-        else:
-            snippets = result[thread_id]["snippets"] if result.get(thread_id) else []
-            return [snippet["message_id"] for snippet in snippets]
 
-    def searchForMessages(self, query, offset=0, limit=5, thread_id=None, threads_limit=5):
+        result = j["payload"]["search_snippets"][query]
+        snippets = result[thread_id]["snippets"] if result.get(thread_id) else []
+        for snippet in snippets:
+            yield snippet["message_id"]
+
+    def searchForMessages(self, query, offset=0, limit=5, thread_id=None):
         """
         Find and get :class:`models.Message` objects by query
 
         .. warning::
-            This method sends request for every found message ID and it's very slow and searching in all threads is much more slower.
+            This method sends request for every found message ID.
 
         :param query: Text to search for
         :param offset: Number of messages to skip
@@ -638,12 +633,39 @@ class Client(object):
         :type offset: int
         :type limit: int
         :return: Found :class:`models.Message` objects
-        :rtype: list
+        :rtype: generator
         :raises: FBchatException if request failed
         """
-        message_ids = self.searchForMessageIDs(query, offset=offset, limit=limit, thread_id=thread_id, threads_limit=threads_limit)
-        result = [self.fetchMessageInfo(mid, thread_id) for mid in message_ids]
-        return result
+        message_ids = self.searchForMessageIDs(query, offset=offset, limit=limit, thread_id=thread_id)
+        for mid in message_ids:
+            yield self.fetchMessageInfo(mid, thread_id)
+
+    def search(self, query, fetch_messages=False, thread_limit=5, message_limit=5):
+        """
+        Searches for messages in all threads
+        
+        :param query: Text to search for
+        :param fetch_messages: Whether to fetch :class:`models.Message` objects or IDs only
+        :param thread_limit: Max. number of threads to retrieve
+        :param message_limit: Max. number of messages to retrieve
+        :type thread_limit: int
+        :type message_limit: int
+        :return: Dictionary with thread IDs as keys and generators to get messages as values
+        :rtype: generator
+        :raises: FBchatException if request failed
+        """
+        data = {
+            "query": query,
+            "snippetLimit": thread_limit
+        }
+        j = self._post(self.req_url.SEARCH_MESSAGES, data, fix_request=True, as_json=True)
+
+        result = j["payload"]["search_snippets"][query]
+
+        if fetch_messages:
+            return {thread_id: self.searchForMessages(query, limit=message_limit, thread_id=thread_id) for thread_id in result}
+        else:
+            return {thread_id: self.searchForMessageIDs(query, limit=message_limit, thread_id=thread_id) for thread_id in result}
 
     def _fetchInfo(self, *ids):
         data = {
