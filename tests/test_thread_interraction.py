@@ -81,18 +81,18 @@ def test_change_emoji(client, catch_event, compare, emoji):
     assert compare(x, new_emoji=emoji)
 
 
-def test_change_thread_image_local(client1, group, catch_event):
+def test_change_image_local(client1, group, catch_event):
     url = path.join(path.dirname(__file__), "resources", "image.png")
     with catch_event("onImageChange") as x:
-        image_id = client1.changeThreadImageLocal(url, group["id"])
+        image_id = client1.changeGroupImageLocal(url, group["id"])
     assert subset(x.res, new_image=image_id, author_id=client1.uid, thread_id=group["id"])
 
 
 # To be changed when merged into master
-def test_change_thread_image_remote(client1, group, catch_event):
+def test_change_image_remote(client1, group, catch_event):
     url = "https://github.com/carpedm20/fbchat/raw/master/tests/image.png"
     with catch_event("onImageChange") as x:
-        image_id = client1.changeThreadImageRemote(url, group["id"])
+        image_id = client1.changeGroupImageRemote(url, group["id"])
     assert subset(x.res, new_image=image_id, author_id=client1.uid, thread_id=group["id"])
 
 

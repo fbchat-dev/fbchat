@@ -1338,21 +1338,16 @@ class Client(object):
         """
         self._usersApproval(user_ids, False, thread_id)
 
-    def changeThreadImage(self, image_id, thread_id=None, thread_type=ThreadType.GROUP):
+    def _changeGroupImage(self, image_id, thread_id=None):
         """
         Changes a thread image from an image id
 
         :param image_id: ID of uploaded image
         :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
         :raises: FBchatException if request failed
         """
 
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
-
-        if thread_type != ThreadType.GROUP:
-            raise FBchatUserError('Can only change the image of group threads')
+        thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {
             'thread_image_id': image_id,
@@ -1362,35 +1357,31 @@ class Client(object):
         j = self._post(self.req_url.THREAD_IMAGE, data, fix_request=True, as_json=True)
         return image_id
 
-    def changeThreadImageRemote(self, image_url, thread_id=None, thread_type=ThreadType.GROUP):
+    def changeGroupImageRemote(self, image_url, thread_id=None):
         """
         Changes a thread image from a URL
 
         :param image_url: URL of an image to upload and change
         :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
         :raises: FBchatException if request failed
         """
 
         (image_id, mimetype), = self._upload(get_files_from_urls([image_url]))
-        return self.changeThreadImage(image_id, thread_id, thread_type)
+        return self._changeGroupImage(image_id, thread_id)
 
-    def changeThreadImageLocal(self, image_path, thread_id=None, thread_type=ThreadType.GROUP):
+    def changeGroupImageLocal(self, image_path, thread_id=None):
         """
         Changes a thread image from a local path
 
         :param image_path: Path of an image to upload and change
         :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
-        :type thread_type: models.ThreadType
         :raises: FBchatException if request failed
         """
 
         with get_files_from_paths([image_path]) as files:
             (image_id, mimetype), = self._upload(files)
 
-        return self.changeThreadImage(image_id, thread_id, thread_type)
+        return self._changeGroupImage(image_id, thread_id)
 
     def changeThreadTitle(self, title, thread_id=None, thread_type=ThreadType.USER):
         """
@@ -1600,21 +1591,16 @@ class Client(object):
         """
         self.createPlan(plan=Plan(time=time, title=title, location=location, location_id=location_id), thread_id=thread_id)
 
-    def createPoll(self, poll, thread_id=None, thread_type=None):
+    def createPoll(self, poll, thread_id=None):
         """
         Creates poll in a group thread
 
         :param poll: Poll to create
         :param thread_id: User/Group ID to create poll in. See :ref:`intro_threads`
-        :param thread_type: See :ref:`intro_threads`
         :type poll: models.Poll
-        :type thread_type: models.ThreadType
         :raises: FBchatException if request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
-
-        if thread_type != ThreadType.GROUP:
-            raise FBchatUserError('Can only create poll in group threads')
+        thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {
             "question_text": poll.title,
@@ -2510,7 +2496,7 @@ class Client(object):
         log.info("Title change from {} in {} ({}): {}".format(author_id, thread_id, thread_type.name, new_title))
 
 
-    def onImageChange(self, mid=None, author_id=None, new_image=None, thread_id=None, thread_type=ThreadType.USER, ts=None):
+    def onImageChange(self, mid=None, author_id=None, new_image=None, thread_id=None, thread_type=ThreadType.GROUP, ts=None):
         """
         Called when the client is listening, and somebody changes the image of a thread
 
