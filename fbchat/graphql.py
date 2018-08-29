@@ -133,7 +133,7 @@ def graphql_to_poll(a):
         title=a.get('title') if a.get('title') else a.get("text"),
         options=[graphql_to_poll_option(m) for m in a.get('options')]
     )
-    rtn.uid = a.get("id")
+    rtn.uid = int(a["id"])
     rtn.options_count = a.get("total_count")
     return rtn
 
@@ -142,7 +142,7 @@ def graphql_to_poll_option(a):
         text=a.get('text'),
         vote=a.get('viewer_has_voted') == 'true' if isinstance(a.get('viewer_has_voted'), str) else a.get('viewer_has_voted')
     )
-    rtn.uid = a.get('id')
+    rtn.uid = int(a["id"])
     rtn.voters = [m.get('node').get('id') for m in a.get('voters').get('edges')] if isinstance(a.get('voters'), dict) else a.get('voters')
     rtn.votes_count = a.get('voters').get('count') if isinstance(a.get('voters'), dict) else a.get('total_count')
     return rtn
