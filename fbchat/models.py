@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals
 import enum
-
+from string import Formatter
 
 class FBchatException(Exception):
     """Custom exception thrown by fbchat. All exceptions in the fbchat module inherits this"""
@@ -207,6 +207,40 @@ class Message(object):
 
     def __unicode__(self):
         return '<Message ({}): {}, mentions={} emoji_size={} attachments={}>'.format(self.uid, repr(self.text), self.mentions, self.emoji_size, self.attachments)
+
+    @classmethod
+    def formatMentions(cls, text, *args, **kwargs):
+        result = ""
+        mentions = list()
+        offset = 0
+        f = Formatter()
+        field_names = [field_name[1] for field_name in f.parse(text)]
+        automatic = '' in field_names
+        i = 0
+
+        for (literal_text, field_name, format_spec, conversion) in f.parse(text):
+            offset += len(literal_text)
+            result += literal_text
+
+            if field_name is None: continue
+
+            if field_name == '':
+                field_name = str(i)
+                i += 1
+            elif automatic and field_name.isdigit():
+                raise ValueError("cannot switch from automatic field numbering to manual field specification")
+
+            thread_id, name = f.get_field(field_name, args, kwargs)[0]
+
+            if format_spec: name = f.format_field(name, format_spec)
+            if conversion: name = f.convert_field(name, conversion)
+
+            result += name
+            mentions.append(Mention(thread_id=thread_id, offset=offset, length=len(name)))
+            offset += len(name)
+
+        message = cls(text=result, mentions=mentions)
+        return message
 
 class Attachment(object):
     #: The attachment ID
