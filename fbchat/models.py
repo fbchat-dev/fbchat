@@ -131,6 +131,17 @@ class Group(Thread):
         self.approval_requests = approval_requests
         self.join_link = join_link
 
+
+class Room(Group):
+    # True is room is not discoverable
+    privacy_mode = None
+
+    def __init__(self, uid, privacy_mode=None, **kwargs):
+        """Deprecated. Use :class:`Group` instead"""
+        super(Room, self).__init__(ThreadType.Room, uid, **kwargs)
+        self.privacy_mode = privacy_mode
+
+
 class Page(Thread):
     #: The page's custom url
     url = None
@@ -518,6 +529,7 @@ class ThreadType(Enum):
     """Used to specify what type of Facebook thread is being used. See :ref:`intro_threads` for more info"""
     USER = 1
     GROUP = 2
+    ROOM = 2
     PAGE = 3
 
 class ThreadLocation(Enum):
