@@ -138,7 +138,8 @@ class Room(Group):
 
     def __init__(self, uid, privacy_mode=None, **kwargs):
         """Deprecated. Use :class:`Group` instead"""
-        super(Room, self).__init__(ThreadType.Room, uid, **kwargs)
+        super(Room, self).__init__(uid, **kwargs)
+        self.type = ThreadType.ROOM
         self.privacy_mode = privacy_mode
 
 
