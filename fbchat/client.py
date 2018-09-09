@@ -544,7 +544,6 @@ class Client(object):
 
         return [graphql_to_page(node) for node in j[name]['pages']['nodes']]
 
-    # TODO intergrate Rooms
     def searchForGroups(self, name, limit=1):
         """
         Find and get group thread by its name
@@ -585,7 +584,6 @@ class Client(object):
             elif node['__typename'] == 'Group':
                 # We don't handle Facebook "Groups"
                 pass
-            # TODO Add Rooms
             else:
                 log.warning('Unknown __typename: {} in {}'.format(repr(node['__typename']), node))
 
@@ -818,9 +816,6 @@ class Client(object):
             if entry.get('thread_type') == 'GROUP':
                 _id = entry['thread_key']['thread_fbid']
                 rtn[_id] = graphql_to_group(entry)
-            elif entry.get('thread_type') == 'ROOM':
-                _id = entry['thread_key']['thread_fbid']
-                rtn[_id] = graphql_to_room(entry)
             elif entry.get('thread_type') == 'ONE_TO_ONE':
                 _id = entry['thread_key']['other_user_id']
                 if pages_and_users.get(_id) is None:
