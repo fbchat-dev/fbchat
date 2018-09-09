@@ -1976,7 +1976,7 @@ class Client(object):
             'sticky_token': sticky,
             'sticky_pool': pool,
             'viewer_uid': self.uid,
-            'state': 'active'
+            'state': 'active',
         }
         self._get(self.req_url.PING, data, fix_request=True, as_json=False)
 
@@ -1996,7 +1996,7 @@ class Client(object):
 
         return j['lb_info']['sticky'], j['lb_info']['pool']
 
-    def _pullMessage(self, sticky, pool):
+    def _pullMessage(self, sticky, pool, markAlive=True):
         """Call pull api with seq value to get message data."""
 
         data = {
@@ -2004,6 +2004,7 @@ class Client(object):
             "sticky_token": sticky,
             "sticky_pool": pool,
             "clientid": self.client_id,
+            'state': 'active' if markAlive else 'offline',
         }
 
         j = self._get(ReqUrl.STICKY, data, fix_request=True, as_json=True)
@@ -2374,7 +2375,7 @@ class Client(object):
         try:
             if markAlive:
                 self._ping(self.sticky, self.pool)
-            content = self._pullMessage(self.sticky, self.pool)
+            content = self._pullMessage(self.sticky, self.pool, markAlive)
             if content:
                 self._parseMessage(content)
         except KeyboardInterrupt:
