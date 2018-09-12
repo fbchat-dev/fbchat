@@ -48,7 +48,7 @@ class FacebookSession(Session):
 
     def request(self, method, url, include_payload=True, **kwargs):
         # '__req': str_base(self.req_counter, 36),
-        return super(self, FacebookSession).request(method, url, **kwargs)
+        return super(FacebookSession, self).request(method, url, **kwargs)
 
 
     def set_fb_dtsg(self, value):
@@ -134,6 +134,7 @@ class BaseClient(User):
             The expected return is a two-factor authentication code, or
             ``None`` if unavailable
         """
+
         return input("Please supply a two-factor authentication code: ")
 
 
@@ -211,6 +212,7 @@ class BaseClient(User):
         Return:
             A dict containing the session
         """
+
         return self.s.cookies.to_dict()
 
     def set_session(self, session):

@@ -10,125 +10,110 @@ class GetterClient(FetcherClient):
     def get_threads(self, limit=None):
         """Retrieve the threads that the client is currently chatting with
 
-        If ``limit`` is ``None``, the result will be a generator, otherwise the
-        result will be a list with maximum length of ``limit``
-
         Args:
             limit (int): Max. number of threads to retrieve
 
         Return:
-            List of `Thread` objects or a generator yielding `Thread` objects
+            A generator yielding `Thread`\s
         """
 
     def get_archived_threads(self, limit=None):
         """Retrieve the client's archived threads
 
-        ``limit`` and return values behave as in `get_messages`
+        Args:
+            limit (int): Max. number of threads to retrieve
+
+        Return:
+            A generator yielding `Thread`\s
         """
 
     def get_filtered_threads(self, limit=None):
         """Retrieve the client's filtered threads
 
-        ``limit`` and return values behave as in `get_messages`
+        Args:
+            limit (int): Max. number of threads to retrieve
+
+        Return:
+            A generator yielding `Thread`\s
         """
 
     def get_unread_threads(self, limit=None):
         """Retrieve the client's unread threads
 
-        ``limit`` and return values behave as in `get_messages`
+        Args:
+            limit (int): Max. number of threads to retrieve
+
+        Return:
+            A generator yielding `Thread`\s
         """
 
     def get_friends(self, limit=None):
         """Retrieve the users that the client is friends with
 
-        ``limit`` and return values behave as in `get_messages`
+        Args:
+            limit (int): Max. number of users to retrieve
+
+        Return:
+            A generator yielding `User`\s
         """
 
 
-    def get_threads_from_ids(self, *thread_ids):
+    def get_threads_from_ids(self, thread_ids):
         """Retrieve threads based on their IDs
 
-        If ``thread_ids`` contains a single iterable, then a generator yielding
-        the threads is returned.
-
-        If ``thread_ids`` is a single value or multiple values, then a list
-        containing the threads is returned.
-
         Args:
-            *thread_ids: One or more thread IDs to query
+            thread_ids (iter): Thread IDs to query
 
         Return:
-            `Thread` objects, in the order and format their IDs were supplied
+            A generator yielding `Thread`\s, in the order and format their IDs were supplied
         """
 
-    def get_messages_from_ids(self, *message_ids):
-        """Retrieve messages based on their IDs
 
-        If ``message_ids`` contains a single iterable, then a generator
-        yielding the messages is returned.
-
-        If ``message_ids`` is a single value or multiple values, then a list
-        containing the messages is returned.
+    def get_events(self, thread, limit=None):
+        """Retrieve events in a thread, starting from the newest
 
         Args:
-            *message_ids: One or more message IDs to query
+            thread (`Thread`): Thread to retrieve events from
+            limit (int): Max. number of events to retrieve
 
         Return:
-            `Message` objects, in the order and format their IDs were supplied
+            A generator yielding `Event`\s
         """
 
-
-    def get_messages(self, thread, limit=None):
-        """Retrieve messages from a thread, starting from the newest
-
-        Like in `get_threads`, if ``limit`` is ``None``, the result will be a
-        generator, otherwise the result will be a list with maximum length of
-        ``limit``
+    def get_events_before(self, event, limit=None):
+        """Retrieve events *before* a specific event
 
         Args:
-            thread (`Thread`): Thread to retrieve messages from
-            limit (int): Max. number of messages to retrieve
+            event (`Event`): A event, indicating from which point to retrieve events
+            limit (int): Max. number of events to retrieve
 
         Return:
-            List of `Message` objects or a generator yielding `Message` objects
+            A generator yielding `Event`\s
         """
 
-    def get_messages_before(self, message, limit=None):
-        """Retrieve messages *before* a specific message
-
-        ``limit`` and return values behave as in `get_messages`
+    def get_events_after(self, event, limit=None):
+        """Retrieve events *after* a specific event
 
         Args:
-            message (`Message`): A message, indicating from which point to
-                retrieve messages
+            event (`Event`): An event, indicating from which point to retrieve events
+            limit (int): Max. number of events to retrieve
+
+        Return:
+            A generator yielding `Event`\s
         """
 
-    def get_messages_after(self, message, limit=None):
-        """Retrieve messages *after* a specific message
-
-        ``limit`` and return values behave as in `get_messages`
-
-        Args:
-            message (`Message`): A message, indicating from which point to
-                retrieve messages
-        """
-
-
+'''
     def get_thread_images(self, thread, limit=None):
         """Retrieve sent images in a thread
-
-        Like in `get_threads`, if ``limit`` is ``None``, the result will be a
-        generator, otherwise the result will be a list with maximum length of
-        ``limit``
 
         Args:
             thread (`Thread`): Thread to fetch images from
             limit (int): Max. number of images to retrieve
 
         Return:
-            List of `ImageAttachment` objects or a generator yielding
-            `ImageAttachment` objects
+            A generator yielding `Image`\s
         """
+'''
 
     def get_thread_files(self, thread, limit=None):
         """Retrieve sent files in a thread
@@ -139,15 +124,14 @@ class GetterClient(FetcherClient):
             thread (`Thread`): Thread to fetch files from
 
         Return:
-            List of `FileAttachment` objects or a generator yielding
-            `FileAttachment` objects
+            A generator yielding `File`\s
         """
 
     def get_url(self, attachment):
-        """Fetch an url from an attachment, where you can download the original
+        """Retrieve a url from an attachment / a file, where you can download the original
 
         Args:
-            attachment (`Attachment`): The attachment to be fetched
+            attachment (`File`): The attachment / file to be fetched
 
         Return:
             An url where you can download the original attachment

@@ -34,7 +34,7 @@ class SenderClient(ListenerClient):
     def on_event(self, event):
         if isinstance(event, Message):
             self.on_message(event)
-        super(self, SenderClient).on_event(event)
+        super(SenderClient, self).on_event(event)
 
     def on_message(self, message):
         """Called when someone sends a message
