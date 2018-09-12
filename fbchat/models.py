@@ -33,8 +33,9 @@ class Thread(object):
 
     def __init__(self, id_):
         if not id_ or id_ < 1:
-            raise ValueError("Invalid ID")
+            raise ValueError("Invalid thread ID")
         self.id = int(id_)
+        self._events = []  # Oldest first
 
     def __hash__(self):
         return self.id
@@ -83,12 +84,14 @@ class Group(Thread):
     Attributes:
         participants (list): `User`\s, denoting the thread's participants
         admins (list): Unique list of `User`\s, denoting the group's admins
-        title: The group's custom title
     """
 
 
 class Page(Thread):
     """Represents a Facebook page
+
+    TODO:
+        The attributes
 
     Attributes:
         city: The name of the page's location city
@@ -102,19 +105,30 @@ class Event(object):
     """Represents an event in a Facebook thread
 
     Attributes:
+        id (int): The unique identifier of the event
         thread (`Thread`): The thread the event was sent to
         author (`User` or `Page`): The person who sent the event
         time (`Time`): When the event was sent
         is_read (bool): Whether the event is read
     """
 
+    def __init__(self, id_):
+        if not id_ or id_ < 1:
+            raise ValueError("Invalid event ID")
+        self.id = int(id_)
+
+    def __hash__(self):
+        return self.id
+
+    def __eq__(self, other):
+        return isinstance(other, Event) and self.id == other.id
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class Message(Event):
-    """Represents a message
-
-    Attributes:
-        id (int): The unique identifier of the message
-    """
+    """Represents a message"""
 
 
 class Action(Event):
