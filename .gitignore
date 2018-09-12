@@ -25,6 +25,7 @@ develop-eggs
 
 # Sphinx documentation
 docs/_build/
+docs/.mypy*
 
 # Scripts and data for tests
 my_tests.py
