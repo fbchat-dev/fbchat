@@ -1485,7 +1485,30 @@ class Client(object):
 
         j = self._post(self.req_url.THREAD_EMOJI, data, fix_request=True, as_json=True)
 
+    def _react(self, message_id, reaction=None, add_reaction=True):
+        data = {
+            "doc_id": 1491398900900362,
+            "variables": json.dumps({
+                "data": {
+                    "action": "ADD_REACTION" if add_reaction else "REMOVE_REACTION",
+                    "client_mutation_id": "1",
+                    "actor_id": self.uid,
+                    "message_id": str(message_id),
+                    "reaction": reaction.value if add_reaction else None
+                }
+            })
+        }
+
+        r = self._post(self.req_url.MESSAGE_REACTION, data)
+        r.raise_for_status()
+
     def reactToMessage(self, message_id, reaction):
+        """
+        Deprecated. Use :func:`fbchat.Client.addReaction` instead
+        """
+        self.addReaction(message_id=message_id, reaction=reaction)
+
+    def addReaction(self, message_id, reaction):
         """
         Reacts to a message
 
@@ -1494,20 +1517,16 @@ class Client(object):
         :type reaction: models.MessageReaction
         :raises: FBchatException if request failed
         """
-        full_data = {
-            "doc_id": 1491398900900362,
-            "variables": json.dumps({
-                "data": {
-                    "action": "ADD_REACTION",
-                    "client_mutation_id": "1",
-                    "actor_id": self.uid,
-                    "message_id": str(message_id),
-                    "reaction": reaction.value
-                }
-            })
-        }
+        self._react(message_id=message_id, reaction=reaction, add_reaction=True)
 
-        j = self._post(self.req_url.MESSAGE_REACTION, full_data, fix_request=True, as_json=True)
+    def removeReaction(self, message_id):
+        """
+        Removes reaction from a message
+
+        :param message_id: :ref:`Message ID <intro_message_ids>` to remove reaction from
+        :raises: FBchatException if request failed
+        """
+        self._react(message_id=message_id, add_reaction=False)
 
     def createPlan(self, plan, thread_id=None):
         """
@@ -2032,6 +2051,7 @@ class Client(object):
 
                     delta = m["delta"]
                     delta_type = delta.get("type")
+                    delta_class = delta.get("class")
                     metadata = delta.get("messageMetadata")
 
                     if metadata:
@@ -2068,14 +2088,14 @@ class Client(object):
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
                     # Thread title change
-                    elif delta.get("class") == "ThreadName":
+                    elif delta_class == "ThreadName":
                         new_title = delta["name"]
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onTitleChange(mid=mid, author_id=author_id, new_title=new_title, thread_id=thread_id,
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
                     # Forced fetch
-                    elif delta.get("class") == "ForcedFetch":
+                    elif delta_class == "ForcedFetch":
                         mid = delta.get("messageId")
                         if mid is None:
                             self.onUnknownMesssageType(msg=m)
@@ -2121,7 +2141,7 @@ class Client(object):
                                                   thread_id=thread_id, thread_type=thread_type, ts=ts, msg=m)
 
                     # Message delivered
-                    elif delta.get("class") == "DeliveryReceipt":
+                    elif delta_class == "DeliveryReceipt":
                         message_ids = delta["messageIds"]
                         delivered_for = str(delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"])
                         ts = int(delta["deliveredWatermarkTimestampMs"])
@@ -2131,7 +2151,7 @@ class Client(object):
                                                 metadata=metadata, msg=m)
 
                     # Message seen
-                    elif delta.get("class") == "ReadReceipt":
+                    elif delta_class == "ReadReceipt":
                         seen_by = str(delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"])
                         seen_ts = int(delta["actionTimestampMs"])
                         delivered_ts = int(delta["watermarkTimestampMs"])
@@ -2140,7 +2160,7 @@ class Client(object):
                                            seen_ts=seen_ts, ts=delivered_ts, metadata=metadata, msg=m)
 
                     # Messages marked as seen
-                    elif delta.get("class") == "MarkRead":
+                    elif delta_class == "MarkRead":
                         seen_ts = int(delta.get("actionTimestampMs") or delta.get("actionTimestamp"))
                         delivered_ts = int(delta.get("watermarkTimestampMs") or delta.get("watermarkTimestamp"))
 
@@ -2240,6 +2260,51 @@ class Client(object):
                         self.onPlanParticipation(mid=mid, plan=plan, take_part=take_part, author_id=author_id,
                                                  thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
+                    # Client payload (that weird numbers)
+                    elif delta_class == "ClientPayload":
+                        payload = json.loads("".join(chr(z) for z in delta['payload']))
+                        ts = m.get("ofd_ts")
+                        for d in payload.get('deltas', []):
+
+                            # Message reaction
+                            if d.get('deltaMessageReaction'):
+                                i = d['deltaMessageReaction']
+                                thread_id, thread_type = getThreadIdAndThreadType(i)
+                                mid = i["messageId"]
+                                author_id = str(i["userId"])
+                                reaction = MessageReaction(i["reaction"]) if i.get("reaction") else None
+                                add_reaction = not bool(i["action"])
+                                if add_reaction:
+                                    self.onReactionAdded(mid=mid, reaction=reaction, author_id=author_id,
+                                                         thread_id=thread_id, thread_type=thread_type, ts=ts, msg=m)
+                                else:
+                                    self.onReactionRemoved(mid=mid, author_id=author_id, thread_id=thread_id,
+                                                           thread_type=thread_type, ts=ts, msg=m)
+
+                            # Viewer status change
+                            elif d.get('deltaChangeViewerStatus'):
+                                i = d['deltaChangeViewerStatus']
+                                thread_id, thread_type = getThreadIdAndThreadType(i)
+                                author_id = str(i["actorFbid"])
+                                reason = i["reason"]
+                                can_reply = i["canViewerReply"]
+                                if reason == 2:
+                                    if can_reply:
+                                        self.onUnblock(author_id=author_id, thread_id=thread_id, thread_type=thread_type, ts=ts, msg=m)
+                                    else:
+                                        self.onBlock(author_id=author_id, thread_id=thread_id, thread_type=thread_type, ts=ts, msg=m)
+
+                            # Live location info
+                            elif d.get('liveLocationData'):
+                                i = d['liveLocationData']
+                                thread_id, thread_type = getThreadIdAndThreadType(i)
+                                for l in i['messageLiveLocations']:
+                                    mid = l["messageId"]
+                                    author_id = l["senderId"]
+                                    location = graphql_to_live_location(l)
+                                    self.onLiveLocation(mid=mid, location=location, author_id=author_id, thread_id=thread_id,
+                                                        thread_type=thread_type, ts=ts, msg=m)
+
                     # New message
                     elif delta.get("class") == "NewMessage":
                         mentions = []
@@ -2260,15 +2325,19 @@ class Client(object):
                                         attach_type = mercury['blob_attachment']['__typename']
                                         attachment = graphql_to_attachment(mercury.get('blob_attachment', {}))
 
-                                        if attach_type == ['MessageFile', 'MessageVideo', 'MessageAudio']:
+                                        if attach_type in ['MessageFile', 'MessageVideo', 'MessageAudio']:
                                             # TODO: Add more data here for audio files
                                             attachment.size = int(a['fileSize'])
                                         attachments.append(attachment)
+
                                     elif mercury.get('sticker_attachment'):
                                         sticker = graphql_to_sticker(a['mercury']['sticker_attachment'])
+
                                     elif mercury.get('extensible_attachment'):
-                                        # TODO: Add more data here for shared stuff (URLs, events and so on)
-                                        pass
+                                        attachment = graphql_to_extensible_attachment(mercury.get('extensible_attachment', {}))
+                                        if attachment:
+                                            attachments.append(attachment)
+
                             except Exception:
                                 log.exception('An exception occured while reading attachments: {}'.format(delta['attachments']))
 
@@ -2928,12 +2997,86 @@ class Client(object):
         :param metadata: Extra metadata about the action
         :param msg: A full set of the data recieved
         :type plan: models.Plan
+        :type take_part: bool
         :type thread_type: models.ThreadType
         """
         if take_part:
             log.info("{} will take part in {} in {} ({})".format(author_id, plan, thread_id, thread_type.name))
         else:
             log.info("{} won't take part in {} in {} ({})".format(author_id, plan, thread_id, thread_type.name))
+
+    def onReactionAdded(self, mid=None, reaction=None, add_reaction=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody reacts to a message
+
+        :param mid: Message ID, that user reacted to
+        :param reaction: Reaction
+        :param add_reaction: Whether user added or removed reaction
+        :param author_id: The ID of the person who reacted to the message
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type reaction: models.MessageReaction
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} reacted to message {} with {} in {} ({})".format(author_id, mid, reaction.name, thread_id, thread_type.name))
+
+    def onReactionRemoved(self, mid=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody removes reaction from a message
+
+        :param mid: Message ID, that user reacted to
+        :param author_id: The ID of the person who removed reaction
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} removed reaction from {} message in {} ({})".format(author_id, mid, thread_id, thread_type))
+
+    def onBlock(self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody blocks client
+
+        :param author_id: The ID of the person who blocked
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} blocked {} ({}) thread".format(author_id, thread_id, thread_type.name))
+
+    def onUnblock(self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody blocks client
+
+        :param author_id: The ID of the person who unblocked
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} unblocked {} ({}) thread".format(author_id, thread_id, thread_type.name))
+
+    def onLiveLocation(self, mid=None, location=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening and somebody sends live location info
+
+        :param mid: The action ID
+        :param location: Sent location info
+        :param author_id: The ID of the person who sent location info
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type location: models.LiveLocationAttachment
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} sent live location info in {} ({}) with latitude {} and longitude {}".format(author_id, thread_id, thread_type, location.latitude, location.longitude))
 
     """
     END EVENTS
