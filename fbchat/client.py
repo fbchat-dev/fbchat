@@ -544,7 +544,6 @@ class Client(object):
 
         return [graphql_to_page(node) for node in j[name]['pages']['nodes']]
 
-    # TODO intergrate Rooms
     def searchForGroups(self, name, limit=1):
         """
         Find and get group thread by its name
@@ -585,7 +584,6 @@ class Client(object):
             elif node['__typename'] == 'Group':
                 # We don't handle Facebook "Groups"
                 pass
-            # TODO Add Rooms
             else:
                 log.warning('Unknown __typename: {} in {}'.format(repr(node['__typename']), node))
 
@@ -818,9 +816,6 @@ class Client(object):
             if entry.get('thread_type') == 'GROUP':
                 _id = entry['thread_key']['thread_fbid']
                 rtn[_id] = graphql_to_group(entry)
-            elif entry.get('thread_type') == 'ROOM':
-                _id = entry['thread_key']['thread_fbid']
-                rtn[_id] = graphql_to_room(entry)
             elif entry.get('thread_type') == 'ONE_TO_ONE':
                 _id = entry['thread_key']['other_user_id']
                 if pages_and_users.get(_id) is None:
@@ -1976,7 +1971,7 @@ class Client(object):
             'sticky_token': sticky,
             'sticky_pool': pool,
             'viewer_uid': self.uid,
-            'state': 'active'
+            'state': 'active',
         }
         self._get(self.req_url.PING, data, fix_request=True, as_json=False)
 
@@ -1996,7 +1991,7 @@ class Client(object):
 
         return j['lb_info']['sticky'], j['lb_info']['pool']
 
-    def _pullMessage(self, sticky, pool):
+    def _pullMessage(self, sticky, pool, markAlive=True):
         """Call pull api with seq value to get message data."""
 
         data = {
@@ -2004,6 +1999,7 @@ class Client(object):
             "sticky_token": sticky,
             "sticky_pool": pool,
             "clientid": self.client_id,
+            'state': 'active' if markAlive else 'offline',
         }
 
         j = self._get(ReqUrl.STICKY, data, fix_request=True, as_json=True)
@@ -2374,7 +2370,7 @@ class Client(object):
         try:
             if markAlive:
                 self._ping(self.sticky, self.pool)
-            content = self._pullMessage(self.sticky, self.pool)
+            content = self._pullMessage(self.sticky, self.pool, markAlive)
             if content:
                 self._parseMessage(content)
         except KeyboardInterrupt:

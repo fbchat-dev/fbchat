@@ -42,7 +42,7 @@ def get_customization_info(thread):
         'emoji': info.get('emoji'),
         'color': graphql_color_to_enum(info.get('outgoing_bubble_color'))
     }
-    if thread.get('thread_type') in ('GROUP', 'ROOM') or thread.get('is_group_thread') or thread.get('thread_key', {}).get('thread_fbid'):
+    if thread.get('thread_type') == 'GROUP' or thread.get('is_group_thread') or thread.get('thread_key', {}).get('thread_fbid'):
         rtn['nicknames'] = {}
         for k in info.get('participant_customizations', []):
             rtn['nicknames'][k['participant_id']] = k.get('nickname')
@@ -220,7 +220,9 @@ def graphql_to_user(user):
     if user.get('profile_picture') is None:
         user['profile_picture'] = {}
     c_info = get_customization_info(user)
-    plan = graphql_to_plan(user['event_reminders']['nodes'][0]) if user.get('event_reminders', dict()).get('nodes') else None
+    plan = None
+    if user.get('event_reminders'):
+        plan = graphql_to_plan(user['event_reminders']['nodes'][0]) if user['event_reminders'].get('nodes') else None
     return User(
         user['id'],
         url=user.get('url'),
@@ -258,7 +260,9 @@ def graphql_to_thread(thread):
         else:
             last_name = user.get('name').split(first_name, 1).pop().strip()
 
-        plan = graphql_to_plan(thread['event_reminders']['nodes'][0]) if thread.get('event_reminders', dict()).get('nodes') else None
+        plan = None
+        if thread.get('event_reminders'):
+            plan = graphql_to_plan(thread['event_reminders']['nodes'][0]) if thread['event_reminders'].get('nodes') else None
 
         return User(
             user['id'],
@@ -288,39 +292,23 @@ def graphql_to_group(group):
     last_message_timestamp = None
     if 'last_message' in group:
         last_message_timestamp = group['last_message']['nodes'][0]['timestamp_precise']
-    plan = graphql_to_plan(group['event_reminders']['nodes'][0]) if group.get('event_reminders', dict()).get('nodes') else None
+    plan = None
+    if group.get('event_reminders'):
+        plan = graphql_to_plan(group['event_reminders']['nodes'][0]) if group['event_reminders'].get('nodes') else None
     return Group(
         group['thread_key']['thread_fbid'],
         participants=set([node['messaging_actor']['id'] for node in group['all_participants']['nodes']]),
         nicknames=c_info.get('nicknames'),
         color=c_info.get('color'),
         emoji=c_info.get('emoji'),
+        admins = set([node.get('id') for node in group.get('thread_admins')]),
+        approval_mode = bool(group.get('approval_mode')),
+        approval_requests = set(node["requester"]['id'] for node in group['group_approval_queue']['nodes']),
+        join_link = group['joinable_mode'].get('link'),
         photo=group['image'].get('uri'),
         name=group.get('name'),
         message_count=group.get('messages_count'),
         last_message_timestamp=last_message_timestamp,
-        plan=plan,
-    )
-
-def graphql_to_room(room):
-    if room.get('image') is None:
-        room['image'] = {}
-    c_info = get_customization_info(room)
-    plan = graphql_to_plan(room['event_reminders']['nodes'][0]) if room.get('event_reminders', dict()).get('nodes') else None
-    return Room(
-        room['thread_key']['thread_fbid'],
-        participants=set([node['messaging_actor']['id'] for node in room['all_participants']['nodes']]),
-        nicknames=c_info.get('nicknames'),
-        color=c_info.get('color'),
-        emoji=c_info.get('emoji'),
-        photo=room['image'].get('uri'),
-        name=room.get('name'),
-        message_count=room.get('messages_count'),
-        admins = set([node.get('id') for node in room.get('thread_admins')]),
-        approval_mode = bool(room.get('approval_mode')),
-        approval_requests = set(node.get('id') for node in room['thread_queue_metadata'].get('approval_requests', {}).get('nodes')),
-        join_link = room['joinable_mode'].get('link'),
-        privacy_mode = bool(room.get('privacy_mode')),
         plan=plan,
     )
 
@@ -329,7 +317,9 @@ def graphql_to_page(page):
         page['profile_picture'] = {}
     if page.get('city') is None:
         page['city'] = {}
-    plan = graphql_to_plan(page['event_reminders']['nodes'][0]) if page.get('event_reminders', dict()).get('nodes') else None
+    plan = None
+    if page.get('event_reminders'):
+        plan = graphql_to_plan(page['event_reminders']['nodes'][0]) if page['event_reminders'].get('nodes') else None
     return Page(
         page['id'],
         url=page.get('url'),
@@ -433,6 +423,40 @@ class GraphQL(object):
             },
             outgoing_bubble_color,
             emoji
+        },
+        thread_admins {
+            id
+        },
+        group_approval_queue {
+            nodes {
+                requester {
+                    id
+                }
+            }
+        },
+        approval_mode,
+        joinable_mode {
+            mode,
+            link
+        },
+        event_reminders {
+            nodes {
+                id,
+                lightweight_event_creator {
+                    id
+                },
+                time,
+                location_name,
+                event_title,
+                event_reminder_members {
+                    edges {
+                        node {
+                            id
+                        },
+                        guest_list_state
+                    }
+                }
+            }
         }
     }
     """
