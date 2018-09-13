@@ -6,7 +6,7 @@ import logging
 import attr
 import re
 
-from requests import Session
+from requests import Session, Response
 from random import choice
 from bs4 import BeautifulSoup as bs
 from six.moves.urllib_parse import urlparse, parse_qs
@@ -20,6 +20,20 @@ log = logging.getLogger(__name__)
 BASE_URL = "https://www.facebook.com"
 MOBILE_URL = "https://m.facebook.com"
 LOGIN_URL = "https://m.facebook.com/login.php?login_attempt=1"
+
+
+class FacebookResponse(Response):
+    def json(self, **kwargs):
+        try:
+            self._content = self._content[self._content.index(b"{") :]
+        except ValueError:
+            raise ValueError("No JSON object found: {!r}".format(self.text))
+        return super(FacebookResponse, self).json(**kwargs)
+
+
+def class_rewrite_hook(r, *args, **kwargs):
+    r.__class__ = FacebookResponse
+    return r
 
 
 class FacebookSession(Session):
@@ -36,6 +50,8 @@ class FacebookSession(Session):
 
     def __init__(self, user_agent):
         super(FacebookSession, self).__init__()
+
+        self.hooks["response"].append(class_rewrite_hook)
 
         if not user_agent:
             user_agent = choice(self.USER_AGENTS)
@@ -124,6 +140,9 @@ class BaseClient(object):
     def __attrs_post_init__(self):
         self.user = User(self.session.cookies.get("c_user"))
 
+    def __repr__(self):
+        return "{}(user.id={})".format(type(self).__name__, self.user.id)
+
     @classmethod
     def login(cls, email, password, user_agent=None):
         """Initialize and login the Facebook client
@@ -156,7 +175,7 @@ class BaseClient(object):
         """
 
         if "c_user" not in session.cookies:
-            raise FacebookError("Could not login, failed on: {}".format(r.url))
+            raise ValueError("Could not login, failed on: {}".format(r.url))
 
         session.set_default_params()
 
@@ -164,7 +183,7 @@ class BaseClient(object):
 
     @classmethod
     def from_session(cls, session_data):
-        session = FacebookSession(session_data["User-Agent"])
+        session = FacebookSession(session_data["user_agent"])
 
         session.cookies.update(session_data["cookies"])
         session.set_default_params()
@@ -182,7 +201,7 @@ class BaseClient(object):
         """
 
         return {
-            "cookies": self.session.cookies.to_dict(),
+            "cookies": self.session.cookies.get_dict(),
             "user_agent": self.session.header["User-Agent"],
         }
 
