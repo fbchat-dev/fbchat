@@ -26,9 +26,9 @@ class Thread(object):
     #: The unique identifier of the thread
     id = attr.ib(type=int, converter=int)
     #: The name of the thread
-    name = attr.ib(type=str)
+    name = attr.ib(None, type=str)
     #: When the thread was last updated
-    last_activity = attr.ib(type=datetime)
+    last_activity = attr.ib(None, type=datetime)
     #: A url to the thread's thumbnail/profile picture
     image = attr.ib(None, type=str)
     #: Number of `Message`\s in the thread
