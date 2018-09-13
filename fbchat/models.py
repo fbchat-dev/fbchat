@@ -5,9 +5,23 @@ from __future__ import unicode_literals
 import json
 import attr
 
-from datetime import datetime
-from typing import Dict, Set, List, Union, Optional
+from datetime import datetime, timedelta
+from typing import Dict, Set, List, Union
 from enum import Enum
+
+
+@attr.s(slots=True)
+class Dimension(object):
+    """Represents the width and height of an object"""
+
+    #: Width of the object
+    width = attr.ib(type=int, converter=int)
+    #: Height of the object
+    height = attr.ib(type=int, converter=int)
+
+    @classmethod
+    def from_dict(cls, items):
+        return cls(items["width"], items["height"])
 
 
 @attr.s(slots=True, str=True)
@@ -124,11 +138,11 @@ class Event(object):
     """Represents an event in a Facebook thread"""
 
     #: The unique identifier of the event
-    id = attr.ib(None, type=str)
+    id = attr.ib(type=str)
     #: The thread the event was sent to
     thread = attr.ib(None, type=Thread)
     #: The person who sent the event
-    author = attr.ib(None, type=Union[User, Page])
+    actor = attr.ib(None, type=Union[User, Page])
     #: When the event was sent
     time = attr.ib(None, type=datetime)
     #: Whether the event is read
@@ -149,14 +163,15 @@ class Event(object):
             return User(thread_key["otherUserFbId"], last_activity=time)
 
     @classmethod
-    def from_pull(cls, delta):
+    def from_pull(cls, delta, **kwargs):
         metadata = delta["messageMetadata"]
         time = datetime.fromtimestamp(int(metadata["timestamp"]) / 1000)
         return cls(
             id=metadata["messageId"],
             thread=cls.pull_data_get_thread(delta, time),
-            author=User(metadata["actorFbId"]),
+            actor=User(metadata["actorFbId"]),
             time=time,
+            **kwargs
         )
 
 
@@ -164,11 +179,19 @@ class Event(object):
 class Message(Event):
     """Represents a message"""
 
-    reactions = attr.ib(type=Dict[User, str], factory=dict)
-    r"""`User`\s, mapped to their reaction
+    #: `User`\s, mapped to their `Reaction`
+    reactions = attr.ib(type="Dict[User, Message.Reaction]", factory=dict)
 
-    A reaction can be ``😍``, ``😆``, ``😮``, ``😢``, ``😠``, ``👍`` or ``👎``
-    """
+    class Reaction(Enum):
+        """Used to specify a message reaction"""
+
+        LOVE = "😍"
+        SMILE = "😆"
+        WOW = "😮"
+        SAD = "😢"
+        ANGRY = "😠"
+        YES = "👍"
+        NO = "👎"
 
 
 @attr.s(slots=True)
@@ -181,31 +204,28 @@ class Sticker(Message):
     """Represents a sent sticker"""
 
     #: The sticker's ID
-    sticker_id = attr.ib(None, type=int)
+    sticker_id = attr.ib(None, type=int, converter=int)
     #: The sticker's label/name
     name = attr.ib(None, type=str)
     #: URL to the sticker's image
     url = attr.ib(None, type=str)
-    #: Width of the sticker
-    width = attr.ib(None, type=int)
-    #: Height of the sticker
-    height = attr.ib(None, type=int)
+    #: The stickers dimensions
+    dimensions = attr.ib(None, type=Dimension)
     #: The sticker's pack
     pack = attr.ib(None, type="Sticker.Pack")
 
     @classmethod
-    def from_pull(cls, delta):
-        message = super(Sticker, cls).from_pull(delta)
+    def from_pull(cls, delta, **kwargs):
         attachment, = [x["mercury"]["sticker_attachment"] for x in delta["attachments"]]
-
-        message.sticker_id = int(attachment["id"])
-        message.name = attachment["label"]
-        message.url = attachment["url"]
-        message.width = int(attachment["width"])
-        message.height = int(attachment["height"])
-        message.pack = Sticker.Pack(attachment["pack"]["id"])
-
-        return message
+        return super(Sticker, cls).from_pull(
+            delta,
+            sticker_id=attachment["id"],
+            name=attachment["label"],
+            url=attachment["url"],
+            dimensions=Dimension.from_dict(attachment),
+            pack=Sticker.Pack(attachment["pack"]["id"]),
+            **kwargs
+        )
 
     @attr.s(slots=True, repr_ns="Sticker")
     class Pack(object):
@@ -230,18 +250,18 @@ class AnimatedSticker(Sticker):
     frame_rate = attr.ib(None, type=int)
 
     @classmethod
-    def from_pull(cls, delta):
-        message = super(AnimatedSticker, cls).from_pull(delta)
+    def from_pull(cls, delta, **kwargs):
         attachment, = [x["mercury"]["sticker_attachment"] for x in delta["attachments"]]
 
-        message.sprite_image = attachment["sprite_image"].get("uri")
-        message.large_sprite_image = attachment["sprite_image_2x"].get("uri")
-        message.frames_per_row = attachment["frames_per_row"]
-        message.frames_per_col = attachment["frames_per_column"]
-        message.frame_rate = attachment["frame_rate"]
-
-        message.pack = Sticker.Pack(attachment["pack"]["id"])
-        return message
+        return super(AnimatedSticker, cls).from_pull(
+            delta,
+            sprite_image=attachment["sprite_image"]["uri"],
+            large_sprite_image=attachment["sprite_image_2x"].get("uri"),
+            frames_per_row=int(attachment["frames_per_row"]),
+            frames_per_col=int(attachment["frames_per_column"]),
+            frame_rate=int(attachment["frame_rate"]),
+            **kwargs
+        )
 
 
 @attr.s(slots=True)
@@ -254,11 +274,13 @@ class Emoji(Message):
     size = attr.ib(None, type="Emoji.Size")
 
     @classmethod
-    def from_pull(cls, delta):
-        message = super(Emoji, cls).from_pull(delta)
-        message.emoji = delta["body"]
-        message.size = Emoji.Size.from_pull(delta["messageMetadata"]["tags"])
-        return message
+    def from_pull(cls, delta, **kwargs):
+        return super(Emoji, cls).from_pull(
+            delta,
+            emoji=delta["body"],
+            size=Emoji.Size.from_pull(delta["messageMetadata"]["tags"]),
+            **kwargs
+        )
 
     class Size(Enum):
         """Represents the size of an emoji"""
@@ -284,9 +306,8 @@ class Text(Message):
     mentions = attr.ib(type="List[Text.Mention]", factory=list)
 
     @classmethod
-    def from_pull(cls, delta):
-        message = super(Text, cls).from_pull(delta)
-        message.text = delta["body"]
+    def from_pull(cls, delta, **kwargs):
+        message = super(Text, cls).from_pull(delta, text=delta["body"], **kwargs)
 
         if delta.get("data") and delta["data"].get("prng"):
             mention_data = json.loads(delta["data"]["prng"])
@@ -307,8 +328,8 @@ class Text(Message):
         length = attr.ib(type=int, converter=int)
 
         @classmethod
-        def from_pull(cls, data):
-            return cls(Thread(x["i"]), offset=x["o"], length=x["l"])
+        def from_pull(cls, data, **kwargs):
+            return cls(Thread(x["i"]), offset=x["o"], length=x["l"], **kwargs)
 
 
 @attr.s(slots=True)
@@ -325,19 +346,21 @@ class FileMessage(Message):
             "MessageImage": Image,
             "MessageAnimatedImage": AnimatedImage,
             "MessageVideo": Video,
-            "Audio": Audio,
+            "MessageAudio": Audio,
             "MessageFile": File,
         }[blob["__typename"]].from_pull(attachment, blob)
 
     @classmethod
-    def from_pull(cls, delta):
-        message = super(FileMessage, cls).from_pull(delta)
+    def from_pull(cls, delta, **kwargs):
+        message = super(FileMessage, cls).from_pull(delta, **kwargs)
+
         for attachment in delta["attachments"]:
             mercury = attachment["mercury"]
             if "blob_attachment" in mercury:
                 message.files.append(cls.pull_data_get_file(attachment, mercury))
             else:
                 return None
+
         return message
 
 
@@ -359,35 +382,146 @@ class File(object):
     is_malicious = attr.ib(None, type=bool)
 
     @classmethod
-    def from_pull(cls, attachment, blob):
+    def from_pull(cls, attachment, blob, **kwargs):
         return cls(
             id=attachment["id"],
             name=attachment["filename"],
             mimetype=attachment["mimeType"],
             size=attachment["fileSize"],
-            url=blob["url"],
+            url=blob.get("url"),
             is_malicious=blob.get("is_malicious"),
+            **kwargs
         )
 
 
 @attr.s(slots=True)
 class Audio(File):
-    """Todo: This"""
+    """Represents an audio file"""
+
+    #: Duration of the audioclip
+    duration = attr.ib(None, type=timedelta)
+    #: Audio type
+    audio_type = attr.ib(None, type=str)
+
+    @classmethod
+    def from_pull(cls, attachment, blob, **kwargs):
+        file = super(Audio, cls).from_pull(
+            attachment,
+            blob,
+            duration=timedelta(microseconds=blob["playable_duration_in_ms"] * 1000),
+            audio_type=blob["audio_type"],
+            **kwargs
+        )
+        file.url = blob["playable_url"]
+        return file
 
 
 @attr.s(slots=True)
 class Image(File):
-    """Todo: This"""
+    """Represents an image"""
+
+    #: The extension of the original image (e.g. 'png')
+    extension = attr.ib(None, type=str)
+    #: Dimensions of the original image
+    dimensions = attr.ib(None, type=Dimension)
+
+    #: URL to a 50x50 thumbnail of the image
+    thumbnail_url = attr.ib(None, type=str)
+
+    #: URL to a medium preview of the image
+    preview_url = attr.ib(None, type=str)
+    #: Dimensions of the medium preview
+    preview_dimensions = attr.ib(None, type=Dimension)
+
+    #: URL to a large preview of the image
+    large_preview_url = attr.ib(None, type=str)
+    #: Dimensions of the large preview
+    large_preview_dimensions = attr.ib(None, type=Dimension)
+
+    @classmethod
+    def from_pull(cls, attachment, blob, **kwargs):
+        preview = blob["preview"]
+        large_preview = blob["large_preview"]
+        return super(Image, cls).from_pull(
+            attachment,
+            blob,
+            extension=blob["original_extension"],
+            dimensions=Dimension.from_dict(attachment["imageMetadata"]),
+            thumbnail_url=blob["thumbnail"]["uri"],
+            preview_url=preview["uri"],
+            preview_dimensions=Dimension.from_dict(preview),
+            large_preview_url=large_preview["uri"],
+            large_preview_dimensions=Dimension.from_dict(large_preview),
+            **kwargs
+        )
 
 
 @attr.s(slots=True)
 class AnimatedImage(Image):
-    """Todo: This"""
+    """Represents an image (e.g. "gif")"""
+
+    #: URL to an animated preview of the image
+    animated_preview_url = None
+    #: Dimensions of the animated preview
+    animated_preview_dimensions = attr.ib(None, type=Dimension)
+
+    @classmethod
+    def from_pull(cls, attachment, blob, **kwargs):
+        animated = blob["animated_image"]
+        return super(AnimatedImage, cls).from_pull(
+            attachment,
+            blob,
+            animated_preview_url=animated["uri"],
+            animated_preview_dimensions=Dimension.from_dict(animated),
+            **kwargs
+        )
 
 
 @attr.s(slots=True)
 class Video(File):
-    """Todo: This"""
+    """Represents a video"""
+
+    #: Dimensions of the original image
+    dimensions = attr.ib(None, type=Dimension)
+    #: Duration of the video
+    duration = attr.ib(None, type=timedelta)
+    #: URL to very compressed preview video
+    preview_url = attr.ib(None, type=str)
+
+    #: URL to a small preview image of the video
+    small_image_url = attr.ib(None, type=str)
+    #: Dimensions of the small preview
+    small_image_dimensions = attr.ib(None, type=Dimension)
+
+    #: URL to a medium preview image of the video
+    medium_image_url = attr.ib(None, type=str)
+    #: Dimensions of the medium preview
+    medium_image_dimensions = attr.ib(None, type=Dimension)
+
+    #: URL to a large preview image of the video
+    large_image_url = attr.ib(None, type=str)
+    #: Dimensions of the large preview
+    large_image_dimensions = attr.ib(None, type=Dimension)
+
+    @classmethod
+    def from_pull(cls, attachment, blob, **kwargs):
+        small_image = blob["chat_image"]
+        medium_image = blob["inbox_image"]
+        large_image = blob["large_image"]
+        return super(Video, cls).from_pull(
+            attachment,
+            blob,
+            dimensions=Dimension.from_dict(blob["original_dimensions"]),
+            duration=timedelta(microseconds=blob["playable_duration_in_ms"] * 1000),
+            preview_url=blob["playable_url"],
+            small_image_url=small_image["uri"],
+            small_image_dimensions=Dimension.from_dict(small_image),
+            medium_image_url=medium_image["uri"],
+            medium_image_dimensions=Dimension.from_dict(medium_image),
+            large_image_url=large_image["uri"],
+            large_image_dimensions=Dimension.from_dict(large_image),
+            **kwargs
+        )
 
 
 @attr.s(slots=True)
