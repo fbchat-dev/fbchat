@@ -93,7 +93,7 @@ class ListenerClient(BaseClient):
 
         self.session.params["seq"] = "0"
 
-    def step_listener(self):
+    def step_listener(self, mark_alive=False):
         """Do one cycle of the listening loop.
 
         This method is useful if you want to control the listener from an
@@ -101,20 +101,21 @@ class ListenerClient(BaseClient):
         """
 
         try:
-            self.session.get(
-                "https://0-edge-chat.facebook.com/active_ping",
-                params={
-                    "channel": "p_{}".format(self.user.id),
-                    "clientid": self._clientid,
-                    "partition": -2,
-                    "cap": 0,
-                    "uid": self.user.id,
-                    "sticky_token": self._sticky,
-                    "sticky_pool": self._pool,
-                    "viewer_uid": self.user.id,
-                    "state": "active",
-                },
-            )
+            if mark_alive:
+                self.session.get(
+                    "https://0-edge-chat.facebook.com/active_ping",
+                    params={
+                        "channel": "p_{}".format(self.user.id),
+                        "clientid": self._clientid,
+                        "partition": -2,
+                        "cap": 0,
+                        "uid": self.user.id,
+                        "sticky_token": self._sticky,
+                        "sticky_pool": self._pool,
+                        "viewer_uid": self.user.id,
+                        "state": "active",
+                    },
+                )
 
             j = self.session.get(
                 "https://0-edge-chat.facebook.com/pull",
@@ -123,6 +124,7 @@ class ListenerClient(BaseClient):
                     "sticky_token": self._sticky,
                     "sticky_pool": self._pool,
                     "clientid": self._clientid,
+                    "state": "active" if mark_alive else "offline",
                 },
             ).json()
         except requests.Timeout:
@@ -162,12 +164,18 @@ class ListenerClient(BaseClient):
         log.debug("Data from listening: %s", raw_data)
 
         if "ms" not in raw_data:
+            if raw_data.get("t") == "heartbeat":
+                # Pull heartbeat, no need to do anything
+                return
             self.on_unknown(raw_data)
             return
 
         for data in raw_data["ms"]:
-            if not self.parse_data(data, raw_data.get("type")):
+            event = self.parse_data(data, data.get("type"))
+            if not event:
                 self.on_unknown(data)
+            elif isinstance(event, Event):
+                self.on_event(event)
 
     def parse_data(self, data, data_type):
         """Called when data is recieved while listening
@@ -185,6 +193,13 @@ class ListenerClient(BaseClient):
         # Happens on every login
         if data_type == "qprimer":
             return True
+
+        if data_type == "delta":
+            delta = data["delta"]
+            return self.parse_delta_data(delta, delta.get("type"), delta.get("class"))
+
+    def parse_delta_data(self, data, data_type, data_class):
+        pass
 
     def on_error(self, exception, data):
         """Called when an error was encountered while listening
@@ -214,4 +229,5 @@ class ListenerClient(BaseClient):
         Args:
             event (`Event`): The executed / sent event
         """
+        log.info("Event recieved: %s", event)
         pass  # Implemented in other classes

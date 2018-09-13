@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from .listen import ListenerClient
-from .models import Message, Emoji
+from .models import Message, Sticker, AnimatedSticker, Emoji, Text, FileMessage
 
 
 class SenderClient(ListenerClient):
@@ -56,6 +56,31 @@ class SenderClient(ListenerClient):
         Return:
             `File`, denoting the uploaded file
         """
+
+    def _get_message_type(self, delta):
+        metadata = delta["messageMetadata"]
+
+        if delta.get("attachments"):
+            attachments = delta["attachments"]
+            stickers = [x["mercury"].get("sticker_attachment") for x in attachments]
+            if any(stickers):
+                if stickers[0].get("sprite_image"):
+                    return AnimatedSticker
+                return Sticker
+            return FileMessage
+
+        if any(tag.startswith("hot_emoji_size:") for tag in metadata["tags"]):
+            return Emoji
+
+        return Text
+
+    def parse_delta_data(self, delta, delta_type, delta_class):
+        if delta_class == "NewMessage":
+            return self._get_message_type(delta).from_pull(delta)
+
+        return super(SenderClient, self).parse_delta_data(
+            delta, delta_type, delta_class
+        )
 
     def send_text(self, thread, text, mentions=None):
         """Send a piece of text to a thread. Shortcut of `send`
