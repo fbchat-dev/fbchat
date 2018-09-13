@@ -4,9 +4,11 @@ from __future__ import unicode_literals
 
 import threading
 import logging
+import attr
+import requests
 
 from random import randint
-from time import sleep
+
 from .base import BaseClient
 from .models import Event, Message, Action
 
@@ -17,28 +19,27 @@ class StopListen(BaseException):
     pass
 
 
+@attr.s(slots=True)
 class ListenerClient(BaseClient):
-    """Enables basic listening
+    """Enables basic listening"""
 
-    Attributes:
-        is_listening (threading.Event): Whether the client is currently listening
-    """
+    _clientid = attr.ib(type=int, factory=lambda: "{:x}".format(randint(0, 2 ** 31)))
+    _sticky = attr.ib(None, type=str)
+    _pool = attr.ib(None, type=str)
+    _should_stop_listening = attr.ib(type=threading.Event, factory=threading.Event)
 
-    def __init__(self, *args, **kwargs):
-        super(self, ListenerClient).__init__(*args, **kwargs)
+    #: Whether the client is currently *not* listening
+    is_not_listening = attr.ib(type=threading.Event, factory=threading.Event)
 
-        self._should_stop_listening = threading.Event()
-        self.is_listening = threading.Event()
-
-        self._sticky, self._pool = (None, None)
-        self._clientid = hex(randint(2**31))[2:]
-
+    def __attrs_post_init__(self):
+        super(ListenerClient, self).__attrs_post_init__()
+        self.is_not_listening.set()
 
     def listen(self):
         """Start listening for incoming messages or events
 
         When the client recieves an event, it will parse the event,
-        and call the corresponding `on_` method
+        and call the corresponding `on_` methods
         """
         try:
             self.init_listener()
@@ -58,17 +59,17 @@ class ListenerClient(BaseClient):
     def stop_listen(self, called_externally=False):
         """Stop the event listener
 
-        Attributes:
+        Args:
             called_externally (bool): Set this if you're calling from another
                 python-thread, or other multithreaded shenanigans
         """
         self._should_stop_listening.set()
-        if called_externally:
-            if not self.is_listening.wait(60):
-                raise ValueError("Could not stop listening: The operation timed out")
-        else:
+
+        if not called_externally:
             raise StopListen()
 
+        if not self.is_not_listening.wait(60):
+            raise ValueError("Could not stop listening: The operation timed out")
 
     def init_listener(self):
         """Prepare the event listener.
@@ -76,20 +77,21 @@ class ListenerClient(BaseClient):
         This method is useful if you want to control the listener from an
         external event loop
         """
-        if self.is_listening.is_set():
-            raise ValueError("Can't start listening: The client is already listening")
-        self.is_listening.set()
+        self.is_not_listening.clear()
 
-        j = self.s.get("https://0-edge-chat.facebook.com/pull", query={
-            'msgs_recv': 0,
-            'channel': 'p_' + str(self.id),
-            'clientid': self._clientid,
-        }).json()
+        j = self.session.get(
+            "https://0-edge-chat.facebook.com/pull",
+            params={
+                "msgs_recv": 0,
+                "channel": "p_{}".format(self.user.id),
+                "clientid": self._clientid,
+            },
+        ).json()
 
-        self._sticky = j['lb_info']['sticky']
-        self._pool = j['lb_info']['pool']
+        self._sticky = j["lb_info"]["sticky"]
+        self._pool = j["lb_info"]["pool"]
 
-        self.s.params['seq'] = '0'
+        self.session.params["seq"] = "0"
 
     def step_listener(self):
         """Do one cycle of the listening loop.
@@ -99,31 +101,38 @@ class ListenerClient(BaseClient):
         """
 
         try:
-            self.s.get("https://0-edge-chat.facebook.com/active_ping", query={
-                'channel': 'p_' + str(self.id),
-                'clientid': self._clientid,
-                'partition': -2,
-                'cap': 0,
-                'uid': self.id,
-                'sticky_token': self._sticky,
-                'sticky_pool': self._pool,
-                'viewer_uid': self.id,
-                'state': 'active',
-            })
+            self.session.get(
+                "https://0-edge-chat.facebook.com/active_ping",
+                params={
+                    "channel": "p_{}".format(self.user.id),
+                    "clientid": self._clientid,
+                    "partition": -2,
+                    "cap": 0,
+                    "uid": self.user.id,
+                    "sticky_token": self._sticky,
+                    "sticky_pool": self._pool,
+                    "viewer_uid": self.user.id,
+                    "state": "active",
+                },
+            )
 
-            j = self.s.get("https://0-edge-chat.facebook.com/pull", query={
-                'msgs_recv': 0,
-                'sticky_token': self._sticky,
-                'sticky_pool': self._pool,
-                'clientid': self._clientid,
-            }).json()
+            j = self.session.get(
+                "https://0-edge-chat.facebook.com/pull",
+                params={
+                    "msgs_recv": 0,
+                    "sticky_token": self._sticky,
+                    "sticky_pool": self._pool,
+                    "clientid": self._clientid,
+                },
+            ).json()
         except requests.Timeout:
             # The pull request is expected to time out if there was no new data
-            pass
+            return
         except requests.ConnectionError:
             # If we lost our internet connection, keep trying every minute
-            sleep(60)
-        '''
+            self.is_not_listening.wait(60)
+            return
+        """
         except FacebookError as e:
             # Fix 502 and 503 pull errors
             if e.request_status_code in [502, 503]:
@@ -131,9 +140,9 @@ class ListenerClient(BaseClient):
                 self.startListening()
             else:
                 raise e
-        '''
+        """
 
-        self.s.params['seq'] = j.get('seq', '0')
+        self.session.params["seq"] = j.get("seq", "0")
 
         try:
             self._parse_raw(j)
@@ -146,35 +155,35 @@ class ListenerClient(BaseClient):
         This method is useful if you want to control the listener from an
         external event loop
         """
-        self.is_listening.clear()
-        self.sticky, self.pool = (None, None)
-
+        self.is_not_listening.set()
+        self._sticky, self._pool = (None, None)
 
     def _parse_raw(self, raw_data):
-        log.debug("Data from listening: %s", data)
+        log.debug("Data from listening: %s", raw_data)
 
-        if 'ms' not in data:
-            self.on_unknown(data)
+        if "ms" not in raw_data:
+            self.on_unknown(raw_data)
             return
 
-        for m in data['ms']:
-            if not self.parse_data(m, data.get('type')):
-                self.on_unknown(m)
+        for data in raw_data["ms"]:
+            if not self.parse_data(data, raw_data.get("type")):
+                self.on_unknown(data)
 
-    def parse_data(self, data):
+    def parse_data(self, data, data_type):
         """Called when data is recieved while listening
 
         This method is overwritten by other classes, to parse the data they need
 
         Args:
             data (dict): Dictionary containing the json data recieved
+            data_type (str): A special Facebook type of the recieved data
 
         Return:
             ``True`` if the data was parsed, ``False`` or ``None`` if it was unknown
         """
 
         # Happens on every login
-        if data.get('type') == 'qprimer':
+        if data_type == "qprimer":
             return True
 
     def on_error(self, exception, data):
@@ -184,17 +193,17 @@ class ListenerClient(BaseClient):
             exception (Exception): The exception that was encountered
             data (dict): Dictionary containing the full json data recieved
         """
-        log.exception("Caught exception while listening. Caused by %s", data)
+        raise exception
 
     def on_unknown(self, data):
         """Called when some unknown data was recieved while listening
 
-        Useful for debugging, and finding missing features / unclaimed potential
+        Useful for finding missing features / unclaimed potential
 
         Args:
             data (dict): Dictionary containing the unknown json data recieved
         """
-        log.info("Unknown data recieved while pulling: %s", data)
+        log.info("Unknown data recieved while listening: %s", data)
 
     def on_event(self, event):
         """Called when an event is executed / sent in a thread
@@ -205,4 +214,4 @@ class ListenerClient(BaseClient):
         Args:
             event (`Event`): The executed / sent event
         """
-        pass # Implemented in other classes
+        pass  # Implemented in other classes
