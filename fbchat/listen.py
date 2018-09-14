@@ -26,6 +26,7 @@ class ListenerClient(BaseClient):
     _clientid = attr.ib(type=int, factory=lambda: "{:x}".format(randint(0, 2 ** 31)))
     _sticky = attr.ib(None, type=str)
     _pool = attr.ib(None, type=str)
+    _seq = attr.ib(0, type=int)
     _should_stop_listening = attr.ib(type=threading.Event, factory=threading.Event)
 
     #: Whether the client is currently *not* listening
@@ -90,8 +91,7 @@ class ListenerClient(BaseClient):
 
         self._sticky = j["lb_info"]["sticky"]
         self._pool = j["lb_info"]["pool"]
-
-        self.session.params["seq"] = "0"
+        self._seq = 0
 
     def step_listener(self, mark_alive=False):
         """Do one cycle of the listening loop.
@@ -105,6 +105,7 @@ class ListenerClient(BaseClient):
                 self.session.get(
                     "https://0-edge-chat.facebook.com/active_ping",
                     params={
+                        "seq": self._seq,
                         "channel": "p_{}".format(self.user.id),
                         "clientid": self._clientid,
                         "partition": -2,
@@ -120,6 +121,7 @@ class ListenerClient(BaseClient):
             j = self.session.get(
                 "https://0-edge-chat.facebook.com/pull",
                 params={
+                    "seq": self._seq,
                     "msgs_recv": 0,
                     "sticky_token": self._sticky,
                     "sticky_pool": self._pool,
@@ -144,7 +146,7 @@ class ListenerClient(BaseClient):
                 raise e
         """
 
-        self.session.params["seq"] = j.get("seq", "0")
+        self._seq = j.get("seq", 0)
 
         try:
             self._parse_raw(j)
@@ -159,6 +161,7 @@ class ListenerClient(BaseClient):
         """
         self.is_not_listening.set()
         self._sticky, self._pool = (None, None)
+        self._seq = 0
 
     def _parse_raw(self, raw_data):
         log.debug("Data from listening: %s", raw_data)
@@ -229,5 +232,4 @@ class ListenerClient(BaseClient):
         Args:
             event (`Event`): The executed / sent event
         """
-        log.info("Event recieved: %s", event)
         pass  # Implemented in other classes

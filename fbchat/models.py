@@ -49,13 +49,13 @@ class Thread(object):
     #: Number of `Message`\s in the thread
     message_count = attr.ib(None, type=int)
     #: `User`\s and `Page`\s, mapped to their nicknames
-    nicknames = attr.ib(type="Dict[Union[User, Page], str]", factory=dict)
+    nicknames = attr.ib(factory=dict)  # type: Dict[Union[User, Page], str]
     #: The thread colour
     colour = attr.ib(None, type=str)
     #: The thread's default emoji
     emoji = attr.ib(None, type=str)
 
-    _events = attr.ib(type="List[Event]", factory=list)
+    _events = attr.ib(factory=list)  # type: List[Event]
 
     def __eq__(self, other):
         return isinstance(other, Thread) and self.id == other.id
@@ -95,7 +95,7 @@ class User(Thread):
     #: Whether the user and the client are friends
     is_friend = attr.ib(None, type=bool)
     #: The user's gender
-    gender = attr.ib(None)  # TODO: The type of this
+    gender = attr.ib(None, type=str)
     #: Between 0 and 1. How close the client is to the user
     affinity = attr.ib(None, type=float)
 
@@ -138,7 +138,7 @@ class Event(object):
     """Represents an event in a Facebook thread"""
 
     #: The unique identifier of the event
-    id = attr.ib(type=str)
+    id = attr.ib(None, type=str)
     #: The thread the event was sent to
     thread = attr.ib(None, type=Thread)
     #: The person who sent the event
@@ -180,7 +180,7 @@ class Message(Event):
     """Represents a message"""
 
     #: `User`\s, mapped to their `Reaction`
-    reactions = attr.ib(type="Dict[User, Message.Reaction]", factory=dict)
+    reactions = attr.ib(factory=dict)  # type: Dict[User, Message.Reaction]
 
     class Reaction(Enum):
         """Used to specify a message reaction"""
@@ -212,7 +212,7 @@ class Sticker(Message):
     #: The stickers dimensions
     dimensions = attr.ib(None, type=Dimension)
     #: The sticker's pack
-    pack = attr.ib(None, type="Sticker.Pack")
+    pack = attr.ib(None)  # type: Sticker.Pack
 
     @classmethod
     def from_pull(cls, delta, **kwargs):
@@ -271,7 +271,7 @@ class Emoji(Message):
     #: The actual emoji
     emoji = attr.ib(None, type=str)
     #: The size of the emoji
-    size = attr.ib(None, type="Emoji.Size")
+    size = attr.ib(None)  # type: Emoji.Size
 
     @classmethod
     def from_pull(cls, delta, **kwargs):
@@ -303,7 +303,7 @@ class Text(Message):
     #: The text-contents
     text = attr.ib(None, type=str)
     #: List of `Mention`\s, ordered by `.offset`
-    mentions = attr.ib(type="List[Text.Mention]", factory=list)
+    mentions = attr.ib(factory=list)  # type: List[Text.Mention]
 
     @classmethod
     def from_pull(cls, delta, **kwargs):
@@ -337,7 +337,7 @@ class FileMessage(Message):
     """Represents a message with files / attachments"""
 
     #: List of `File`\s sent in the message
-    files = attr.ib(type="List[File]", factory=list)
+    files = attr.ib(factory=list)  # type: List[File]
 
     @staticmethod
     def pull_data_get_file(attachment, mercury):

@@ -2,8 +2,12 @@
 
 from __future__ import unicode_literals
 
+import logging
+
 from .listen import ListenerClient
 from .models import Message, Sticker, AnimatedSticker, Emoji, Text, FileMessage
+
+log = logging.getLogger(__name__)
 
 
 class SenderClient(ListenerClient):
@@ -19,9 +23,8 @@ class SenderClient(ListenerClient):
     def send(self, thread, message):
         """Send the contents specified in a message object to a thread
 
-        If ``message.thread``, ``message.author`` or ``message.id`` is set,
-        they will be ignored (Which means it's safe to send a previously
-        recieved message)
+        If ``message.thread``, ``message.actor`` or ``message.id`` is set, they will be
+        ignored (Which means it's safe to send a previously recieved message)
 
         Args:
             thread (`Thread`): Thread to send the message to
@@ -32,9 +35,9 @@ class SenderClient(ListenerClient):
         """
 
     def on_event(self, event):
+        super(SenderClient, self).on_event(event)
         if isinstance(event, Message):
             self.on_message(event)
-        super(SenderClient, self).on_event(event)
 
     def on_message(self, message):
         """Called when someone sends a message
@@ -42,6 +45,10 @@ class SenderClient(ListenerClient):
         Args:
             message (`Message`): Message that was sent
         """
+        if isinstance(message, Text):
+            self.on_text(message.thread, message.actor, message.text, message.mentions)
+        elif isinstance(message, Emoji):
+            self.on_emoji(message.thread, message.actor, message.emoji, message.size)
 
     def upload(self, paths, names=None):
         """Upload a set of files to Facebook, to later send them in messages
@@ -95,36 +102,18 @@ class SenderClient(ListenerClient):
         Return:
             `Message`, denoting the sent message
         """
+        return self.send(thread, Text(text=text, mentions=mentions))
 
-    def on_text(self, thread, author, text, mentions):
+    def on_text(self, thread, actor, text, mentions):
         """Called when text is recieved. Shortcut of `on_message`
 
         Args:
             thread (`Thread`): Thread that the text was sent to
-            author (`Thread`): User that sent the text
+            actor (`Thread`): User that sent the text
             text: Text that was sent
             mentions (list): `Mention` objects
         """
-
-    def send_sticker(self, thread, sticker):
-        """Send a sticker to a thread. Shortcut of `send`
-
-        Args:
-            thread (`Thread`): Thread to send the sticker to
-            sticker (`Sticker`): Sticker to send
-
-        Return:
-            `Message`, denoting the sent message
-        """
-
-    def on_sticker(self, thread, author, sticker):
-        """Called when a sticker is recieved. Shortcut of `on_message`
-
-        Args:
-            thread (`Thread`): Thread that the sticker was sent to
-            author (`Thread`): User that sent the sticker
-            sticker (`Sticker`): Sticker that was sent
-        """
+        log.info("Recieved %s, %s in %s, sent by %s", text, mentions, thread, actor)
 
     def send_emoji(self, thread, emoji=None, size=Emoji.Size.SMALL):
         """Send a emoji to a thread. Shortcut of `send`
@@ -139,16 +128,18 @@ class SenderClient(ListenerClient):
         Return:
             `Message`, denoting the sent message
         """
+        return self.send(thread, Emoji(emoji=emoji, size=size))
 
-    def on_emoji(self, thread, author, emoji, size):
+    def on_emoji(self, thread, actor, emoji, size):
         """Called when an emoji is recieved. Shortcut of `on_message`
 
         Args:
             thread (`Thread`): Thread that the emoji was sent to
-            author (`Thread`): User that sent the emoji
+            actor (`Thread`): User that sent the emoji
             emoji: Emoji that was sent
             size (`Size`): Size of the sent emoji
         """
+        log.info("Recieved %s, %s in %s, sent by %s", emoji, size, thread, actor)
 
     def send_file(self, thread, path, name=None):
         """Send a file to a thread. Shortcut combination of `send` and `upload`
@@ -161,14 +152,6 @@ class SenderClient(ListenerClient):
         Return:
             `Message`, denoting the sent message
         """
-
-    def on_file(self, thread, author, file):
-        """Called when a file is recieved. Shortcut of `on_message`
-
-        Args:
-            thread (`Thread`): Thread that the file was sent to
-            author (`Thread`): User that sent the file
-            file (`Attachment`): Recieved file
-        """
+        return self.send(thread, self.upload(path, name))
 
     # More shortcuts could be added
