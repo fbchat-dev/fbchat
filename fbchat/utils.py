@@ -14,10 +14,10 @@ import requests
 from .models import *
 
 try:
-    from urllib.parse import urlencode
+    from urllib.parse import urlencode, parse_qs, urlparse
     basestring = (str, bytes)
 except ImportError:
-    from urllib import urlencode
+    from urllib import urlencode, parse_qs, urlparse
     basestring = basestring
 
 # Python 2's `input` executes the input, whereas `raw_input` just returns the input
@@ -297,3 +297,10 @@ def get_files_from_paths(filenames):
     yield files
     for fn, fp, ft in files:
         fp.close()
+
+def get_url_parameters(url, *args):
+    params = parse_qs(urlparse(url).query)
+    return [params[arg][0] for arg in args if params.get(arg)]
+
+def get_url_parameter(url, param):
+    return get_url_parameters(url, param)[0]
