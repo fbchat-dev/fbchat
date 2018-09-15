@@ -17,7 +17,8 @@ try:
     from urllib.parse import urlencode, parse_qs, urlparse
     basestring = (str, bytes)
 except ImportError:
-    from urllib import urlencode, parse_qs, urlparse
+    from urllib import urlencode
+    from urlparse import parse_qs, urlparse
     basestring = basestring
 
 # Python 2's `input` executes the input, whereas `raw_input` just returns the input
