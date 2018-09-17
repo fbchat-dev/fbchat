@@ -102,7 +102,7 @@ class GetterClient(FetcherClient):
             A generator yielding `Event`\s
         """
 
-'''
+    '''
     def get_thread_images(self, thread, limit=None):
         """Retrieve sent images in a thread
 
@@ -113,7 +113,7 @@ class GetterClient(FetcherClient):
         Return:
             A generator yielding `Image`\s
         """
-'''
+    '''
 
     def get_thread_files(self, thread, limit=None):
         """Retrieve sent files in a thread
