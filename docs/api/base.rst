@@ -1,4 +1,0 @@
-Base class
-==========
-
-.. autoclass:: BaseClient()

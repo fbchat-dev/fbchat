@@ -1,10 +1,10 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import unicode_literals
-from .base import BaseClient
+from .core import CoreClient
 
 
-class FetcherClient(BaseClient):
+class FetcherClient(CoreClient):
     """Enables retrieving information about threads and messages"""
 
     def fetch_messages(self, thread, limit=None, message=None, before=None, after=None):

@@ -9,8 +9,8 @@ import requests
 
 from random import randint
 
-from .base import BaseClient
-from .models import Event, Message, Action
+from .cache import CacherClient
+from ..models import Event, Message, Action
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class StopListen(BaseException):
 
 
 @attr.s(slots=True)
-class ListenerClient(BaseClient):
+class ListenerClient(CacherClient):
     """Enables basic listening"""
 
     _clientid = attr.ib(type=int, factory=lambda: "{:x}".format(randint(0, 2 ** 31)))

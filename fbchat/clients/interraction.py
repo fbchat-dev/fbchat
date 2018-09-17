@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from .listen import ListenerClient
-from .models import Action
+from ..models import Action
 
 
 class ThreadInterracterClient(ListenerClient):

@@ -14,8 +14,7 @@ from __future__ import unicode_literals
 import logging
 
 from .models import *
-
-from .client import *
+from .clients import *
 
 # from .async import AsyncClient
 
@@ -39,7 +38,7 @@ You can downgrade to a specific version using eg. `pip install fbchat=1.3.9`.\
 """ % __version__)
 
 
-__all__ = [
+__all__ = (
     #'Event',
     #'Action',
     #'Message',
@@ -60,6 +59,6 @@ __all__ = [
     #'AsyncClient',
 
     'Client',
-]
+)
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())

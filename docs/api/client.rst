@@ -1,4 +1,0 @@
-Main Class
-==========
-
-.. autoclass:: FacebookClient()

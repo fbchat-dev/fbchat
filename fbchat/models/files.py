@@ -1,3 +1,17 @@
+# -*- coding: UTF-8 -*-
+
+from __future__ import unicode_literals
+
+import attr
+
+from datetime import timedelta
+
+from .core import Dimension
+
+
+__all__ = ("File", "Audio", "Image", "AnimatedImage", "Video")
+
+
 @attr.s(slots=True)
 class File(object):
     """Represents a file / an attachment"""

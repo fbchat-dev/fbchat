@@ -1,3 +1,13 @@
+# -*- coding: UTF-8 -*-
+
+from __future__ import unicode_literals
+
+import attr
+
+from datetime import datetime
+from typing import Dict, List, Set, Union
+
+
 @attr.s(slots=True)
 class Thread(object):
     """Represents a Facebook chat-thread"""

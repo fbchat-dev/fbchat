@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup as bs
 from six.moves.urllib_parse import urlparse, parse_qs
 from six.moves import input
 
-from .models import User, FacebookError
+from ..models import User, FacebookError
 
 log = logging.getLogger(__name__)
 
@@ -129,8 +129,8 @@ class FacebookSession(Session):
 
 
 @attr.s(slots=True)
-class BaseClient(object):
-    """Base Facebook client"""
+class CoreClient(object):
+    """Core Facebook client"""
 
     #: The client's `requests` session
     session = attr.ib(type=FacebookSession)

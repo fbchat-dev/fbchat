@@ -1,3 +1,21 @@
+# -*- coding: UTF-8 -*-
+
+from __future__ import unicode_literals
+
+import json
+import attr
+
+from typing import Dict, List
+from enum import Enum
+
+from .threads import Thread, User, Group
+from .core import Dimension, Event
+from .files import File, Audio, Image, AnimatedImage, Video
+
+
+__all__ = ("Message", "Sticker", "AnimatedSticker", "Emoji", "Text", "FileMessage")
+
+
 @attr.s(slots=True)
 class Message(Event):
     """Represents a message"""

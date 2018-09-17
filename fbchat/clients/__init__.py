@@ -2,28 +2,28 @@
 
 from __future__ import unicode_literals
 
-from .base import BaseClient
-from .fetch import FetcherClient
-from .cache import CacherClient
-from .listen import ListenerClient
-from .get import GetterClient
-from .search import SearcherClient
-from .send import SenderClient
-from .control import GroupControllerClient
-from .interraction import ThreadInterracterClient
-from .config import ThreadConfigurerClient
+from .core import *
+from .fetch import *
+from .cache import *
+from .listen import *
+from .get import *
+from .search import *
+from .send import *
+from .control import *
+from .interraction import *
+from .config import *
 
 
 class FacebookClient(
-        ThreadConfigurerClient,
-        ThreadInterracterClient,
-        GroupControllerClient,
-        SenderClient,
-        SearcherClient,
-        GetterClient,
-        ListenerClient,
-        CacherClient,
-        FetcherClient,
-        BaseClient
-    ):
+    ThreadConfigurerClient,
+    ThreadInterracterClient,
+    GroupControllerClient,
+    SenderClient,
+    SearcherClient,
+    GetterClient,
+    ListenerClient,
+    CacherClient,
+    FetcherClient,
+    CoreClient,
+):
     pass

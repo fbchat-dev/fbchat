@@ -2,11 +2,10 @@
 
 from __future__ import unicode_literals
 
-import json
 import logging
 
 from .listen import ListenerClient
-from .models import Message, Sticker, AnimatedSticker, Emoji, Text, FileMessage
+from ..models import Message, Sticker, AnimatedSticker, Emoji, Text, FileMessage
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +37,6 @@ class SenderClient(ListenerClient):
         data.update(thread.to_send())
 
         j = self.session.post("/messaging/send/", data).json()
-        print(json.dumps(j, indent=4))
 
         action, = j["payload"]["actions"]
         return type(message).from_send(action, message, thread=thread, actor=self.user)
@@ -92,7 +90,6 @@ class SenderClient(ListenerClient):
 
     def parse_delta_data(self, delta, delta_type, delta_class):
         if delta_class == "NewMessage":
-            print(json.dumps(delta, indent=4))
             return self._get_message_type(delta).from_pull(delta)
 
         return super(SenderClient, self).parse_delta_data(

@@ -1,11 +1,11 @@
 API
 ===
 
+.. autoclass:: FacebookClient()
+
 .. toctree::
 
-   client
-
-   base
+   core
    cache
    config
    control

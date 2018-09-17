@@ -2,8 +2,8 @@
 
 from __future__ import unicode_literals
 
-from .base import BaseClient
-from .models import Thread, User, Group, Page, Text
+from .core import CoreClient
+from ..models import Thread, User, Group, Page, Text
 
 
 def add_events_to_cache(cache, events):
@@ -30,7 +30,7 @@ def add_events_to_cache(cache, events):
     return cache[:min1] + prepend + [events] + append + cache[max1 + 1:]
 
 
-class CacherClient(BaseClient):
+class CacherClient(CoreClient):
     """Enables caching information about threads"""
 
     def __init__(self, *args, **kwargs):
