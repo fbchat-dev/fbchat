@@ -10,6 +10,9 @@ from ..models import Message, Sticker, AnimatedSticker, Emoji, Text, FileMessage
 log = logging.getLogger(__name__)
 
 
+__all__ = ("SenderClient",)
+
+
 class SenderClient(ListenerClient):
     """Enables sending various messages to threads
 

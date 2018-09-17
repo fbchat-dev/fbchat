@@ -6,6 +6,9 @@ from .core import CoreClient
 from ..models import Thread, User, Group, Page, Text
 
 
+__all__ = ("CacherClient",)
+
+
 def add_events_to_cache(cache, events):
     min1, min2 = (0, 0)
     prepend = []

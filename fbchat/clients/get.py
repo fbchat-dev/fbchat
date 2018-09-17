@@ -4,6 +4,9 @@ from __future__ import unicode_literals
 from .fetch import FetcherClient
 
 
+__all__ = ("GetterClient",)
+
+
 class GetterClient(FetcherClient):
     """Enables retrieving information about threads and messages"""
 

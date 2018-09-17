@@ -6,6 +6,9 @@ from .listen import ListenerClient
 from ..models import Action
 
 
+__all__ = ("ThreadInterracterClient",)
+
+
 class ThreadInterracterClient(ListenerClient):
     """Enables the client to interract with threads and listen on those events"""
 

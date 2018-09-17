@@ -17,6 +17,9 @@ from ..models import User, FacebookError
 log = logging.getLogger(__name__)
 
 
+__all__ = ("FacebookResponse", "FacebookSession", "CoreClient")
+
+
 BASE_URL = "https://www.facebook.com"
 MOBILE_URL = "https://m.facebook.com"
 LOGIN_URL = "https://m.facebook.com/login.php?login_attempt=1"

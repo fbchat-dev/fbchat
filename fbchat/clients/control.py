@@ -5,6 +5,9 @@ from __future__ import unicode_literals
 from .listen import ListenerClient
 
 
+__all__ = ("GroupControllerClient",)
+
+
 class GroupControllerClient(ListenerClient):
     """Enables the client to control groups and listen to those events"""
 

@@ -5,6 +5,9 @@ from __future__ import unicode_literals
 from .cache import CacherClient
 
 
+__all__ = ("ThreadConfigurerClient",)
+
+
 class ThreadConfigurerClient(CacherClient):
     """Enables the client to configure threads"""
 

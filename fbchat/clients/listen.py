@@ -15,6 +15,9 @@ from ..models import Event, Message, Action
 log = logging.getLogger(__name__)
 
 
+__all__ = ("StopListen", "ListenerClient",)
+
+
 class StopListen(BaseException):
     pass
 

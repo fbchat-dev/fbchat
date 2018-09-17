@@ -4,6 +4,9 @@ from __future__ import unicode_literals
 from .cache import CacherClient
 
 
+__all__ = ("SearcherClient",)
+
+
 class SearcherClient(CacherClient):
     """Enables fetching information about threads"""
 

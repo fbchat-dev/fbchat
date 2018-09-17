@@ -6,6 +6,7 @@ import attr
 
 from datetime import datetime
 from typing import Dict, List, Set, Union
+from . import core
 
 
 @attr.s(slots=True)
@@ -29,7 +30,7 @@ class Thread(object):
     #: The thread's default emoji
     emoji = attr.ib(None, type=str)
 
-    _events = attr.ib(factory=list)  # type: List[Event]
+    _events = attr.ib(factory=list)  # type: List[core.Event]
 
     def __eq__(self, other):
         return isinstance(other, Thread) and self.id == other.id
