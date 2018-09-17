@@ -5,6 +5,9 @@ from __future__ import unicode_literals
 import json
 import attr
 
+from random import randint
+from time import time
+
 from datetime import datetime, timedelta
 from typing import Dict, Set, List, Union
 from enum import Enum
@@ -83,6 +86,9 @@ class Thread(object):
         BRILLIANT_ROSE = "#ff5ca1"
         BILOBA_FLOWER = "#a695c7"
 
+    def to_send(self):
+        return {"other_user_fbid": self.id}
+
 
 @attr.s(slots=True)
 class User(Thread):
@@ -112,6 +118,9 @@ class Group(Thread):
     approval_mode = attr.ib(None, type=bool)
     #: Set containing `User`\s requesting to join the group
     approval_requests = attr.ib(type=Set[User], factory=set)
+
+    def to_send(self):
+        return {"thread_fbid": self.id}
 
 
 @attr.s(slots=True)
@@ -155,6 +164,10 @@ class Event(object):
         return not self.__eq__(other)
 
     @staticmethod
+    def time_from_milliseconds(timestamp):
+        return datetime.fromtimestamp(int(timestamp) / 1000)
+
+    @staticmethod
     def pull_data_get_thread(delta, time):
         thread_key = delta["messageMetadata"]["threadKey"]
         if "threadFbId" in thread_key:
@@ -165,12 +178,34 @@ class Event(object):
     @classmethod
     def from_pull(cls, delta, **kwargs):
         metadata = delta["messageMetadata"]
-        time = datetime.fromtimestamp(int(metadata["timestamp"]) / 1000)
         return cls(
             id=metadata["messageId"],
             thread=cls.pull_data_get_thread(delta, time),
             actor=User(metadata["actorFbId"]),
-            time=time,
+            time=cls.time_from_milliseconds(metadata["timestamp"]),
+            **kwargs
+        )
+
+    def to_send(self, **kwargs):
+        millisecond_timestamp = int(time() * 1000)
+        message_id = (millisecond_timestamp << 22) + randint(0, 2 ** 22 - 1)
+
+        return dict(
+            client="mercury",
+            timestamp=millisecond_timestamp,
+            source="source:chat:web",
+            offline_threading_id=message_id,
+            message_id=message_id,
+            ephemeral_ttl_mode=0,
+            **kwargs
+        )
+
+    @classmethod
+    def from_send(cls, action, old, **kwargs):
+        # `thread` and `actor` should be set by the caller in `kwargs`
+        return cls(
+            id=action["message_id"],
+            time=cls.time_from_milliseconds(action["timestamp"]),
             **kwargs
         )
 
@@ -193,6 +228,11 @@ class Message(Event):
         YES = "👍"
         NO = "👎"
 
+    def to_send(self, **kwargs):
+        return super(Message, self).to_send(
+            action_type="ma-type:user-generated-message", **kwargs
+        )
+
 
 @attr.s(slots=True)
 class Action(Event):
@@ -214,18 +254,31 @@ class Sticker(Message):
     #: The sticker's pack
     pack = attr.ib(None)  # type: Sticker.Pack
 
+    @staticmethod
+    def graphql_data(data, **kwargs):
+        return dict(
+            sticker_id=data["id"],
+            name=data["label"],
+            url=data["url"],
+            dimensions=Dimension.from_dict(data),
+            pack=Sticker.Pack(data["pack"]["id"]),
+            **kwargs
+        )
+
     @classmethod
     def from_pull(cls, delta, **kwargs):
         attachment, = [x["mercury"]["sticker_attachment"] for x in delta["attachments"]]
-        return super(Sticker, cls).from_pull(
-            delta,
-            sticker_id=attachment["id"],
-            name=attachment["label"],
-            url=attachment["url"],
-            dimensions=Dimension.from_dict(attachment),
-            pack=Sticker.Pack(attachment["pack"]["id"]),
-            **kwargs
-        )
+        data = cls.graphql_data(attachment, **kwargs)
+        return super(Sticker, cls).from_pull(delta, **data)
+
+    def to_send(self, **kwargs):
+        return super(Sticker, self).to_send(sticker_id=self.sticker_id, **kwargs)
+
+    @classmethod
+    def from_send(cls, action, old, **kwargs):
+        payload, = action["graphql_payload"]
+        data = cls.graphql_data(payload["node"], **kwargs)
+        return super(Sticker, cls).from_send(action, old, **data)
 
     @attr.s(slots=True, repr_ns="Sticker")
     class Pack(object):
@@ -249,17 +302,15 @@ class AnimatedSticker(Sticker):
     #: The frame rate the spritemap is intended to be played in
     frame_rate = attr.ib(None, type=int)
 
-    @classmethod
-    def from_pull(cls, delta, **kwargs):
-        attachment, = [x["mercury"]["sticker_attachment"] for x in delta["attachments"]]
-
-        return super(AnimatedSticker, cls).from_pull(
-            delta,
-            sprite_image=attachment["sprite_image"]["uri"],
-            large_sprite_image=attachment["sprite_image_2x"].get("uri"),
-            frames_per_row=int(attachment["frames_per_row"]),
-            frames_per_col=int(attachment["frames_per_column"]),
-            frame_rate=int(attachment["frame_rate"]),
+    @staticmethod
+    def graphql_data(data, **kwargs):
+        return super(AnimatedSticker, cls).graphql_data(
+            data,
+            sprite_image=data["sprite_image"]["uri"],
+            large_sprite_image=data["sprite_image_2x"].get("uri"),
+            frames_per_row=int(data["frames_per_row"]),
+            frames_per_col=int(data["frames_per_column"]),
+            frame_rate=int(data["frame_rate"]),
             **kwargs
         )
 
@@ -280,6 +331,19 @@ class Emoji(Message):
             emoji=delta["body"],
             size=Emoji.Size.from_pull(delta["messageMetadata"]["tags"]),
             **kwargs
+        )
+
+    def to_send(self, **kwargs):
+        data = super(Emoji, self).to_send(body=self.emoji, **kwargs)
+
+        data["tags[0]"] = "hot_emoji_size:{}".format(self.size.value)
+
+        return data
+
+    @classmethod
+    def from_send(cls, action, old, **kwargs):
+        return super(Emoji, cls).from_send(
+            action, old, emoji=old.emoji, size=old.size, **kwargs
         )
 
     class Size(Enum):
@@ -306,15 +370,37 @@ class Text(Message):
     mentions = attr.ib(factory=list)  # type: List[Text.Mention]
 
     @classmethod
+    def mentions_from_prng(cls, data):
+        if data and data.get("prng"):
+            prng = json.loads(data["prng"])
+            return sorted(map(cls.Mention.from_prng, prng), key=lambda x: x.offset)
+        return list()
+
+    @classmethod
     def from_pull(cls, delta, **kwargs):
-        message = super(Text, cls).from_pull(delta, text=delta["body"], **kwargs)
+        return super(Text, cls).from_pull(
+            delta,
+            text=delta["body"],
+            mentions=cls.mentions_from_prng(delta.get("data")),
+            **kwargs
+        )
 
-        if delta.get("data") and delta["data"].get("prng"):
-            mention_data = json.loads(delta["data"]["prng"])
-            message.mentions = [Text.Mention.from_pull(x) for x in mention_data]
-            message.mentions.sort(key="offset")
+    def to_send(self, **kwargs):
+        data = super(Text, self).to_send(body=self.text, **kwargs)
 
-        return message
+        for i, mention in enumerate(self.mentions):
+            data["profile_xmd[{}][id]".format(i)] = mention.thread.id
+            data["profile_xmd[{}][offset]".format(i)] = mention.offset
+            data["profile_xmd[{}][length]".format(i)] = mention.length
+            data["profile_xmd[{}][type]".format(i)] = "p"
+
+        return data
+
+    @classmethod
+    def from_send(cls, action, old, **kwargs):
+        return super(Text, cls).from_send(
+            action, old, text=old.text, mentions=old.mentions, **kwargs
+        )
 
     @attr.s(slots=True, repr_ns="Text")
     class Mention(object):
@@ -328,8 +414,8 @@ class Text(Message):
         length = attr.ib(type=int, converter=int)
 
         @classmethod
-        def from_pull(cls, data, **kwargs):
-            return cls(Thread(x["i"]), offset=x["o"], length=x["l"], **kwargs)
+        def from_prng(cls, data, **kwargs):
+            return cls(Thread(data["i"]), offset=data["o"], length=data["l"], **kwargs)
 
 
 @attr.s(slots=True)
@@ -350,6 +436,17 @@ class FileMessage(Message):
             "MessageFile": File,
         }[blob["__typename"]].from_pull(attachment, blob)
 
+    @staticmethod
+    def mimetype_to_key(mimetype):
+        if not mimetype:
+            return "file_id"
+        if mimetype == "image/gif":
+            return "gif_id"
+        x = mimetype.split("/")
+        if x[0] in ["video", "image", "audio"]:
+            return "{}_id".format(x[0])
+        return "file_id"
+
     @classmethod
     def from_pull(cls, delta, **kwargs):
         message = super(FileMessage, cls).from_pull(delta, **kwargs)
@@ -362,6 +459,19 @@ class FileMessage(Message):
                 return None
 
         return message
+
+    def to_send(self, **kwargs):
+        data = super(FileMessage, self).to_send(has_attachment=True, **kwargs)
+
+        for i, file in enumerate(self.files):
+            data["{}s[{}]".format(self.mimetype_to_key(file.mimetype), i)] = file.id
+
+        return data
+
+    @classmethod
+    def from_send(cls, action, old, **kwargs):
+        # TODO: Parse `action["graphql_payload"]` to retrieve updated file info
+        return super(FileMessage, cls).from_send(action, old, files=old.files, **kwargs)
 
 
 @attr.s(slots=True)

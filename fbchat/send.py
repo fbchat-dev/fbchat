@@ -33,6 +33,13 @@ class SenderClient(ListenerClient):
         Return:
             New `Message`, denoting the sent message
         """
+        data = message.to_send()
+        data.update(thread.to_send())
+
+        j = self.session.post("/messaging/send/", data).json()
+
+        action, = j["payload"]["actions"]
+        return type(message).from_send(action, message, thread=thread, actor=self.user)
 
     def on_event(self, event):
         super(SenderClient, self).on_event(event)
@@ -113,7 +120,7 @@ class SenderClient(ListenerClient):
             text: Text that was sent
             mentions (list): `Mention` objects
         """
-        log.info("Recieved %s, %s in %s, sent by %s", text, mentions, thread, actor)
+        log.info("Recieved %r, %s in %s, sent by %s", text, mentions, thread, actor)
 
     def send_emoji(self, thread, emoji=None, size=Emoji.Size.SMALL):
         """Send a emoji to a thread. Shortcut of `send`
@@ -139,7 +146,7 @@ class SenderClient(ListenerClient):
             emoji: Emoji that was sent
             size (`Size`): Size of the sent emoji
         """
-        log.info("Recieved %s, %s in %s, sent by %s", emoji, size, thread, actor)
+        log.info("Recieved %r, %s in %s, sent by %s", emoji, size, thread, actor)
 
     def send_file(self, thread, path, name=None):
         """Send a file to a thread. Shortcut combination of `send` and `upload`
