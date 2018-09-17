@@ -1,16 +1,16 @@
 # -*- coding: UTF-8 -*-
 
-# Imports Client, Thread, Group, Page, User and Message
-from fbchat import *
+# Import the main class
+from fbchat import Client
 
 # Login, using your email and credentials
-client = Client('<email>', '<password>')
+client = Client.login("<email>", "<password>")
 
 # Display data about you
-print(client, vars(client))
+print(client.user)
 
 # Send a message to yourself
-message = client.send_text(client, 'Hi me!')
+message = client.send_text(client.user, "Hi me!")
 
 # Display data about the sent message
-print(message, vars(message))
+print(message)

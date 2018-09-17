@@ -2,7 +2,7 @@
 
 from fbchat import *
 
-c = Client('<email>', '<password>')
+c = Client("<email>", "<password>")
 
 # Display the first 10 threads in your chat window, newly updated first
 threads = c.get_threads(limit=10)
@@ -32,6 +32,7 @@ if len(threads) > 0:
 
     # Same as above, alternate method using iterables
     from itertools import islice
+
     for m in islice(c.get_messages(t), 10):
         print(m)
 
@@ -48,5 +49,5 @@ print([f.name for f in c.get_friends()])
 thread = c.get_threads_from_ids(1234567890)
 
 # Otherwise we could try a search
-possible_threads = c.search_for_thread('<thread name>', limit=10)
+possible_threads = c.search_for_thread("<thread name>", limit=10)
 print(possible_threads)

@@ -2,7 +2,7 @@
 
 from fbchat import *
 
-c = Client('<email>', '<password>')
+c = Client("<email>", "<password>")
 
 # This is a possible way we *could* build the library. Not saying it's a good
 # idea, but I'd like your opinions
@@ -10,16 +10,16 @@ c = Client('<email>', '<password>')
 u = c.users[0]
 
 # Updates the users nickname, also on Facebook's side
-u.nickname = 'New nickname'
+u.nickname = "New nickname"
 
 # Should throw an error, since we can't change a persons name
-u.name = 'New name'
+u.name = "New name"
 
 
 g = c.groups[0]
 
 # Updates the title
-g.title = 'New title'
+g.title = "New title"
 
 # Adds a user to the group. If they're already in the group, nothing would
 # happen? Or should an error be thrown?

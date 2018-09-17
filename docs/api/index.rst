@@ -1,7 +1,7 @@
 API
 ===
 
-.. autoclass:: FacebookClient()
+.. autoclass:: Client()
 
 .. toctree::
 

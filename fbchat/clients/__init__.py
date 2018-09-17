@@ -14,7 +14,7 @@ from .interraction import *
 from .config import *
 
 
-class FacebookClient(
+class Client(
     ThreadConfigurerClient,
     ThreadInterracterClient,
     GroupControllerClient,
