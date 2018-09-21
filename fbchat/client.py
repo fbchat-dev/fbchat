@@ -479,13 +479,13 @@ class Client(object):
     """
 
     def _forcedFetch(self, thread_id, mid):
-    j = self.graphql_request(GraphQL(doc_id='1768656253222505', params={
-        'thread_and_message_id': {
-            'thread_id': thread_id,
-            'message_id': mid
-        }
-    }))
-    return j
+        j = self.graphql_request(GraphQL(doc_id='1768656253222505', params={
+            'thread_and_message_id': {
+                'thread_id': thread_id,
+                'message_id': mid
+            }
+        }))
+        return j
 
     def fetchThreads(self, thread_location, after=None, limit=None):
         """
