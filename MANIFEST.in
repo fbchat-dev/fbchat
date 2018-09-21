@@ -1,4 +1,3 @@
-include LICENSE.txt
-include MANIFEST.in
+include LICENSE
+include CONTRIBUTING.rst
 include README.rst
-include setup.py

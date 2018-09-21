@@ -5,8 +5,12 @@ import re
 import json
 from time import time
 from random import random
+from contextlib import contextmanager
+from mimetypes import guess_type
+from os.path import basename
 import warnings
 import logging
+import requests
 from .models import *
 
 try:
@@ -48,16 +52,6 @@ LIKES = {
     's': EmojiSize.SMALL
 }
 
-MessageReactionFix = {
-    '😍': ('0001f60d', '%F0%9F%98%8D'),
-    '😆': ('0001f606', '%F0%9F%98%86'),
-    '😮': ('0001f62e', '%F0%9F%98%AE'),
-    '😢': ('0001f622', '%F0%9F%98%A2'),
-    '😠': ('0001f620', '%F0%9F%98%A0'),
-    '👍': ('0001f44d', '%F0%9F%91%8D'),
-    '👎': ('0001f44e', '%F0%9F%91%8E')
-}
-
 
 GENDERS = {
     # For standard requests
@@ -97,6 +91,9 @@ class ReqUrl(object):
     UNREAD_THREADS = "https://www.facebook.com/ajax/mercury/unread_threads.php"
     UNSEEN_THREADS = "https://www.facebook.com/mercury/unseen_thread_ids/"
     THREADS = "https://www.facebook.com/ajax/mercury/threadlist_info.php"
+    MOVE_THREAD = "https://www.facebook.com/ajax/mercury/move_thread.php"
+    ARCHIVED_STATUS = "https://www.facebook.com/ajax/mercury/change_archived_status.php?dpr=1"
+    PINNED_STATUS = "https://www.facebook.com/ajax/mercury/change_pinned_status.php?dpr=1"
     MESSAGES = "https://www.facebook.com/ajax/mercury/thread_info.php"
     READ_STATUS = "https://www.facebook.com/ajax/mercury/change_read_status.php"
     DELIVERED = "https://www.facebook.com/ajax/mercury/delivery_receipts.php"
@@ -116,12 +113,33 @@ class ReqUrl(object):
     THREAD_COLOR = "https://www.facebook.com/messaging/save_thread_color/?source=thread_settings&dpr=1"
     THREAD_NICKNAME = "https://www.facebook.com/messaging/save_thread_nickname/?source=thread_settings&dpr=1"
     THREAD_EMOJI = "https://www.facebook.com/messaging/save_thread_emoji/?source=thread_settings&dpr=1"
+    THREAD_IMAGE = "https://www.facebook.com/messaging/set_thread_image/?dpr=1"
+    THREAD_NAME = "https://www.facebook.com/messaging/set_thread_name/?dpr=1"
     MESSAGE_REACTION = "https://www.facebook.com/webgraphql/mutation"
     TYPING = "https://www.facebook.com/ajax/messaging/typ.php"
     GRAPHQL = "https://www.facebook.com/api/graphqlbatch/"
     ATTACHMENT_PHOTO = "https://www.facebook.com/mercury/attachments/photo/"
-    EVENT_REMINDER = "https://www.facebook.com/ajax/eventreminder/create"
+    PLAN_CREATE = "https://www.facebook.com/ajax/eventreminder/create"
+    PLAN_INFO = "https://www.facebook.com/ajax/eventreminder"
+    PLAN_CHANGE = "https://www.facebook.com/ajax/eventreminder/submit"
+    PLAN_PARTICIPATION = "https://www.facebook.com/ajax/eventreminder/rsvp"
     MODERN_SETTINGS_MENU = "https://www.facebook.com/bluebar/modern_settings_menu/"
+    REMOVE_FRIEND = "https://m.facebook.com/a/removefriend.php"
+    BLOCK_USER = "https://www.facebook.com/messaging/block_messages/?dpr=1"
+    UNBLOCK_USER = "https://www.facebook.com/messaging/unblock_messages/?dpr=1"
+    SAVE_ADMINS = "https://www.facebook.com/messaging/save_admins/?dpr=1"
+    APPROVAL_MODE = "https://www.facebook.com/messaging/set_approval_mode/?dpr=1"
+    CREATE_GROUP = "https://m.facebook.com/messages/send/?icm=1"
+    DELETE_THREAD = "https://www.facebook.com/ajax/mercury/delete_thread.php?dpr=1"
+    DELETE_MESSAGES = "https://www.facebook.com/ajax/mercury/delete_messages.php?dpr=1"
+    MUTE_THREAD = "https://www.facebook.com/ajax/mercury/change_mute_thread.php?dpr=1"
+    MUTE_REACTIONS = "https://www.facebook.com/ajax/mercury/change_reactions_mute_thread/?dpr=1"
+    MUTE_MENTIONS = "https://www.facebook.com/ajax/mercury/change_mentions_mute_thread/?dpr=1"
+    CREATE_POLL = "https://www.facebook.com/messaging/group_polling/create_poll/?dpr=1"
+    UPDATE_VOTE = "https://www.facebook.com/messaging/group_polling/update_vote/?dpr=1"
+    GET_POLL_OPTIONS = "https://www.facebook.com/ajax/mercury/get_poll_options"
+    SEARCH_MESSAGES = "https://www.facebook.com/ajax/mercury/search_snippets.php?dpr=1"
+    MARK_SPAM = "https://www.facebook.com/ajax/mercury/mark_spam.php?dpr=1"
 
     pull_channel = 0
 
@@ -143,7 +161,7 @@ def strip_to_json(text):
     try:
         return text[text.index('{'):]
     except ValueError:
-        raise FBchatException('No JSON object found: {}, {}'.format(repr(text), text.index('{')))
+        raise FBchatException('No JSON object found: {!r}'.format(text))
 
 def get_decoded_r(r):
     return get_decoded(r._content)
@@ -210,8 +228,9 @@ def check_request(r, as_json=True):
         try:
             j = json.loads(content)
         except ValueError:
-            raise FBchatFacebookError('Error while parsing JSON: {}'.format(repr(content)))
+            raise FBchatFacebookError('Error while parsing JSON: {!r}'.format(content))
         check_json(j)
+        log.debug(j)
         return j
     else:
         return content
@@ -234,3 +253,47 @@ def get_emojisize_from_tags(tags):
         except (KeyError, IndexError):
             log.exception('Could not determine emoji size from {} - {}'.format(tags, tmp))
     return None
+
+def require_list(list_):
+    if isinstance(list_, list):
+        return set(list_)
+    else:
+        return set([list_])
+
+def mimetype_to_key(mimetype):
+    if not mimetype:
+        return "file_id"
+    if mimetype == "image/gif":
+        return "gif_id"
+    x = mimetype.split("/")
+    if x[0] in ["video", "image", "audio"]:
+        return "%s_id" % x[0]
+    return "file_id"
+
+
+def get_files_from_urls(file_urls):
+    files = []
+    for file_url in file_urls:
+        r = requests.get(file_url)
+        # We could possibly use r.headers.get('Content-Disposition'), see
+        # https://stackoverflow.com/a/37060758
+        files.append((
+            basename(file_url),
+            r.content,
+            r.headers.get('Content-Type') or guess_type(file_url)[0],
+        ))
+    return files
+
+
+@contextmanager
+def get_files_from_paths(filenames):
+    files = []
+    for filename in filenames:
+        files.append((
+            basename(filename),
+            open(filename, 'rb'),
+            guess_type(filename)[0],
+        ))
+    yield files
+    for fn, fp, ft in files:
+        fp.close()

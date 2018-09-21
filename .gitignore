@@ -8,9 +8,11 @@
 # Packages
 *.egg
 *.egg-info
+*.dist-info
 dist
 build
 eggs
+.eggs
 parts
 bin
 var
@@ -29,6 +31,7 @@ my_tests.py
 my_test_data.json
 my_data.json
 tests.data
+.pytest_cache
 
 # Virtual environment
 venv/

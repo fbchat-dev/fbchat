@@ -8,8 +8,8 @@ client = Client('<email>', '<password>')
 # Fetches a list of all users you're currently chatting with, as `User` objects
 users = client.fetchAllUsers()
 
-print("users' IDs: {}".format(user.uid for user in users))
-print("users' names: {}".format(user.name for user in users))
+print("users' IDs: {}".format([user.uid for user in users]))
+print("users' names: {}".format([user.name for user in users]))
 
 
 # If we have a user id, we can use `fetchUserInfo` to fetch a `User` object
@@ -18,7 +18,7 @@ user = client.fetchUserInfo('<user id>')['<user id>']
 users = client.fetchUserInfo('<1st user id>', '<2nd user id>', '<3rd user id>')
 
 print("user's name: {}".format(user.name))
-print("users' names: {}".format(users[k].name for k in users))
+print("users' names: {}".format([users[k].name for k in users]))
 
 
 # `searchForUsers` searches for the user and gives us a list of the results,

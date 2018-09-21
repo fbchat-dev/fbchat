@@ -37,7 +37,9 @@ class Thread(object):
     last_message_timestamp = None
     #: Number of messages in the thread
     message_count = None
-    def __init__(self, _type, uid, photo=None, name=None, last_message_timestamp=None, message_count=None):
+    #: Set :class:`Plan`
+    plan = None
+    def __init__(self, _type, uid, photo=None, name=None, last_message_timestamp=None, message_count=None, plan=None):
         """Represents a Facebook thread"""
         self.uid = str(uid)
         self.type = _type
@@ -45,6 +47,7 @@ class Thread(object):
         self.name = name
         self.last_message_timestamp = last_message_timestamp
         self.message_count = message_count
+        self.plan = plan
 
     def __repr__(self):
         return self.__unicode__()
@@ -99,8 +102,16 @@ class Group(Thread):
     color = None
     #: The groups's default emoji
     emoji = None
+    # Set containing user IDs of thread admins
+    admins = None
+    # True if users need approval to join
+    approval_mode = None
+    # Set containing user IDs requesting to join
+    approval_requests = None
+    # Link for joining group
+    join_link = None
 
-    def __init__(self, uid, participants=None, nicknames=None, color=None, emoji=None, **kwargs):
+    def __init__(self, uid, participants=None, nicknames=None, color=None, emoji=None, admins=None, approval_mode=None, approval_requests=None, join_link=None, privacy_mode=None, **kwargs):
         """Represents a Facebook group. Inherits `Thread`"""
         super(Group, self).__init__(ThreadType.GROUP, uid, **kwargs)
         if participants is None:
@@ -111,24 +122,6 @@ class Group(Thread):
         self.nicknames = nicknames
         self.color = color
         self.emoji = emoji
-
-
-class Room(Group):
-    # Set containing user IDs of thread admins
-    admins = None
-    # True if users need approval to join
-    approval_mode = None
-    # Set containing user IDs requesting to join
-    approval_requests = None
-    # Link for joining room
-    join_link = None
-    # True is room is not discoverable
-    privacy_mode = None
-
-    def __init__(self, uid, admins=None, approval_mode=None, approval_requests=None, join_link=None, privacy_mode=None, **kwargs):
-        """Represents a Facebook room. Inherits `Group`"""
-        super(Room, self).__init__(uid, **kwargs)
-        self.type = ThreadType.ROOM
         if admins is None:
             admins = set()
         self.admins = admins
@@ -137,6 +130,16 @@ class Room(Group):
             approval_requests = set()
         self.approval_requests = approval_requests
         self.join_link = join_link
+
+
+class Room(Group):
+    # True is room is not discoverable
+    privacy_mode = None
+
+    def __init__(self, uid, privacy_mode=None, **kwargs):
+        """Deprecated. Use :class:`Group` instead"""
+        super(Room, self).__init__(uid, **kwargs)
+        self.type = ThreadType.ROOM
         self.privacy_mode = privacy_mode
 
 
@@ -436,6 +439,87 @@ class Mention(object):
     def __unicode__(self):
         return '<Mention {}: offset={} length={}>'.format(self.thread_id, self.offset, self.length)
 
+class Poll(object):
+    #: ID of the poll
+    uid = None
+    #: Title of the poll
+    title = None
+    #: List of :class:`PollOption`, can be fetched with :func:`fbchat.Client.fetchPollOptions`
+    options = None
+    #: Options count
+    options_count = None
+
+    def __init__(self, title, options):
+        """Represents a poll"""
+        self.title = title
+        self.options = options
+
+    def __repr__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return '<Poll ({}): {} options={}>'.format(self.uid, repr(self.title), self.options)
+
+class PollOption(object):
+    #: ID of the poll option
+    uid = None
+    #: Text of the poll option
+    text = None
+    #: Whether vote when creating or client voted
+    vote = None
+    #: ID of the users who voted for this poll option
+    voters = None
+    #: Votes count
+    votes_count = None
+
+    def __init__(self, text, vote=False):
+        """Represents a poll option"""
+        self.text = text
+        self.vote = vote
+
+    def __repr__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return '<PollOption ({}): {} voters={}>'.format(self.uid, repr(self.text), self.voters)
+
+class Plan(object):
+    #: ID of the plan
+    uid = None
+    #: Plan time (unix time stamp), only precise down to the minute
+    time = None
+    #: Plan title
+    title = None
+    #: Plan location name
+    location = None
+    #: Plan location ID
+    location_id = None
+    #: ID of the plan creator
+    author_id = None
+    #: List of the people IDs who will take part in the plan
+    going = None
+    #: List of the people IDs who won't take part in the plan
+    declined = None
+    #: List of the people IDs who are invited to the plan
+    invited = None
+
+    def __init__(self, time, title, location=None, location_id=None):
+        """Represents a plan"""
+        self.time = int(time)
+        self.title = title
+        self.location = location or ''
+        self.location_id = location_id or ''
+        self.author_id = None
+        self.going = []
+        self.declined = []
+        self.invited = []
+
+    def __repr__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return '<Plan ({}): {} time={}, location={}, location_id={}>'.format(self.uid, repr(self.title), self.time, repr(self.location), repr(self.location_id))
+
 class Enum(enum.Enum):
     """Used internally by fbchat to support enumerations"""
     def __repr__(self):
@@ -446,8 +530,8 @@ class ThreadType(Enum):
     """Used to specify what type of Facebook thread is being used. See :ref:`intro_threads` for more info"""
     USER = 1
     GROUP = 2
+    ROOM = 2
     PAGE = 3
-    ROOM = 4
 
 class ThreadLocation(Enum):
     """Used to specify where a thread is located (inbox, pending, archived, other)."""
