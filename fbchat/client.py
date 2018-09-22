@@ -2792,6 +2792,79 @@ class Client(object):
         """
         log.info("{} played \"{}\" in {} ({})".format(author_id, game_name, thread_id, thread_type.name))
 
+    def onReactionAdded(self, mid=None, reaction=None, add_reaction=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody reacts to a message
+
+        :param mid: Message ID, that user reacted to
+        :param reaction: Reaction
+        :param add_reaction: Whether user added or removed reaction
+        :param author_id: The ID of the person who reacted to the message
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type reaction: models.MessageReaction
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} reacted to message {} with {} in {} ({})".format(author_id, mid, reaction.name, thread_id, thread_type.name))
+
+    def onReactionRemoved(self, mid=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody removes reaction from a message
+
+        :param mid: Message ID, that user reacted to
+        :param author_id: The ID of the person who removed reaction
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} removed reaction from {} message in {} ({})".format(author_id, mid, thread_id, thread_type))
+
+    def onBlock(self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody blocks client
+
+        :param author_id: The ID of the person who blocked
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} blocked {} ({}) thread".format(author_id, thread_id, thread_type.name))
+
+    def onUnblock(self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody blocks client
+
+        :param author_id: The ID of the person who unblocked
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} unblocked {} ({}) thread".format(author_id, thread_id, thread_type.name))
+
+    def onLiveLocation(self, mid=None, location=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening and somebody sends live location info
+
+        :param mid: The action ID
+        :param location: Sent location info
+        :param author_id: The ID of the person who sent location info
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type location: models.LiveLocationAttachment
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} sent live location info in {} ({}) with latitude {} and longitude {}".format(author_id, thread_id, thread_type, location.latitude, location.longitude))
+
     def onQprimer(self, ts=None, msg=None):
         """
         Called when the client just started listening
@@ -3004,79 +3077,6 @@ class Client(object):
             log.info("{} will take part in {} in {} ({})".format(author_id, plan, thread_id, thread_type.name))
         else:
             log.info("{} won't take part in {} in {} ({})".format(author_id, plan, thread_id, thread_type.name))
-
-    def onReactionAdded(self, mid=None, reaction=None, add_reaction=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
-        """
-        Called when the client is listening, and somebody reacts to a message
-
-        :param mid: Message ID, that user reacted to
-        :param reaction: Reaction
-        :param add_reaction: Whether user added or removed reaction
-        :param author_id: The ID of the person who reacted to the message
-        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
-        :param ts: A timestamp of the action
-        :param msg: A full set of the data recieved
-        :type reaction: models.MessageReaction
-        :type thread_type: models.ThreadType
-        """
-        log.info("{} reacted to message {} with {} in {} ({})".format(author_id, mid, reaction.name, thread_id, thread_type.name))
-
-    def onReactionRemoved(self, mid=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
-        """
-        Called when the client is listening, and somebody removes reaction from a message
-
-        :param mid: Message ID, that user reacted to
-        :param author_id: The ID of the person who removed reaction
-        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
-        :param ts: A timestamp of the action
-        :param msg: A full set of the data recieved
-        :type thread_type: models.ThreadType
-        """
-        log.info("{} removed reaction from {} message in {} ({})".format(author_id, mid, thread_id, thread_type))
-
-    def onBlock(self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
-        """
-        Called when the client is listening, and somebody blocks client
-
-        :param author_id: The ID of the person who blocked
-        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
-        :param ts: A timestamp of the action
-        :param msg: A full set of the data recieved
-        :type thread_type: models.ThreadType
-        """
-        log.info("{} blocked {} ({}) thread".format(author_id, thread_id, thread_type.name))
-
-    def onUnblock(self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
-        """
-        Called when the client is listening, and somebody blocks client
-
-        :param author_id: The ID of the person who unblocked
-        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
-        :param ts: A timestamp of the action
-        :param msg: A full set of the data recieved
-        :type thread_type: models.ThreadType
-        """
-        log.info("{} unblocked {} ({}) thread".format(author_id, thread_id, thread_type.name))
-
-    def onLiveLocation(self, mid=None, location=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
-        """
-        Called when the client is listening and somebody sends live location info
-
-        :param mid: The action ID
-        :param location: Sent location info
-        :param author_id: The ID of the person who sent location info
-        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
-        :param ts: A timestamp of the action
-        :param msg: A full set of the data recieved
-        :type location: models.LiveLocationAttachment
-        :type thread_type: models.ThreadType
-        """
-        log.info("{} sent live location info in {} ({}) with latitude {} and longitude {}".format(author_id, thread_id, thread_type, location.latitude, location.longitude))
 
     """
     END EVENTS
