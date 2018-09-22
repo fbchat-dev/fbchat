@@ -62,6 +62,8 @@ class Client(object):
         self.default_thread_id = None
         self.default_thread_type = None
         self.req_url = ReqUrl()
+        self._markAlive = True
+        self._buddylist = dict()
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -989,6 +991,15 @@ class Client(object):
         plan = graphql_to_plan(j["payload"])
         return plan
 
+    def getUserActiveStatus(self, user_id):
+        """
+        Gets friend active status as an :class:`models.ActiveStatus` object
+
+        :param user_id: ID of the user
+        :rtype: models.ActiveStatus
+        """
+        return self._buddylist.get(user_id)
+
     """
     END FETCH METHODS
     """
@@ -1747,7 +1758,7 @@ class Client(object):
         .. todo::
             Documenting this
         """
-        r = self._post(self.req_url.MARK_SEEN, {"seen_timestamp": 0})
+        r = self._post(self.req_url.MARK_SEEN, {"seen_timestamp": now()})
         return r.ok
 
     def friendConnect(self, friend_id):
@@ -2090,7 +2101,7 @@ class Client(object):
                                 image_metadata = fetch_data.get("image_with_metadata")
                                 image_id = int(image_metadata["legacy_attachment_id"]) if image_metadata else None
                                 self.onImageChange(mid=mid, author_id=author_id, new_image=image_id, thread_id=thread_id,
-                                                   thread_type=ThreadType.GROUP, ts=ts)
+                                                   thread_type=ThreadType.GROUP, ts=ts, msg=m)
 
                     # Nickname change
                     elif delta_type == "change_thread_nickname":
@@ -2335,11 +2346,26 @@ class Client(object):
 
                 # Chat timestamp
                 elif mtype == "chatproxy-presence":
-                    buddylist = {}
+                    buddylist = dict()
                     for _id in m.get('buddyList', {}):
                         payload = m['buddyList'][_id]
-                        buddylist[_id] = payload.get('lat')
+                        last_active = payload.get('lat')
+                        active = time.time() - last_active <= 60
+                        in_game = int(_id) in m.get('gamers', {})
+                        buddylist[_id] = last_active
+                        self._buddylist[_id] = ActiveStatus(active=active, last_active=last_active, in_game=in_game)
                     self.onChatTimestamp(buddylist=buddylist, msg=m)
+
+                elif mtype == "buddylist_overlay":
+                    statuses = dict()
+                    for _id in m.get('overlay', {}):
+                        payload = m['overlay'][_id]
+                        last_active = payload.get('la')
+                        active = payload.get('a') in [2, 3]
+                        in_game = self._buddylist[_id].in_game if self._buddylist.get(_id) else False
+                        self._buddylist[_id] = ActiveStatus(active=active, last_active=last_active, in_game=in_game)
+                        statuses[_id] = ActiveStatus(active=active, last_active=last_active, in_game=in_game)
+                    self.onBuddylistOverlay(statuses=statuses, msg=m)
 
                 # Unknown message type
                 else:
@@ -2357,7 +2383,7 @@ class Client(object):
         self.listening = True
         self.sticky, self.pool = self._fetchSticky()
 
-    def doOneListen(self, markAlive=True):
+    def doOneListen(self, markAlive=None):
         """
         Does one cycle of the listening loop.
         This method is useful if you want to control fbchat from an external event loop
@@ -2367,6 +2393,8 @@ class Client(object):
         :return: Whether the loop should keep running
         :rtype: bool
         """
+        if markAlive is None:
+            markAlive = self._markAlive
         try:
             if markAlive:
                 self._ping(self.sticky, self.pool)
@@ -2397,20 +2425,32 @@ class Client(object):
         self.listening = False
         self.sticky, self.pool = (None, None)
 
-    def listen(self, markAlive=True):
+    def listen(self, markAlive=None):
         """
         Initializes and runs the listening loop continually
 
         :param markAlive: Whether this should ping the Facebook server each time the loop runs
         :type markAlive: bool
         """
+        if markAlive is not None:
+            self._markAlive = markAlive
+
         self.startListening()
         self.onListening()
 
-        while self.listening and self.doOneListen(markAlive):
+        while self.listening and self.doOneListen():
             pass
 
         self.stopListening()
+
+    def setActiveStatus(markAlive):
+        """
+        Changes client active status while listening
+
+        :param markAlive: Whether to show if client is active
+        :type markAlive: bool
+        """
+        self._markAlive = markAlive
 
     """
     END LISTEN METHODS
@@ -2523,15 +2563,18 @@ class Client(object):
         log.info("Title change from {} in {} ({}): {}".format(author_id, thread_id, thread_type.name, new_title))
 
 
-    def onImageChange(self, mid=None, author_id=None, new_image=None, thread_id=None, thread_type=ThreadType.GROUP, ts=None):
+    def onImageChange(self, mid=None, author_id=None, new_image=None, thread_id=None, thread_type=ThreadType.GROUP, ts=None, msg=None):
         """
         Called when the client is listening, and somebody changes the image of a thread
 
         :param mid: The action ID
-        :param new_image: The ID of the new image
         :param author_id: The ID of the person who changed the image
+        :param new_image: The ID of the new image
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
         """
         log.info("{} changed thread image in {}".format(author_id, thread_id))
 
@@ -2723,41 +2766,6 @@ class Client(object):
         """
         log.info("{} played \"{}\" in {} ({})".format(author_id, game_name, thread_id, thread_type.name))
 
-    def onQprimer(self, ts=None, msg=None):
-        """
-        Called when the client just started listening
-
-        :param ts: A timestamp of the action
-        :param msg: A full set of the data recieved
-        """
-        pass
-
-    def onChatTimestamp(self, buddylist=None, msg=None):
-        """
-        Called when the client receives chat online presence update
-
-        :param buddylist: A list of dicts with friend id and last seen timestamp
-        :param msg: A full set of the data recieved
-        """
-        log.debug('Chat Timestamps received: {}'.format(buddylist))
-
-    def onUnknownMesssageType(self, msg=None):
-        """
-        Called when the client is listening, and some unknown data was recieved
-
-        :param msg: A full set of the data recieved
-        """
-        log.debug('Unknown message received: {}'.format(msg))
-
-    def onMessageError(self, exception=None, msg=None):
-        """
-        Called when an error was encountered while parsing recieved data
-
-        :param exception: The exception that was encountered
-        :param msg: A full set of the data recieved
-        """
-        log.exception('Exception in parsing of {}'.format(msg))
-
     def onCallStarted(self, mid=None, caller_id=None, is_video_call=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
         .. todo::
@@ -2934,6 +2942,51 @@ class Client(object):
             log.info("{} will take part in {} in {} ({})".format(author_id, plan, thread_id, thread_type.name))
         else:
             log.info("{} won't take part in {} in {} ({})".format(author_id, plan, thread_id, thread_type.name))
+
+    def onQprimer(self, ts=None, msg=None):
+        """
+        Called when the client just started listening
+
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        """
+        pass
+
+    def onChatTimestamp(self, buddylist=None, msg=None):
+        """
+        Called when the client receives chat online presence update
+
+        :param buddylist: A list of dicts with friend id and last seen timestamp
+        :param msg: A full set of the data recieved
+        """
+        log.debug('Chat Timestamps received: {}'.format(buddylist))
+
+    def onBuddylistOverlay(self, statuses=None, msg=None):
+        """
+        Called when the client is listening and client receives information about friend active status
+
+        :param statuses: Dictionary with user IDs as keys and :class:`models.ActiveStatus` as values
+        :param msg: A full set of the data recieved
+        :type statuses: dict
+        """
+        log.debug('Buddylist overlay received: {}'.format(statuses))
+
+    def onUnknownMesssageType(self, msg=None):
+        """
+        Called when the client is listening, and some unknown data was recieved
+
+        :param msg: A full set of the data recieved
+        """
+        log.debug('Unknown message received: {}'.format(msg))
+
+    def onMessageError(self, exception=None, msg=None):
+        """
+        Called when an error was encountered while parsing recieved data
+
+        :param exception: The exception that was encountered
+        :param msg: A full set of the data recieved
+        """
+        log.exception('Exception in parsing of {}'.format(msg))
 
     """
     END EVENTS
