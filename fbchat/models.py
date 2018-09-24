@@ -188,8 +188,10 @@ class Message(object):
     sticker = None
     #: A list of attachments
     attachments = None
+    #: A list of :class:`QuickReply`
+    quick_replies = None
 
-    def __init__(self, text=None, mentions=None, emoji_size=None, sticker=None, attachments=None):
+    def __init__(self, text=None, mentions=None, emoji_size=None, sticker=None, attachments=None, quick_replies=None):
         """Represents a Facebook message"""
         self.text = text
         if mentions is None:
@@ -200,6 +202,9 @@ class Message(object):
         if attachments is None:
             attachments = []
         self.attachments = attachments
+        if quick_replies is None:
+            quick_replies = []
+        self.quick_replies = quick_replies
         self.reactions = {}
 
     def __repr__(self):
@@ -438,6 +443,31 @@ class Mention(object):
 
     def __unicode__(self):
         return '<Mention {}: offset={} length={}>'.format(self.thread_id, self.offset, self.length)
+
+class QuickReply(object):
+    #: Title of the quick reply
+    title = None
+    #: URL of the quick reply image (optional)
+    image_url = None
+    #: Custom identifier of the quick reply
+    payload = None
+    #: Additional data
+    data = None
+    #: Whether it's a response for a quick reply
+    is_response = None
+
+    def __init__(self, title, image_url=None, payload=None, data=None):
+        """Represents a quick reply"""
+        self.title = title
+        self.image_url = image_url
+        self.payload = payload
+        self.data = data
+
+    def __repr__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return '<QuickReply: title={!r} payload={!r}>'.format(self.title, self.payload)
 
 class Poll(object):
     #: ID of the poll
