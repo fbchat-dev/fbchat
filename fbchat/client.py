@@ -1045,6 +1045,18 @@ class Client(object):
         if message.sticker:
             data['sticker_id'] = message.sticker.uid
 
+        if message.quick_replies:
+            xmd = {"quick_replies": []}
+            for quick_reply in message.quick_replies:
+                xmd["quick_replies"].append({
+                    "content_type": "text",
+                    "title": quick_reply.title,
+                    "payload": quick_reply.payload,
+                    "image_url": quick_reply.image_url,
+                    "data": quick_reply.data,
+                })
+            data['platform_xmd'] = json.dumps(xmd)
+
         return data
 
     def _doSendRequest(self, data, get_thread_id=False):
