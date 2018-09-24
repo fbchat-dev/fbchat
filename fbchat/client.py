@@ -850,14 +850,22 @@ class Client(object):
             'id': thread_id,
             'message_limit': limit,
             'load_messages': True,
-            'load_read_receipts': False,
+            'load_read_receipts': True,
             'before': before
         }))
 
         if j.get('message_thread') is None:
             raise FBchatException('Could not fetch thread {}: {}'.format(thread_id, j))
 
-        return list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
+        messages = list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
+        read_receipts = j['message_thread']['read_receipts']['nodes']
+
+        for message in messages:
+            for receipt in read_receipts:
+                if int(receipt['watermark']) >= int(message.timestamp):
+                    message.read_by.append(receipt['actor']['id'])
+
+        return messages
 
     def fetchThreadList(self, offset=None, limit=20, thread_location=ThreadLocation.INBOX, before=None):
         """Get thread list of your facebook account
