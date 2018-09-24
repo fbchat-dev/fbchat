@@ -193,6 +193,16 @@ def graphql_to_plan(a):
     rtn.invited = [m.get('node').get('id') for m in guests if m.get('guest_list_state') == "INVITED"]
     return rtn
 
+def graphql_to_quick_reply(q, is_response=None):
+    rtn = QuickReply(
+        title=q.get('title'),
+        image_url=q.get('image_url'),
+        payload=q.get('payload'),
+        data=q.get('data'),
+    )
+    rtn.is_response = is_response
+    return rtn
+
 def graphql_to_message(message):
     if message.get('message_sender') is None:
         message['message_sender'] = {}
@@ -214,6 +224,12 @@ def graphql_to_message(message):
         rtn.attachments = [graphql_to_attachment(attachment) for attachment in message['blob_attachments']]
     # TODO: This is still missing parsing:
     # message.get('extensible_attachment')
+    if message.get('platform_xmd_encoded'):
+        quick_replies = json.loads(message['platform_xmd_encoded']).get('quick_replies')
+        if isinstance(quick_replies, list):
+            rtn.quick_replies = [graphql_to_quick_reply(q, is_response=False) for q in quick_replies]
+        elif isinstance(quick_replies, dict):
+            rtn.quick_replies = [graphql_to_quick_reply(quick_replies, is_response=True)]
     return rtn
 
 def graphql_to_user(user):
