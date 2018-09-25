@@ -193,14 +193,14 @@ def graphql_to_plan(a):
     rtn.invited = [m.get('node').get('id') for m in guests if m.get('guest_list_state') == "INVITED"]
     return rtn
 
-def graphql_to_quick_reply(q, is_response=None):
+def graphql_to_quick_reply(q, is_response=False):
     rtn = QuickReply(
         title=q.get('title'),
         image_url=q.get('image_url'),
         payload=q.get('payload'),
         data=q.get('data'),
+        is_response=is_response,
     )
-    rtn.is_response = is_response
     return rtn
 
 def graphql_to_message(message):
@@ -227,7 +227,7 @@ def graphql_to_message(message):
     if message.get('platform_xmd_encoded'):
         quick_replies = json.loads(message['platform_xmd_encoded']).get('quick_replies')
         if isinstance(quick_replies, list):
-            rtn.quick_replies = [graphql_to_quick_reply(q, is_response=False) for q in quick_replies]
+            rtn.quick_replies = [graphql_to_quick_reply(q) for q in quick_replies]
         elif isinstance(quick_replies, dict):
             rtn.quick_replies = [graphql_to_quick_reply(quick_replies, is_response=True)]
     return rtn
