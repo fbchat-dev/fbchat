@@ -456,12 +456,13 @@ class QuickReply(object):
     #: Whether it's a response for a quick reply
     is_response = None
 
-    def __init__(self, title, image_url=None, payload=None, data=None):
+    def __init__(self, title, image_url=None, payload=None, data=None, is_response=False):
         """Represents a quick reply"""
         self.title = title
         self.image_url = image_url
         self.payload = payload
         self.data = data
+        self.is_response = is_response
 
     def __repr__(self):
         return self.__unicode__()
