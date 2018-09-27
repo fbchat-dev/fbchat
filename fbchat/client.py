@@ -1723,7 +1723,7 @@ class Client(object):
         }
 
         for thread_id in thread_ids:
-            data["ids[{}]".format(thread_id)] = read
+            data["ids[{}]".format(thread_id)] = 'true' if read else 'false'
 
         r = self._post(self.req_url.READ_STATUS, data)
         return r.ok
