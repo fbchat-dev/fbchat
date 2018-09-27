@@ -180,6 +180,8 @@ class Message(object):
     timestamp = None
     #: Whether the message is read
     is_read = None
+    #: A list of pepole IDs who read the message, works only with :func:`fbchat.Client.fetchThreadMessages`
+    read_by = None
     #: A dict with user's IDs as keys, and their :class:`MessageReaction` as values
     reactions = None
     #: The actual message
@@ -201,6 +203,7 @@ class Message(object):
             attachments = []
         self.attachments = attachments
         self.reactions = {}
+        self.read_by = []
 
     def __repr__(self):
         return self.__unicode__()
