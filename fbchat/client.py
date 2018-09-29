@@ -1116,6 +1116,26 @@ class Client(object):
             data['specific_to_list[0]'] = "fbid:{}".format(thread_id)
         return self._doSendRequest(data)
 
+    def sendLocation(self, location, thread_id=None, thread_type=None):
+        """
+        Sends a given location to a thread
+
+        :param location: Location to send
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type location: models.LocationAttachment
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+        :raises: FBchatException if request failed
+        """
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
+        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        data['action_type'] = 'ma-type:user-generated-message'
+        data['location_attachment[coordinates][latitude]'] = location.latitude
+        data['location_attachment[coordinates][longitude]'] = location.longitude
+        data['location_attachment[is_current_location]'] = True
+        return self._doSendRequest(data)
+
     def _upload(self, files):
         """
         Uploads files to Facebook
@@ -1485,16 +1505,16 @@ class Client(object):
 
         j = self._post(self.req_url.THREAD_EMOJI, data, fix_request=True, as_json=True)
 
-    def _react(self, message_id, reaction=None, add_reaction=True):
+    def _react(self, message_id, reaction=None):
         data = {
             "doc_id": 1491398900900362,
             "variables": json.dumps({
                 "data": {
-                    "action": "ADD_REACTION" if add_reaction else "REMOVE_REACTION",
+                    "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
                     "client_mutation_id": "1",
                     "actor_id": self.uid,
                     "message_id": str(message_id),
-                    "reaction": reaction.value if add_reaction else None
+                    "reaction": reaction.value if reaction else None
                 }
             })
         }
@@ -1517,7 +1537,7 @@ class Client(object):
         :type reaction: models.MessageReaction
         :raises: FBchatException if request failed
         """
-        self._react(message_id=message_id, reaction=reaction, add_reaction=True)
+        self._react(message_id=message_id, reaction=reaction)
 
     def removeReaction(self, message_id):
         """
@@ -1526,7 +1546,7 @@ class Client(object):
         :param message_id: :ref:`Message ID <intro_message_ids>` to remove reaction from
         :raises: FBchatException if request failed
         """
-        self._react(message_id=message_id, add_reaction=False)
+        self._react(message_id=message_id)
 
     def createPlan(self, plan, thread_id=None):
         """
