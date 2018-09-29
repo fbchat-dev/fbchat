@@ -302,13 +302,11 @@ class LocationAttachment(Attachment):
     #: URL to Bing maps with the location
     url = None
 
-    def __init__(self, latitude=None, longitude=None, image=None, url=None, **kwargs):
+    def __init__(self, latitude=None, longitude=None, **kwargs):
         """Represents a user location"""
         super(LocationAttachment, self).__init__(**kwargs)
         self.latitude = latitude
         self.longitude = longitude
-        self.image = image
-        self.url = url
 
 class LiveLocationAttachment(LocationAttachment):
     #: Name of the location
