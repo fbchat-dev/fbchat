@@ -238,22 +238,6 @@ class Client(object):
         self.payloadDefault['ttstamp'] = self.ttstamp
         self.payloadDefault['fb_dtsg'] = self.fb_dtsg
 
-        self.form = {
-            'channel' : self.user_channel,
-            'partition' : '-2',
-            'clientid' : self.client_id,
-            'viewer_uid' : self.uid,
-            'uid' : self.uid,
-            'state' : 'active',
-            'format' : 'json',
-            'idle' : 0,
-            'cap' : '8'
-        }
-
-        self.prev = now()
-        self.tmp_prev = now()
-        self.last_sync = now()
-
     def _login(self):
         if not (self.email and self.password):
             raise FBchatUserError("Email and password not found.")
