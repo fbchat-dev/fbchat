@@ -1,45 +1,45 @@
 # -*- coding: UTF-8 -*-
 
-from __future__ import unicode_literals
-
 import attr
 
 from datetime import timedelta
+from typing import Optional, Type, T
 
-from .core import Dimension
+from .core import Dimension, ID, JSON
 
 
 __all__ = ("File", "Audio", "Image", "AnimatedImage", "Video")
 
 
 @attr.s(slots=True)
-class File(object):
+class File:
     """Represents a file / an attachment"""
 
     #: The unique identifier of the file
-    id = attr.ib(type=int, converter=int)
+    id = attr.ib(type=ID)
     #: Name of the file
     name = attr.ib(type=str)
     #: The mimetype of the file
     mimetype = attr.ib(type=str)
     #: URL where you can download the file
-    url = attr.ib(type=str)
+    url = attr.ib(type=Optional[str])
     #: Size of the file, in bytes
-    size = attr.ib(type=int, converter=int)
+    size = attr.ib(type=int)
     #: Whether Facebook determines that this file may be harmful
-    is_malicious = attr.ib(None, type=bool)
+    is_malicious = attr.ib(type=Optional[bool])
 
     @classmethod
-    def from_pull(cls, attachment, blob, **kwargs):
-        return cls(
-            id=attachment["id"],
-            name=attachment["filename"],
-            mimetype=attachment["mimeType"],
-            size=attachment["fileSize"],
-            url=blob.get("url"),
-            is_malicious=blob.get("is_malicious"),
-            **kwargs
-        )
+    def from_pull(cls: Type[T], attachment: JSON, blob: JSON, **kwargs) -> T:
+        self = cls.__new__(cls)
+
+        self.id = ID(attachment["id"])
+        self.name = attachment["filename"]
+        self.mimetype = attachment["mimeType"]
+        self.size = attachment["fileSize"]
+        self.url = blob.get("url")
+        self.is_malicious = blob.get("is_malicious")
+
+        return self
 
 
 @attr.s(slots=True)
@@ -47,21 +47,19 @@ class Audio(File):
     """Represents an audio file"""
 
     #: Duration of the audioclip
-    duration = attr.ib(None, type=timedelta)
+    duration = attr.ib(type=timedelta)
     #: Audio type
-    audio_type = attr.ib(None, type=str)
+    audio_type = attr.ib(type=str)
 
     @classmethod
-    def from_pull(cls, attachment, blob, **kwargs):
-        file = super(Audio, cls).from_pull(
-            attachment,
-            blob,
-            duration=timedelta(microseconds=blob["playable_duration_in_ms"] * 1000),
-            audio_type=blob["audio_type"],
-            **kwargs
-        )
-        file.url = blob["playable_url"]
-        return file
+    def from_pull(cls: Type[T], attachment: JSON, blob: JSON) -> T:
+        self = super().from_pull(attachment, blob)
+
+        self.duration = timedelta(microseconds=blob["playable_duration_in_ms"] * 1000)
+        self.audio_type = blob["audio_type"]
+        self.url = blob["playable_url"]
+
+        return self
 
 
 @attr.s(slots=True)
@@ -69,39 +67,39 @@ class Image(File):
     """Represents an image"""
 
     #: The extension of the original image (e.g. 'png')
-    extension = attr.ib(None, type=str)
+    extension = attr.ib(type=str)
     #: Dimensions of the original image
-    dimensions = attr.ib(None, type=Dimension)
+    dimension = attr.ib(type=Dimension)
 
     #: URL to a 50x50 thumbnail of the image
-    thumbnail_url = attr.ib(None, type=str)
+    thumbnail_url = attr.ib(type=str)
 
     #: URL to a medium preview of the image
-    preview_url = attr.ib(None, type=str)
+    preview_url = attr.ib(type=str)
     #: Dimensions of the medium preview
-    preview_dimensions = attr.ib(None, type=Dimension)
+    preview_dimension = attr.ib(type=Dimension)
 
     #: URL to a large preview of the image
-    large_preview_url = attr.ib(None, type=str)
+    large_preview_url = attr.ib(type=Optional[str])
     #: Dimensions of the large preview
-    large_preview_dimensions = attr.ib(None, type=Dimension)
+    large_preview_dimension = attr.ib(type=Optional[Dimension])
 
     @classmethod
-    def from_pull(cls, attachment, blob, **kwargs):
+    def from_pull(cls: Type[T], attachment: JSON, blob: JSON) -> T:
+        self = super().from_pull(attachment, blob)
+
         preview = blob["preview"]
         large_preview = blob["large_preview"]
-        return super(Image, cls).from_pull(
-            attachment,
-            blob,
-            extension=blob["original_extension"],
-            dimensions=Dimension.from_dict(attachment["imageMetadata"]),
-            thumbnail_url=blob["thumbnail"]["uri"],
-            preview_url=preview["uri"],
-            preview_dimensions=Dimension.from_dict(preview),
-            large_preview_url=large_preview["uri"],
-            large_preview_dimensions=Dimension.from_dict(large_preview),
-            **kwargs
-        )
+
+        self.extension = blob["original_extension"]
+        self.dimensions = Dimension.from_dict(attachment["imageMetadata"])
+        self.thumbnail_url = blob["thumbnail"]["uri"]
+        self.preview_url = preview["uri"]
+        self.preview_dimensions = Dimension.from_dict(preview)
+        self.large_preview_url = large_preview["uri"]
+        self.large_preview_dimensions = Dimension.from_dict(large_preview)
+
+        return self
 
 
 @attr.s(slots=True)
@@ -109,20 +107,20 @@ class AnimatedImage(Image):
     """Represents an image (e.g. "gif")"""
 
     #: URL to an animated preview of the image
-    animated_preview_url = None
+    animated_preview_url = attr.ib(type=str)
     #: Dimensions of the animated preview
-    animated_preview_dimensions = attr.ib(None, type=Dimension)
+    animated_preview_dimension = attr.ib(type=Dimension)
 
     @classmethod
-    def from_pull(cls, attachment, blob, **kwargs):
+    def from_pull(cls: Type[T], attachment: JSON, blob: JSON) -> T:
+        self = super().from_pull(attachment, blob)
+
         animated = blob["animated_image"]
-        return super(AnimatedImage, cls).from_pull(
-            attachment,
-            blob,
-            animated_preview_url=animated["uri"],
-            animated_preview_dimensions=Dimension.from_dict(animated),
-            **kwargs
-        )
+
+        self.animated_preview_url = animated["uri"]
+        self.animated_preview_dimensions = Dimension.from_dict(animated)
+
+        return self
 
 
 @attr.s(slots=True)
@@ -130,43 +128,43 @@ class Video(File):
     """Represents a video"""
 
     #: Dimensions of the original image
-    dimensions = attr.ib(None, type=Dimension)
+    dimensions = attr.ib(type=Dimension)
     #: Duration of the video
-    duration = attr.ib(None, type=timedelta)
+    duration = attr.ib(type=timedelta)
     #: URL to very compressed preview video
-    preview_url = attr.ib(None, type=str)
+    preview_url = attr.ib(type=str)
 
     #: URL to a small preview image of the video
-    small_image_url = attr.ib(None, type=str)
+    small_image_url = attr.ib(type=Optional[str])
     #: Dimensions of the small preview
-    small_image_dimensions = attr.ib(None, type=Dimension)
+    small_image_dimension = attr.ib(type=Optional[Dimension])
 
     #: URL to a medium preview image of the video
-    medium_image_url = attr.ib(None, type=str)
+    medium_image_url = attr.ib(type=Optional[str])
     #: Dimensions of the medium preview
-    medium_image_dimensions = attr.ib(None, type=Dimension)
+    medium_image_dimension = attr.ib(type=Dimension)
 
     #: URL to a large preview image of the video
-    large_image_url = attr.ib(None, type=str)
+    large_image_url = attr.ib(type=Optional[str])
     #: Dimensions of the large preview
-    large_image_dimensions = attr.ib(None, type=Dimension)
+    large_image_dimension = attr.ib(type=Optional[Dimension])
 
     @classmethod
-    def from_pull(cls, attachment, blob, **kwargs):
+    def from_pull(cls: Type[T], attachment: JSON, blob: JSON) -> T:
+        self = super().from_pull(attachment, blob)
+
         small_image = blob["chat_image"]
         medium_image = blob["inbox_image"]
         large_image = blob["large_image"]
-        return super(Video, cls).from_pull(
-            attachment,
-            blob,
-            dimensions=Dimension.from_dict(blob["original_dimensions"]),
-            duration=timedelta(microseconds=blob["playable_duration_in_ms"] * 1000),
-            preview_url=blob["playable_url"],
-            small_image_url=small_image["uri"],
-            small_image_dimensions=Dimension.from_dict(small_image),
-            medium_image_url=medium_image["uri"],
-            medium_image_dimensions=Dimension.from_dict(medium_image),
-            large_image_url=large_image["uri"],
-            large_image_dimensions=Dimension.from_dict(large_image),
-            **kwargs
-        )
+
+        self.dimensions = Dimension.from_dict(blob["original_dimensions"])
+        self.duration = timedelta(microseconds=blob["playable_duration_in_ms"] * 1000)
+        self.preview_url = blob["playable_url"]
+        self.small_image_url = small_image["uri"]
+        self.small_image_dimensions = Dimension.from_dict(small_image)
+        self.medium_image_url = medium_image["uri"]
+        self.medium_image_dimensions = Dimension.from_dict(medium_image)
+        self.large_image_url = large_image["uri"]
+        self.large_image_dimensions = Dimension.from_dict(large_image)
+
+        return self

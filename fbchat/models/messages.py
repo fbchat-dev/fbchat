@@ -1,15 +1,14 @@
 # -*- coding: UTF-8 -*-
 
-from __future__ import unicode_literals
-
 import json
 import attr
 
-from typing import Dict, List
+from typing import Optional, Dict, List, Any, Type, T
 from enum import Enum
 
+from .core import Dimension, ID, JSON
 from .threads import Thread, User, Group
-from .core import Dimension, Event
+from .events import Event
 from .files import File, Audio, Image, AnimatedImage, Video
 
 
@@ -21,7 +20,7 @@ class Message(Event):
     """Represents a message"""
 
     #: `User`\s, mapped to their `Reaction`
-    reactions = attr.ib(factory=dict)  # type: Dict[User, Message.Reaction]
+    reactions = attr.ib(type="Dict[User, Message.Reaction]")  # factory=dict
 
     class Reaction(Enum):
         """Used to specify a message reaction"""
@@ -34,10 +33,12 @@ class Message(Event):
         YES = "👍"
         NO = "👎"
 
-    def to_send(self, **kwargs):
-        return super(Message, self).to_send(
-            action_type="ma-type:user-generated-message", **kwargs
-        )
+    def to_send(self) -> JSON:
+        data = super().to_send()
+
+        data["action_type"] = "ma-type:user-generated-message"
+
+        return data
 
 
 @attr.s(slots=True)
@@ -45,47 +46,56 @@ class Sticker(Message):
     """Represents a sent sticker"""
 
     #: The sticker's ID
-    sticker_id = attr.ib(None, type=int, converter=int)
+    sticker_id = attr.ib(type=ID)
     #: The sticker's label/name
-    name = attr.ib(None, type=str)
+    name = attr.ib(type=str)
     #: URL to the sticker's image
-    url = attr.ib(None, type=str)
+    url = attr.ib(type=str)
     #: The stickers dimensions
-    dimensions = attr.ib(None, type=Dimension)
+    dimension = attr.ib(type=Dimension)
     #: The sticker's pack
-    pack = attr.ib(None)  # type: Sticker.Pack
+    pack = attr.ib(type="Optional[Sticker.Pack]")
 
-    @staticmethod
-    def graphql_data(data, **kwargs):
-        return dict(
-            sticker_id=data["id"],
-            name=data["label"],
-            url=data["url"],
-            dimensions=Dimension.from_dict(data),
-            pack=Sticker.Pack(data["pack"]["id"]),
-            **kwargs
-        )
+    def load_graphql_data(self, data: JSON) -> Dict[str, Any]:
+        self.sticker_id = data["id"]
+        self.name = data["label"]
+        self.url = data["url"]
+        self.dimensions = Dimension.from_dict(data)
+        self.pack = Sticker.Pack.from_graphql(data["id"])
 
     @classmethod
-    def from_pull(cls, delta, **kwargs):
+    def from_pull(cls: Type[T], delta: JSON) -> T:
+        self = super().from_pull(delta)
+
         attachment, = [x["mercury"]["sticker_attachment"] for x in delta["attachments"]]
-        data = cls.graphql_data(attachment, **kwargs)
-        return super(Sticker, cls).from_pull(delta, **data)
+        self.load_graphql_data(attachment)
 
-    def to_send(self, **kwargs):
-        return super(Sticker, self).to_send(sticker_id=self.sticker_id, **kwargs)
+        return self
+
+    def to_send(self) -> JSON:
+        data = super().to_send()
+
+        data["sticker_id"] = self.sticker_id
+
+        return data
 
     @classmethod
-    def from_send(cls, action, old, **kwargs):
-        payload, = action["graphql_payload"]
-        data = cls.graphql_data(payload["node"], **kwargs)
-        return super(Sticker, cls).from_send(action, old, **data)
+    def from_send(cls: Type[T], action: JSON, old: T) -> T:
+        self = super().from_send(action, old)
 
-    @attr.s(slots=True, repr_ns="Sticker")
-    class Pack(object):
+        payload, = action["graphql_payload"]
+        self.load_graphql_data(payload["node"])
+
+        return self
+
+    @attr.s(slots=True)
+    class Pack:
         """TODO: This"""
 
-        id = attr.ib(type=int, converter=int)
+        id: ID = attr.ib(converter=ID)
+
+        def from_graphql(cls: Type[T], data: JSON) -> T:
+            return cls(data["id"])
 
 
 @attr.s(slots=True)
@@ -93,27 +103,24 @@ class AnimatedSticker(Sticker):
     """Represents a sent sticker that's animated"""
 
     #: URL to a spritemap
-    sprite_image = attr.ib(None, type=str)
-    #: URL to a large spritemap
-    large_sprite_image = attr.ib(None, type=str)
+    sprite_image = attr.ib(type=str)
     #: The amount of frames present in the spritemap pr. row
-    frames_per_row = attr.ib(None, type=int)
+    frames_per_row = attr.ib(type=int)
     #: The amount of frames present in the spritemap pr. coloumn
-    frames_per_col = attr.ib(None, type=int)
+    frames_per_col = attr.ib(type=int)
     #: The frame rate the spritemap is intended to be played in
-    frame_rate = attr.ib(None, type=int)
+    frame_rate = attr.ib(type=int)
+    #: URL to a large spritemap
+    large_sprite_image = attr.ib(type=Optional[str])
 
-    @staticmethod
-    def graphql_data(data, **kwargs):
-        return super(AnimatedSticker, cls).graphql_data(
-            data,
-            sprite_image=data["sprite_image"]["uri"],
-            large_sprite_image=data["sprite_image_2x"].get("uri"),
-            frames_per_row=int(data["frames_per_row"]),
-            frames_per_col=int(data["frames_per_column"]),
-            frame_rate=int(data["frame_rate"]),
-            **kwargs
-        )
+    def load_graphql_data(self, data: JSON) -> Dict[str, Any]:
+        super().load_graphql_data(data)
+
+        self.sprite_image = data["sprite_image"]["uri"]
+        self.large_sprite_image = data["sprite_image_2x"].get("uri")
+        self.frames_per_row = int(data["frames_per_row"])
+        self.frames_per_col = int(data["frames_per_column"])
+        self.frame_rate = int(data["frame_rate"])
 
 
 @attr.s(slots=True)
@@ -121,31 +128,35 @@ class Emoji(Message):
     """Represents a sent emoji"""
 
     #: The actual emoji
-    emoji = attr.ib(None, type=str)
+    emoji = attr.ib(type=str)
     #: The size of the emoji
-    size = attr.ib(None)  # type: Emoji.Size
+    size = attr.ib(type="Emoji.Size")
 
     @classmethod
-    def from_pull(cls, delta, **kwargs):
-        return super(Emoji, cls).from_pull(
-            delta,
-            emoji=delta["body"],
-            size=Emoji.Size.from_pull(delta["messageMetadata"]["tags"]),
-            **kwargs
-        )
+    def from_pull(cls: Type[T], delta: JSON) -> T:
+        self = super().from_pull(delta)
 
-    def to_send(self, **kwargs):
-        data = super(Emoji, self).to_send(body=self.emoji, **kwargs)
+        self.emoji = delta["body"]
+        self.size = Emoji.Size.from_pull(delta["messageMetadata"]["tags"])
+
+        return self
+
+    def to_send(self) -> JSON:
+        data = super().to_send()
+        data["body"] = self.emoji
 
         data["tags[0]"] = "hot_emoji_size:{}".format(self.size.value)
 
         return data
 
     @classmethod
-    def from_send(cls, action, old, **kwargs):
-        return super(Emoji, cls).from_send(
-            action, old, emoji=old.emoji, size=old.size, **kwargs
-        )
+    def from_send(cls: Type[T], action: JSON, old: T) -> T:
+        self = super().from_send(action, old)
+
+        self.emoji = old.emoji
+        self.size = old.size
+
+        return self
 
     class Size(Enum):
         """Represents the size of an emoji"""
@@ -155,9 +166,9 @@ class Emoji(Message):
         LARGE = "large"
 
         @classmethod
-        def from_pull(cls, tags):
-            tag, = [x for x in tags if x.startswith("hot_emoji_size:")]
-            tag = tag.split(":", maxsplit=1)[1]
+        def from_pull(cls: Type[T], tags: List[str]) -> T:
+            tag, = (x for x in tags if x.startswith("hot_emoji_size:"))
+            _, tag = tag.split(":", maxsplit=1)
             return cls(tag)
 
 
@@ -166,31 +177,32 @@ class Text(Message):
     """Represents a text message"""
 
     #: The text-contents
-    text = attr.ib(None, type=str)
+    text = attr.ib(type=str)
     #: List of `Mention`\s, ordered by `.offset`
-    mentions = attr.ib(factory=list)  # type: List[Text.Mention]
+    mentions = attr.ib(factory=list, type="List[Text.Mention]")
 
     @classmethod
-    def mentions_from_prng(cls, data):
+    def mentions_from_prng(cls, data: Optional[JSON]) -> "List[Text.Mention]":
         if data and data.get("prng"):
             prng = json.loads(data["prng"])
-            return sorted(map(cls.Mention.from_prng, prng), key=lambda x: x.offset)
-        return list()
+            return sorted(map(Text.Mention.from_prng, prng), key=lambda x: x.offset)
+        return []
 
     @classmethod
-    def from_pull(cls, delta, **kwargs):
-        return super(Text, cls).from_pull(
-            delta,
-            text=delta["body"],
-            mentions=cls.mentions_from_prng(delta.get("data")),
-            **kwargs
-        )
+    def from_pull(cls: Type[T], delta: JSON) -> T:
+        self = super().from_pull(delta)
 
-    def to_send(self, **kwargs):
-        data = super(Text, self).to_send(body=self.text, **kwargs)
+        self.text = delta["body"]
+        self.mentions = cls.mentions_from_prng(delta.get("data"))
+
+        return self
+
+    def to_send(self) -> JSON:
+        data = super().to_send()
+        data["body"] = self.text
 
         for i, mention in enumerate(self.mentions):
-            data["profile_xmd[{}][id]".format(i)] = mention.thread.id
+            data["profile_xmd[{}][id]".format(i)] = mention.thread_id
             data["profile_xmd[{}][offset]".format(i)] = mention.offset
             data["profile_xmd[{}][length]".format(i)] = mention.length
             data["profile_xmd[{}][type]".format(i)] = "p"
@@ -198,25 +210,28 @@ class Text(Message):
         return data
 
     @classmethod
-    def from_send(cls, action, old, **kwargs):
-        return super(Text, cls).from_send(
-            action, old, text=old.text, mentions=old.mentions, **kwargs
-        )
+    def from_send(cls: Type[T], action: JSON, old: T) -> T:
+        self = super().from_send(action, old)
 
-    @attr.s(slots=True, repr_ns="Text")
-    class Mention(object):
+        self.text = old.text
+        self.mentions = old.mentions
+
+        return self
+
+    @attr.s(slots=True)
+    class Mention:
         """Represents a @mention"""
 
-        #: Person that the mention is pointing at
-        thread = attr.ib(type=Thread)
+        #: Thread ID that the mention is pointing at
+        thread_id = attr.ib(converter=ID, type=ID)
         #: The character in the message where the mention starts
-        offset = attr.ib(type=int, converter=int)
+        offset = attr.ib(converter=int, type=int)
         #: The length of the mention
-        length = attr.ib(type=int, converter=int)
+        length = attr.ib(converter=int, type=int)
 
         @classmethod
-        def from_prng(cls, data, **kwargs):
-            return cls(Thread(data["i"]), offset=data["o"], length=data["l"], **kwargs)
+        def from_prng(cls: Type[T], data: JSON) -> T:
+            return cls(data["i"], offset=data["o"], length=data["l"])
 
 
 @attr.s(slots=True)
@@ -224,10 +239,10 @@ class FileMessage(Message):
     """Represents a message with files / attachments"""
 
     #: List of `File`\s sent in the message
-    files = attr.ib(factory=list)  # type: List[File]
+    files = attr.ib(factory=list, type=List[File])
 
     @staticmethod
-    def pull_data_get_file(attachment, mercury):
+    def pull_data_get_file(attachment: JSON, mercury: JSON) -> File:
         blob = mercury["blob_attachment"]
         return {
             "MessageImage": Image,
@@ -238,7 +253,7 @@ class FileMessage(Message):
         }[blob["__typename"]].from_pull(attachment, blob)
 
     @staticmethod
-    def mimetype_to_key(mimetype):
+    def mimetype_to_key(mimetype: str) -> str:
         if not mimetype:
             return "file_id"
         if mimetype == "image/gif":
@@ -249,20 +264,19 @@ class FileMessage(Message):
         return "file_id"
 
     @classmethod
-    def from_pull(cls, delta, **kwargs):
-        message = super(FileMessage, cls).from_pull(delta, **kwargs)
+    def from_pull(cls: Type[T], delta) -> T:
+        self = super().from_pull(delta)
 
         for attachment in delta["attachments"]:
             mercury = attachment["mercury"]
             if "blob_attachment" in mercury:
-                message.files.append(cls.pull_data_get_file(attachment, mercury))
-            else:
-                return None
+                self.files.append(cls.pull_data_get_file(attachment, mercury))
 
-        return message
+        return self
 
-    def to_send(self, **kwargs):
-        data = super(FileMessage, self).to_send(has_attachment=True, **kwargs)
+    def to_send(self) -> JSON:
+        data = super().to_send()
+        data["has_attachment"] = True
 
         for i, file in enumerate(self.files):
             data["{}s[{}]".format(self.mimetype_to_key(file.mimetype), i)] = file.id
@@ -270,6 +284,10 @@ class FileMessage(Message):
         return data
 
     @classmethod
-    def from_send(cls, action, old, **kwargs):
+    def from_send(cls: Type[T], action: JSON, old: T) -> T:
         # TODO: Parse `action["graphql_payload"]` to retrieve updated file info
-        return super(FileMessage, cls).from_send(action, old, files=old.files, **kwargs)
+        self = super().from_send(action, old)
+
+        self.files = old.files
+
+        return self

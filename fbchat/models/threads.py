@@ -1,45 +1,43 @@
 # -*- coding: UTF-8 -*-
 
-from __future__ import unicode_literals
-
 import attr
 
 from datetime import datetime
-from typing import Dict, List, Set, Union
-from . import core
+from typing import Dict, List, Set, Union, Optional
+
+from .core import ID, JSON
+
+from . import events
+
+
+__all__ = ("Thread", "User", "Group", "Page")
 
 
 @attr.s(slots=True)
-class Thread(object):
+class Thread:
     """Represents a Facebook chat-thread"""
 
     #: The unique identifier of the thread
-    id = attr.ib(type=int, converter=int)
+    id: ID = attr.ib(converter=ID)
     #: The name of the thread
-    name = attr.ib(None, type=str)
+    name = attr.ib(type=str)
     #: When the thread was last updated
-    last_activity = attr.ib(None, type=datetime)
+    last_activity = attr.ib(type=datetime)
+    #: Number of `Message`\s in the thread
+    message_count = attr.ib(type=int)
+    #: The thread colour
+    colour = attr.ib(type=str)
+    #: The thread's default emoji
+    emoji = attr.ib(type=str)
     #: A url to the thread's thumbnail/profile picture
     image = attr.ib(None, type=str)
-    #: Number of `Message`\s in the thread
-    message_count = attr.ib(None, type=int)
     #: `User`\s and `Page`\s, mapped to their nicknames
-    nicknames = attr.ib(factory=dict)  # type: Dict[Union[User, Page], str]
-    #: The thread colour
-    colour = attr.ib(None, type=str)
-    #: The thread's default emoji
-    emoji = attr.ib(None, type=str)
+    nicknames = attr.ib(factory=dict, type="Dict[Union[User, Page], str]")
 
-    _events = attr.ib(factory=list)  # type: List[core.Event]
+    _events = attr.ib(factory=list, type="List[events.Event]")
 
-    def __eq__(self, other):
-        return isinstance(other, Thread) and self.id == other.id
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    @attr.s(slots=True, repr_ns="Thread")
-    class Colour(object):
+    @attr.s(slots=True)
+    class Colour:
         """Used to specify thread colours"""
 
         MESSENGER_BLUE = "#0084ff"
@@ -58,8 +56,8 @@ class Thread(object):
         BRILLIANT_ROSE = "#ff5ca1"
         BILOBA_FLOWER = "#a695c7"
 
-    def to_send(self):
-        return {"other_user_fbid": self.id}
+    def to_send(self) -> JSON:
+        raise NotImplementedError
 
 
 @attr.s(slots=True)
@@ -67,31 +65,34 @@ class User(Thread):
     """Represents a Facebook user and the thread between that user and the client"""
 
     #: The user's first name
-    first_name = attr.ib(None, type=str)
+    first_name = attr.ib(None, type=str)  # TODO: Shouldn't be ``None``
     #: The user's last name
-    last_name = attr.ib(None, type=str)
-    #: Whether the user and the client are friends
-    is_friend = attr.ib(None, type=bool)
+    last_name = attr.ib(None, type=str)  # TODO: Shouldn't be ``None``
     #: The user's gender
     gender = attr.ib(None, type=str)
     #: Between 0 and 1. How close the client is to the user
     affinity = attr.ib(None, type=float)
+    #: Whether the user and the client are friends
+    is_friend = attr.ib(None, type=bool)
+
+    def to_send(self) -> JSON:
+        return {"other_user_fbid": self.id}
 
 
 @attr.s(slots=True)
 class Group(Thread):
     """Represents a group-thread"""
 
-    #: `User`\s, denoting the thread's participants
-    participants = attr.ib(type=Set[User], factory=set)
-    #: Set containing `User`\s, denoting the group's admins
-    admins = attr.ib(type=Set[User], factory=set)
     #: Whether users need approval to join
     approval_mode = attr.ib(None, type=bool)
+    #: `User`\s, denoting the thread's participants
+    participants = attr.ib(factory=set, type=Set[User])
+    #: Set containing `User`\s, denoting the group's admins
+    admins = attr.ib(factory=set, type=Set[User])
     #: Set containing `User`\s requesting to join the group
-    approval_requests = attr.ib(type=Set[User], factory=set)
+    approval_requests = attr.ib(factory=set, type=Set[User])
 
-    def to_send(self):
+    def to_send(self) -> JSON:
         return {"thread_fbid": self.id}
 
 
