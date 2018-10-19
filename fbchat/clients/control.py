@@ -62,7 +62,6 @@ class GroupControllerClient(ListenerClient):
             user (`User`): The removed user
         """
 
-
     def add_admin(self, group, user):
         """Promote a user to admin in a group
 
@@ -96,7 +95,6 @@ class GroupControllerClient(ListenerClient):
             actor (`User`): Person that demoted the user
             user (`User`)): The demoted user
         """
-
 
     def add_group(self, users):
         """Add/create a group
@@ -135,7 +133,6 @@ class GroupControllerClient(ListenerClient):
             group (`Group`): The deleted group
             actor (`User`): Person that deleted the group
         """
-
 
     def leave_group(self, group):
         """Leave a group. Shortcut of `remove_user`

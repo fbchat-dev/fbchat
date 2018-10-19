@@ -18,7 +18,6 @@ class ThreadConfigurerClient(CacherClient):
             thread (`Thread`): Thread to archive
         """
 
-
     def ignore(self, thread):
         """Ignore a thread
 
@@ -32,7 +31,6 @@ class ThreadConfigurerClient(CacherClient):
         Args:
             thread (`Thread`): Thread to stop ignoring
         """
-
 
     def mute(self, thread, time=None):
         """Mute a thread for a specific amount of time
@@ -51,7 +49,6 @@ class ThreadConfigurerClient(CacherClient):
             thread (`Thread`): Thread to unmute
         """
 
-
     def mute_reactions(self, thread):
         """Mute reactions in a thread
 
@@ -65,7 +62,6 @@ class ThreadConfigurerClient(CacherClient):
         Args:
             thread (`Thread`): Thread to unmute reactions in
         """
-
 
     def mute_mentions(self, thread):
         """Mute mentions in a thread

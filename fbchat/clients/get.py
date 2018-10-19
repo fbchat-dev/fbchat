@@ -60,7 +60,6 @@ class GetterClient(FetcherClient):
             A generator yielding `User`\s
         """
 
-
     def get_threads_from_ids(self, thread_ids):
         """Retrieve threads based on their IDs
 
@@ -70,7 +69,6 @@ class GetterClient(FetcherClient):
         Return:
             A generator yielding `Thread`\s, in the order and format their IDs were supplied
         """
-
 
     def get_events(self, thread, limit=None):
         """Retrieve events in a thread, starting from the newest

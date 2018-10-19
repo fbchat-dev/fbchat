@@ -24,7 +24,6 @@ class ThreadInterracterClient(ListenerClient):
             action (`Action`): Action that was executed
         """
 
-
     def set_reaction(self, message, reaction=None):
         """React to a message
 
@@ -45,7 +44,6 @@ class ThreadInterracterClient(ListenerClient):
             old_reaction: Previous reaction emoji
         """
 
-
     def remove_message(self, message):
         """Remove/delete a message
 
@@ -59,7 +57,6 @@ class ThreadInterracterClient(ListenerClient):
         Args:
             message (`Message`): Message to delete
         """
-
 
     def set_image(self, group, image=None):
         """Set a group's image
@@ -77,7 +74,6 @@ class ThreadInterracterClient(ListenerClient):
             actor (`User`): Person that set the image
             old_image (`Image`): The previous image
         """
-
 
     def set_title(self, group, title=None):
         """Set a group's title
@@ -97,7 +93,6 @@ class ThreadInterracterClient(ListenerClient):
             actor (`User` or `Page`): Person that set the title
             old_title: The previous title
         """
-
 
     def set_nickname(self, thread, user, nickname=None):
         """Set the nickname of a user in a group
@@ -120,7 +115,6 @@ class ThreadInterracterClient(ListenerClient):
             old_nickname: The previous nickname
         """
 
-
     def set_colour(self, thread, colour):
         """Set a thread's colour
 
@@ -137,7 +131,6 @@ class ThreadInterracterClient(ListenerClient):
             actor (`User` or `Page`): Person that set the colour
             old_colour (`Colour`): The previous colour
         """
-
 
     def set_emoji(self, thread, emoji=None):
         """Set a thread's emoji
@@ -156,7 +149,6 @@ class ThreadInterracterClient(ListenerClient):
             old_emoji: The previous emoji
         """
 
-
     def start_typing(self, thread):
         """Notify the thread that the client is currently typing
 
@@ -171,7 +163,6 @@ class ThreadInterracterClient(ListenerClient):
             thread (`Thread`): Thread where the user started typing
             actor (`Thread`): User that started typing
         """
-
 
     def stop_typing(self, thread):
         """Notify the thread that the client is no longer typing
@@ -188,7 +179,6 @@ class ThreadInterracterClient(ListenerClient):
             actor (`Thread`): User that stopped typing
         """
 
-
     def mark_delivered(self, thread):
         """Notify the thread that the last messages have been delivered
 
@@ -204,7 +194,6 @@ class ThreadInterracterClient(ListenerClient):
             actor (`Thread`): User that marked the messages as delivered
         """
 
-
     def mark_read(self, thread):
         """Notify the thread that the last messages have been read
 
@@ -219,7 +208,6 @@ class ThreadInterracterClient(ListenerClient):
             thread (`Thread`): Thread where the messages were marked as read
             actor (`Thread`): User that marked the messages as read
         """
-
 
     def mark_unread(self, thread):
         """Notify the thread that the last messages have been marked as unread

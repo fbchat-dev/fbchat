@@ -17,20 +17,20 @@ def add_events_to_cache(cache, events):
             events = cache[min1][:min2] + events
             break
         if x.time < events[0].time:
-            prepend = [cache[min1][:min2 + 1]]
+            prepend = [cache[min1][: min2 + 1]]
             break
 
     max1, max2 = (0, 0)
     append = []
     for max1, max2, x in traverse(cache):
         if x == events[-1]:
-            events = events + cache[max1][max2 + 1:]
+            events = events + cache[max1][max2 + 1 :]
             break
         if x.time > events[-1].time:
             append = [cache[max1][max2:]]
             break
 
-    return cache[:min1] + prepend + [events] + append + cache[max1 + 1:]
+    return cache[:min1] + prepend + [events] + append + cache[max1 + 1 :]
 
 
 class CacherClient(CoreClient):
@@ -81,13 +81,11 @@ class CacherClient(CoreClient):
 
         return thread
 
-
     def _cache_events(self, thread, events):
         [self._cache_event(e) for e in events]
         self._events.update(set(events))
-        #events.sort(lambda x: x.time)
+        # events.sort(lambda x: x.time)
         thread._events = add_events_to_cache(thread._events, events)
-
 
     def _cache_event(self, event):
         """Add an event to the cache
@@ -99,7 +97,7 @@ class CacherClient(CoreClient):
         if event in self._events:
             old_event = self._events[self._events.index(event)]
             for name, value in vars(event).items():
-                #if name not in ['is_read', 'name', 'width', 'height', 'pack', 'reactions'] and getattr(old_event, name) != value:
+                # if name not in ['is_read', 'name', 'width', 'height', 'pack', 'reactions'] and getattr(old_event, name) != value:
                 #    raise ValueError("A (supposedly) immutable attribue was changed in a cached event: old={} ({}), new={} ({})".format(old, vars(old), new, vars(new)))
                 setattr(old_event, name, value)
             return old_event
