@@ -308,7 +308,7 @@ def graphql_to_group(group):
         emoji=c_info.get('emoji'),
         admins = set([node.get('id') for node in group.get('thread_admins')]),
         approval_mode = bool(group.get('approval_mode')) if group.get('approval_mode') is not None else None,
-        approval_requests = approval_requests
+        approval_requests = approval_requests,
         join_link = group['joinable_mode'].get('link'),
         photo=group['image'].get('uri'),
         name=group.get('name'),
