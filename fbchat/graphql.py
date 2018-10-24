@@ -295,6 +295,11 @@ def graphql_to_group(group):
     plan = None
     if group.get('event_reminders'):
         plan = graphql_to_plan(group['event_reminders']['nodes'][0]) if group['event_reminders'].get('nodes') else None
+        
+    approval_requests = None
+    if group.get('group_approval_queue'):
+        approval_requests = set(node["requester"]['id'] for node in group['group_approval_queue']['nodes'])
+        
     return Group(
         group['thread_key']['thread_fbid'],
         participants=set([node['messaging_actor']['id'] for node in group['all_participants']['nodes']]),
@@ -303,7 +308,7 @@ def graphql_to_group(group):
         emoji=c_info.get('emoji'),
         admins = set([node.get('id') for node in group.get('thread_admins')]),
         approval_mode = bool(group.get('approval_mode')) if group.get('approval_mode') is not None else None,
-        approval_requests = set(node["requester"]['id'] for node in group['group_approval_queue']['nodes']) if group.get('group_approval_queue') else None,
+        approval_requests = approval_requests
         join_link = group['joinable_mode'].get('link'),
         photo=group['image'].get('uri'),
         name=group.get('name'),
