@@ -168,10 +168,12 @@ class Client(object):
 
     def graphql_requests(self, *queries):
         """
-        .. todo::
-            Documenting this
+        :param queries: Zero or more GraphQL objects
+        :type queries: GraphQL
 
         :raises: FBchatException if request failed
+        :return: A tuple containing json graphql queries
+        :rtype: tuple
         """
 
         return tuple(self._graphql({
@@ -441,7 +443,8 @@ class Client(object):
             return given_thread_id, given_thread_type
 
     def setDefaultThread(self, thread_id, thread_type):
-        """Sets default thread to send messages to
+        """
+        Sets default thread to send messages to
 
         :param thread_id: User/Group ID to default to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
