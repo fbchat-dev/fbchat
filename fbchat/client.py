@@ -1153,7 +1153,7 @@ class Client(object):
         """
         self._sendLocation(location=location, current=False, thread_id=thread_id, thread_type=thread_type)
 
-    def _upload(self, files):
+    def _upload(self, files, voice_clip=False):
         """
         Uploads files to Facebook
 
@@ -1163,7 +1163,12 @@ class Client(object):
         Returns a list of tuples with a file's ID and mimetype
         """
         file_dict = {'upload_{}'.format(i): f for i, f in enumerate(files)}
-        j = self._postFile(self.req_url.UPLOAD, files=file_dict, fix_request=True, as_json=True)
+
+        data = {
+            "voice_clip": voice_clip,
+        }
+
+        j = self._postFile(self.req_url.UPLOAD, files=file_dict, query=data, fix_request=True, as_json=True)
 
         if len(j['payload']['metadata']) != len(files):
             raise FBchatException("Some files could not be uploaded: {}, {}".format(j, files))
@@ -1207,7 +1212,7 @@ class Client(object):
         """
         Sends local files to a thread
 
-        :param file_path: Paths of files to upload and send
+        :param file_paths: Paths of files to upload and send
         :param message: Additional message
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
@@ -1218,6 +1223,39 @@ class Client(object):
         file_paths = require_list(file_paths)
         with get_files_from_paths(file_paths) as x:
             files = self._upload(x)
+        return self._sendFiles(files=files, message=message, thread_id=thread_id, thread_type=thread_type)
+
+    def sendRemoteVoiceClips(self, clip_urls, message=None, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Sends voice clips from URLs to a thread
+
+        :param clip_urls: URLs of clips to upload and send
+        :param message: Additional message
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent files
+        :raises: FBchatException if request failed
+        """
+        clip_urls = require_list(clip_urls)
+        files = self._upload(get_files_from_urls(clip_urls), voice_clip=True)
+        return self._sendFiles(files=files, message=message, thread_id=thread_id, thread_type=thread_type)
+
+    def sendLocalVoiceClips(self, clip_paths, message=None, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Sends local voice clips to a thread
+
+        :param clip_paths: Paths of clips to upload and send
+        :param message: Additional message
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent files
+        :raises: FBchatException if request failed
+        """
+        clip_paths = require_list(clip_paths)
+        with get_files_from_paths(clip_paths) as x:
+            files = self._upload(x, voice_clip=True)
         return self._sendFiles(files=files, message=message, thread_id=thread_id, thread_type=thread_type)
 
     def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER, is_gif=False):
