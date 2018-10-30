@@ -177,7 +177,6 @@ class Client(object):
         """
 
         return tuple(self._graphql({
-            'method': 'GET',
             'response_format': 'json',
             'queries': graphql_queries_to_json(*queries)
         }))

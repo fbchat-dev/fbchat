@@ -45,3 +45,9 @@ Maintainer
 
 - Mads Marquart / `@madsmtm <https://github.com/madsmtm>`__
 - Taehoon Kim / `@carpedm20 <http://carpedm20.github.io/about/>`__
+
+
+Other projects using fbchat
+---------------------------
+
+- qwertyuu / `SMSenger-Bridge <https://github.com/qwertyuu/SMSenger-Bridge>`__
