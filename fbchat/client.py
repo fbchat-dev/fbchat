@@ -993,7 +993,10 @@ class Client(object):
 
     def getUserActiveStatus(self, user_id):
         """
-        Gets friend active status as an :class:`models.ActiveStatus` object
+        Gets friend active status as an :class:`models.ActiveStatus` object.
+        
+        .. warning::
+            Only works when listening.
 
         :param user_id: ID of the user
         :rtype: models.ActiveStatus
@@ -2433,7 +2436,7 @@ class Client(object):
         :type markAlive: bool
         """
         if markAlive is not None:
-            self._markAlive = markAlive
+            self.setActiveStatus(markAlive)
 
         self.startListening()
         self.onListening()
@@ -2443,7 +2446,7 @@ class Client(object):
 
         self.stopListening()
 
-    def setActiveStatus(markAlive):
+    def setActiveStatus(self, markAlive):
         """
         Changes client active status while listening
 
