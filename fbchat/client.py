@@ -1956,54 +1956,42 @@ class Client(object):
     LISTEN METHODS
     """
 
-    def _ping(self, sticky, pool):
+    def _ping(self):
         data = {
             'channel': self.user_channel,
             'clientid': self.client_id,
             'partition': -2,
             'cap': 0,
             'uid': self.uid,
-            'sticky_token': sticky,
-            'sticky_pool': pool,
+            'sticky_token': self.sticky,
+            'sticky_pool': self.pool,
             'viewer_uid': self.uid,
             'state': 'active',
         }
         self._get(self.req_url.PING, data, fix_request=True, as_json=False)
 
-    def _fetchSticky(self):
-        """Call pull api to get sticky and pool parameter, newer api needs these parameters to work"""
-
-        data = {
-            "msgs_recv": 0,
-            "channel": self.user_channel,
-            "clientid": self.client_id
-        }
-
-        j = self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
-
-        if j.get('lb_info') is None:
-            raise FBchatException('Missing lb_info: {}'.format(j))
-
-        return j['lb_info']['sticky'], j['lb_info']['pool']
-
-    def _pullMessage(self, sticky, pool, markAlive=True):
+    def _pullMessage(self, markAlive=True):
         """Call pull api with seq value to get message data."""
 
         data = {
             "msgs_recv": 0,
-            "sticky_token": sticky,
-            "sticky_pool": pool,
+            "sticky_token": self.sticky,
+            "sticky_pool": self.pool,
             "clientid": self.client_id,
             'state': 'active' if markAlive else 'offline',
         }
 
-        j = self._get(ReqUrl.STICKY, data, fix_request=True, as_json=True)
+        j = self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
 
         self.seq = j.get('seq', '0')
         return j
 
     def _parseMessage(self, content):
         """Get message and author name from content. May contain multiple messages in the content."""
+
+        if 'lb_info' in content:
+            self.sticky = content['lb_info']['sticky']
+            self.pool = content['lb_info']['pool']
 
         if 'ms' not in content: return
 
@@ -2350,7 +2338,6 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         self.listening = True
-        self.sticky, self.pool = self._fetchSticky()
 
     def doOneListen(self, markAlive=True):
         """
@@ -2364,8 +2351,8 @@ class Client(object):
         """
         try:
             if markAlive:
-                self._ping(self.sticky, self.pool)
-            content = self._pullMessage(self.sticky, self.pool, markAlive)
+                self._ping()
+            content = self._pullMessage(markAlive)
             if content:
                 self._parseMessage(content)
         except KeyboardInterrupt:
