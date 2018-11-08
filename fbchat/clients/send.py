@@ -1,64 +1,25 @@
-# -*- coding: UTF-8 -*-
-
-from __future__ import unicode_literals
-
-import logging
-
-from .listen import ListenerClient
+from .core import Core
 from ..models import Message, Sticker, AnimatedSticker, Emoji, Text, FileMessage
 
 log = logging.getLogger(__name__)
 
 
-__all__ = ("SenderClient",)
+__all__ = ("MessageSending",)
 
 
-class SenderClient(ListenerClient):
-    """Enables sending various messages to threads
+class MessageSending(Core):
+    """Enables sending various messages to channels"""
 
-    Every method in this class, except `send`, `on_message` and `upload`, are
-    shortcuts of the aforementioned
-
-    Attributes:
-        sent_messages (list): All messages sent by the client
-    """
-
-    def send(self, thread, message):
-        """Send the contents specified in a message object to a thread
-
-        If ``message.thread``, ``message.actor`` or ``message.id`` is set, they will be
-        ignored (Which means it's safe to send a previously recieved message)
-
-        Args:
-            thread (`Thread`): Thread to send the message to
-            message (`Message`): Message to send
-
-        Return:
-            New `Message`, denoting the sent message
-        """
+    def _send(self, channel: Channel, message: Message) -> Message:
         data = message.to_send()
-        data.update(thread.to_send())
+        data.update(channel.to_send())
 
         j = self.session.post("/messaging/send/", data).json()
 
         action, = j["payload"]["actions"]
-        return type(message).from_send(action, message, thread=thread, actor=self.user)
-
-    def on_event(self, event):
-        super(SenderClient, self).on_event(event)
-        if isinstance(event, Message):
-            self.on_message(event)
-
-    def on_message(self, message):
-        """Called when someone sends a message
-
-        Args:
-            message (`Message`): Message that was sent
-        """
-        if isinstance(message, Text):
-            self.on_text(message.thread, message.actor, message.text, message.mentions)
-        elif isinstance(message, Emoji):
-            self.on_emoji(message.thread, message.actor, message.emoji, message.size)
+        return type(message).from_send(
+            action, message, channel=channel, actor=self.user
+        )
 
     def upload(self, paths, names=None):
         """Upload a set of files to Facebook, to later send them in messages
@@ -99,69 +60,47 @@ class SenderClient(ListenerClient):
             delta, delta_type, delta_class
         )
 
-    def send_text(self, thread, text, mentions=None):
-        """Send a piece of text to a thread. Shortcut of `send`
+    def send_text(self, channel, text, mentions=None) -> TextMessage:
+        """Send a piece of text to a channel. Shortcut of `send`
 
         If ``mentions`` is ``None``, it will act like an empty list
 
         Args:
-            thread (`Thread`): Thread to send the text to
+            channel (`Channel`): Channel to send the text to
             text: Text to send
             mentions (list): `Mention` objects
 
         Return:
-            `Message`, denoting the sent message
+            The sent text message
         """
-        return self.send(thread, Text(text=text, mentions=mentions))
+        return self._send(channel, Text(text=text, mentions=mentions))
 
-    def on_text(self, thread, actor, text, mentions):
-        """Called when text is recieved. Shortcut of `on_message`
+    def send_emoji(self, channel, emoji=None, size=Emoji.Size.SMALL) -> Emoji:
+        """Send a emoji to a channel. Shortcut of `send`
+
+        If ``emoji`` is ``None``, the channel's default emoji will be sent
 
         Args:
-            thread (`Thread`): Thread that the text was sent to
-            actor (`Thread`): User that sent the text
-            text: Text that was sent
-            mentions (list): `Mention` objects
-        """
-        log.info("Recieved %r, %s in %s, sent by %s", text, mentions, thread, actor)
-
-    def send_emoji(self, thread, emoji=None, size=Emoji.Size.SMALL):
-        """Send a emoji to a thread. Shortcut of `send`
-
-        If ``emoji`` is ``None``, the thread's default emoji will be sent
-
-        Args:
-            thread (`Thread`): Thread to send the emoji to
+            channel (`Channel`): Channel to send the emoji to
             emoji: Emoji to send
             size (`Emoji.Size`): Size of the emoji
 
         Return:
-            `Message`, denoting the sent message
+            The sent emoji
         """
-        return self.send(thread, Emoji(emoji=emoji, size=size))
+        return self._send(channel, Emoji(emoji=emoji, size=size))
 
-    def on_emoji(self, thread, actor, emoji, size):
-        """Called when an emoji is recieved. Shortcut of `on_message`
+    def send_file(self, channel, path, name=None) -> FileMessage:
+        """Send a file to a channel. Shortcut combination of `send` and `upload`
 
         Args:
-            thread (`Thread`): Thread that the emoji was sent to
-            actor (`Thread`): User that sent the emoji
-            emoji: Emoji that was sent
-            size (`Size`): Size of the sent emoji
-        """
-        log.info("Recieved %r, %s in %s, sent by %s", emoji, size, thread, actor)
-
-    def send_file(self, thread, path, name=None):
-        """Send a file to a thread. Shortcut combination of `send` and `upload`
-
-        Args:
-            thread: Thread to send the files to
+            channel: Channel to send the files to
             path: Path to the file which should be sent
             name: Name of the file which is sent
 
         Return:
-            `Message`, denoting the sent message
+            The sent file message
         """
-        return self.send(thread, self.upload(path, name))
+        return self._send(channel, self.upload(path, name))
 
     # More shortcuts could be added

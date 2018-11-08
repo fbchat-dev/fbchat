@@ -1,142 +1,69 @@
-# -*- coding: UTF-8 -*-
+from typing import List
 
-from __future__ import unicode_literals
+from .core import Core
+from ..models import GroupChannel, User
+from ..models.incomplete import GroupChannelData
 
-from .listen import ListenerClient
+__all__ = ("GroupControl",)
 
 
-__all__ = ("GroupControllerClient",)
+class GroupControl(Core):
+    """Contains methods to control groups"""
 
-
-class GroupControllerClient(ListenerClient):
-    """Enables the client to control groups and listen to those events"""
-
-    def add_users(self, group, users):
-        """Add users to a group
-
-        Args:
-            group (`Group`): Group to add the users to
-            users (list): `User`\s, denoting the users to add
-        """
-
-    def on_users_added(self, group, actor, users):
-        """Called when users are added to a group
+    async def add_participants(
+        self, group_channel: GroupChannel, users: List[User]
+    ) -> None:
+        """Add users to a group channel
 
         Args:
-            group (`Group`): Group that the users were added to
-            actor (`User`): Person that added the users
-            users (list): `User`\s, denoting the added users
+            group: Group to add the users to
+            users: Users to add
         """
 
-    def add_user(self, group, user):
-        """Add a user to a group. Shortcut of `add_users`
+    async def remove_participants(
+        self, group_channel: GroupChannel, users: List[User]
+    ) -> None:
+        """Remove/kick users from a group
 
         Args:
-            group (`Group`): Group to add the user to
-            user (`User`): Person to add
+            group: Group to remove the user from
+            users: Users to remove
         """
 
-    def on_user_added(self, group, actor, user):
-        """Called when a user is added. Shortcut of `on_users_added`
+    async def add_admins(self, group_channel: GroupChannel, users: List[User]) -> None:
+        """Promote users to admins in a group
 
         Args:
-            group (`Group`): Group that the user were added to
-            actor (`User`): Person that added the user
-            user (`User`): The added user
+            group: Group to promote the user in
+            users: Users to promote
         """
 
-    def remove_user(self, group, user):
-        """Remove/kick a user from a group
+    async def remove_admins(
+        self, group_channel: GroupChannel, users: List[User]
+    ) -> None:
+        """Demote users from being admins
 
         Args:
-            group (`Group`): Group to remove the user from
-            user (`User`): Person to remove
+            group: Group to demote the users from being admin in
+            users: Users to demote
         """
 
-    def on_user_removed(self, group, actor, user):
-        """Called when a user is removed/kicked
-
-        Args:
-            group (`Group`): Group that the user were removed from
-            actor (`User`): Person that removed the user
-            user (`User`): The removed user
-        """
-
-    def add_admin(self, group, user):
-        """Promote a user to admin in a group
-
-        Args:
-            group (`Group`): Group to promote the user in
-            user (`User`): Person to promote
-        """
-
-    def on_admin_added(self, group, actor, user):
-        """Called when a user is promoted to admin
-
-        Args:
-            group (`Group`): Group that the user were promoted in
-            actor (`User`): Person that promoted the user
-            user (`User`): The promoted user
-        """
-
-    def remove_admin(self, group, user):
-        """Demote a user from being an admin
-
-        Args:
-            group (`Group`): Group to demote the user from being an admin in
-            user (`User`): User to demote
-        """
-
-    def on_admin_removed(self, group, actor, user):
-        """Called when a user is demoted as an admin
-
-        Args:
-            group (`Group`): Group that the user were demoted in
-            actor (`User`): Person that demoted the user
-            user (`User`)): The demoted user
-        """
-
-    def add_group(self, users):
+    async def add_group_channel(self, users: List[User]) -> GroupChannelData:
         """Add/create a group
 
         Args:
-            users (list): `User` objects, denoting the users that the group
-                should be created with
+            users: Users that the group should be created with
 
         Return:
-            `Group`, denoting the newly created group
+            Data about the newly created group
         """
 
-    def on_group_added(self, group, actor):
-        """Called when a new group is added/created
-
-        Args:
-            group (`Group`): The newly created group
-            actor (`User`): Person that created the group
-        """
-
-    def remove_group(self, group):
+    async def remove_group_channel(self, group_channel: GroupChannel) -> None:
         """Remove/delete a group
 
         Warning:
-            Will delete the group without any further warning. Use with
-            caution!
+            Will delete the group without any further warning. Use with caution!
 
         Args:
-            group (`Group`): Group to delete
-        """
-
-    def on_group_removed(self, group, actor):
-        """Called when a group is removed/deleted
-
-        Args:
-            group (`Group`): The deleted group
-            actor (`User`): Person that deleted the group
-        """
-
-    def leave_group(self, group):
-        """Leave a group. Shortcut of `remove_user`
-
-        Args:
-            group (`Group`): Group to leave
+            group: Group to delete
         """

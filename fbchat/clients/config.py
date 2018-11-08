@@ -1,78 +1,85 @@
-# -*- coding: UTF-8 -*-
+from datetime import timedelta
 
-from __future__ import unicode_literals
+from .core import Core
+from ..models import Channel
 
-from .cache import CacherClient
-
-
-__all__ = ("ThreadConfigurerClient",)
+__all__ = ("ChannelConfiguration",)
 
 
-class ThreadConfigurerClient(CacherClient):
-    """Enables the client to configure threads"""
+class ChannelConfiguration(Core):
+    """Contains methods to configure channels"""
 
-    def archive(self, thread):
-        """Archive a thread
+    async def archive(self, channel: Channel) -> None:
+        """Archive a channel
 
         Args:
-            thread (`Thread`): Thread to archive
+            channel: Channel to archive
         """
 
-    def ignore(self, thread):
-        """Ignore a thread
+    async def unarchive(self, channel: Channel) -> None:
+        ...
+
+    async def ignore(self, channel: Channel) -> None:
+        """Ignore a channel
 
         Args:
-            thread (`Thread`): Thread to ignore
+            channel: Channel to ignore
         """
 
-    def unignore(self, thread):
-        """Unignore a thread
+    async def unignore(self, channel: Channel) -> None:
+        """Unignore a channel
 
         Args:
-            thread (`Thread`): Thread to stop ignoring
+            channel: Channel to stop ignoring
         """
 
-    def mute(self, thread, time=None):
-        """Mute a thread for a specific amount of time
+    async def mute(self, channel: Channel, *, duration: timedelta = None) -> None:
+        """Mute a channel for a specific amount of time
 
-        If ``time`` is ``None``, the thread will be muted indefinitely
+        If ``time`` is ``None``, the channel will be muted indefinitely
 
         Args:
-            thread (`Thread`): Thread to mute
-            time (float): Amount of time to mute the thread, in seconds
+            channel: Channel to mute
+            duration: Duration of time to mute channel
         """
 
-    def unmute(self, thread):
-        """Unmute a thread
+    async def unmute(self, channel: Channel) -> None:
+        """Unmute a channel
 
         Args:
-            thread (`Thread`): Thread to unmute
+            channel: Channel to unmute
         """
 
-    def mute_reactions(self, thread):
-        """Mute reactions in a thread
+    async def mute_reactions(
+        self, channel: Channel, *, duration: timedelta = None
+    ) -> None:
+        """Mute reactions in a channel
 
         Args:
-            thread (`Thread`): Thread to mute reactions in
+            channel: Channel to mute reactions in
+            duration: Duration of time to mute reactions
         """
 
-    def unmute_reactions(self, thread):
-        """Unmute reactions in a thread
+    async def unmute_reactions(self, channel: Channel) -> None:
+        """Unmute reactions in a channel
 
         Args:
-            thread (`Thread`): Thread to unmute reactions in
+            channel: Channel to unmute reactions in
         """
 
-    def mute_mentions(self, thread):
-        """Mute mentions in a thread
+    async def mute_mentions(
+        self, channel: Channel, *, duration: timedelta = None
+    ) -> None:
+        """Mute mentions in a channel
 
         Args:
-            thread (`Thread`): Thread to mute mentions in
+            channel: Channel to mute mentions in
+            duration: Duration of time to mute mentions
         """
 
-    def unmute_mentions(self, thread):
-        """Unmute mentions in a thread
+    async def unmute_mentions(self, channel: Channel) -> None:
+        """Unmute mentions in a channel
 
         Args:
-            thread (`Thread`): Thread to unmute mentions in
+            channel: Channel to unmute mentions in
         """
