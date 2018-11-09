@@ -1993,6 +1993,10 @@ class Client(object):
             self.sticky = content['lb_info']['sticky']
             self.pool = content['lb_info']['pool']
 
+        if 'batches' in content:
+            for batch in content['batches']:
+                self._parseMessage(batch)
+
         if 'ms' not in content: return
 
         for m in content["ms"]:
