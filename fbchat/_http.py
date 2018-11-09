@@ -1,16 +1,18 @@
 import json
-import re
 import asks
 
 from random import choice
-from typing import Type, List, Dict, Any
+from typing import Type, List, Dict, Any, ClassVar, Optional
 from copy import copy
-from bs4 import BeautifulSoup as bs
 from asks.response_objects import Response
+
+__all__ = ("BaseSession", "FacebookResponse", "FacebookSession")
 
 
 class BaseSession(asks.Session):
-    response_cls = Response  # type: Type[Response]
+    response_cls = Response  # type: ClassVar[Type[Response]]
+
+    ENDPOINTS = []  # type: List[str]
 
     def __init__(self, params: Dict = None, **kwargs) -> None:
         if params is None:
@@ -34,9 +36,11 @@ class BaseSession(asks.Session):
             netloc = self.base_location
         return self._cookie_tracker.get_additional_cookies(netloc, path)
 
-    def get_cookie(self, name: str, netloc: str = None, path: str = "") -> str:
+    def get_cookie(
+        self, name: str, netloc: str = None, path: str = ""
+    ) -> Optional[str]:
         """Get a single cookie"""
-        return self.get_cookies(netloc=netloc, path=path)[name]
+        return self.get_cookies(netloc=netloc, path=path).get(name)
 
     async def request(self, method: str, url: str = None, **kwargs) -> Response:
         """Overwritten to enable default parameters and customizing response class"""
@@ -73,39 +77,17 @@ class FacebookSession(BaseSession):
         "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6",
     ]
 
-    FIND_FB_DTSG = re.compile(r'name="fb_dtsg" value="(.*?)"')
-    FIND_CLIENT_REVISION = re.compile(r'"client_revision":(.*?),')
+    BASE_URL = "https://www.facebook.com"
 
     def __init__(self, user_agent: str = None, **kwargs) -> None:
-        kwargs.setdefault("base_location", "https://www.facebook.com")
+        kwargs["base_location"] = self.BASE_URL
         kwargs.setdefault("persist_cookies", True)
 
         if not user_agent:
             user_agent = choice(self.USER_AGENTS)
 
-        kwargs.setdefault("header", {})
-        kwargs["header"].setdefault("Referer", kwargs["base_location"])
-        kwargs["header"].setdefault("User-Agent", user_agent)
+        kwargs.setdefault("headers", {})
+        kwargs["headers"].setdefault("Referer", self.BASE_URL)
+        kwargs["headers"].setdefault("User-Agent", user_agent)
 
         super().__init__(**kwargs)
-
-    def _set_fb_dtsg_html(self, html: str) -> None:
-        soup = bs(html, "html.parser")
-
-        elem = soup.find("input", {"name": "fb_dtsg"})
-        if elem:
-            fb_dtsg = elem.get("value")
-        else:
-            # Fallback to regex
-            fb_dtsg = self.FIND_FB_DTSG.search(html).group(1)
-
-        self.params["fb_dtsg"] = fb_dtsg
-
-    async def _set_default_params(self) -> None:
-        resp = await self.get(self.base_location)
-
-        rev = self.FIND_CLIENT_REVISION.search(resp.text).group(1)
-
-        self.params = {"__rev": rev, "__user": self.get_cookie("c_user"), "__a": "1"}
-
-        self._set_fb_dtsg_html(resp.text)
