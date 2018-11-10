@@ -7,7 +7,7 @@ from ._http import BaseSession
 __all__ = ("Core",)
 
 
-class FacebookCore:
+class Core:
     """Core methods for logging in to and out of Facebook"""
 
     __slots__ = ("_session",)

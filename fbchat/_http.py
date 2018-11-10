@@ -33,7 +33,7 @@ class BaseSession(requests.Session):
         return self._rewrite_response_class(r)
 
 
-class FacebookResponse(requests.Response):
+class Response(requests.Response):
     def json(self):
         return json.loads(self._strip_text_for_json(self.text))
 
@@ -46,8 +46,8 @@ class FacebookResponse(requests.Response):
             raise ValueError("No JSON object found: {!r}".format(text))
 
 
-class FacebookSession(BaseSession):
-    response_cls = FacebookResponse
+class Session(BaseSession):
+    response_cls = Response
 
     USER_AGENTS = [
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36",
