@@ -13,7 +13,7 @@ class FacebookCore:
     __slots__ = ("_session",)
 
     MOBILE_URL = "https://m.facebook.com"
-    LOGIN_URL = "https://m.facebook.com/login.php?login_attempt=1"
+    LOGIN_URL = "{}/login.php?login_attempt=1".format(MOBILE_URL)
     FIND_FB_DTSG = re.compile(r'name="fb_dtsg" value="(.*?)"')
     FIND_CLIENT_REVISION = re.compile(r'"client_revision":(.*?),')
     FIND_LOGOUT_VALUE = re.compile(r'name=\\"h\\" value=\\"(.*?)\\"')
@@ -40,7 +40,7 @@ class FacebookCore:
 
         self._session.params = {
             "__rev": rev,
-            "__user": self._session.get_cookie("c_user"),
+            "__user": self._session.cookies["c_user"],
             "__a": "1",
         }
 
@@ -68,7 +68,7 @@ class FacebookCore:
 
         r = await self._session.post(self.LOGIN_URL, data=data)
 
-        if self._session.get_cookie("c_user") is None:
+        if "c_user" not in self._session.cookies:
             raise ValueError("Could not login, failed on: {}".format(r.url))
 
         await self._set_default_params()
@@ -76,10 +76,12 @@ class FacebookCore:
     async def logout(self) -> None:
         """Properly log out and invalidate the session"""
 
-        r = self._session.post("/bluebar/modern_settings_menu/", data={"pmid": "4"})
+        r = await self._session.post(
+            "/bluebar/modern_settings_menu/", data={"pmid": "4"}
+        )
         logout_h = self.FIND_LOGOUT_VALUE.search(r.text).group(1)
 
-        self._session.get("/logout.php", params={"ref": "mb", "h": logout_h})
+        await self._session.get("/logout.php", params={"ref": "mb", "h": logout_h})
 
     async def is_logged_in(self) -> bool:
         """Check the login status
@@ -87,7 +89,7 @@ class FacebookCore:
         Return:
             Whether the session is still logged in
         """
-
         # Call the login url, and see if we're redirected to the home page
-        r = self._session.get(self.LOGIN_URL)
-        return "home" in r.url
+        r = await self._session.get(self.LOGIN_URL, allow_redirects=False)
+
+        return "Location" in r.headers and "home" in r.headers["Location"]

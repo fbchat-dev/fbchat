@@ -1,26 +1,19 @@
 import json
-import asks
+import requests
 
 from random import choice
 from typing import Type, List, Dict, Any, ClassVar, Optional
 from copy import copy
-from asks.response_objects import Response
 
 __all__ = ("BaseSession", "FacebookResponse", "FacebookSession")
 
 
-class BaseSession(asks.Session):
-    response_cls = Response  # type: ClassVar[Type[Response]]
+class BaseSession(requests.Session):
+    response_cls = requests.Response  # type: ClassVar[Type[requests.Response]]
 
-    ENDPOINTS = []  # type: List[str]
+    BASE_URL = None  # type: ClassVar[str]
 
-    def __init__(self, params: Dict = None, **kwargs) -> None:
-        if params is None:
-            params = {}
-        self.params = params
-        super().__init__(**kwargs)
-
-    def _rewrite_response_class(self, resp: Response) -> Response:
+    def _rewrite_response_class(self, resp: requests.Response) -> requests.Response:
         """Override default `asks.Response` class with our own class
 
         Note:
@@ -30,29 +23,17 @@ class BaseSession(asks.Session):
         resp.__class__ = self.response_cls
         return resp
 
-    def get_cookies(self, netloc: str = None, path: str = "") -> Dict[str, str]:
-        """Get a dict of cookie values"""
-        if netloc is None:
-            netloc = self.base_location
-        return self._cookie_tracker.get_additional_cookies(netloc, path)
+    async def request(self, method: str, url: str, **kwargs) -> requests.Response:
+        """Overwritten to enable base url, async and customizing response class"""
+        if url.startswith("/") and self.BASE_URL is not None:
+            url = self.BASE_URL + url
 
-    def get_cookie(
-        self, name: str, netloc: str = None, path: str = ""
-    ) -> Optional[str]:
-        """Get a single cookie"""
-        return self.get_cookies(netloc=netloc, path=path).get(name)
+        r = super().request(method, url, **kwargs)
 
-    async def request(self, method: str, url: str = None, **kwargs) -> Response:
-        """Overwritten to enable default parameters and customizing response class"""
-        params = copy(self.params)
-        params.update(kwargs.pop("params", {}))
-
-        resp = await super().request(method, url=url, params=params, **kwargs)
-
-        return self._rewrite_response_class(resp)
+        return self._rewrite_response_class(r)
 
 
-class FacebookResponse(Response):
+class FacebookResponse(requests.Response):
     def json(self):
         return json.loads(self._strip_text_for_json(self.text))
 
@@ -79,15 +60,10 @@ class FacebookSession(BaseSession):
 
     BASE_URL = "https://www.facebook.com"
 
-    def __init__(self, user_agent: str = None, **kwargs) -> None:
-        kwargs["base_location"] = self.BASE_URL
-        kwargs.setdefault("persist_cookies", True)
+    def __init__(self, user_agent: str = None) -> None:
+        super().__init__()
 
-        if not user_agent:
+        if user_agent is None:
             user_agent = choice(self.USER_AGENTS)
 
-        kwargs.setdefault("headers", {})
-        kwargs["headers"].setdefault("Referer", self.BASE_URL)
-        kwargs["headers"].setdefault("User-Agent", user_agent)
-
-        super().__init__(**kwargs)
+        self.header = {"Referer": self.BASE_URL, "User-Agent": user_agent}
