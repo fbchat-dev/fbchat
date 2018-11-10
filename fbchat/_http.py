@@ -34,7 +34,13 @@ class BaseSession(requests.Session):
 
 
 class Response(requests.Response):
+    @property
+    def apparent_encoding(self):
+        """Overwritten to disable chardet encoding detection. Facebook uses utf-8"""
+        return "utf-8"
+
     def json(self):
+        """Overwritten to enable seamless fixing of Facebook's wierd responses"""
         return json.loads(self._strip_text_for_json(self.text))
 
     @staticmethod
