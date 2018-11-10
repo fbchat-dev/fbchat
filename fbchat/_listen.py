@@ -24,6 +24,9 @@ class Listener:
         "mark_alive",
     )
 
+    CONNECT_TIMEOUT = 10
+    READ_TIMEOUT = 60  # The server holds the request open for 50 seconds
+
     PULL_URL = "https://0-edge-chat.facebook.com/pull"
 
     def __init__(self, session: BaseSession, mark_alive=False) -> None:
@@ -55,7 +58,7 @@ class Listener:
                 "clientid": self._clientid,
                 "state": "active" if self.mark_alive else "offline",
             },
-            timeout=60,
+            timeout=(self.CONNECT_TIMEOUT, self.READ_TIMEOUT),
         )
         return r.json()
 
