@@ -5,7 +5,7 @@ from random import choice
 from typing import Type, List, Dict, Any, ClassVar, Optional
 from copy import copy
 
-__all__ = ("BaseSession", "FacebookResponse", "FacebookSession")
+__all__ = ("BaseSession", "Response", "Session")
 
 
 class BaseSession(requests.Session):

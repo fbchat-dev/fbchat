@@ -68,31 +68,36 @@ class Listener:
     def parse_raw(self, data):
         log.debug("Data from listening: %s", data)
 
-        self._seq = data.get("seq", self._seq)
+        if "seq" in data:
+            self._seq = data["seq"]
 
         type_ = data["t"]
 
         if type_ == "msg":
-            self.parse_ms(data["ms"])
+            self.parse_ms(data)
         elif type_ == "heartbeat":
             # Pull request refresh, no need to do anything
             pass
         elif type_ == "fullReload":
-            self.parse_ms(data["ms"])
+            self.parse_full_reload(data)
         elif type_ == "lb":
-            self.parse_lb_info(data["lb_info"])
+            self.parse_lb_info(data)
         else:
             log.info("Unknown data: %s", data)
 
     def parse_lb_info(self, data):
-        self._pool = data["pool"]
-        self._sticky = data["sticky"]
+        self._pool = data["lb_info"]["pool"]
+        self._sticky = data["lb_info"]["sticky"]
+
+    def parse_full_reload(self, data):
+        if "ms" in data:
+            self.parse_ms(data)
 
     def parse_ms(self, data):
-        for item in data:
+        for item in data["ms"]:
             self.parse(item, item["type"])
 
     def parse(self, data, type_):
         if type_ == "qprimer":
             return "QPrimer(Event)"
-        log.info("Unknown msg: %s", item)
+        log.info("Unknown msg: %s", data)
