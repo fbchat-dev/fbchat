@@ -1,7 +1,6 @@
 import logging
 import random
 import requests
-from async_generator import async_generator, yield_, yield_from_
 
 from ._http import BaseSession
 
@@ -47,33 +46,29 @@ class Listener:
     def __exit__(self, *exc) -> None:
         self._clean()
 
-    async def _pull(self):
-        r = await self._session.get(
-            self.PULL_URL,
-            params={
-                "seq": self._seq,
-                "msgs_recv": self._msgs_recv,
-                "sticky_token": self._sticky_token,
-                "sticky_pool": self._sticky_pool,
-                "clientid": self._clientid,
-                "state": "active" if self.mark_alive else "offline",
-            },
-            timeout=(self.CONNECT_TIMEOUT, self.READ_TIMEOUT),
-        )
-        return r.json()
-
-    @async_generator
-    async def step(self):
+    async def pull(self):
         try:
-            data = await self._pull()
+            r = await self._session.get(
+                self.PULL_URL,
+                params={
+                    "seq": self._seq,
+                    "msgs_recv": self._msgs_recv,
+                    "sticky_token": self._sticky_token,
+                    "sticky_pool": self._sticky_pool,
+                    "clientid": self._clientid,
+                    "state": "active" if self.mark_alive else "offline",
+                },
+                timeout=(self.CONNECT_TIMEOUT, self.READ_TIMEOUT),
+            )
         except (requests.ConnectionError, requests.Timeout):
             # If we lost our internet connection, keep trying every minute
             await trio.sleep(60)
             return
 
-        log.debug("Data from listening: %s", data)
+        if not r.text:
+            return None
 
-        await yield_from_(self._handle_protocol_data(data))
+        return r.json()
 
     def get_backoff_delay(self):
         if self._backoff > 0:
@@ -83,7 +78,7 @@ class Listener:
             return delay * random.uniform(1, 1.5)
         return 0
 
-    def _handle_protocol_data(self, data):
+    def handle_protocol_data(self, data):
         """Handle pull protocol data, and yield data frames ready for further parsing"""
         if "seq" in data:
             self._seq = data["seq"]
@@ -112,8 +107,8 @@ class Listener:
             self._backoff += 1
 
         elif t == "lb":
-            self._pool = data["lb_info"]["pool"]
-            self._sticky = data["lb_info"]["sticky"]
+            self._sticky_pool = data["lb_info"]["pool"]
+            self._sticky_token = data["lb_info"]["sticky"]
 
         elif t == "fullReload":
             self._backoff = 0
@@ -134,7 +129,7 @@ class Listener:
 
         elif t == "batched":
             for item in data["batches"]:
-                yield from self._handle_protocol_data(item)
+                yield from self.handle_protocol_data(item)
 
         else:
             log.error("Unknown protocol message: %s, %s", t, data)
