@@ -80,6 +80,8 @@ class Listener:
 
     def handle_protocol_data(self, data):
         """Handle pull protocol data, and yield data frames ready for further parsing"""
+        prev_seq = self._seq
+
         if "seq" in data:
             self._seq = data["seq"]
         if "s" in data:
@@ -128,6 +130,13 @@ class Listener:
 
     def _process_ms(self, data, prev_seq):
         items = data["ms"]
+        if self._seq - prev_seq < len(items):
+            msg = "Sequence regression. Some items may have been duplicated! %s, %s, %s"
+            log.error(msg, prev_seq, self._seq, items)
+            # We could strip the duplicated items with:
+            # items = items[len(items) - (self._seq - prev_seq): ]
+            # But I'm not sure what causes a sequence regression, and there might be
+            # other factors involved, so it's safer to just allow duplicates for now
         for item in items:
             self._msgs_recv += 1
             yield item
