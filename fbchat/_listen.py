@@ -1,6 +1,7 @@
 import logging
 import random
 import requests
+import trio
 
 from ._http import BaseSession
 
@@ -46,26 +47,33 @@ class Listener:
     def __exit__(self, *exc) -> None:
         self._clean()
 
+    def _get_pull_params(self):
+        return {
+            "seq": self._seq,
+            "msgs_recv": self._msgs_recv,
+            "sticky_token": self._sticky_token,
+            "sticky_pool": self._sticky_pool,
+            "clientid": self._clientid,
+            "state": "active" if self.mark_alive else "offline",
+        }
+
+    async def _pull(self, **kwargs):
+        return await self._session.get(
+            self.PULL_URL,
+            params=self._get_pull_params(),
+            timeout=(self.CONNECT_TIMEOUT, self.READ_TIMEOUT),
+            **kwargs
+        )
+
     async def pull(self):
         try:
-            r = await self._session.get(
-                self.PULL_URL,
-                params={
-                    "seq": self._seq,
-                    "msgs_recv": self._msgs_recv,
-                    "sticky_token": self._sticky_token,
-                    "sticky_pool": self._sticky_pool,
-                    "clientid": self._clientid,
-                    "state": "active" if self.mark_alive else "offline",
-                },
-                timeout=(self.CONNECT_TIMEOUT, self.READ_TIMEOUT),
-            )
+            r = await self._pull()
         except (requests.ConnectionError, requests.Timeout):
-            # If we lost our internet connection, keep trying every minute
+            # If we lost our connection, keep trying every minute
             await trio.sleep(60)
-            return
+            return None
 
-        if not r.text:
+        if not r.content:
             return None
 
         return r.json()
