@@ -92,36 +92,25 @@ class Listener:
         # Also, it seems like Facebook has some kind of streaming support, though I'm
         # not quite sure what that entails yet. But a lot of of these events is for that
 
-        if t == "continue":
+        if t in ("continue", "fullReload", "msg"):
             self._backoff = 0
-            log.info("Unused protocol message: %s, %s", t, data)
 
-        elif t in ("refresh", "refreshDelay"):
-            log.info("Unused protocol message: %s, %s", t, data)
-
-        elif t == "test_streaming":
-            log.info("Unused protocol message: %s, %s", t, data)
-
-        elif t == "backoff":
-            log.warning("Server told us to back off")
+        if t == "backoff":
             self._backoff += 1
+            log.warning("Server told us to back off")
 
         elif t == "lb":
-            self._sticky_pool = data["lb_info"]["pool"]
-            self._sticky_token = data["lb_info"]["sticky"]
+            lb_info = data["lb_info"]
+            self._sticky_token = lb_info["sticky"]
+            if "pool" in lb_info:
+                self._sticky_pool = lb_info["pool"]
 
-        elif t == "fullReload":
-            self._backoff = 0
+        elif t == "fullReload":  # Not yet sure what consequence this has
             if "ms" in data:
-                for item in data["ms"]:
-                    self._msgs_recv += 1
-                    yield item
+                yield from self._process_ms(data, prev_seq)
 
         elif t == "msg":
-            self._backoff = 0
-            for item in data["ms"]:
-                self._msgs_recv += 1
-                yield item
+            yield from self._process_ms(data, prev_seq)
 
         elif t == "heartbeat":
             # Pull request refresh, no need to do anything
@@ -131,5 +120,14 @@ class Listener:
             for item in data["batches"]:
                 yield from self.handle_protocol_data(item)
 
+        elif t == ("continue", "refresh", "refreshDelay", "test_streaming"):
+            log.info("Unused protocol message: %s, %s", t, data)
+
         else:
             log.error("Unknown protocol message: %s, %s", t, data)
+
+    def _process_ms(self, data, prev_seq):
+        items = data["ms"]
+        for item in items:
+            self._msgs_recv += 1
+            yield item
