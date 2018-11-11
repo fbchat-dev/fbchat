@@ -148,3 +148,22 @@ class Listener:
         for item in items:
             self._msgs_recv += 1
             yield item
+
+
+class StreamingListener(Listener):
+    """Handles listening for events, using a streaming pull request"""
+
+    def _get_pull_params(self):
+        rtn = super()._get_pull_params()
+        rtn["mode"] = "stream"
+        rtn["format"] = "json"
+        return rtn
+
+    async def pull(self):
+        try:
+            r = await self._pull(stream=True)
+            return list(r.iter_json())
+        except (requests.ConnectionError, requests.Timeout):
+            # If we lost our connection, keep trying every minute
+            await trio.sleep(60)
+            return None

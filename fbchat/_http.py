@@ -1,6 +1,7 @@
 import json
 import requests
 
+from contextlib import closing
 from random import choice
 from typing import Type, List, Dict, Any, ClassVar, Optional
 from copy import copy
@@ -50,6 +51,11 @@ class Response(requests.Response):
             return text[text.index("{") :]
         except ValueError:
             raise ValueError("No JSON object found: {!r}".format(text))
+
+    def iter_json(self):
+        with closing(self.iter_lines(chunk_size=None, decode_unicode=True)) as lines:
+            for line in lines:
+                yield json.loads(self._strip_text_for_json(line))
 
 
 class Session(BaseSession):
