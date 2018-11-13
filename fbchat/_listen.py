@@ -21,6 +21,7 @@ class Listener:
         "_seq",
         "_msgs_recv",
         "_backoff",
+        "_error_delay",
         "mark_alive",
     )
 
@@ -70,21 +71,43 @@ class Listener:
             r = await self._pull()
         except (requests.ConnectionError, requests.Timeout):
             # If we lost our connection, keep trying every minute
-            await trio.sleep(60)
+            log.exception("Could not pull")
+            self._error_delay = 60
             return None
+
+        if r.status_code == 503:
+            # In Facebook's JS code, this delay is set by their servers on every call to
+            # `/ajax/presence/reconnect.php`, as `proxy_down_delay_millis`, but we'll
+            # just set a sensible default
+            self._error_delay = 60
+            log.error("Server is unavailable")
+            return None
+
+        if not (200 <= r.status_code < 300):
+            log.error("Response status: %s", r.status_code)
+            self._error_delay = 30
+            return None
+
+        self._error_delay = 0
 
         if not r.content:
             return None
 
         return r.json()
 
-    def get_backoff_delay(self):
+    def get_delay(self):
+        if self._error_delay:
+            return self._error_delay
         if self._backoff > 0:
             delay = min(5 * (2 ** max(0, self._backoff - 1)), 320)
-            # self.proxyDown && "proxy_down_delay_millis" in n && (x = n.proxy_down_delay_millis)
-            # self.proxyDown = False
-            return delay * random.uniform(1, 1.5)
-        return 0
+            return delay
+        return None
+
+    def get_randomized_delay(self):
+        delay = self.get_delay()
+        if delay is None:
+            return None
+        return delay * random.uniform(1, 1.5)
 
     def handle_protocol_data(self, data):
         """Handle pull protocol data, and yield data frames ready for further parsing"""
@@ -98,9 +121,7 @@ class Listener:
         t = data.get("t")
 
         # Don't worry if you've never seen a lot of these types, this is implemented
-        # based on reading the JavaScript source for Facebook's `ChannelManager`
-        # Also, it seems like Facebook has some kind of streaming support, though I'm
-        # not quite sure what that entails yet. But a lot of of these events is for that
+        # based on reading the JS source for Facebook's `ChannelManager`
 
         if t in ("continue", "fullReload", "msg"):
             self._backoff = 0
@@ -130,8 +151,12 @@ class Listener:
             for item in data["batches"]:
                 yield from self.handle_protocol_data(item)
 
-        elif t == ("continue", "refresh", "refreshDelay", "test_streaming"):
+        elif t in ("continue", "test_streaming"):
             log.info("Unused protocol message: %s, %s", t, data)
+
+        elif t in ("refresh", "refreshDelay"):
+            self._error_delay = 10
+            pass  # {'t': 'refresh', 'reason': 110, 'seq': 0}
 
         else:
             log.error("Unknown protocol message: %s, %s", t, data)
