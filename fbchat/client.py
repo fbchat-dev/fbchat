@@ -502,7 +502,7 @@ class Client(object):
 
         return users
 
-    def searchForUsers(self, name, limit=1):
+    def searchForUsers(self, name, limit=10):
         """
         Find and get user by his/her name
 
