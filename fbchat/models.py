@@ -445,21 +445,18 @@ class Mention(object):
         return '<Mention {}: offset={} length={}>'.format(self.thread_id, self.offset, self.length)
 
 class QuickReply(object):
-    #: Title of the quick reply
-    title = None
-    #: URL of the quick reply image (optional)
-    image_url = None
-    #: Custom identifier of the quick reply
+    #: Type of the quick reply
+    type = None
+    #: Payload of the quick reply
     payload = None
     #: Additional data
     data = None
     #: Whether it's a response for a quick reply
     is_response = None
 
-    def __init__(self, title, image_url=None, payload=None, data=None, is_response=False):
+    def __init__(self, _type=None, payload=None, data=None, is_response=False):
         """Represents a quick reply"""
-        self.title = title
-        self.image_url = image_url
+        self.type = _type
         self.payload = payload
         self.data = data
         self.is_response = is_response
@@ -468,7 +465,44 @@ class QuickReply(object):
         return self.__unicode__()
 
     def __unicode__(self):
-        return '<QuickReply: title={!r} payload={!r}>'.format(self.title, self.payload)
+        return '<QuickReply: type={!r} payload={!r}>'.format(self.type, self.payload)
+
+class QuickReplyText(QuickReply):
+    #: Title of the quick reply
+    title = None
+    #: URL of the quick reply image (optional)
+    image_url = None
+
+    def __init__(self, title=None, image_url=None, **kwargs):
+        """Represents a text quick reply"""
+        super(QuickReplyText, self).__init__(_type=QuickReplyType.TEXT, **kwargs)
+        self.title = title
+        self.image_url = image_url
+
+class QuickReplyLocation(QuickReply):
+
+    def __init__(self, **kwargs):
+        """Represents a location quick reply"""
+        super(QuickReplyLocation, self).__init__(_type=QuickReplyType.LOCATION, **kwargs)
+        self.is_response = False
+
+class QuickReplyPhoneNumber(QuickReply):
+    #: URL of the quick reply image (optional)
+    image_url = None
+
+    def __init__(self, image_url=None, **kwargs):
+        """Represents a phone number quick reply"""
+        super(QuickReplyPhoneNumber, self).__init__(_type=QuickReplyType.PHONE_NUMBER, **kwargs)
+        self.image_url = image_url
+
+class QuickReplyEmail(QuickReply):
+    #: URL of the quick reply image (optional)
+    image_url = None
+
+    def __init__(self, image_url=None, **kwargs):
+        """Represents an email quick reply"""
+        super(QuickReplyEmail, self).__init__(_type=QuickReplyType.EMAIL, **kwargs)
+        self.image_url = image_url
 
 class Poll(object):
     #: ID of the poll
@@ -556,6 +590,12 @@ class Enum(enum.Enum):
     def __repr__(self):
         # For documentation:
         return '{}.{}'.format(type(self).__name__, self.name)
+
+class QuickReplyType(Enum):
+    TEXT = 'TEXT'
+    LOCATION = 'LOCATION'
+    PHONE_NUMBER = 'USER_PHONE_NUMBER'
+    EMAIL = 'USER_EMAIL'
 
 class ThreadType(Enum):
     """Used to specify what type of Facebook thread is being used. See :ref:`intro_threads` for more info"""
