@@ -482,7 +482,7 @@ class QuickReplyText(QuickReply):
 class QuickReplyLocation(QuickReply):
 
     def __init__(self, **kwargs):
-        """Represents a location quick reply"""
+        """Represents a location quick reply (Doesn't work on mobile)"""
         super(QuickReplyLocation, self).__init__(_type=QuickReplyType.LOCATION, **kwargs)
         self.is_response = False
 
@@ -491,7 +491,7 @@ class QuickReplyPhoneNumber(QuickReply):
     image_url = None
 
     def __init__(self, image_url=None, **kwargs):
-        """Represents a phone number quick reply"""
+        """Represents a phone number quick reply (Doesn't work on mobile)"""
         super(QuickReplyPhoneNumber, self).__init__(_type=QuickReplyType.PHONE_NUMBER, **kwargs)
         self.image_url = image_url
 
@@ -500,7 +500,7 @@ class QuickReplyEmail(QuickReply):
     image_url = None
 
     def __init__(self, image_url=None, **kwargs):
-        """Represents an email quick reply"""
+        """Represents an email quick reply (Doesn't work on mobile)"""
         super(QuickReplyEmail, self).__init__(_type=QuickReplyType.EMAIL, **kwargs)
         self.image_url = image_url
 

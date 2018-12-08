@@ -1048,13 +1048,15 @@ class Client(object):
         if message.quick_replies:
             xmd = {"quick_replies": []}
             for quick_reply in message.quick_replies:
-                xmd["quick_replies"].append({
-                    "content_type": "text",
-                    "title": quick_reply.title,
-                    "payload": quick_reply.payload,
-                    "image_url": quick_reply.image_url,
-                    "data": quick_reply.data,
-                })
+                q = dict()
+                q["content_type"] = quick_reply.type.value.lower()
+                q["payload"] = quick_reply.payload
+                q["data"] = quick_reply.data
+                if isinstance(quick_reply, QuickReplyText): q["title"] = quick_reply.title
+                if not isinstance(quick_reply, QuickReplyLocation): q["image_url"] = quick_reply.image_url
+                xmd["quick_replies"].append(q)
+            if len(message.quick_replies) == 1 and message.quick_replies[0].is_response:
+                xmd["quick_replies"] = xmd["quick_replies"][0]
             data['platform_xmd'] = json.dumps(xmd)
 
         return data
