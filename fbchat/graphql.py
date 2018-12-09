@@ -141,9 +141,10 @@ def graphql_to_extensible_attachment(a):
                     latitude=float(latitude),
                     longitude=float(longitude),
                 )
-                rtn.image_url = story['media']['image']['uri']
-                rtn.image_width = story['media']['image']['width']
-                rtn.image_height = story['media']['image']['height']
+                if story['media']:
+                    rtn.image_url = story['media']['image']['uri']
+                    rtn.image_width = story['media']['image']['width']
+                    rtn.image_height = story['media']['image']['height']
                 rtn.url = story['url']
                 return rtn
             elif _type == 'MessageLiveLocation':
@@ -155,9 +156,10 @@ def graphql_to_extensible_attachment(a):
                     expiration_time=story['target']['expiration_time'] if story['target'].get('expiration_time') else None,
                     is_expired=story['target']['is_expired'],
                 )
-                rtn.image_url = story['media']['image']['uri']
-                rtn.image_width = story['media']['image']['width']
-                rtn.image_height = story['media']['image']['height']
+                if story['media']:
+                    rtn.image_url = story['media']['image']['uri']
+                    rtn.image_width = story['media']['image']['width']
+                    rtn.image_height = story['media']['image']['height']
                 rtn.url = story['url']
                 return rtn
             elif _type in ['ExternalUrl', 'Story']:

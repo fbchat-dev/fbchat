@@ -2387,10 +2387,20 @@ class Client(object):
                                 thread_id, thread_type = getThreadIdAndThreadType(i)
                                 for l in i['messageLiveLocations']:
                                     mid = l["messageId"]
-                                    author_id = l["senderId"]
+                                    author_id = str(l["senderId"])
                                     location = graphql_to_live_location(l)
                                     self.onLiveLocation(mid=mid, location=location, author_id=author_id, thread_id=thread_id,
                                                         thread_type=thread_type, ts=ts, msg=m)
+                            
+                            # Message deletion
+                            elif d.get('deltaRecallMessageData'):
+                                i = d['deltaRecallMessageData']
+                                thread_id, thread_type = getThreadIdAndThreadType(i)
+                                mid = i['messageID']
+                                ts = i['deletionTimestamp']
+                                author_id = str(i['senderID'])
+                                self.onMessageDeleted(mid=mid, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
+                                                      ts=ts, msg=m)
 
                     # New message
                     elif delta.get("class") == "NewMessage":
@@ -2798,6 +2808,19 @@ class Client(object):
         """
         log.info("Marked messages as seen in threads {} at {}s".format([(x[0], x[1].name) for x in threads], seen_ts/1000))
 
+    def onMessageDeleted(self, mid=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and someone unsends (deleted for everyone) a message
+
+        :param mid: ID of the deleted message
+        :param author_id: The ID of the person who deleted the message
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} unsended the message {} in {} ({}) at {}s".format(author_id, repr(mid), thread_id, thread_type.name, ts/1000))
 
     def onPeopleAdded(self, mid=None, added_ids=None, author_id=None, thread_id=None, ts=None, msg=None):
         """
