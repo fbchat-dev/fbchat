@@ -1116,6 +1116,18 @@ class Client(object):
             data['specific_to_list[0]'] = "fbid:{}".format(thread_id)
         return self._doSendRequest(data)
 
+    def unsend(self, mid):
+        """
+        Unsends a message (removes for everyone)
+
+        :param mid: :ref:`Message ID <intro_message_ids>` of the message to unsend
+        """
+        data = {
+            'message_id': mid,
+        }
+        r = self._post(self.req_url.UNSEND, data)
+        r.raise_for_status()
+
     def _sendLocation(self, location, current=True, thread_id=None, thread_type=None):
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
