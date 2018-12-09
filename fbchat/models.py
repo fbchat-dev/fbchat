@@ -216,6 +216,12 @@ class Attachment(object):
         """Represents a Facebook attachment"""
         self.uid = uid
 
+class DeletedMessage(Attachment):
+
+    def __init__(self, *args, **kwargs):
+        """Represents a deleted message"""
+        super(DeletedMessage, self).__init__(*args, **kwargs)
+
 class Sticker(Attachment):
     #: The sticker-pack's ID
     pack = None

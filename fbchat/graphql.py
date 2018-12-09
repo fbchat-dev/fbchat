@@ -131,47 +131,53 @@ def graphql_to_attachment(a):
 def graphql_to_extensible_attachment(a):
     story = a.get('story_attachment')
     if story:
-        _type = story['target']['__typename']
-        if _type == 'MessageLocation':
-            latitude, longitude = get_url_parameter(get_url_parameter(story['url'], 'u'), 'where1').split(", ")
-            rtn = LocationAttachment(
-                uid=int(story['deduplication_key']),
-                latitude=float(latitude),
-                longitude=float(longitude),
-            )
-            rtn.image_url = story['media']['image']['uri']
-            rtn.image_width = story['media']['image']['width']
-            rtn.image_height = story['media']['image']['height']
-            rtn.url = story['url']
-            return rtn
-        elif _type == 'MessageLiveLocation':
-            rtn = LiveLocationAttachment(
-                uid=int(story['target']['live_location_id']),
-                latitude=story['target']['coordinate']['latitude'] if story['target'].get('coordinate') else None,
-                longitude=story['target']['coordinate']['longitude'] if story['target'].get('coordinate') else None,
-                name=story['title_with_entities']['text'],
-                expiration_time=story['target']['expiration_time'] if story['target'].get('expiration_time') else None,
-                is_expired=story['target']['is_expired'],
-            )
-            rtn.image_url = story['media']['image']['uri']
-            rtn.image_width = story['media']['image']['width']
-            rtn.image_height = story['media']['image']['height']
-            rtn.url = story['url']
-            return rtn
-        elif _type in ['ExternalUrl', 'Story']:
-            return ShareAttachment(
+        target = story.get('target')
+        if target:
+            _type = target['__typename']
+            if _type == 'MessageLocation':
+                latitude, longitude = get_url_parameter(get_url_parameter(story['url'], 'u'), 'where1').split(", ")
+                rtn = LocationAttachment(
+                    uid=int(story['deduplication_key']),
+                    latitude=float(latitude),
+                    longitude=float(longitude),
+                )
+                rtn.image_url = story['media']['image']['uri']
+                rtn.image_width = story['media']['image']['width']
+                rtn.image_height = story['media']['image']['height']
+                rtn.url = story['url']
+                return rtn
+            elif _type == 'MessageLiveLocation':
+                rtn = LiveLocationAttachment(
+                    uid=int(story['target']['live_location_id']),
+                    latitude=story['target']['coordinate']['latitude'] if story['target'].get('coordinate') else None,
+                    longitude=story['target']['coordinate']['longitude'] if story['target'].get('coordinate') else None,
+                    name=story['title_with_entities']['text'],
+                    expiration_time=story['target']['expiration_time'] if story['target'].get('expiration_time') else None,
+                    is_expired=story['target']['is_expired'],
+                )
+                rtn.image_url = story['media']['image']['uri']
+                rtn.image_width = story['media']['image']['width']
+                rtn.image_height = story['media']['image']['height']
+                rtn.url = story['url']
+                return rtn
+            elif _type in ['ExternalUrl', 'Story']:
+                return ShareAttachment(
+                    uid=a.get('legacy_attachment_id'),
+                    author=story['target']['actors'][0]['id'] if story['target'].get('actors') else None,
+                    url=story['url'],
+                    original_url=get_url_parameter(story['url'], 'u') if "/l.php?u=" in story['url'] else story['url'],
+                    title=story['title_with_entities'].get('text'),
+                    description=story['description'].get('text'),
+                    source=story['source']['text'],
+                    image_url=story['media']['image']['uri'] if story.get('media') else None,
+                    original_image_url=(get_url_parameter(story['media']['image']['uri'], 'url') if "/safe_image.php" in story['media']['image']['uri'] else story['media']['image']['uri']) if story.get('media') else None,
+                    image_width=story['media']['image']['width'] if story.get('media') else None,
+                    image_height=story['media']['image']['height'] if story.get('media') else None,
+                    attachments=[graphql_to_subattachment(attachment) for attachment in story.get('subattachments')],
+                )
+        else:
+            return DeletedMessage(
                 uid=a.get('legacy_attachment_id'),
-                author=story['target']['actors'][0]['id'] if story['target'].get('actors') else None,
-                url=story['url'],
-                original_url=get_url_parameter(story['url'], 'u') if "/l.php?u=" in story['url'] else story['url'],
-                title=story['title_with_entities'].get('text'),
-                description=story['description'].get('text'),
-                source=story['source']['text'],
-                image_url=story['media']['image']['uri'] if story.get('media') else None,
-                original_image_url=(get_url_parameter(story['media']['image']['uri'], 'url') if "/safe_image.php" in story['media']['image']['uri'] else story['media']['image']['uri']) if story.get('media') else None,
-                image_width=story['media']['image']['width'] if story.get('media') else None,
-                image_height=story['media']['image']['height'] if story.get('media') else None,
-                attachments=[graphql_to_subattachment(attachment) for attachment in story.get('subattachments')]
             )
 
 
