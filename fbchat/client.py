@@ -1130,6 +1130,19 @@ class Client(object):
             data['specific_to_list[0]'] = "fbid:{}".format(thread_id)
         return self._doSendRequest(data)
 
+    def quickReply(self, quick_reply, thread_id=None, thread_type=None):
+        """
+        Replies to a chosen quick reply
+
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+        :raises: FBchatException if request failed
+        """
+        quick_reply.is_response = True
+        return self.send(Message(text=quick_reply.title, quick_replies=[quick_reply]))
+
     def _upload(self, files):
         """
         Uploads files to Facebook

@@ -194,13 +194,21 @@ def graphql_to_plan(a):
     return rtn
 
 def graphql_to_quick_reply(q, is_response=False):
-    rtn = QuickReply(
-        title=q.get('title'),
-        image_url=q.get('image_url'),
-        payload=q.get('payload'),
-        data=q.get('data'),
-        is_response=is_response,
-    )
+    data = dict()
+    if q.get('title') is not None: data["title"] = q["title"]
+    if q.get('image_url') is not None: data["image_url"] = q["image_url"]
+    if q.get('payload') is not None: data["payload"] = q["payload"]
+    if q.get('data') is not None: data["data"] = q["data"]
+    data["is_response"] = is_response
+    _type = QuickReplyType(q.get('content_type').upper())
+    if _type == QuickReplyType.TEXT:
+        rtn = QuickReplyText(**data)
+    elif _type == QuickReplyType.LOCATION:
+        rtn = QuickReplyLocation(**data)
+    elif _type == QuickReplyType.PHONE_NUMBER:
+        rtn = QuickReplyPhoneNumber(**data)
+    elif _type == QuickReplyType.EMAIL:
+        rtn = QuickReplyEmail(**data)
     return rtn
 
 def graphql_to_message(message):
