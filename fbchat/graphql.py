@@ -477,7 +477,7 @@ class GraphQL(object):
     """
 
     SEARCH_USER = """
-    Query SearchUser(<search> = '', <limit> = 1) {
+    Query SearchUser(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.of_type(user).first(<limit>) as users {
                 nodes {
@@ -489,7 +489,7 @@ class GraphQL(object):
     """ + FRAGMENT_USER
 
     SEARCH_GROUP = """
-    Query SearchGroup(<search> = '', <limit> = 1, <pic_size> = 32) {
+    Query SearchGroup(<search> = '', <limit> = 10, <pic_size> = 32) {
         viewer() {
             message_threads.with_thread_name(<search>).last(<limit>) as groups {
                 nodes {
@@ -501,7 +501,7 @@ class GraphQL(object):
     """ + FRAGMENT_GROUP
 
     SEARCH_PAGE = """
-    Query SearchPage(<search> = '', <limit> = 1) {
+    Query SearchPage(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.of_type(page).first(<limit>) as pages {
                 nodes {
@@ -513,7 +513,7 @@ class GraphQL(object):
     """ + FRAGMENT_PAGE
 
     SEARCH_THREAD = """
-    Query SearchThread(<search> = '', <limit> = 1) {
+    Query SearchThread(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.first(<limit>) as threads {
                 nodes {
