@@ -502,7 +502,7 @@ class Client(object):
 
         return users
 
-    def searchForUsers(self, name, limit=1):
+    def searchForUsers(self, name, limit=10):
         """
         Find and get user by his/her name
 
@@ -517,7 +517,7 @@ class Client(object):
 
         return [graphql_to_user(node) for node in j[name]['users']['nodes']]
 
-    def searchForPages(self, name, limit=1):
+    def searchForPages(self, name, limit=10):
         """
         Find and get page by its name
 
@@ -531,7 +531,7 @@ class Client(object):
 
         return [graphql_to_page(node) for node in j[name]['pages']['nodes']]
 
-    def searchForGroups(self, name, limit=1):
+    def searchForGroups(self, name, limit=10):
         """
         Find and get group thread by its name
 
@@ -546,7 +546,7 @@ class Client(object):
 
         return [graphql_to_group(node) for node in j['viewer']['groups']['nodes']]
 
-    def searchForThreads(self, name, limit=1):
+    def searchForThreads(self, name, limit=10):
         """
         Find and get a thread by its name
 
