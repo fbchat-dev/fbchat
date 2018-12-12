@@ -24,6 +24,14 @@ class ConcatJSONDecoder(json.JSONDecoder):
         return objs
 # End shameless copy
 
+def enum_extend_if_invalid(enumeration, value):
+    try:
+        return enumeration(value)
+    except ValueError:
+        log.warning("Failed parsing {}({!r}). Extending enum.".format(enumeration, value))
+        aenum.extend_enum(enumeration, "UNKNOWN_{}".format(value).upper(), value)
+        return enumeration(value)
+
 def graphql_color_to_enum(color):
     if color is None:
         return None
@@ -31,12 +39,7 @@ def graphql_color_to_enum(color):
         return ThreadColor.MESSENGER_BLUE
     color = color[2:]  # Strip the alpha value
     color_value = '#{}'.format(color.lower())
-    try:
-        return ThreadColor(color_value)
-    except ValueError:
-        log.warning("Failed parsing color {}. Extending enum.".format(color))
-        aenum.extend_enum(ThreadColor, "UNKNOWN_{}".format(color), color_value)
-        return ThreadColor(color_value)
+    return enum_extend_if_invalid(ThreadColor, color_value)
 
 def get_customization_info(thread):
     if thread is None or thread.get('customization_info') is None:
@@ -214,16 +217,10 @@ def graphql_to_message(message):
     rtn.timestamp = message.get('timestamp_precise')
     if message.get('unread') is not None:
         rtn.is_read = not message['unread']
-
-    for r in message.get('message_reactions'):
-        try:
-            reaction = MessageReaction(r['reaction'])
-        except ValueError:
-            log.warning("Failed parsing reaction {}. Extending enum.".format(r['reaction']))
-            aenum.extend_enum(MessageReaction, "UNKNOWN_{}".format(r['reaction']), r['reaction'])
-            reaction = MessageReaction(r['reaction'])
-        rtn.reactions[str(r['user']['id'])] = reaction
-
+    rtn.reactions = {
+        str(r['user']['id']): enum_extend_if_invalid(MessageReaction, r['reaction'])
+        for r in message.get('message_reactions')
+    }
     if message.get('blob_attachments') is not None:
         rtn.attachments = [graphql_to_attachment(attachment) for attachment in message['blob_attachments']]
     # TODO: This is still missing parsing:
