@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import unicode_literals
-import enum
+import aenum
 
 
 class FBchatException(Exception):
@@ -523,7 +523,7 @@ class Plan(object):
     def __unicode__(self):
         return '<Plan ({}): {} time={}, location={}, location_id={}>'.format(self.uid, repr(self.title), self.time, repr(self.location), repr(self.location_id))
 
-class Enum(enum.Enum):
+class Enum(aenum.Enum):
     """Used internally by fbchat to support enumerations"""
     def __repr__(self):
         # For documentation:

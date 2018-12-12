@@ -5,4 +5,4 @@ from __future__ import unicode_literals
 
 from setuptools import setup
 
-setup(extras_require={':python_version < "3.4"': ['enum34']})
+setup()
