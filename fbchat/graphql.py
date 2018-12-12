@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 import json
 import re
+import aenum
 from .models import *
 from .utils import *
 
@@ -26,12 +27,16 @@ class ConcatJSONDecoder(json.JSONDecoder):
 def graphql_color_to_enum(color):
     if color is None:
         return None
-    if len(color) == 0:
+    if not color:
         return ThreadColor.MESSENGER_BLUE
+    color = color[2:]  # Strip the alpha value
+    color_value = '#{}'.format(color.lower())
     try:
-        return ThreadColor('#{}'.format(color[2:].lower()))
+        return ThreadColor(color_value)
     except ValueError:
-        raise FBchatException('Could not get ThreadColor from color: {}'.format(color))
+        log.warning("Failed parsing color {}. Extending enum.".format(color))
+        aenum.extend_enum(ThreadColor, "UNKNOWN_{}".format(color), color_value)
+        return ThreadColor(color_value)
 
 def get_customization_info(thread):
     if thread is None or thread.get('customization_info') is None:
