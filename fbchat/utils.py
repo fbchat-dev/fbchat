@@ -304,6 +304,6 @@ def enum_extend_if_invalid(enumeration, value):
     try:
         return enumeration(value)
     except ValueError:
-        log.warning("Failed parsing {}({!r}). Extending enum.".format(enumeration, value))
+        log.warning("Failed parsing {.__name__}({!r}). Extending enum.".format(enumeration, value))
         aenum.extend_enum(enumeration, "UNKNOWN_{}".format(value).upper(), value)
         return enumeration(value)
