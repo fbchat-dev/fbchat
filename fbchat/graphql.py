@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 import json
 import re
-import aenum
 from .models import *
 from .utils import *
 
@@ -23,14 +22,6 @@ class ConcatJSONDecoder(json.JSONDecoder):
             objs.append(obj)
         return objs
 # End shameless copy
-
-def enum_extend_if_invalid(enumeration, value):
-    try:
-        return enumeration(value)
-    except ValueError:
-        log.warning("Failed parsing {}({!r}). Extending enum.".format(enumeration, value))
-        aenum.extend_enum(enumeration, "UNKNOWN_{}".format(value).upper(), value)
-        return enumeration(value)
 
 def graphql_color_to_enum(color):
     if color is None:
