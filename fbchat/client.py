@@ -1486,7 +1486,7 @@ class Client(object):
 
         :param message_id: :ref:`Message ID <intro_message_ids>` to react to
         :param reaction: Reaction emoji to use
-        :type reaction: models.MessageReaction
+        :type reaction: str
         :raises: FBchatException if request failed
         """
         full_data = {

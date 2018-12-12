@@ -209,7 +209,7 @@ def graphql_to_message(message):
     rtn.timestamp = message.get('timestamp_precise')
     if message.get('unread') is not None:
         rtn.is_read = not message['unread']
-    rtn.reactions = {str(r['user']['id']):MessageReaction(r['reaction']) for r in message.get('message_reactions')}
+    rtn.reactions = {str(r['user']['id']): r['reaction'] for r in message.get('message_reactions')}
     if message.get('blob_attachments') is not None:
         rtn.attachments = [graphql_to_attachment(attachment) for attachment in message['blob_attachments']]
     # TODO: This is still missing parsing:

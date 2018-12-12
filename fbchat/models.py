@@ -182,7 +182,7 @@ class Message(object):
     is_read = None
     #: A list of pepole IDs who read the message, works only with :func:`fbchat.Client.fetchThreadMessages`
     read_by = None
-    #: A dict with user's IDs as keys, and their :class:`MessageReaction` as values
+    #: A dict with user's IDs as keys, and their :class:`str` as values
     reactions = None
     #: The actual message
     text = None
@@ -571,13 +571,3 @@ class ThreadColor(Enum):
     CAMEO = '#d4a88c'
     BRILLIANT_ROSE = '#ff5ca1'
     BILOBA_FLOWER = '#a695c7'
-
-class MessageReaction(Enum):
-    """Used to specify a message reaction"""
-    LOVE = '😍'
-    SMILE = '😆'
-    WOW = '😮'
-    SAD = '😢'
-    ANGRY = '😠'
-    YES = '👍'
-    NO = '👎'
