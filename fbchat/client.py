@@ -1497,7 +1497,7 @@ class Client(object):
                     "client_mutation_id": "1",
                     "actor_id": self.uid,
                     "message_id": str(message_id),
-                    "reaction": reaction.value
+                    "reaction": reaction
                 }
             })
         }
