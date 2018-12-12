@@ -581,3 +581,4 @@ class MessageReaction(Enum):
     ANGRY = '😠'
     YES = '👍'
     NO = '👎'
+    UNDEFINED = ''
