@@ -8,7 +8,7 @@ FAQ
 Version X broke my installation
 -------------------------------
 
-We try to provide backwards compatability where possible, but since we're not part of Facebook,
+We try to provide backwards compatibility where possible, but since we're not part of Facebook,
 most of the things may be broken at any point in time
 
 Downgrade to an earlier version of fbchat, run this command

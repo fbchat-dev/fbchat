@@ -42,7 +42,7 @@ def get_customization_info(thread):
         'emoji': info.get('emoji'),
         'color': graphql_color_to_enum(info.get('outgoing_bubble_color'))
     }
-    if thread.get('thread_type') in ('GROUP', 'ROOM') or thread.get('is_group_thread') or thread.get('thread_key', {}).get('thread_fbid'):
+    if thread.get('thread_type') == 'GROUP' or thread.get('is_group_thread') or thread.get('thread_key', {}).get('thread_fbid'):
         rtn['nicknames'] = {}
         for k in info.get('participant_customizations', []):
             rtn['nicknames'][k['participant_id']] = k.get('nickname')
@@ -128,6 +128,71 @@ def graphql_to_attachment(a):
             uid=a.get('legacy_attachment_id')
         )
 
+def graphql_to_poll(a):
+    rtn = Poll(
+        title=a.get('title') if a.get('title') else a.get("text"),
+        options=[graphql_to_poll_option(m) for m in a.get('options')]
+    )
+    rtn.uid = int(a["id"])
+    rtn.options_count = a.get("total_count")
+    return rtn
+
+def graphql_to_poll_option(a):
+    if a.get('viewer_has_voted') is None:
+        vote = None
+    elif isinstance(a['viewer_has_voted'], bool):
+        vote = a['viewer_has_voted']
+    else:
+        vote = a['viewer_has_voted'] == 'true'
+    rtn = PollOption(
+        text=a.get('text'),
+        vote=vote
+    )
+    rtn.uid = int(a["id"])
+    rtn.voters = [m.get('node').get('id') for m in a.get('voters').get('edges')] if isinstance(a.get('voters'), dict) else a.get('voters')
+    rtn.votes_count = a.get('voters').get('count') if isinstance(a.get('voters'), dict) else a.get('total_count')
+    return rtn
+
+def graphql_to_plan(a):
+    if a.get('event_members'):
+        rtn = Plan(
+            time=a.get('event_time'),
+            title=a.get('title'),
+            location=a.get('location_name')
+        )
+        if a.get('location_id') != 0:
+            rtn.location_id = str(a.get('location_id'))
+        rtn.uid = a.get('oid')
+        rtn.author_id = a.get('creator_id')
+        guests = a.get("event_members")
+        rtn.going = [uid for uid in guests if guests[uid] == "GOING"]
+        rtn.declined = [uid for uid in guests if guests[uid] == "DECLINED"]
+        rtn.invited = [uid for uid in guests if guests[uid] == "INVITED"]
+        return rtn
+    elif a.get('id') is None:
+        rtn = Plan(
+            time=a.get('event_time'),
+            title=a.get('event_title'),
+            location=a.get('event_location_name'),
+            location_id=a.get('event_location_id')
+        )
+        rtn.uid = a.get('event_id')
+        rtn.author_id = a.get('event_creator_id')
+        guests = json.loads(a.get('guest_state_list'))
+    else:
+        rtn = Plan(
+            time=a.get('time'),
+            title=a.get('event_title'),
+            location=a.get('location_name')
+        )
+        rtn.uid = a.get('id')
+        rtn.author_id = a.get('lightweight_event_creator').get('id')
+        guests = a.get('event_reminder_members').get('edges')
+    rtn.going = [m.get('node').get('id') for m in guests if m.get('guest_list_state') == "GOING"]
+    rtn.declined = [m.get('node').get('id') for m in guests if m.get('guest_list_state') == "DECLINED"]
+    rtn.invited = [m.get('node').get('id') for m in guests if m.get('guest_list_state') == "INVITED"]
+    return rtn
+
 def graphql_to_message(message):
     if message.get('message_sender') is None:
         message['message_sender'] = {}
@@ -155,6 +220,9 @@ def graphql_to_user(user):
     if user.get('profile_picture') is None:
         user['profile_picture'] = {}
     c_info = get_customization_info(user)
+    plan = None
+    if user.get('event_reminders'):
+        plan = graphql_to_plan(user['event_reminders']['nodes'][0]) if user['event_reminders'].get('nodes') else None
     return User(
         user['id'],
         url=user.get('url'),
@@ -169,7 +237,8 @@ def graphql_to_user(user):
         own_nickname=c_info.get('own_nickname'),
         photo=user['profile_picture'].get('uri'),
         name=user.get('name'),
-        message_count=user.get('messages_count')
+        message_count=user.get('messages_count'),
+        plan=plan,
     )
 
 def graphql_to_thread(thread):
@@ -191,6 +260,10 @@ def graphql_to_thread(thread):
         else:
             last_name = user.get('name').split(first_name, 1).pop().strip()
 
+        plan = None
+        if thread.get('event_reminders'):
+            plan = graphql_to_plan(thread['event_reminders']['nodes'][0]) if thread['event_reminders'].get('nodes') else None
+
         return User(
             user['id'],
             url=user.get('url'),
@@ -206,7 +279,8 @@ def graphql_to_thread(thread):
             own_nickname=c_info.get('own_nickname'),
             photo=user['big_image_src'].get('uri'),
             message_count=thread.get('messages_count'),
-            last_message_timestamp=last_message_timestamp
+            last_message_timestamp=last_message_timestamp,
+            plan=plan,
         )
     else:
         raise FBchatException('Unknown thread type: {}, with data: {}'.format(thread.get('thread_type'), thread))
@@ -218,36 +292,24 @@ def graphql_to_group(group):
     last_message_timestamp = None
     if 'last_message' in group:
         last_message_timestamp = group['last_message']['nodes'][0]['timestamp_precise']
+    plan = None
+    if group.get('event_reminders'):
+        plan = graphql_to_plan(group['event_reminders']['nodes'][0]) if group['event_reminders'].get('nodes') else None
     return Group(
         group['thread_key']['thread_fbid'],
         participants=set([node['messaging_actor']['id'] for node in group['all_participants']['nodes']]),
         nicknames=c_info.get('nicknames'),
         color=c_info.get('color'),
         emoji=c_info.get('emoji'),
+        admins = set([node.get('id') for node in group.get('thread_admins')]),
+        approval_mode = bool(group.get('approval_mode')) if group.get('approval_mode') is not None else None,
+        approval_requests = set(node["requester"]['id'] for node in group['group_approval_queue']['nodes']) if group.get('group_approval_queue') else None,
+        join_link = group['joinable_mode'].get('link'),
         photo=group['image'].get('uri'),
         name=group.get('name'),
         message_count=group.get('messages_count'),
-        last_message_timestamp=last_message_timestamp
-    )
-
-def graphql_to_room(room):
-    if room.get('image') is None:
-        room['image'] = {}
-    c_info = get_customization_info(room)
-    return Room(
-        room['thread_key']['thread_fbid'],
-        participants=set([node['messaging_actor']['id'] for node in room['all_participants']['nodes']]),
-        nicknames=c_info.get('nicknames'),
-        color=c_info.get('color'),
-        emoji=c_info.get('emoji'),
-        photo=room['image'].get('uri'),
-        name=room.get('name'),
-        message_count=room.get('messages_count'),
-        admins = set([node.get('id') for node in room.get('thread_admins')]),
-        approval_mode = bool(room.get('approval_mode')),
-        approval_requests = set(node.get('id') for node in room['thread_queue_metadata'].get('approval_requests', {}).get('nodes')),
-        join_link = room['joinable_mode'].get('link'),
-        privacy_mode = bool(room.get('privacy_mode')),
+        last_message_timestamp=last_message_timestamp,
+        plan=plan,
     )
 
 def graphql_to_page(page):
@@ -255,6 +317,9 @@ def graphql_to_page(page):
         page['profile_picture'] = {}
     if page.get('city') is None:
         page['city'] = {}
+    plan = None
+    if page.get('event_reminders'):
+        plan = graphql_to_plan(page['event_reminders']['nodes'][0]) if page['event_reminders'].get('nodes') else None
     return Page(
         page['id'],
         url=page.get('url'),
@@ -262,7 +327,8 @@ def graphql_to_page(page):
         category=page.get('category_type'),
         photo=page['profile_picture'].get('uri'),
         name=page.get('name'),
-        message_count=page.get('messages_count')
+        message_count=page.get('messages_count'),
+        plan=plan,
     )
 
 def graphql_queries_to_json(*queries):
@@ -357,6 +423,40 @@ class GraphQL(object):
             },
             outgoing_bubble_color,
             emoji
+        },
+        thread_admins {
+            id
+        },
+        group_approval_queue {
+            nodes {
+                requester {
+                    id
+                }
+            }
+        },
+        approval_mode,
+        joinable_mode {
+            mode,
+            link
+        },
+        event_reminders {
+            nodes {
+                id,
+                lightweight_event_creator {
+                    id
+                },
+                time,
+                location_name,
+                event_title,
+                event_reminder_members {
+                    edges {
+                        node {
+                            id
+                        },
+                        guest_list_state
+                    }
+                }
+            }
         }
     }
     """
@@ -377,7 +477,7 @@ class GraphQL(object):
     """
 
     SEARCH_USER = """
-    Query SearchUser(<search> = '', <limit> = 1) {
+    Query SearchUser(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.of_type(user).first(<limit>) as users {
                 nodes {
@@ -389,7 +489,7 @@ class GraphQL(object):
     """ + FRAGMENT_USER
 
     SEARCH_GROUP = """
-    Query SearchGroup(<search> = '', <limit> = 1, <pic_size> = 32) {
+    Query SearchGroup(<search> = '', <limit> = 10, <pic_size> = 32) {
         viewer() {
             message_threads.with_thread_name(<search>).last(<limit>) as groups {
                 nodes {
@@ -401,7 +501,7 @@ class GraphQL(object):
     """ + FRAGMENT_GROUP
 
     SEARCH_PAGE = """
-    Query SearchPage(<search> = '', <limit> = 1) {
+    Query SearchPage(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.of_type(page).first(<limit>) as pages {
                 nodes {
@@ -413,7 +513,7 @@ class GraphQL(object):
     """ + FRAGMENT_PAGE
 
     SEARCH_THREAD = """
-    Query SearchThread(<search> = '', <limit> = 1) {
+    Query SearchThread(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.first(<limit>) as threads {
                 nodes {

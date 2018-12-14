@@ -7,7 +7,7 @@ import json
 
 from utils import *
 from contextlib import contextmanager
-from fbchat.models import ThreadType
+from fbchat.models import ThreadType, Message, Mention
 
 
 @pytest.fixture(scope="session")
@@ -20,9 +20,15 @@ def group(pytestconfig):
     return {"id": load_variable("group_id", pytestconfig.cache), "type": ThreadType.GROUP}
 
 
-@pytest.fixture(scope="session", params=["user", "group"])
+@pytest.fixture(scope="session", params=[
+    "user", "group", pytest.param("none", marks=[pytest.mark.xfail()])
+])
 def thread(request, user, group):
-    return user if request.param == "user" else group
+    return {
+        "user": user,
+        "group": group,
+        "none": {"id": "0", "type": ThreadType.GROUP}
+    }[request.param]
 
 
 @pytest.fixture(scope="session")
@@ -37,7 +43,7 @@ def client2(pytestconfig):
         yield c
 
 
-@pytest.fixture  # (scope="session")
+@pytest.fixture(scope="module")
 def client(client1, thread):
     client1.setDefaultThread(thread["id"], thread["type"])
     yield client1
@@ -80,12 +86,12 @@ def catch_event(client2):
     try:
         # Make the client send a messages to itself, so the blocking pull request will return
         # This is probably not safe, since the client is making two requests simultaneously
-        client2.sendMessage("Shutdown", client2.uid)
+        client2.sendMessage(random_hex(), client2.uid)
     finally:
         t.join()
 
 
-@pytest.fixture  # (scope="session")
+@pytest.fixture(scope="module")
 def compare(client, thread):
     def inner(caught_event, **kwargs):
         d = {
@@ -99,3 +105,21 @@ def compare(client, thread):
         return subset(caught_event.res, **d)
 
     return inner
+
+
+@pytest.fixture(params=["me", "other", "me other"])
+def message_with_mentions(request, client, client2, group):
+    text = "Hi there ["
+    mentions = []
+    if 'me' in request.param:
+        mentions.append(Mention(thread_id=client.uid, offset=len(text), length=2))
+        text += "me, "
+    if 'other' in request.param:
+        mentions.append(Mention(thread_id=client2.uid, offset=len(text), length=5))
+        text += "other, "
+    # Unused, because Facebook don't properly support sending mentions with groups as targets
+    if 'group' in request.param:
+        mentions.append(Mention(thread_id=group["id"], offset=len(text), length=5))
+        text += "group, "
+    text += "nothing]"
+    return Message(text, mentions=mentions)
