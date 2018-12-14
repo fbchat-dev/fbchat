@@ -140,6 +140,7 @@ class ReqUrl(object):
     GET_POLL_OPTIONS = "https://www.facebook.com/ajax/mercury/get_poll_options"
     SEARCH_MESSAGES = "https://www.facebook.com/ajax/mercury/search_snippets.php?dpr=1"
     MARK_SPAM = "https://www.facebook.com/ajax/mercury/mark_spam.php?dpr=1"
+    ACCEPT_FRIEND_REQ = "https://www.facebook.com/ajax/reqs.php?dpr=1"
 
     pull_channel = 0
 
