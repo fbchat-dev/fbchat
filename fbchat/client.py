@@ -1758,6 +1758,24 @@ class Client(object):
         r = self._post(self.req_url.CONNECT, data)
         return r.ok
 
+   def acceptFriendRequest(self, from_id=None):
+        """
+        Accepts a friend request.
+
+        :param from_id: The ID of the person who sent the friend request.
+        :return: Returns error if the accepting was unsuccessful, returns True when successful.
+        """
+        payload = {
+            "actions[accept]": "1",
+            "confirm": str(from_id),
+            "list_item_id": str(from_id) + "_1_req",
+            "nctr[_mod]": "pagelet_bluebar",
+            "request_id": str(from_id),
+            "status_div_id": str(from_id) + "_1_req_status",
+            "type": "friend_connect"
+        }
+        r = self._post(self.req_url.ACCEPT_FRIEND_REQ, payload)
+        
     def removeFriend(self, friend_id=None):
         """
         Removes a specifed friend from your friend list
