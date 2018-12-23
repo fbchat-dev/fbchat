@@ -168,10 +168,12 @@ class Client(object):
 
     def graphql_requests(self, *queries):
         """
-        .. todo::
-            Documenting this
+        :param queries: Zero or more GraphQL objects
+        :type queries: GraphQL
 
         :raises: FBchatException if request failed
+        :return: A tuple containing json graphql queries
+        :rtype: tuple
         """
 
         return tuple(self._graphql({
@@ -237,22 +239,6 @@ class Client(object):
         self.payloadDefault['__a'] = '1'
         self.payloadDefault['ttstamp'] = self.ttstamp
         self.payloadDefault['fb_dtsg'] = self.fb_dtsg
-
-        self.form = {
-            'channel' : self.user_channel,
-            'partition' : '-2',
-            'clientid' : self.client_id,
-            'viewer_uid' : self.uid,
-            'uid' : self.uid,
-            'state' : 'active',
-            'format' : 'json',
-            'idle' : 0,
-            'cap' : '8'
-        }
-
-        self.prev = now()
-        self.tmp_prev = now()
-        self.last_sync = now()
 
     def _login(self):
         if not (self.email and self.password):
@@ -457,7 +443,8 @@ class Client(object):
             return given_thread_id, given_thread_type
 
     def setDefaultThread(self, thread_id, thread_type):
-        """Sets default thread to send messages to
+        """
+        Sets default thread to send messages to
 
         :param thread_id: User/Group ID to default to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
@@ -515,7 +502,7 @@ class Client(object):
 
         return users
 
-    def searchForUsers(self, name, limit=1):
+    def searchForUsers(self, name, limit=10):
         """
         Find and get user by his/her name
 
@@ -530,7 +517,7 @@ class Client(object):
 
         return [graphql_to_user(node) for node in j[name]['users']['nodes']]
 
-    def searchForPages(self, name, limit=1):
+    def searchForPages(self, name, limit=10):
         """
         Find and get page by its name
 
@@ -544,7 +531,7 @@ class Client(object):
 
         return [graphql_to_page(node) for node in j[name]['pages']['nodes']]
 
-    def searchForGroups(self, name, limit=1):
+    def searchForGroups(self, name, limit=10):
         """
         Find and get group thread by its name
 
@@ -559,7 +546,7 @@ class Client(object):
 
         return [graphql_to_group(node) for node in j['viewer']['groups']['nodes']]
 
-    def searchForThreads(self, name, limit=1):
+    def searchForThreads(self, name, limit=10):
         """
         Find and get a thread by its name
 
@@ -850,14 +837,22 @@ class Client(object):
             'id': thread_id,
             'message_limit': limit,
             'load_messages': True,
-            'load_read_receipts': False,
+            'load_read_receipts': True,
             'before': before
         }))
 
         if j.get('message_thread') is None:
             raise FBchatException('Could not fetch thread {}: {}'.format(thread_id, j))
 
-        return list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
+        messages = list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
+        read_receipts = j['message_thread']['read_receipts']['nodes']
+
+        for message in messages:
+            for receipt in read_receipts:
+                if int(receipt['watermark']) >= int(message.timestamp):
+                    message.read_by.append(receipt['actor']['id'])
+
+        return messages
 
     def fetchThreadList(self, offset=None, limit=20, thread_location=ThreadLocation.INBOX, before=None):
         """Get thread list of your facebook account
@@ -1801,7 +1796,7 @@ class Client(object):
         }
 
         for thread_id in thread_ids:
-            data["ids[{}]".format(thread_id)] = read
+            data["ids[{}]".format(thread_id)] = 'true' if read else 'false'
 
         r = self._post(self.req_url.READ_STATUS, data)
         return r.ok
@@ -2047,54 +2042,46 @@ class Client(object):
     LISTEN METHODS
     """
 
-    def _ping(self, sticky, pool):
+    def _ping(self):
         data = {
             'channel': self.user_channel,
             'clientid': self.client_id,
             'partition': -2,
             'cap': 0,
             'uid': self.uid,
-            'sticky_token': sticky,
-            'sticky_pool': pool,
+            'sticky_token': self.sticky,
+            'sticky_pool': self.pool,
             'viewer_uid': self.uid,
             'state': 'active',
         }
         self._get(self.req_url.PING, data, fix_request=True, as_json=False)
 
-    def _fetchSticky(self):
-        """Call pull api to get sticky and pool parameter, newer api needs these parameters to work"""
-
-        data = {
-            "msgs_recv": 0,
-            "channel": self.user_channel,
-            "clientid": self.client_id
-        }
-
-        j = self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
-
-        if j.get('lb_info') is None:
-            raise FBchatException('Missing lb_info: {}'.format(j))
-
-        return j['lb_info']['sticky'], j['lb_info']['pool']
-
-    def _pullMessage(self, sticky, pool, markAlive=True):
+    def _pullMessage(self, markAlive=True):
         """Call pull api with seq value to get message data."""
 
         data = {
             "msgs_recv": 0,
-            "sticky_token": sticky,
-            "sticky_pool": pool,
+            "sticky_token": self.sticky,
+            "sticky_pool": self.pool,
             "clientid": self.client_id,
             'state': 'active' if markAlive else 'offline',
         }
 
-        j = self._get(ReqUrl.STICKY, data, fix_request=True, as_json=True)
+        j = self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
 
         self.seq = j.get('seq', '0')
         return j
 
     def _parseMessage(self, content):
         """Get message and author name from content. May contain multiple messages in the content."""
+
+        if 'lb_info' in content:
+            self.sticky = content['lb_info']['sticky']
+            self.pool = content['lb_info']['pool']
+
+        if 'batches' in content:
+            for batch in content['batches']:
+                self._parseMessage(batch)
 
         if 'ms' not in content: return
 
@@ -2505,7 +2492,6 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         self.listening = True
-        self.sticky, self.pool = self._fetchSticky()
 
     def doOneListen(self, markAlive=True):
         """
@@ -2519,8 +2505,8 @@ class Client(object):
         """
         try:
             if markAlive:
-                self._ping(self.sticky, self.pool)
-            content = self._pullMessage(self.sticky, self.pool, markAlive)
+                self._ping()
+            content = self._pullMessage(markAlive)
             if content:
                 self._parseMessage(content)
         except KeyboardInterrupt:

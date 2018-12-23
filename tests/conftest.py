@@ -20,7 +20,9 @@ def group(pytestconfig):
     return {"id": load_variable("group_id", pytestconfig.cache), "type": ThreadType.GROUP}
 
 
-@pytest.fixture(scope="session", params=["user", "group", pytest.mark.xfail("none")])
+@pytest.fixture(scope="session", params=[
+    "user", "group", pytest.param("none", marks=[pytest.mark.xfail()])
+])
 def thread(request, user, group):
     return {
         "user": user,

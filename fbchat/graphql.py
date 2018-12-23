@@ -381,8 +381,8 @@ def graphql_to_group(group):
         color=c_info.get('color'),
         emoji=c_info.get('emoji'),
         admins = set([node.get('id') for node in group.get('thread_admins')]),
-        approval_mode = bool(group.get('approval_mode')),
-        approval_requests = set(node["requester"]['id'] for node in group['group_approval_queue']['nodes']),
+        approval_mode = bool(group.get('approval_mode')) if group.get('approval_mode') is not None else None,
+        approval_requests = set(node["requester"]['id'] for node in group['group_approval_queue']['nodes']) if group.get('group_approval_queue') else None,
         join_link = group['joinable_mode'].get('link'),
         photo=group['image'].get('uri'),
         name=group.get('name'),
@@ -556,7 +556,7 @@ class GraphQL(object):
     """
 
     SEARCH_USER = """
-    Query SearchUser(<search> = '', <limit> = 1) {
+    Query SearchUser(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.of_type(user).first(<limit>) as users {
                 nodes {
@@ -568,7 +568,7 @@ class GraphQL(object):
     """ + FRAGMENT_USER
 
     SEARCH_GROUP = """
-    Query SearchGroup(<search> = '', <limit> = 1, <pic_size> = 32) {
+    Query SearchGroup(<search> = '', <limit> = 10, <pic_size> = 32) {
         viewer() {
             message_threads.with_thread_name(<search>).last(<limit>) as groups {
                 nodes {
@@ -580,7 +580,7 @@ class GraphQL(object):
     """ + FRAGMENT_GROUP
 
     SEARCH_PAGE = """
-    Query SearchPage(<search> = '', <limit> = 1) {
+    Query SearchPage(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.of_type(page).first(<limit>) as pages {
                 nodes {
@@ -592,7 +592,7 @@ class GraphQL(object):
     """ + FRAGMENT_PAGE
 
     SEARCH_THREAD = """
-    Query SearchThread(<search> = '', <limit> = 1) {
+    Query SearchThread(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.first(<limit>) as threads {
                 nodes {

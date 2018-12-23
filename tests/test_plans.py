@@ -11,8 +11,14 @@ from time import time
 
 @pytest.fixture(scope="module", params=[
     Plan(int(time()) + 100, random_hex()),
-    pytest.mark.xfail(Plan(int(time()), random_hex()), raises=FBchatFacebookError),
-    pytest.mark.xfail(Plan(0, None)),
+    pytest.param(
+        Plan(int(time()), random_hex()),
+        marks=[pytest.mark.xfail(raises=FBchatFacebookError)]
+    ),
+    pytest.param(
+        Plan(0, None),
+        marks=[pytest.mark.xfail()],
+    ),
 ])
 def plan_data(request, client, user, thread, catch_event, compare):
     with catch_event("onPlanCreated") as x:

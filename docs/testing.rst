@@ -15,7 +15,7 @@ To use the tests, copy ``tests/data.json`` to ``tests/my_data.json`` or type the
 Please remember to test all supported python versions.
 If you've made any changes to the 2FA functionality, test it with a 2FA enabled account.
 
-If you only want to execute specific tests, pass the function names in the commandline (not including the `test_` prefix). Example::
+If you only want to execute specific tests, pass the function names in the command line (not including the `test_` prefix). Example::
 
     $ python tests.py sendMessage sessions sendEmoji
 
