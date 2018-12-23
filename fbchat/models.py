@@ -465,7 +465,7 @@ class QuickReply(object):
         return self.__unicode__()
 
     def __unicode__(self):
-        return '<QuickReply: type={!r} payload={!r}>'.format(self.type, self.payload)
+        return '<{}: payload={!r}>'.format(self.__class__.__name__, self.payload)
 
 class QuickReplyText(QuickReply):
     #: Title of the quick reply

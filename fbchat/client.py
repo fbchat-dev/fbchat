@@ -1052,8 +1052,8 @@ class Client(object):
                 q["content_type"] = quick_reply.type.value.lower()
                 q["payload"] = quick_reply.payload
                 q["data"] = quick_reply.data
-                if isinstance(quick_reply, QuickReplyText): q["title"] = quick_reply.title
-                if not isinstance(quick_reply, QuickReplyLocation): q["image_url"] = quick_reply.image_url
+                if quick_reply.type == QuickReplyType.TEXT: q["title"] = quick_reply.title
+                if quick_reply.type is not QuickReplyType.LOCATION: q["image_url"] = quick_reply.image_url
                 xmd["quick_replies"].append(q)
             if len(message.quick_replies) == 1 and message.quick_replies[0].is_response:
                 xmd["quick_replies"] = xmd["quick_replies"][0]
@@ -1141,7 +1141,8 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         quick_reply.is_response = True
-        return self.send(Message(text=quick_reply.title, quick_replies=[quick_reply]))
+        if quick_reply.type == QuickReplyType.TEXT:
+            return self.send(Message(text=quick_reply.title, quick_replies=[quick_reply]))
 
     def _upload(self, files):
         """

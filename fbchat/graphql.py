@@ -195,13 +195,13 @@ def graphql_to_plan(a):
 
 def graphql_to_quick_reply(q, is_response=False):
     data = dict()
-    if q.get('title') is not None: data["title"] = q["title"]
-    if q.get('image_url') is not None: data["image_url"] = q["image_url"]
-    if q.get('payload') is not None: data["payload"] = q["payload"]
-    if q.get('data') is not None: data["data"] = q["data"]
-    data["is_response"] = is_response
     _type = QuickReplyType(q.get('content_type').upper())
+    if q.get('payload'): data["payload"] = q["payload"]
+    if q.get('data'): data["data"] = q["data"]
+    if q.get('image_url') and _type is not QuickReplyType.LOCATION: data["image_url"] = q["image_url"]
+    data["is_response"] = is_response
     if _type == QuickReplyType.TEXT:
+        if q.get('title') is not None: data["title"] = q["title"]
         rtn = QuickReplyText(**data)
     elif _type == QuickReplyType.LOCATION:
         rtn = QuickReplyLocation(**data)
