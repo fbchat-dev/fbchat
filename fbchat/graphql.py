@@ -288,7 +288,11 @@ def graphql_to_message(message):
     if message.get('blob_attachments') is not None:
         rtn.attachments = [graphql_to_attachment(attachment) for attachment in message['blob_attachments']]
     if message.get('extensible_attachment') is not None:
-        rtn.attachments.append(graphql_to_extensible_attachment(message['extensible_attachment']))
+        attachment = graphql_to_extensible_attachment(message['extensible_attachment'])
+        if isinstance(attachment, DeletedMessage):
+            rtn.deleted = True
+        elif attachment:
+            rtn.attachments.append(attachment)
     return rtn
 
 def graphql_to_user(user):

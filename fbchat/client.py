@@ -2393,6 +2393,7 @@ class Client(object):
 
                         sticker = None
                         attachments = []
+                        deleted = False
                         if delta.get('attachments'):
                             try:
                                 for a in delta['attachments']:
@@ -2400,7 +2401,7 @@ class Client(object):
                                     if mercury.get('blob_attachment'):
                                         image_metadata = a.get('imageMetadata', {})
                                         attach_type = mercury['blob_attachment']['__typename']
-                                        attachment = graphql_to_attachment(mercury.get('blob_attachment', {}))
+                                        attachment = graphql_to_attachment(mercury['blob_attachment'])
 
                                         if attach_type in ['MessageFile', 'MessageVideo', 'MessageAudio']:
                                             # TODO: Add more data here for audio files
@@ -2408,11 +2409,13 @@ class Client(object):
                                         attachments.append(attachment)
 
                                     elif mercury.get('sticker_attachment'):
-                                        sticker = graphql_to_sticker(a['mercury']['sticker_attachment'])
+                                        sticker = graphql_to_sticker(mercury['sticker_attachment'])
 
                                     elif mercury.get('extensible_attachment'):
-                                        attachment = graphql_to_extensible_attachment(mercury.get('extensible_attachment', {}))
-                                        if attachment:
+                                        attachment = graphql_to_extensible_attachment(mercury['extensible_attachment'])
+                                        if isinstance(attachment, DeletedMessage):
+                                            deleted = True
+                                        elif attachment:
                                             attachments.append(attachment)
 
                             except Exception:
@@ -2426,12 +2429,13 @@ class Client(object):
                             mentions=mentions,
                             emoji_size=emoji_size,
                             sticker=sticker,
-                            attachments=attachments
+                            attachments=attachments,
                         )
                         message.uid = mid
                         message.author = author_id
                         message.timestamp = ts
                         #message.reactions = {}
+                        message.deleted = deleted
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onMessage(mid=mid, author_id=author_id, message=delta.get('body', ''), message_object=message,
                                        thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)

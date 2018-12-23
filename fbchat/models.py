@@ -188,6 +188,8 @@ class Message(object):
     sticker = None
     #: A list of attachments
     attachments = None
+    #: Whether the message is deleted (unsended)
+    deleted = None
 
     def __init__(self, text=None, mentions=None, emoji_size=None, sticker=None, attachments=None):
         """Represents a Facebook message"""
@@ -201,6 +203,7 @@ class Message(object):
             attachments = []
         self.attachments = attachments
         self.reactions = {}
+        self.deleted = False
 
     def __repr__(self):
         return self.__unicode__()
