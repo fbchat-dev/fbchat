@@ -1150,7 +1150,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         self._sendLocation(location=location, current=True, thread_id=thread_id, thread_type=thread_type)
-        
+
     def sendPinnedLocation(self, location, thread_id=None, thread_type=None):
         """
         Sends a given location to a thread as a pinned location
@@ -1572,7 +1572,15 @@ class Client(object):
 
         j = self._post(self.req_url.THREAD_EMOJI, data, fix_request=True, as_json=True)
 
-    def _react(self, message_id, reaction=None):
+    def reactToMessage(self, message_id, reaction):
+        """
+        Reacts to a message, or removes reaction
+
+        :param message_id: :ref:`Message ID <intro_message_ids>` to react to
+        :param reaction: Reaction emoji to use, if None removes reaction
+        :type reaction: models.MessageReaction or None
+        :raises: FBchatException if request failed
+        """
         data = {
             "doc_id": 1491398900900362,
             "variables": json.dumps({
@@ -1585,35 +1593,7 @@ class Client(object):
                 }
             })
         }
-
-        r = self._post(self.req_url.MESSAGE_REACTION, data)
-        r.raise_for_status()
-
-    def reactToMessage(self, message_id, reaction):
-        """
-        Deprecated. Use :func:`fbchat.Client.addReaction` instead
-        """
-        self.addReaction(message_id=message_id, reaction=reaction)
-
-    def addReaction(self, message_id, reaction):
-        """
-        Reacts to a message
-
-        :param message_id: :ref:`Message ID <intro_message_ids>` to react to
-        :param reaction: Reaction emoji to use
-        :type reaction: models.MessageReaction
-        :raises: FBchatException if request failed
-        """
-        self._react(message_id=message_id, reaction=reaction)
-
-    def removeReaction(self, message_id):
-        """
-        Removes reaction from a message
-
-        :param message_id: :ref:`Message ID <intro_message_ids>` to remove reaction from
-        :raises: FBchatException if request failed
-        """
-        self._react(message_id=message_id)
+        self._post(self.req_url.MESSAGE_REACTION, data, fix_request=True, as_json=True)
 
     def createPlan(self, plan, thread_id=None):
         """
@@ -2391,7 +2371,7 @@ class Client(object):
                                     location = graphql_to_live_location(l)
                                     self.onLiveLocation(mid=mid, location=location, author_id=author_id, thread_id=thread_id,
                                                         thread_type=thread_type, ts=ts, msg=m)
-                            
+
                             # Message deletion
                             elif d.get('deltaRecallMessageData'):
                                 i = d['deltaRecallMessageData']
