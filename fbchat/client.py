@@ -989,6 +989,30 @@ class Client(object):
         plan = graphql_to_plan(j["payload"])
         return plan
 
+    def _getPrivateData(self):
+        j = self.graphql_request(GraphQL(doc_id='1868889766468115'))
+        return j['viewer']
+
+    def getPhoneNumbers(self):
+        """
+        Fetches a list of user phone numbers.
+
+        :return: List of phone numbers
+        :rtype: list
+        """
+        data = self._getPrivateData()
+        return [j['phone_number']['universal_number'] for j in data['user']['all_phones']]
+
+    def getEmails(self):
+        """
+        Fetches a list of user emails.
+
+        :return: List of emails
+        :rtype: list
+        """
+        data = self._getPrivateData()
+        return [j['display_email'] for j in data['all_emails']]
+
     """
     END FETCH METHODS
     """
