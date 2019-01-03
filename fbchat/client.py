@@ -1154,12 +1154,15 @@ class Client(object):
             data['specific_to_list[0]'] = "fbid:{}".format(thread_id)
         return self._doSendRequest(data)
 
-    def quickReply(self, quick_reply, thread_id=None, thread_type=None):
+    def quickReply(self, quick_reply, payload=None, thread_id=None, thread_type=None):
         """
         Replies to a chosen quick reply
 
+        :param quick_reply: Quick reply to reply to
+        :param payload: Optional answer to the quick reply
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
+        :type quick_reply: models.QuickReply
         :type thread_type: models.ThreadType
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
         :raises: FBchatException if request failed
@@ -1167,6 +1170,16 @@ class Client(object):
         quick_reply.is_response = True
         if quick_reply.type == QuickReplyType.TEXT:
             return self.send(Message(text=quick_reply.title, quick_replies=[quick_reply]))
+        elif quick_reply.type == QuickReplyType.EMAIL:
+            if not payload: payload = self.getEmails()[0]
+            quick_reply.external_payload = quick_reply.payload
+            quick_reply.payload = payload
+            return self.send(Message(text=payload, quick_replies=[quick_reply]))
+        elif quick_reply.type == QuickReplyType.PHONE_NUMBER:
+            if not payload: payload = self.getPhoneNumbers()[0]
+            quick_reply.external_payload = quick_reply.payload
+            quick_reply.payload = payload
+            return self.send(Message(text=payload, quick_replies=[quick_reply]))
 
     def _upload(self, files):
         """

@@ -449,6 +449,8 @@ class QuickReply(object):
     type = None
     #: Payload of the quick reply
     payload = None
+    #: External payload for responses
+    external_payload = None
     #: Additional data
     data = None
     #: Whether it's a response for a quick reply
