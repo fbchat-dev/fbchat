@@ -178,7 +178,7 @@ def graphql_to_extensible_attachment(a):
                     attachments=[graphql_to_subattachment(attachment) for attachment in story.get('subattachments')],
                 )
         else:
-            return DeletedMessage(
+            return UnsentMessage(
                 uid=a.get('legacy_attachment_id'),
             )
 
@@ -282,6 +282,7 @@ def graphql_to_message(message):
     rtn.uid = str(message.get('message_id'))
     rtn.author = str(message.get('message_sender').get('id'))
     rtn.timestamp = message.get('timestamp_precise')
+    rtn.unsent = False
     if message.get('unread') is not None:
         rtn.is_read = not message['unread']
     rtn.reactions = {str(r['user']['id']):MessageReaction(r['reaction']) for r in message.get('message_reactions')}
@@ -289,8 +290,8 @@ def graphql_to_message(message):
         rtn.attachments = [graphql_to_attachment(attachment) for attachment in message['blob_attachments']]
     if message.get('extensible_attachment') is not None:
         attachment = graphql_to_extensible_attachment(message['extensible_attachment'])
-        if isinstance(attachment, DeletedMessage):
-            rtn.deleted = True
+        if isinstance(attachment, UnsentMessage):
+            rtn.unsent = True
         elif attachment:
             rtn.attachments.append(attachment)
     return rtn

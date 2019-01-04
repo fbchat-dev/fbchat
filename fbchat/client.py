@@ -2366,7 +2366,7 @@ class Client(object):
                                 mid = i['messageID']
                                 ts = i['deletionTimestamp']
                                 author_id = str(i['senderID'])
-                                self.onMessageDeleted(mid=mid, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
+                                self.onMessageUnsent(mid=mid, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
                                                       ts=ts, msg=m)
 
                     # New message
@@ -2380,7 +2380,7 @@ class Client(object):
 
                         sticker = None
                         attachments = []
-                        deleted = False
+                        unsent = False
                         if delta.get('attachments'):
                             try:
                                 for a in delta['attachments']:
@@ -2400,8 +2400,8 @@ class Client(object):
 
                                     elif mercury.get('extensible_attachment'):
                                         attachment = graphql_to_extensible_attachment(mercury['extensible_attachment'])
-                                        if isinstance(attachment, DeletedMessage):
-                                            deleted = True
+                                        if isinstance(attachment, UnsentMessage):
+                                            unsent = True
                                         elif attachment:
                                             attachments.append(attachment)
 
@@ -2422,7 +2422,7 @@ class Client(object):
                         message.author = author_id
                         message.timestamp = ts
                         #message.reactions = {}
-                        message.deleted = deleted
+                        message.unsent = unsent
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onMessage(mid=mid, author_id=author_id, message=delta.get('body', ''), message_object=message,
                                        thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
@@ -2778,19 +2778,19 @@ class Client(object):
         """
         log.info("Marked messages as seen in threads {} at {}s".format([(x[0], x[1].name) for x in threads], seen_ts/1000))
 
-    def onMessageDeleted(self, mid=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+    def onMessageUnsent(self, mid=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
         """
-        Called when the client is listening, and someone unsends (deleted for everyone) a message
+        Called when the client is listening, and someone unsends (deletes for everyone) a message
 
-        :param mid: ID of the deleted message
-        :param author_id: The ID of the person who deleted the message
+        :param mid: ID of the unsent message
+        :param author_id: The ID of the person who unsent the message
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
         :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
         :param ts: A timestamp of the action
         :param msg: A full set of the data recieved
         :type thread_type: models.ThreadType
         """
-        log.info("{} unsended the message {} in {} ({}) at {}s".format(author_id, repr(mid), thread_id, thread_type.name, ts/1000))
+        log.info("{} unsent the message {} in {} ({}) at {}s".format(author_id, repr(mid), thread_id, thread_type.name, ts/1000))
 
     def onPeopleAdded(self, mid=None, added_ids=None, author_id=None, thread_id=None, ts=None, msg=None):
         """

@@ -190,8 +190,8 @@ class Message(object):
     sticker = None
     #: A list of attachments
     attachments = None
-    #: Whether the message is deleted (unsended)
-    deleted = None
+    #: Whether the message is unsent (deleted for everyone)
+    unsent = None
 
     def __init__(self, text=None, mentions=None, emoji_size=None, sticker=None, attachments=None):
         """Represents a Facebook message"""
@@ -222,11 +222,11 @@ class Attachment(object):
         """Represents a Facebook attachment"""
         self.uid = uid
 
-class DeletedMessage(Attachment):
+class UnsentMessage(Attachment):
 
     def __init__(self, *args, **kwargs):
-        """Represents a deleted message"""
-        super(DeletedMessage, self).__init__(*args, **kwargs)
+        """Represents an unsent message attachment"""
+        super(UnsentMessage, self).__init__(*args, **kwargs)
 
 class Sticker(Attachment):
     #: The sticker-pack's ID
