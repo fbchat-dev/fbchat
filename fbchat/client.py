@@ -2072,7 +2072,7 @@ class Client(object):
         }
         self._get(self.req_url.PING, data, fix_request=True, as_json=False)
 
-    def _pullMessage(self, markAlive=True):
+    def _pullMessage(self):
         """Call pull api with seq value to get message data."""
 
         data = {
@@ -2080,7 +2080,7 @@ class Client(object):
             "sticky_token": self.sticky,
             "sticky_pool": self.pool,
             "clientid": self.client_id,
-            'state': 'active' if markAlive else 'offline',
+            'state': 'active' if self._markAlive else 'offline',
         }
 
         j = self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
@@ -2545,22 +2545,22 @@ class Client(object):
         """
         self.listening = True
 
-    def doOneListen(self, markAlive=None):
+    def doOneListen(self):
         """
         Does one cycle of the listening loop.
         This method is useful if you want to control fbchat from an external event loop
 
-        :param markAlive: Whether this should ping the Facebook server before running
-        :type markAlive: bool
+        .. warning::
+            `markAlive` parameter is deprecated now, use :func:`fbchat.Client.setActiveStatus`
+            or `markAlive` parameter in :func:`fbchat.Client.listen` instead.
+
         :return: Whether the loop should keep running
         :rtype: bool
         """
-        if markAlive is None:
-            markAlive = self._markAlive
         try:
-            if markAlive:
+            if self._markAlive:
                 self._ping()
-            content = self._pullMessage(markAlive)
+            content = self._pullMessage()
             if content:
                 self._parseMessage(content)
         except KeyboardInterrupt:
