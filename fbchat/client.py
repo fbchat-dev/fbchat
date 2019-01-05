@@ -1167,6 +1167,9 @@ class Client(object):
         quick_reply.is_response = True
         if isinstance(quick_reply, QuickReplyText):
             return self.send(Message(text=quick_reply.title, quick_replies=[quick_reply]))
+        elif isinstance(quick_reply, QuickReplyLocation):
+            if not isinstance(payload, LocationAttachment): raise ValueError("Payload must be an instance of `fbchat.models.LocationAttachment`")
+            return self.sendLocation(payload, thread_id=thread_id, thread_type=thread_type)
         elif isinstance(quick_reply, QuickReplyEmail):
             if not payload: payload = self.getEmails()[0]
             quick_reply.external_payload = quick_reply.payload
