@@ -927,14 +927,14 @@ class Client(object):
         :type image_id: str
         :return: An url where you can download the original image
         :rtype: str
-        :raises: FBChatException if request failed
+        :raises: FBchatException if request failed
         """
         image_id = str(image_id)
         j = check_request(self._get(ReqUrl.ATTACHMENT_PHOTO, query={'photo_id': str(image_id)}))
 
         url = get_jsmods_require(j, 3)
         if url is None:
-            raise FBChatException('Could not fetch image url from: {}'.format(j))
+            raise FBchatException('Could not fetch image url from: {}'.format(j))
         return url
 
     def fetchMessageInfo(self, mid, thread_id=None):
@@ -945,7 +945,7 @@ class Client(object):
         :param thread_id: User/Group ID to get message info from. See :ref:`intro_threads`
         :return: :class:`models.Message` object
         :rtype: models.Message
-        :raises: FBChatException if request failed
+        :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         message_info = self._forcedFetch(thread_id, mid).get("message")
@@ -958,7 +958,7 @@ class Client(object):
 
         :param poll_id: Poll ID to fetch from
         :rtype: list
-        :raises: FBChatException if request failed
+        :raises: FBchatException if request failed
         """
         data = {
             "question_id": poll_id
@@ -975,7 +975,7 @@ class Client(object):
         :param plan_id: Plan ID to fetch from
         :return: :class:`models.Plan` object
         :rtype: models.Plan
-        :raises: FBChatException if request failed
+        :raises: FBchatException if request failed
         """
         data = {
             "event_reminder_id": plan_id
