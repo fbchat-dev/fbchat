@@ -989,14 +989,16 @@ class Client(object):
     def getUserActiveStatus(self, user_id):
         """
         Gets friend active status as an :class:`models.ActiveStatus` object.
+        Returns `None` if status isn't known.
 
         .. warning::
             Only works when listening.
 
         :param user_id: ID of the user
+        :return: Given user active status
         :rtype: models.ActiveStatus
         """
-        return self._buddylist.get(user_id)
+        return self._buddylist.get(str(user_id))
 
     """
     END FETCH METHODS
