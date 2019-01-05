@@ -1,0 +1,37 @@
+*py[co]
+
+.idea/
+
+# Test scripts
+*.sh
+
+# Packages
+*.egg
+*.egg-info
+*.dist-info
+dist
+build
+eggs
+.eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+
+# Vim
+.*.sw[op]
+
+# Sphinx documentation
+docs/_build/
+
+# Scripts and data for tests
+my_tests.py
+my_test_data.json
+my_data.json
+tests.data
+.pytest_cache
+
+# Virtual environment
+venv/
