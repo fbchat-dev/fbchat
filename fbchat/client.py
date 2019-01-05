@@ -1068,11 +1068,13 @@ class Client(object):
             xmd = {"quick_replies": []}
             for quick_reply in message.quick_replies:
                 q = dict()
-                q["content_type"] = quick_reply.type.value.lower()
+                q["content_type"] = quick_reply._type
                 q["payload"] = quick_reply.payload
+                q["external_payload"] = quick_reply.external_payload
                 q["data"] = quick_reply.data
-                if quick_reply.type == QuickReplyType.TEXT: q["title"] = quick_reply.title
-                if quick_reply.type is not QuickReplyType.LOCATION: q["image_url"] = quick_reply.image_url
+                if quick_reply.is_response: q["ignore_for_webhook"] = False
+                if quick_reply._type == QuickReplyText._type: q["title"] = quick_reply.title
+                if quick_reply._type is not QuickReplyLocation._type: q["image_url"] = quick_reply.image_url
                 xmd["quick_replies"].append(q)
             if len(message.quick_replies) == 1 and message.quick_replies[0].is_response:
                 xmd["quick_replies"] = xmd["quick_replies"][0]
@@ -1163,14 +1165,14 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         quick_reply.is_response = True
-        if quick_reply.type == QuickReplyType.TEXT:
+        if isinstance(quick_reply, QuickReplyText):
             return self.send(Message(text=quick_reply.title, quick_replies=[quick_reply]))
-        elif quick_reply.type == QuickReplyType.EMAIL:
+        elif isinstance(quick_reply, QuickReplyEmail):
             if not payload: payload = self.getEmails()[0]
             quick_reply.external_payload = quick_reply.payload
             quick_reply.payload = payload
             return self.send(Message(text=payload, quick_replies=[quick_reply]))
-        elif quick_reply.type == QuickReplyType.PHONE_NUMBER:
+        elif isinstance(quick_reply, QuickReplyPhoneNumber):
             if not payload: payload = self.getPhoneNumbers()[0]
             quick_reply.external_payload = quick_reply.payload
             quick_reply.payload = payload
