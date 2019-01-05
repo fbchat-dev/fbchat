@@ -26,7 +26,9 @@ from utils import random_hex, subset
         PollOption(random_hex()),
         PollOption(random_hex()),
     ]),
-    pytest.mark.xfail(Poll(title=None, options=[]), raises=ValueError),
+    pytest.param(
+        Poll(title=None, options=[]), marks=[pytest.mark.xfail(raises=ValueError)]
+    ),
 ])
 def poll_data(request, client1, group, catch_event):
     with catch_event("onPollCreated") as x:

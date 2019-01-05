@@ -18,7 +18,7 @@ This will show basic usage of `fbchat`
 Interacting with Threads
 ------------------------
 
-This will interract with the thread in every way `fbchat` supports
+This will interact with the thread in every way `fbchat` supports
 
 .. literalinclude:: ../examples/interract.py
 

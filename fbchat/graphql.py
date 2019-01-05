@@ -128,9 +128,84 @@ def graphql_to_attachment(a):
             uid=a.get('legacy_attachment_id')
         )
 
+def graphql_to_extensible_attachment(a):
+    story = a.get('story_attachment')
+    if story:
+        target = story.get('target')
+        if target:
+            _type = target['__typename']
+            if _type == 'MessageLocation':
+                latitude, longitude = get_url_parameter(get_url_parameter(story['url'], 'u'), 'where1').split(", ")
+                rtn = LocationAttachment(
+                    uid=int(story['deduplication_key']),
+                    latitude=float(latitude),
+                    longitude=float(longitude),
+                )
+                if story['media']:
+                    rtn.image_url = story['media']['image']['uri']
+                    rtn.image_width = story['media']['image']['width']
+                    rtn.image_height = story['media']['image']['height']
+                rtn.url = story['url']
+                return rtn
+            elif _type == 'MessageLiveLocation':
+                rtn = LiveLocationAttachment(
+                    uid=int(story['target']['live_location_id']),
+                    latitude=story['target']['coordinate']['latitude'] if story['target'].get('coordinate') else None,
+                    longitude=story['target']['coordinate']['longitude'] if story['target'].get('coordinate') else None,
+                    name=story['title_with_entities']['text'],
+                    expiration_time=story['target']['expiration_time'] if story['target'].get('expiration_time') else None,
+                    is_expired=story['target']['is_expired'],
+                )
+                if story['media']:
+                    rtn.image_url = story['media']['image']['uri']
+                    rtn.image_width = story['media']['image']['width']
+                    rtn.image_height = story['media']['image']['height']
+                rtn.url = story['url']
+                return rtn
+            elif _type in ['ExternalUrl', 'Story']:
+                return ShareAttachment(
+                    uid=a.get('legacy_attachment_id'),
+                    author=story['target']['actors'][0]['id'] if story['target'].get('actors') else None,
+                    url=story['url'],
+                    original_url=get_url_parameter(story['url'], 'u') if "/l.php?u=" in story['url'] else story['url'],
+                    title=story['title_with_entities'].get('text'),
+                    description=story['description'].get('text'),
+                    source=story['source']['text'],
+                    image_url=story['media']['image']['uri'] if story.get('media') else None,
+                    original_image_url=(get_url_parameter(story['media']['image']['uri'], 'url') if "/safe_image.php" in story['media']['image']['uri'] else story['media']['image']['uri']) if story.get('media') else None,
+                    image_width=story['media']['image']['width'] if story.get('media') else None,
+                    image_height=story['media']['image']['height'] if story.get('media') else None,
+                    attachments=[graphql_to_subattachment(attachment) for attachment in story.get('subattachments')],
+                )
+        else:
+            return UnsentMessage(
+                uid=a.get('legacy_attachment_id'),
+            )
+
+
+def graphql_to_subattachment(a):
+    _type = a['target']['__typename']
+    if _type == 'Video':
+        return VideoAttachment(
+            duration=a['media'].get('playable_duration_in_ms'),
+            preview_url=a['media'].get('playable_url'),
+            medium_image=a['media'].get('image'),
+            uid=a['target'].get('video_id'),
+        )
+
+def graphql_to_live_location(a):
+    return LiveLocationAttachment(
+        uid=a['id'],
+        latitude=a['coordinate']['latitude'] / (10 ** 8) if not a.get('stopReason') else None,
+        longitude=a['coordinate']['longitude'] / (10 ** 8)  if not a.get('stopReason') else None,
+        name=a.get('locationTitle'),
+        expiration_time=a['expirationTime'],
+        is_expired=bool(a.get('stopReason')),
+    )
+
 def graphql_to_poll(a):
     rtn = Poll(
-        title=a.get('title') if a.get('title') else a.get("text"),
+        title=a.get('title') if a.get('title') else a.get('text'),
         options=[graphql_to_poll_option(m) for m in a.get('options')]
     )
     rtn.uid = int(a["id"])
@@ -225,19 +300,24 @@ def graphql_to_message(message):
     rtn.uid = str(message.get('message_id'))
     rtn.author = str(message.get('message_sender').get('id'))
     rtn.timestamp = message.get('timestamp_precise')
+    rtn.unsent = False
     if message.get('unread') is not None:
         rtn.is_read = not message['unread']
     rtn.reactions = {str(r['user']['id']):MessageReaction(r['reaction']) for r in message.get('message_reactions')}
     if message.get('blob_attachments') is not None:
         rtn.attachments = [graphql_to_attachment(attachment) for attachment in message['blob_attachments']]
-    # TODO: This is still missing parsing:
-    # message.get('extensible_attachment')
     if message.get('platform_xmd_encoded'):
         quick_replies = json.loads(message['platform_xmd_encoded']).get('quick_replies')
         if isinstance(quick_replies, list):
             rtn.quick_replies = [graphql_to_quick_reply(q) for q in quick_replies]
         elif isinstance(quick_replies, dict):
             rtn.quick_replies = [graphql_to_quick_reply(quick_replies, is_response=True)]
+    if message.get('extensible_attachment') is not None:
+        attachment = graphql_to_extensible_attachment(message['extensible_attachment'])
+        if isinstance(attachment, UnsentMessage):
+            rtn.unsent = True
+        elif attachment:
+            rtn.attachments.append(attachment)
     return rtn
 
 def graphql_to_user(user):
@@ -326,8 +406,8 @@ def graphql_to_group(group):
         color=c_info.get('color'),
         emoji=c_info.get('emoji'),
         admins = set([node.get('id') for node in group.get('thread_admins')]),
-        approval_mode = bool(group.get('approval_mode')),
-        approval_requests = set(node["requester"]['id'] for node in group['group_approval_queue']['nodes']),
+        approval_mode = bool(group.get('approval_mode')) if group.get('approval_mode') is not None else None,
+        approval_requests = set(node["requester"]['id'] for node in group['group_approval_queue']['nodes']) if group.get('group_approval_queue') else None,
         join_link = group['joinable_mode'].get('link'),
         photo=group['image'].get('uri'),
         name=group.get('name'),
@@ -501,7 +581,7 @@ class GraphQL(object):
     """
 
     SEARCH_USER = """
-    Query SearchUser(<search> = '', <limit> = 1) {
+    Query SearchUser(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.of_type(user).first(<limit>) as users {
                 nodes {
@@ -513,7 +593,7 @@ class GraphQL(object):
     """ + FRAGMENT_USER
 
     SEARCH_GROUP = """
-    Query SearchGroup(<search> = '', <limit> = 1, <pic_size> = 32) {
+    Query SearchGroup(<search> = '', <limit> = 10, <pic_size> = 32) {
         viewer() {
             message_threads.with_thread_name(<search>).last(<limit>) as groups {
                 nodes {
@@ -525,7 +605,7 @@ class GraphQL(object):
     """ + FRAGMENT_GROUP
 
     SEARCH_PAGE = """
-    Query SearchPage(<search> = '', <limit> = 1) {
+    Query SearchPage(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.of_type(page).first(<limit>) as pages {
                 nodes {
@@ -537,7 +617,7 @@ class GraphQL(object):
     """ + FRAGMENT_PAGE
 
     SEARCH_THREAD = """
-    Query SearchThread(<search> = '', <limit> = 1) {
+    Query SearchThread(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.first(<limit>) as threads {
                 nodes {

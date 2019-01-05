@@ -168,10 +168,12 @@ class Client(object):
 
     def graphql_requests(self, *queries):
         """
-        .. todo::
-            Documenting this
+        :param queries: Zero or more GraphQL objects
+        :type queries: GraphQL
 
         :raises: FBchatException if request failed
+        :return: A tuple containing json graphql queries
+        :rtype: tuple
         """
 
         return tuple(self._graphql({
@@ -237,22 +239,6 @@ class Client(object):
         self.payloadDefault['__a'] = '1'
         self.payloadDefault['ttstamp'] = self.ttstamp
         self.payloadDefault['fb_dtsg'] = self.fb_dtsg
-
-        self.form = {
-            'channel' : self.user_channel,
-            'partition' : '-2',
-            'clientid' : self.client_id,
-            'viewer_uid' : self.uid,
-            'uid' : self.uid,
-            'state' : 'active',
-            'format' : 'json',
-            'idle' : 0,
-            'cap' : '8'
-        }
-
-        self.prev = now()
-        self.tmp_prev = now()
-        self.last_sync = now()
 
     def _login(self):
         if not (self.email and self.password):
@@ -457,7 +443,8 @@ class Client(object):
             return given_thread_id, given_thread_type
 
     def setDefaultThread(self, thread_id, thread_type):
-        """Sets default thread to send messages to
+        """
+        Sets default thread to send messages to
 
         :param thread_id: User/Group ID to default to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
@@ -515,7 +502,7 @@ class Client(object):
 
         return users
 
-    def searchForUsers(self, name, limit=1):
+    def searchForUsers(self, name, limit=10):
         """
         Find and get user by his/her name
 
@@ -530,7 +517,7 @@ class Client(object):
 
         return [graphql_to_user(node) for node in j[name]['users']['nodes']]
 
-    def searchForPages(self, name, limit=1):
+    def searchForPages(self, name, limit=10):
         """
         Find and get page by its name
 
@@ -544,7 +531,7 @@ class Client(object):
 
         return [graphql_to_page(node) for node in j[name]['pages']['nodes']]
 
-    def searchForGroups(self, name, limit=1):
+    def searchForGroups(self, name, limit=10):
         """
         Find and get group thread by its name
 
@@ -559,7 +546,7 @@ class Client(object):
 
         return [graphql_to_group(node) for node in j['viewer']['groups']['nodes']]
 
-    def searchForThreads(self, name, limit=1):
+    def searchForThreads(self, name, limit=10):
         """
         Find and get a thread by its name
 
@@ -850,14 +837,22 @@ class Client(object):
             'id': thread_id,
             'message_limit': limit,
             'load_messages': True,
-            'load_read_receipts': False,
+            'load_read_receipts': True,
             'before': before
         }))
 
         if j.get('message_thread') is None:
             raise FBchatException('Could not fetch thread {}: {}'.format(thread_id, j))
 
-        return list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
+        messages = list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
+        read_receipts = j['message_thread']['read_receipts']['nodes']
+
+        for message in messages:
+            for receipt in read_receipts:
+                if int(receipt['watermark']) >= int(message.timestamp):
+                    message.read_by.append(receipt['actor']['id'])
+
+        return messages
 
     def fetchThreadList(self, offset=None, limit=20, thread_location=ThreadLocation.INBOX, before=None):
         """Get thread list of your facebook account
@@ -932,14 +927,14 @@ class Client(object):
         :type image_id: str
         :return: An url where you can download the original image
         :rtype: str
-        :raises: FBChatException if request failed
+        :raises: FBchatException if request failed
         """
         image_id = str(image_id)
         j = check_request(self._get(ReqUrl.ATTACHMENT_PHOTO, query={'photo_id': str(image_id)}))
 
         url = get_jsmods_require(j, 3)
         if url is None:
-            raise FBChatException('Could not fetch image url from: {}'.format(j))
+            raise FBchatException('Could not fetch image url from: {}'.format(j))
         return url
 
     def fetchMessageInfo(self, mid, thread_id=None):
@@ -950,7 +945,7 @@ class Client(object):
         :param thread_id: User/Group ID to get message info from. See :ref:`intro_threads`
         :return: :class:`models.Message` object
         :rtype: models.Message
-        :raises: FBChatException if request failed
+        :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         message_info = self._forcedFetch(thread_id, mid).get("message")
@@ -963,7 +958,7 @@ class Client(object):
 
         :param poll_id: Poll ID to fetch from
         :rtype: list
-        :raises: FBChatException if request failed
+        :raises: FBchatException if request failed
         """
         data = {
             "question_id": poll_id
@@ -980,7 +975,7 @@ class Client(object):
         :param plan_id: Plan ID to fetch from
         :return: :class:`models.Plan` object
         :rtype: models.Plan
-        :raises: FBChatException if request failed
+        :raises: FBchatException if request failed
         """
         data = {
             "event_reminder_id": plan_id
@@ -1181,7 +1176,56 @@ class Client(object):
             quick_reply.payload = payload
             return self.send(Message(text=payload, quick_replies=[quick_reply]))
 
-    def _upload(self, files):
+    def unsend(self, mid):
+        """
+        Unsends a message (removes for everyone)
+
+        :param mid: :ref:`Message ID <intro_message_ids>` of the message to unsend
+        """
+        data = {
+            'message_id': mid,
+        }
+        r = self._post(self.req_url.UNSEND, data)
+        r.raise_for_status()
+
+    def _sendLocation(self, location, current=True, thread_id=None, thread_type=None):
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
+        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        data['action_type'] = 'ma-type:user-generated-message'
+        data['location_attachment[coordinates][latitude]'] = location.latitude
+        data['location_attachment[coordinates][longitude]'] = location.longitude
+        data['location_attachment[is_current_location]'] = current
+        return self._doSendRequest(data)
+
+    def sendLocation(self, location, thread_id=None, thread_type=None):
+        """
+        Sends a given location to a thread as the user's current location
+
+        :param location: Location to send
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type location: models.LocationAttachment
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+        :raises: FBchatException if request failed
+        """
+        self._sendLocation(location=location, current=True, thread_id=thread_id, thread_type=thread_type)
+
+    def sendPinnedLocation(self, location, thread_id=None, thread_type=None):
+        """
+        Sends a given location to a thread as a pinned location
+
+        :param location: Location to send
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type location: models.LocationAttachment
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+        :raises: FBchatException if request failed
+        """
+        self._sendLocation(location=location, current=False, thread_id=thread_id, thread_type=thread_type)
+
+    def _upload(self, files, voice_clip=False):
         """
         Uploads files to Facebook
 
@@ -1191,7 +1235,12 @@ class Client(object):
         Returns a list of tuples with a file's ID and mimetype
         """
         file_dict = {'upload_{}'.format(i): f for i, f in enumerate(files)}
-        j = self._postFile(self.req_url.UPLOAD, files=file_dict, fix_request=True, as_json=True)
+
+        data = {
+            "voice_clip": voice_clip,
+        }
+
+        j = self._postFile(self.req_url.UPLOAD, files=file_dict, query=data, fix_request=True, as_json=True)
 
         if len(j['payload']['metadata']) != len(files):
             raise FBchatException("Some files could not be uploaded: {}, {}".format(j, files))
@@ -1235,7 +1284,7 @@ class Client(object):
         """
         Sends local files to a thread
 
-        :param file_path: Paths of files to upload and send
+        :param file_paths: Paths of files to upload and send
         :param message: Additional message
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
@@ -1246,6 +1295,39 @@ class Client(object):
         file_paths = require_list(file_paths)
         with get_files_from_paths(file_paths) as x:
             files = self._upload(x)
+        return self._sendFiles(files=files, message=message, thread_id=thread_id, thread_type=thread_type)
+
+    def sendRemoteVoiceClips(self, clip_urls, message=None, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Sends voice clips from URLs to a thread
+
+        :param clip_urls: URLs of clips to upload and send
+        :param message: Additional message
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent files
+        :raises: FBchatException if request failed
+        """
+        clip_urls = require_list(clip_urls)
+        files = self._upload(get_files_from_urls(clip_urls), voice_clip=True)
+        return self._sendFiles(files=files, message=message, thread_id=thread_id, thread_type=thread_type)
+
+    def sendLocalVoiceClips(self, clip_paths, message=None, thread_id=None, thread_type=ThreadType.USER):
+        """
+        Sends local voice clips to a thread
+
+        :param clip_paths: Paths of clips to upload and send
+        :param message: Additional message
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent files
+        :raises: FBchatException if request failed
+        """
+        clip_paths = require_list(clip_paths)
+        with get_files_from_paths(clip_paths) as x:
+            files = self._upload(x, voice_clip=True)
         return self._sendFiles(files=files, message=message, thread_id=thread_id, thread_type=thread_type)
 
     def sendImage(self, image_id, message=None, thread_id=None, thread_type=ThreadType.USER, is_gif=False):
@@ -1552,27 +1634,26 @@ class Client(object):
 
     def reactToMessage(self, message_id, reaction):
         """
-        Reacts to a message
+        Reacts to a message, or removes reaction
 
         :param message_id: :ref:`Message ID <intro_message_ids>` to react to
-        :param reaction: Reaction emoji to use
-        :type reaction: models.MessageReaction
+        :param reaction: Reaction emoji to use, if None removes reaction
+        :type reaction: models.MessageReaction or None
         :raises: FBchatException if request failed
         """
-        full_data = {
+        data = {
             "doc_id": 1491398900900362,
             "variables": json.dumps({
                 "data": {
-                    "action": "ADD_REACTION",
+                    "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
                     "client_mutation_id": "1",
                     "actor_id": self.uid,
                     "message_id": str(message_id),
-                    "reaction": reaction.value
+                    "reaction": reaction.value if reaction else None
                 }
             })
         }
-
-        j = self._post(self.req_url.MESSAGE_REACTION, full_data, fix_request=True, as_json=True)
+        self._post(self.req_url.MESSAGE_REACTION, data, fix_request=True, as_json=True)
 
     def createPlan(self, plan, thread_id=None):
         """
@@ -1780,7 +1861,7 @@ class Client(object):
         }
 
         for thread_id in thread_ids:
-            data["ids[{}]".format(thread_id)] = read
+            data["ids[{}]".format(thread_id)] = 'true' if read else 'false'
 
         r = self._post(self.req_url.READ_STATUS, data)
         return r.ok
@@ -2026,54 +2107,46 @@ class Client(object):
     LISTEN METHODS
     """
 
-    def _ping(self, sticky, pool):
+    def _ping(self):
         data = {
             'channel': self.user_channel,
             'clientid': self.client_id,
             'partition': -2,
             'cap': 0,
             'uid': self.uid,
-            'sticky_token': sticky,
-            'sticky_pool': pool,
+            'sticky_token': self.sticky,
+            'sticky_pool': self.pool,
             'viewer_uid': self.uid,
             'state': 'active',
         }
         self._get(self.req_url.PING, data, fix_request=True, as_json=False)
 
-    def _fetchSticky(self):
-        """Call pull api to get sticky and pool parameter, newer api needs these parameters to work"""
-
-        data = {
-            "msgs_recv": 0,
-            "channel": self.user_channel,
-            "clientid": self.client_id
-        }
-
-        j = self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
-
-        if j.get('lb_info') is None:
-            raise FBchatException('Missing lb_info: {}'.format(j))
-
-        return j['lb_info']['sticky'], j['lb_info']['pool']
-
-    def _pullMessage(self, sticky, pool, markAlive=True):
+    def _pullMessage(self, markAlive=True):
         """Call pull api with seq value to get message data."""
 
         data = {
             "msgs_recv": 0,
-            "sticky_token": sticky,
-            "sticky_pool": pool,
+            "sticky_token": self.sticky,
+            "sticky_pool": self.pool,
             "clientid": self.client_id,
             'state': 'active' if markAlive else 'offline',
         }
 
-        j = self._get(ReqUrl.STICKY, data, fix_request=True, as_json=True)
+        j = self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
 
         self.seq = j.get('seq', '0')
         return j
 
     def _parseMessage(self, content):
         """Get message and author name from content. May contain multiple messages in the content."""
+
+        if 'lb_info' in content:
+            self.sticky = content['lb_info']['sticky']
+            self.pool = content['lb_info']['pool']
+
+        if 'batches' in content:
+            for batch in content['batches']:
+                self._parseMessage(batch)
 
         if 'ms' not in content: return
 
@@ -2097,6 +2170,7 @@ class Client(object):
 
                     delta = m["delta"]
                     delta_type = delta.get("type")
+                    delta_class = delta.get("class")
                     metadata = delta.get("messageMetadata")
 
                     if metadata:
@@ -2133,14 +2207,14 @@ class Client(object):
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
                     # Thread title change
-                    elif delta.get("class") == "ThreadName":
+                    elif delta_class == "ThreadName":
                         new_title = delta["name"]
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onTitleChange(mid=mid, author_id=author_id, new_title=new_title, thread_id=thread_id,
                                            thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
                     # Forced fetch
-                    elif delta.get("class") == "ForcedFetch":
+                    elif delta_class == "ForcedFetch":
                         mid = delta.get("messageId")
                         if mid is None:
                             self.onUnknownMesssageType(msg=m)
@@ -2186,7 +2260,7 @@ class Client(object):
                                                   thread_id=thread_id, thread_type=thread_type, ts=ts, msg=m)
 
                     # Message delivered
-                    elif delta.get("class") == "DeliveryReceipt":
+                    elif delta_class == "DeliveryReceipt":
                         message_ids = delta["messageIds"]
                         delivered_for = str(delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"])
                         ts = int(delta["deliveredWatermarkTimestampMs"])
@@ -2196,7 +2270,7 @@ class Client(object):
                                                 metadata=metadata, msg=m)
 
                     # Message seen
-                    elif delta.get("class") == "ReadReceipt":
+                    elif delta_class == "ReadReceipt":
                         seen_by = str(delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"])
                         seen_ts = int(delta["actionTimestampMs"])
                         delivered_ts = int(delta["watermarkTimestampMs"])
@@ -2205,7 +2279,7 @@ class Client(object):
                                            seen_ts=seen_ts, ts=delivered_ts, metadata=metadata, msg=m)
 
                     # Messages marked as seen
-                    elif delta.get("class") == "MarkRead":
+                    elif delta_class == "MarkRead":
                         seen_ts = int(delta.get("actionTimestampMs") or delta.get("actionTimestamp"))
                         delivered_ts = int(delta.get("watermarkTimestampMs") or delta.get("watermarkTimestamp"))
 
@@ -2305,6 +2379,61 @@ class Client(object):
                         self.onPlanParticipation(mid=mid, plan=plan, take_part=take_part, author_id=author_id,
                                                  thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
+                    # Client payload (that weird numbers)
+                    elif delta_class == "ClientPayload":
+                        payload = json.loads("".join(chr(z) for z in delta['payload']))
+                        ts = m.get("ofd_ts")
+                        for d in payload.get('deltas', []):
+
+                            # Message reaction
+                            if d.get('deltaMessageReaction'):
+                                i = d['deltaMessageReaction']
+                                thread_id, thread_type = getThreadIdAndThreadType(i)
+                                mid = i["messageId"]
+                                author_id = str(i["userId"])
+                                reaction = MessageReaction(i["reaction"]) if i.get("reaction") else None
+                                add_reaction = not bool(i["action"])
+                                if add_reaction:
+                                    self.onReactionAdded(mid=mid, reaction=reaction, author_id=author_id,
+                                                         thread_id=thread_id, thread_type=thread_type, ts=ts, msg=m)
+                                else:
+                                    self.onReactionRemoved(mid=mid, author_id=author_id, thread_id=thread_id,
+                                                           thread_type=thread_type, ts=ts, msg=m)
+
+                            # Viewer status change
+                            elif d.get('deltaChangeViewerStatus'):
+                                i = d['deltaChangeViewerStatus']
+                                thread_id, thread_type = getThreadIdAndThreadType(i)
+                                author_id = str(i["actorFbid"])
+                                reason = i["reason"]
+                                can_reply = i["canViewerReply"]
+                                if reason == 2:
+                                    if can_reply:
+                                        self.onUnblock(author_id=author_id, thread_id=thread_id, thread_type=thread_type, ts=ts, msg=m)
+                                    else:
+                                        self.onBlock(author_id=author_id, thread_id=thread_id, thread_type=thread_type, ts=ts, msg=m)
+
+                            # Live location info
+                            elif d.get('liveLocationData'):
+                                i = d['liveLocationData']
+                                thread_id, thread_type = getThreadIdAndThreadType(i)
+                                for l in i['messageLiveLocations']:
+                                    mid = l["messageId"]
+                                    author_id = str(l["senderId"])
+                                    location = graphql_to_live_location(l)
+                                    self.onLiveLocation(mid=mid, location=location, author_id=author_id, thread_id=thread_id,
+                                                        thread_type=thread_type, ts=ts, msg=m)
+
+                            # Message deletion
+                            elif d.get('deltaRecallMessageData'):
+                                i = d['deltaRecallMessageData']
+                                thread_id, thread_type = getThreadIdAndThreadType(i)
+                                mid = i['messageID']
+                                ts = i['deletionTimestamp']
+                                author_id = str(i['senderID'])
+                                self.onMessageUnsent(mid=mid, author_id=author_id, thread_id=thread_id, thread_type=thread_type,
+                                                      ts=ts, msg=m)
+
                     # New message
                     elif delta.get("class") == "NewMessage":
                         mentions = []
@@ -2316,6 +2445,7 @@ class Client(object):
 
                         sticker = None
                         attachments = []
+                        unsent = False
                         if delta.get('attachments'):
                             try:
                                 for a in delta['attachments']:
@@ -2323,17 +2453,23 @@ class Client(object):
                                     if mercury.get('blob_attachment'):
                                         image_metadata = a.get('imageMetadata', {})
                                         attach_type = mercury['blob_attachment']['__typename']
-                                        attachment = graphql_to_attachment(mercury.get('blob_attachment', {}))
+                                        attachment = graphql_to_attachment(mercury['blob_attachment'])
 
-                                        if attach_type == ['MessageFile', 'MessageVideo', 'MessageAudio']:
+                                        if attach_type in ['MessageFile', 'MessageVideo', 'MessageAudio']:
                                             # TODO: Add more data here for audio files
                                             attachment.size = int(a['fileSize'])
                                         attachments.append(attachment)
+
                                     elif mercury.get('sticker_attachment'):
-                                        sticker = graphql_to_sticker(a['mercury']['sticker_attachment'])
+                                        sticker = graphql_to_sticker(mercury['sticker_attachment'])
+
                                     elif mercury.get('extensible_attachment'):
-                                        # TODO: Add more data here for shared stuff (URLs, events and so on)
-                                        pass
+                                        attachment = graphql_to_extensible_attachment(mercury['extensible_attachment'])
+                                        if isinstance(attachment, UnsentMessage):
+                                            unsent = True
+                                        elif attachment:
+                                            attachments.append(attachment)
+
                             except Exception:
                                 log.exception('An exception occured while reading attachments: {}'.format(delta['attachments']))
 
@@ -2345,12 +2481,13 @@ class Client(object):
                             mentions=mentions,
                             emoji_size=emoji_size,
                             sticker=sticker,
-                            attachments=attachments
+                            attachments=attachments,
                         )
                         message.uid = mid
                         message.author = author_id
                         message.timestamp = ts
                         #message.reactions = {}
+                        message.unsent = unsent
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
                         self.onMessage(mid=mid, author_id=author_id, message=delta.get('body', ''), message_object=message,
                                        thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
@@ -2420,7 +2557,6 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         self.listening = True
-        self.sticky, self.pool = self._fetchSticky()
 
     def doOneListen(self, markAlive=True):
         """
@@ -2434,8 +2570,8 @@ class Client(object):
         """
         try:
             if markAlive:
-                self._ping(self.sticky, self.pool)
-            content = self._pullMessage(self.sticky, self.pool, markAlive)
+                self._ping()
+            content = self._pullMessage(markAlive)
             if content:
                 self._parseMessage(content)
         except KeyboardInterrupt:
@@ -2707,6 +2843,19 @@ class Client(object):
         """
         log.info("Marked messages as seen in threads {} at {}s".format([(x[0], x[1].name) for x in threads], seen_ts/1000))
 
+    def onMessageUnsent(self, mid=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and someone unsends (deletes for everyone) a message
+
+        :param mid: ID of the unsent message
+        :param author_id: The ID of the person who unsent the message
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} unsent the message {} in {} ({}) at {}s".format(author_id, repr(mid), thread_id, thread_type.name, ts/1000))
 
     def onPeopleAdded(self, mid=None, added_ids=None, author_id=None, thread_id=None, ts=None, msg=None):
         """
@@ -2787,6 +2936,79 @@ class Client(object):
         :type thread_type: models.ThreadType
         """
         log.info("{} played \"{}\" in {} ({})".format(author_id, game_name, thread_id, thread_type.name))
+
+    def onReactionAdded(self, mid=None, reaction=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody reacts to a message
+
+        :param mid: Message ID, that user reacted to
+        :param reaction: Reaction
+        :param add_reaction: Whether user added or removed reaction
+        :param author_id: The ID of the person who reacted to the message
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type reaction: models.MessageReaction
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} reacted to message {} with {} in {} ({})".format(author_id, mid, reaction.name, thread_id, thread_type.name))
+
+    def onReactionRemoved(self, mid=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody removes reaction from a message
+
+        :param mid: Message ID, that user reacted to
+        :param author_id: The ID of the person who removed reaction
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} removed reaction from {} message in {} ({})".format(author_id, mid, thread_id, thread_type))
+
+    def onBlock(self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody blocks client
+
+        :param author_id: The ID of the person who blocked
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} blocked {} ({}) thread".format(author_id, thread_id, thread_type.name))
+
+    def onUnblock(self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening, and somebody blocks client
+
+        :param author_id: The ID of the person who unblocked
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} unblocked {} ({}) thread".format(author_id, thread_id, thread_type.name))
+
+    def onLiveLocation(self, mid=None, location=None, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None):
+        """
+        Called when the client is listening and somebody sends live location info
+
+        :param mid: The action ID
+        :param location: Sent location info
+        :param author_id: The ID of the person who sent location info
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        :param msg: A full set of the data recieved
+        :type location: models.LiveLocationAttachment
+        :type thread_type: models.ThreadType
+        """
+        log.info("{} sent live location info in {} ({}) with latitude {} and longitude {}".format(author_id, thread_id, thread_type, location.latitude, location.longitude))
 
     def onQprimer(self, ts=None, msg=None):
         """
@@ -2993,6 +3215,7 @@ class Client(object):
         :param metadata: Extra metadata about the action
         :param msg: A full set of the data recieved
         :type plan: models.Plan
+        :type take_part: bool
         :type thread_type: models.ThreadType
         """
         if take_part:
