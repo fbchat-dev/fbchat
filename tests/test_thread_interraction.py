@@ -72,8 +72,8 @@ def test_change_nickname(client, client_all, catch_event, compare):
     "😂",
     "😕",
     "😍",
-    pytest.mark.xfail("🙃", raises=FBchatFacebookError),
-    pytest.mark.xfail("not an emoji", raises=FBchatFacebookError)
+    pytest.param("🙃", marks=[pytest.mark.xfail(raises=FBchatFacebookError)]),
+    pytest.param("not an emoji", marks=[pytest.mark.xfail(raises=FBchatFacebookError)]),
 ])
 def test_change_emoji(client, catch_event, compare, emoji):
     with catch_event("onEmojiChange") as x:
@@ -101,7 +101,7 @@ def test_change_image_remote(client1, group, catch_event):
     [
         x
         if x in [ThreadColor.MESSENGER_BLUE, ThreadColor.PUMPKIN]
-        else pytest.mark.expensive(x)
+        else pytest.param(x, marks=[pytest.mark.expensive()])
         for x in ThreadColor
     ],
 )

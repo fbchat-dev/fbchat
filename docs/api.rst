@@ -13,7 +13,7 @@ If you are looking for information on a specific function, class, or method, thi
 Client
 ------
 
-This is the main class of `fbchat`, which contains all the methods you use to interract with Facebook.
+This is the main class of `fbchat`, which contains all the methods you use to interact with Facebook.
 You can extend this class, and overwrite the events, to provide custom event handling (mainly used while listening)
 
 .. autoclass:: Client(email, password, user_agent=None, max_tries=5, session_cookies=None, logging_level=logging.INFO)

@@ -180,6 +180,8 @@ class Message(object):
     timestamp = None
     #: Whether the message is read
     is_read = None
+    #: A list of pepole IDs who read the message, works only with :func:`fbchat.Client.fetchThreadMessages`
+    read_by = None
     #: A dict with user's IDs as keys, and their :class:`MessageReaction` as values
     reactions = None
     #: The actual message
@@ -188,6 +190,8 @@ class Message(object):
     sticker = None
     #: A list of attachments
     attachments = None
+    #: Whether the message is unsent (deleted for everyone)
+    unsent = None
 
     def __init__(self, text=None, mentions=None, emoji_size=None, sticker=None, attachments=None):
         """Represents a Facebook message"""
@@ -201,6 +205,8 @@ class Message(object):
             attachments = []
         self.attachments = attachments
         self.reactions = {}
+        self.read_by = []
+        self.deleted = False
 
     def __repr__(self):
         return self.__unicode__()
@@ -215,6 +221,12 @@ class Attachment(object):
     def __init__(self, uid=None):
         """Represents a Facebook attachment"""
         self.uid = uid
+
+class UnsentMessage(Attachment):
+
+    def __init__(self, *args, **kwargs):
+        """Represents an unsent message attachment"""
+        super(UnsentMessage, self).__init__(*args, **kwargs)
 
 class Sticker(Attachment):
     #: The sticker-pack's ID
@@ -248,9 +260,79 @@ class Sticker(Attachment):
         super(Sticker, self).__init__(*args, **kwargs)
 
 class ShareAttachment(Attachment):
-    def __init__(self, **kwargs):
-        """Represents a shared item (eg. URL) that has been sent as a Facebook attachment - *Currently Incomplete!*"""
+    #: ID of the author of the shared post
+    author = None
+    #: Target URL
+    url = None
+    #: Original URL if Facebook redirects the URL
+    original_url = None
+    #: Title of the attachment
+    title = None
+    #: Description of the attachment
+    description = None
+    #: Name of the source
+    source = None
+    #: URL of the attachment image
+    image_url = None
+    #: URL of the original image if Facebook uses `safe_image`
+    original_image_url = None
+    #: Width of the image
+    image_width = None
+    #: Height of the image
+    image_height = None
+    #: List of additional attachments
+    attachments = None
+
+    def __init__(self, author=None, url=None, original_url=None, title=None, description=None, source=None, image_url=None, original_image_url=None, image_width=None, image_height=None, attachments=None, **kwargs):
+        """Represents a shared item (eg. URL) that has been sent as a Facebook attachment"""
         super(ShareAttachment, self).__init__(**kwargs)
+        self.author = author
+        self.url = url
+        self.original_url = original_url
+        self.title = title
+        self.description = description
+        self.source = source
+        self.image_url = image_url
+        self.original_image_url = original_image_url
+        self.image_width = image_width
+        self.image_height = image_height
+        if attachments is None:
+            attachments = []
+        self.attachments = attachments
+
+class LocationAttachment(Attachment):
+    #: Latidute of the location
+    latitude = None
+    #: Longitude of the location
+    longitude = None
+    #: URL of image showing the map of the location
+    image_url = None
+    #: Width of the image
+    image_width = None
+    #: Height of the image
+    image_height = None
+    #: URL to Bing maps with the location
+    url = None
+
+    def __init__(self, latitude=None, longitude=None, **kwargs):
+        """Represents a user location"""
+        super(LocationAttachment, self).__init__(**kwargs)
+        self.latitude = latitude
+        self.longitude = longitude
+
+class LiveLocationAttachment(LocationAttachment):
+    #: Name of the location
+    name = None
+    #: Timestamp when live location expires
+    expiration_time = None
+    #: True if live location is expired
+    is_expired = None
+
+    def __init__(self, name=None, expiration_time=None, is_expired=None, **kwargs):
+        """Represents a live user location"""
+        super(LiveLocationAttachment, self).__init__(**kwargs)
+        self.expiration_time = expiration_time
+        self.is_expired = is_expired
 
 class FileAttachment(Attachment):
     #: Url where you can download the file

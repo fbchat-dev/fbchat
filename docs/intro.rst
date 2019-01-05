@@ -6,7 +6,7 @@ Introduction
 ============
 
 `fbchat` uses your email and password to communicate with the Facebook server.
-That means that you should always store your password in a seperate file, in case e.g. someone looks over your shoulder while you're writing code.
+That means that you should always store your password in a separate file, in case e.g. someone looks over your shoulder while you're writing code.
 You should also make sure that the file's access control is appropriately restrictive
 
 
@@ -16,7 +16,7 @@ Logging In
 ----------
 
 Simply create an instance of :class:`Client`. If you have two factor authentication enabled, type the code in the terminal prompt
-(If you want to supply the code in another fasion, overwrite :func:`Client.on2FACode`)::
+(If you want to supply the code in another fashion, overwrite :func:`Client.on2FACode`)::
 
     from fbchat import Client
     from fbchat.models import *
@@ -50,7 +50,7 @@ A thread can refer to two things: A Messenger group chat or a single Facebook us
 
 :class:`models.ThreadType` is an enumerator with two values: ``USER`` and ``GROUP``.
 These will specify whether the thread is a single user chat or a group chat.
-This is required for many of `fbchat`'s functions, since Facebook differetiates between these two internally
+This is required for many of `fbchat`'s functions, since Facebook differentiates between these two internally
 
 Searching for group chats and finding their ID can be done via. :func:`Client.searchForGroups`,
 and searching for users is possible via. :func:`Client.searchForUsers`. See :ref:`intro_fetching`
@@ -141,7 +141,7 @@ Sessions
 --------
 
 `fbchat` provides functions to retrieve and set the session cookies.
-This will enable you to store the session cookies in a seperate file, so that you don't have to login each time you start your script.
+This will enable you to store the session cookies in a separate file, so that you don't have to login each time you start your script.
 Use :func:`Client.getSession` to retrieve the cookies::
 
     session_cookies = client.getSession()
