@@ -2106,6 +2106,15 @@ class Client(object):
                     delta = m["delta"]
                     delta_type = delta.get("type")
                     delta_class = delta.get("class")
+                    
+                    delta_attachments = delta.get('attachments')
+                    lwa_type = None
+
+                    for a in delta_attachments:
+                        mercury = a['mercury']
+                        if mercury.get('extensible_attachment'):
+                            lwa_type = mercury['extensible_attachment']['story_attachment']['target']['lwa_type']
+                    
                     metadata = delta.get("messageMetadata")
 
                     if metadata:
@@ -2260,6 +2269,11 @@ class Client(object):
                         self.onUserJoinedCall(mid=mid, joined_id=author_id, is_video_call=is_video_call,
                                             thread_id=thread_id, thread_type=thread_type, ts=ts, metadata=metadata, msg=m)
 
+                    # On Waved to thread
+                    elif lwa_type == "WAVE":
+                        thread_id, thread_type = getThreadIdAndThreadType(metadata)
+                        self.onWaved(author_id, thread_id, thread_type, ts)
+                        
                     # Group poll event
                     elif delta_type == "group_poll":
                         thread_id, thread_type = getThreadIdAndThreadType(metadata)
@@ -3035,6 +3049,18 @@ class Client(object):
         """
         log.info("{} joined call in {} ({})".format(joined_id, thread_id, thread_type.name))
 
+        
+        
+    def onWaved(self, author_id, thread_id=None, thread_type=None, ts=None):
+        """
+        Called when the client is listening, and somebody waves to a thread
+        :param author_id: The ID of the person who created the poll
+        :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+        :param thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+        :param ts: A timestamp of the action
+        """
+        log.info("{} waved to the thread in {} ({})".format(author_id, thread_id, thread_type.name))
+        
     def onPollCreated(self, mid=None, poll=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
         Called when the client is listening, and somebody creates a group poll
