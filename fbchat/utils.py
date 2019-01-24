@@ -15,10 +15,11 @@ import aenum
 from .models import *
 
 try:
-    from urllib.parse import urlencode
+    from urllib.parse import urlencode, parse_qs, urlparse
     basestring = (str, bytes)
 except ImportError:
     from urllib import urlencode
+    from urlparse import parse_qs, urlparse
     basestring = basestring
 
 # Python 2's `input` executes the input, whereas `raw_input` just returns the input
@@ -141,6 +142,7 @@ class ReqUrl(object):
     GET_POLL_OPTIONS = "https://www.facebook.com/ajax/mercury/get_poll_options"
     SEARCH_MESSAGES = "https://www.facebook.com/ajax/mercury/search_snippets.php?dpr=1"
     MARK_SPAM = "https://www.facebook.com/ajax/mercury/mark_spam.php?dpr=1"
+    UNSEND = "https://www.facebook.com/messaging/unsend_message/?dpr=1"
 
     pull_channel = 0
 
@@ -299,7 +301,6 @@ def get_files_from_paths(filenames):
     for fn, fp, ft in files:
         fp.close()
 
-
 def enum_extend_if_invalid(enumeration, value):
     try:
         return enumeration(value)
@@ -307,3 +308,10 @@ def enum_extend_if_invalid(enumeration, value):
         log.warning("Failed parsing {.__name__}({!r}). Extending enum.".format(enumeration, value))
         aenum.extend_enum(enumeration, "UNKNOWN_{}".format(value).upper(), value)
         return enumeration(value)
+
+def get_url_parameters(url, *args):
+    params = parse_qs(urlparse(url).query)
+    return [params[arg][0] for arg in args if params.get(arg)]
+
+def get_url_parameter(url, param):
+    return get_url_parameters(url, param)[0]
