@@ -11,6 +11,7 @@ from os.path import basename
 import warnings
 import logging
 import requests
+import aenum
 from .models import *
 
 try:
@@ -299,6 +300,14 @@ def get_files_from_paths(filenames):
     yield files
     for fn, fp, ft in files:
         fp.close()
+
+def enum_extend_if_invalid(enumeration, value):
+    try:
+        return enumeration(value)
+    except ValueError:
+        log.warning("Failed parsing {.__name__}({!r}). Extending enum.".format(enumeration, value))
+        aenum.extend_enum(enumeration, "UNKNOWN_{}".format(value).upper(), value)
+        return enumeration(value)
 
 def get_url_parameters(url, *args):
     params = parse_qs(urlparse(url).query)

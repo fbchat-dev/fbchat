@@ -26,12 +26,11 @@ class ConcatJSONDecoder(json.JSONDecoder):
 def graphql_color_to_enum(color):
     if color is None:
         return None
-    if len(color) == 0:
+    if not color:
         return ThreadColor.MESSENGER_BLUE
-    try:
-        return ThreadColor('#{}'.format(color[2:].lower()))
-    except ValueError:
-        raise FBchatException('Could not get ThreadColor from color: {}'.format(color))
+    color = color[2:]  # Strip the alpha value
+    color_value = '#{}'.format(color.lower())
+    return enum_extend_if_invalid(ThreadColor, color_value)
 
 def get_customization_info(thread):
     if thread is None or thread.get('customization_info') is None:
@@ -285,7 +284,10 @@ def graphql_to_message(message):
     rtn.unsent = False
     if message.get('unread') is not None:
         rtn.is_read = not message['unread']
-    rtn.reactions = {str(r['user']['id']):MessageReaction(r['reaction']) for r in message.get('message_reactions')}
+    rtn.reactions = {
+        str(r['user']['id']): enum_extend_if_invalid(MessageReaction, r['reaction'])
+        for r in message.get('message_reactions')
+    }
     if message.get('blob_attachments') is not None:
         rtn.attachments = [graphql_to_attachment(attachment) for attachment in message['blob_attachments']]
     if message.get('extensible_attachment') is not None:
