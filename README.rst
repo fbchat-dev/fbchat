@@ -27,17 +27,18 @@ or jump right into the code by viewing the `examples <https://github.com/carpedm
 
 Installation:
 
-.. code-block:: console
+.. code-block::
 
     $ pip install fbchat
 
-You can also install from source, by using `setuptools` (You need at least version 30.3.0):
+You can also install from source, by using `flit`:
 
-.. code-block:: console
+.. code-block::
 
+    $ pip install flit
     $ git clone https://github.com/carpedm20/fbchat.git
     $ cd fbchat
-    $ python setup.py install
+    $ flit install
 
 
 Maintainer
