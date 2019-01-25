@@ -29,19 +29,21 @@ jobs:
     # and in `tests.utils.load_client`, we need 6 new sessions per branch. This is usually the point where Facebook
     # starts complaining, and we have to manually fix it
 
+    # Run online tests in all the supported python versions
     - &test-online
       if: (branch = master OR tag IS present) AND type != pull_request
       stage: online tests
       script: scripts/travis-online
-
-    # Run online tests in all the supported python versions
+    - <<: *test-online
       python: 2.7
+      before_install:
+      - sudo apt-get -y install python3-pip python3-setuptools
+      - sudo pip3 install flit
+      - pip install flit6
     - <<: *test-online
       python: 3.4
     - <<: *test-online
       python: 3.5
-    - <<: *test-online
-      python: 3.6
     - <<: *test-online
       python: pypy
 
@@ -50,25 +52,29 @@ jobs:
       # Only run if the commit message includes [ci all] or [all ci]
       if: commit_message =~ /\[ci\s+all\]|\[all\s+ci\]/
       python: 2.7
+      before_install:
+      - sudo apt-get -y install python3-pip python3-setuptools
+      - sudo pip3 install flit
+      - pip install flit6
       env: PYTEST_ADDOPTS='-m expensive'
 
+    # Run offline tests in all the supported python versions
     - &test-offline
       # Ideally, it'd be nice to run the offline tests in every build, but since we can't run jobs concurrently (yet),
       # we'll disable them when they're not needed, and include them inside the online tests instead
       if: not ((branch = master OR tag IS present) AND type != pull_request)
       stage: offline tests
       script: scripts/travis-offline
-
-    # Run offline tests in all the supported python versions
+    - <<: *test-offline
       python: 2.7
+      before_install:
+      - sudo apt-get -y install python3-pip python3-setuptools
+      - sudo pip3 install flit
+      - pip install flit6
     - <<: *test-offline
       python: 3.4
     - <<: *test-offline
       python: 3.5
-    - <<: *test-offline
-      python: 3.6
-    - <<: *test-offline
-      python: 3.6
     - <<: *test-offline
       python: pypy
 
