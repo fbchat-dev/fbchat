@@ -45,7 +45,7 @@ jobs:
     - <<: *test-online
       python: 3.5
     - <<: *test-online
-      python: pypy
+      python: pypy3.5
 
     # Run the expensive tests, with the python version most likely to break, aka. 2
     - <<: *test-online
@@ -76,7 +76,7 @@ jobs:
     - <<: *test-offline
       python: 3.5
     - <<: *test-offline
-      python: pypy
+      python: pypy3.5
 
     - stage: deploy
       name: PyPI
