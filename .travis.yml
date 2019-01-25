@@ -1,6 +1,7 @@
 sudo: false
 language: python
 conditions: v1
+python: 3.6
 
 # There are two accounts made specifically for Travis, and the passwords are really only encrypted for obscurity
 # The global env variables `client1_email`, `client1_password`, `client2_email`, `client2_password` and `group_id`
@@ -8,9 +9,9 @@ conditions: v1
 
 # The tests are run with `Limit concurrent jobs = 1`, since the tests can't use the clients simultaneously
 
-install:
-  - pip install -U -r requirements.txt
-  - pip install -U -r dev-requirements.txt
+before_install: pip install flit
+# Use `--deps production` so that we don't install unnecessary dependencies
+install: flit install --deps production --extras test
 
 cache:
   pip: true
@@ -71,20 +72,13 @@ jobs:
     - <<: *test-offline
       python: pypy
 
-    # Deploy to PyPI
-    - &deploy
-      stage: deploy
-      if: branch = master AND tag IS present
+    - stage: deploy
+      name: PyPI
+      if: tag IS present
       install: skip
+      script: skip
       deploy:
-        provider: pypi
-        user: madsmtm
-        password:
-          secure: "VA0MLSrwIW/T2KjMwjLZCzrLHw8pJT6tAvb48t7qpBdm8x192hax61pz1TaBZoJvlzyBPFKvluftuclTc7yEFwzXe7Gjqgd/ODKZl/wXDr36hQ7BBOLPZujdwmWLvTzMh3eJZlvkgcLCzrvK3j2oW8cM/+FZeVi/5/FhVuJ4ofs="
-        distributions: sdist bdist_wheel
-        skip_existing: true
-
-    # We need the bdist_wheels from both Python 2 and 3
-      python: 3.6
-    - <<: *deploy
-      python: 2.7
+        provider: script
+        script: flit publish
+        on:
+          tags: true
