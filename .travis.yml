@@ -39,7 +39,7 @@ jobs:
       before_install:
       - sudo apt-get -y install python3-pip python3-setuptools
       - sudo pip3 install flit
-      - pip install flit6
+      install: flit install --python python --deps production --extras test
     - <<: *test-online
       python: 3.4
     - <<: *test-online
@@ -55,7 +55,7 @@ jobs:
       before_install:
       - sudo apt-get -y install python3-pip python3-setuptools
       - sudo pip3 install flit
-      - pip install flit6
+      install: flit install --python python --deps production --extras test
       env: PYTEST_ADDOPTS='-m expensive'
 
     # Run offline tests in all the supported python versions
@@ -70,7 +70,7 @@ jobs:
       before_install:
       - sudo apt-get -y install python3-pip python3-setuptools
       - sudo pip3 install flit
-      - pip install flit6
+      install: flit install --python python --deps production --extras test
     - <<: *test-offline
       python: 3.4
     - <<: *test-offline
