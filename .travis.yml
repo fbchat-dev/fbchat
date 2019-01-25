@@ -24,6 +24,21 @@ jobs:
   - python: pypy3.5
 
   - stage: deploy
+    name: Github Releases
+    if: tag IS present
+    install: skip
+    script: flit build
+    deploy:
+      provider: releases
+      api_key: $GITHUB_OAUTH_TOKEN
+      file_glob: true
+      file: dist/*
+      skip_cleanup: true
+      draft: true
+      on:
+        tags: true
+
+  - stage: deploy
     name: PyPI
     if: tag IS present
     install: skip
