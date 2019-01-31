@@ -1072,9 +1072,12 @@ class Client(object):
                 q["payload"] = quick_reply.payload
                 q["external_payload"] = quick_reply.external_payload
                 q["data"] = quick_reply.data
-                if quick_reply.is_response: q["ignore_for_webhook"] = False
-                if quick_reply._type == QuickReplyText._type: q["title"] = quick_reply.title
-                if quick_reply._type is not QuickReplyLocation._type: q["image_url"] = quick_reply.image_url
+                if quick_reply.is_response:
+                    q["ignore_for_webhook"] = False
+                if isinstance(quick_reply, QuickReplyText):
+                    q["title"] = quick_reply.title
+                if not isinstance(quick_reply, QuickReplyLocation):
+                    q["image_url"] = quick_reply.image_url
                 xmd["quick_replies"].append(q)
             if len(message.quick_replies) == 1 and message.quick_replies[0].is_response:
                 xmd["quick_replies"] = xmd["quick_replies"][0]
