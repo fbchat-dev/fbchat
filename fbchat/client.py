@@ -984,6 +984,30 @@ class Client(object):
         plan = graphql_to_plan(j["payload"])
         return plan
 
+    def _getPrivateData(self):
+        j = self.graphql_request(GraphQL(doc_id='1868889766468115'))
+        return j['viewer']
+
+    def getPhoneNumbers(self):
+        """
+        Fetches a list of user phone numbers.
+
+        :return: List of phone numbers
+        :rtype: list
+        """
+        data = self._getPrivateData()
+        return [j['phone_number']['universal_number'] for j in data['user']['all_phones']]
+
+    def getEmails(self):
+        """
+        Fetches a list of user emails.
+
+        :return: List of emails
+        :rtype: list
+        """
+        data = self._getPrivateData()
+        return [j['display_email'] for j in data['all_emails']]
+
     """
     END FETCH METHODS
     """
@@ -1039,6 +1063,25 @@ class Client(object):
 
         if message.sticker:
             data['sticker_id'] = message.sticker.uid
+
+        if message.quick_replies:
+            xmd = {"quick_replies": []}
+            for quick_reply in message.quick_replies:
+                q = dict()
+                q["content_type"] = quick_reply._type
+                q["payload"] = quick_reply.payload
+                q["external_payload"] = quick_reply.external_payload
+                q["data"] = quick_reply.data
+                if quick_reply.is_response:
+                    q["ignore_for_webhook"] = False
+                if isinstance(quick_reply, QuickReplyText):
+                    q["title"] = quick_reply.title
+                if not isinstance(quick_reply, QuickReplyLocation):
+                    q["image_url"] = quick_reply.image_url
+                xmd["quick_replies"].append(q)
+            if len(message.quick_replies) == 1 and message.quick_replies[0].is_response:
+                xmd["quick_replies"] = xmd["quick_replies"][0]
+            data['platform_xmd'] = json.dumps(xmd)
 
         return data
 
@@ -1110,6 +1153,36 @@ class Client(object):
         if thread_type == ThreadType.USER:
             data['specific_to_list[0]'] = "fbid:{}".format(thread_id)
         return self._doSendRequest(data)
+
+    def quickReply(self, quick_reply, payload=None, thread_id=None, thread_type=None):
+        """
+        Replies to a chosen quick reply
+
+        :param quick_reply: Quick reply to reply to
+        :param payload: Optional answer to the quick reply
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :param thread_type: See :ref:`intro_threads`
+        :type quick_reply: models.QuickReply
+        :type thread_type: models.ThreadType
+        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+        :raises: FBchatException if request failed
+        """
+        quick_reply.is_response = True
+        if isinstance(quick_reply, QuickReplyText):
+            return self.send(Message(text=quick_reply.title, quick_replies=[quick_reply]))
+        elif isinstance(quick_reply, QuickReplyLocation):
+            if not isinstance(payload, LocationAttachment): raise ValueError("Payload must be an instance of `fbchat.models.LocationAttachment`")
+            return self.sendLocation(payload, thread_id=thread_id, thread_type=thread_type)
+        elif isinstance(quick_reply, QuickReplyEmail):
+            if not payload: payload = self.getEmails()[0]
+            quick_reply.external_payload = quick_reply.payload
+            quick_reply.payload = payload
+            return self.send(Message(text=payload, quick_replies=[quick_reply]))
+        elif isinstance(quick_reply, QuickReplyPhoneNumber):
+            if not payload: payload = self.getPhoneNumbers()[0]
+            quick_reply.external_payload = quick_reply.payload
+            quick_reply.payload = payload
+            return self.send(Message(text=payload, quick_replies=[quick_reply]))
 
     def unsend(self, mid):
         """
