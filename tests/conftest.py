@@ -115,14 +115,14 @@ def compare(client, thread):
 def message_with_mentions(request, client, client2, group):
     text = "Hi there ["
     mentions = []
-    if 'me' in request.param:
+    if "me" in request.param:
         mentions.append(Mention(thread_id=client.uid, offset=len(text), length=2))
         text += "me, "
-    if 'other' in request.param:
+    if "other" in request.param:
         mentions.append(Mention(thread_id=client2.uid, offset=len(text), length=5))
         text += "other, "
     # Unused, because Facebook don't properly support sending mentions with groups as targets
-    if 'group' in request.param:
+    if "group" in request.param:
         mentions.append(Mention(thread_id=group["id"], offset=len(text), length=5))
         text += "group, "
     text += "nothing]"

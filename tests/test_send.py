@@ -120,6 +120,6 @@ def test_send_remote_files(client, catch_event, compare):
     assert len(x.res["message_object"].attachments) == len(files)
 
 
-@pytest.mark.parametrize('wave_first', [True, False])
+@pytest.mark.parametrize("wave_first", [True, False])
 def test_wave(client, wave_first):
     client.wave(wave_first)

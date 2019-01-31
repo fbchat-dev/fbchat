@@ -135,7 +135,7 @@ def test_typing_status(client, catch_event, compare, status):
     assert compare(x, status=status)
 
 
-@pytest.mark.parametrize('require_admin_approval', [True, False])
+@pytest.mark.parametrize("require_admin_approval", [True, False])
 def test_change_approval_mode(client1, group, catch_event, require_admin_approval):
     with catch_event("onApprovalModeChange") as x:
         client1.changeGroupApprovalMode(require_admin_approval, group["id"])

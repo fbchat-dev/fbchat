@@ -4,17 +4,17 @@ from fbchat import log, Client
 from fbchat.models import *
 
 # Change this to your group id
-old_thread_id = '1234567890'
+old_thread_id = "1234567890"
 
 # Change these to match your liking
 old_color = ThreadColor.MESSENGER_BLUE
-old_emoji = '👍'
-old_title = 'Old group chat name'
+old_emoji = "👍"
+old_title = "Old group chat name"
 old_nicknames = {
-    '12345678901': "User nr. 1's nickname",
-    '12345678902': "User nr. 2's nickname",
-    '12345678903': "User nr. 3's nickname",
-    '12345678904': "User nr. 4's nickname",
+    "12345678901": "User nr. 1's nickname",
+    "12345678902": "User nr. 2's nickname",
+    "12345678903": "User nr. 3's nickname",
+    "12345678904": "User nr. 4's nickname",
 }
 
 

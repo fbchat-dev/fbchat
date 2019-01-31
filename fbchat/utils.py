@@ -48,37 +48,37 @@ USER_AGENTS = [
 ]
 
 LIKES = {
-    'large': EmojiSize.LARGE,
-    'medium': EmojiSize.MEDIUM,
-    'small': EmojiSize.SMALL,
-    'l': EmojiSize.LARGE,
-    'm': EmojiSize.MEDIUM,
-    's': EmojiSize.SMALL,
+    "large": EmojiSize.LARGE,
+    "medium": EmojiSize.MEDIUM,
+    "small": EmojiSize.SMALL,
+    "l": EmojiSize.LARGE,
+    "m": EmojiSize.MEDIUM,
+    "s": EmojiSize.SMALL,
 }
 
 
 GENDERS = {
     # For standard requests
-    0: 'unknown',
-    1: 'female_singular',
-    2: 'male_singular',
-    3: 'female_singular_guess',
-    4: 'male_singular_guess',
-    5: 'mixed',
-    6: 'neuter_singular',
-    7: 'unknown_singular',
-    8: 'female_plural',
-    9: 'male_plural',
-    10: 'neuter_plural',
-    11: 'unknown_plural',
+    0: "unknown",
+    1: "female_singular",
+    2: "male_singular",
+    3: "female_singular_guess",
+    4: "male_singular_guess",
+    5: "mixed",
+    6: "neuter_singular",
+    7: "unknown_singular",
+    8: "female_plural",
+    9: "male_plural",
+    10: "neuter_plural",
+    11: "unknown_plural",
     # For graphql requests
-    'UNKNOWN': 'unknown',
-    'FEMALE': 'female_singular',
-    'MALE': 'male_singular',
+    "UNKNOWN": "unknown",
+    "FEMALE": "female_singular",
+    "MALE": "male_singular",
     # '': 'female_singular_guess',
     # '': 'male_singular_guess',
     # '': 'mixed',
-    'NEUTER': 'neuter_singular',
+    "NEUTER": "neuter_singular",
     # '': 'unknown_singular',
     # '': 'female_plural',
     # '': 'male_plural',
@@ -168,7 +168,7 @@ class ReqUrl(object):
         )
 
 
-facebookEncoding = 'UTF-8'
+facebookEncoding = "UTF-8"
 
 
 def now():
@@ -177,9 +177,9 @@ def now():
 
 def strip_to_json(text):
     try:
-        return text[text.index('{') :]
+        return text[text.index("{") :]
     except ValueError:
-        raise FBchatException('No JSON object found: {!r}'.format(text))
+        raise FBchatException("No JSON object found: {!r}".format(text))
 
 
 def get_decoded_r(r):
@@ -201,12 +201,12 @@ def get_json(r):
 def digitToChar(digit):
     if digit < 10:
         return str(digit)
-    return chr(ord('a') + digit - 10)
+    return chr(ord("a") + digit - 10)
 
 
 def str_base(number, base):
     if number < 0:
-        return '-' + str_base(-number, base)
+        return "-" + str_base(-number, base)
     (d, m) = divmod(number, base)
     if d > 0:
         return str_base(d, base) + digitToChar(m)
@@ -226,55 +226,55 @@ def getSignatureID():
 def generateOfflineThreadingID():
     ret = now()
     value = int(random() * 4294967295)
-    string = ("0000000000000000000000" + format(value, 'b'))[-22:]
-    msgs = format(ret, 'b') + string
+    string = ("0000000000000000000000" + format(value, "b"))[-22:]
+    msgs = format(ret, "b") + string
     return str(int(msgs, 2))
 
 
 def check_json(j):
-    if j.get('error') is None:
+    if j.get("error") is None:
         return
-    if 'errorDescription' in j:
+    if "errorDescription" in j:
         # 'errorDescription' is in the users own language!
         raise FBchatFacebookError(
-            'Error #{} when sending request: {}'.format(
-                j['error'], j['errorDescription']
+            "Error #{} when sending request: {}".format(
+                j["error"], j["errorDescription"]
             ),
-            fb_error_code=j['error'],
-            fb_error_message=j['errorDescription'],
+            fb_error_code=j["error"],
+            fb_error_message=j["errorDescription"],
         )
-    elif 'debug_info' in j['error'] and 'code' in j['error']:
+    elif "debug_info" in j["error"] and "code" in j["error"]:
         raise FBchatFacebookError(
-            'Error #{} when sending request: {}'.format(
-                j['error']['code'], repr(j['error']['debug_info'])
+            "Error #{} when sending request: {}".format(
+                j["error"]["code"], repr(j["error"]["debug_info"])
             ),
-            fb_error_code=j['error']['code'],
-            fb_error_message=j['error']['debug_info'],
+            fb_error_code=j["error"]["code"],
+            fb_error_message=j["error"]["debug_info"],
         )
     else:
         raise FBchatFacebookError(
-            'Error {} when sending request'.format(j['error']), fb_error_code=j['error']
+            "Error {} when sending request".format(j["error"]), fb_error_code=j["error"]
         )
 
 
 def check_request(r, as_json=True):
     if not r.ok:
         raise FBchatFacebookError(
-            'Error when sending request: Got {} response'.format(r.status_code),
+            "Error when sending request: Got {} response".format(r.status_code),
             request_status_code=r.status_code,
         )
 
     content = get_decoded_r(r)
 
     if content is None or len(content) == 0:
-        raise FBchatFacebookError('Error when sending request: Got empty response')
+        raise FBchatFacebookError("Error when sending request: Got empty response")
 
     if as_json:
         content = strip_to_json(content)
         try:
             j = json.loads(content)
         except ValueError:
-            raise FBchatFacebookError('Error while parsing JSON: {!r}'.format(content))
+            raise FBchatFacebookError("Error while parsing JSON: {!r}".format(content))
         check_json(j)
         log.debug(j)
         return j
@@ -283,12 +283,12 @@ def check_request(r, as_json=True):
 
 
 def get_jsmods_require(j, index):
-    if j.get('jsmods') and j['jsmods'].get('require'):
+    if j.get("jsmods") and j["jsmods"].get("require"):
         try:
-            return j['jsmods']['require'][0][index][0]
+            return j["jsmods"]["require"][0][index][0]
         except (KeyError, IndexError) as e:
             log.warning(
-                'Error when getting jsmods_require: {}. Facebook might have changed protocol'.format(
+                "Error when getting jsmods_require: {}. Facebook might have changed protocol".format(
                     j
                 )
             )
@@ -298,13 +298,13 @@ def get_jsmods_require(j, index):
 def get_emojisize_from_tags(tags):
     if tags is None:
         return None
-    tmp = [tag for tag in tags if tag.startswith('hot_emoji_size:')]
+    tmp = [tag for tag in tags if tag.startswith("hot_emoji_size:")]
     if len(tmp) > 0:
         try:
-            return LIKES[tmp[0].split(':')[1]]
+            return LIKES[tmp[0].split(":")[1]]
         except (KeyError, IndexError):
             log.exception(
-                'Could not determine emoji size from {} - {}'.format(tags, tmp)
+                "Could not determine emoji size from {} - {}".format(tags, tmp)
             )
     return None
 
@@ -337,7 +337,7 @@ def get_files_from_urls(file_urls):
             (
                 basename(file_url),
                 r.content,
-                r.headers.get('Content-Type') or guess_type(file_url)[0],
+                r.headers.get("Content-Type") or guess_type(file_url)[0],
             )
         )
     return files
@@ -348,7 +348,7 @@ def get_files_from_paths(filenames):
     files = []
     for filename in filenames:
         files.append(
-            (basename(filename), open(filename, 'rb'), guess_type(filename)[0])
+            (basename(filename), open(filename, "rb"), guess_type(filename)[0])
         )
     yield files
     for fn, fp, ft in files:
