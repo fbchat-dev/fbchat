@@ -17,6 +17,10 @@ fbchat: Facebook Chat (Messenger) for Python
     :target: https://travis-ci.org/carpedm20/fbchat
     :alt: Travis CI
 
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/ambv/black
+    :alt: Code style
+
 Facebook Chat (`Messenger <https://www.facebook.com/messages/>`__) for Python.
 This project was inspired by `facebook-chat-api <https://github.com/Schmavery/facebook-chat-api>`__.
 
