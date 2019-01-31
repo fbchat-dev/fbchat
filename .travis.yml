@@ -23,6 +23,11 @@ jobs:
     sudo: required
   - python: pypy3.5
 
+  - name: Lint
+    before_install: skip
+    install: pip install black
+    script: black --check --verbose .
+
   - stage: deploy
     name: Github Releases
     if: tag IS present
