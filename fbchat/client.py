@@ -2545,7 +2545,7 @@ class Client(object):
         """
         self.listening = True
 
-    def doOneListen(self):
+    def doOneListen(self, markAlive=None):
         """
         Does one cycle of the listening loop.
         This method is useful if you want to control fbchat from an external event loop
@@ -2557,6 +2557,8 @@ class Client(object):
         :return: Whether the loop should keep running
         :rtype: bool
         """
+        if markAlive is not None:
+            self._markAlive = markAlive
         try:
             if self._markAlive:
                 self._ping()
