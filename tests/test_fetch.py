@@ -19,6 +19,11 @@ def test_fetch_thread_list(client1):
     assert len(threads) == 2
 
 
+def test_fetch_threads(client1):
+    threads = client1.fetchThreads(limit=2)
+    assert len(threads) == 2
+
+
 @pytest.mark.parametrize("emoji, emoji_size", EMOJI_LIST)
 def test_fetch_message_emoji(client, emoji, emoji_size):
     mid = client.sendEmoji(emoji, emoji_size)

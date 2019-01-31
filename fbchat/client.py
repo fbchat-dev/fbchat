@@ -476,6 +476,82 @@ class Client(object):
         }))
         return j
 
+    def fetchThreads(self, thread_location, before=None, after=None, limit=None):
+        """
+        Get all threads in thread_location.
+        Threads will be sorted from newest to oldest.
+
+        :param thread_location: models.ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
+        :param before: Fetch only thread before this epoch (in ms) (default all threads)
+        :param after: Fetch only thread after this epoch (in ms) (default all threads)
+        :param limit: The max. amount of threads to fetch (default all threads)
+        :return: :class:`models.Thread` objects
+        :rtype: list
+        :raises: FBchatException if request failed
+        """
+        threads = []
+
+        last_thread_timestamp = None
+        while True:
+            # break if limit is exceeded
+            if limit and len(threads) >= limit:
+                break
+
+            # fetchThreadList returns at max 20 threads before last_thread_timestamp (included)
+            candidates = self.fetchThreadList(before=last_thread_timestamp,
+                                              thread_location=thread_location
+                                              )
+
+            if len(candidates) > 1:
+                threads += candidates[1:]
+            else:  # End of threads
+                break
+
+            last_thread_timestamp = threads[-1].last_message_timestamp
+
+            # FB returns a sorted list of threads
+            if (before is not None and int(last_thread_timestamp) > before) or \
+                (after is not None and int(last_thread_timestamp) < after):
+                break
+
+        # Return only threads between before and after (if set)
+        if before is not None or after is not None:
+            for t in threads:
+                last_message_timestamp = int(t.last_message_timestamp)
+                if (before is not None and last_message_timestamp > before) or \
+                    (after is not None and last_message_timestamp < after):
+                    threads.remove(t)
+
+        if limit and len(threads) > limit:
+            return threads[:limit]
+
+        return threads
+
+    def fetchAllUsersFromThreads(self, threads):
+        """
+        Get all users involved in threads.
+
+        :param threads: models.Thread: List of threads to check for users
+        :return: :class:`models.User` objects
+        :rtype: list
+        :raises: FBchatException if request failed
+        """
+        users = []
+        users_to_fetch = []  # It's more efficient to fetch all users in one request
+        for thread in threads:
+            if thread.type == ThreadType.USER:
+                if thread.uid not in [user.uid for user in users]:
+                    users.append(thread)
+            elif thread.type == ThreadType.GROUP:
+                for user_id in thread.participants:
+                    if user_id not in [user.uid for user in users] and user_id not in users_to_fetch:
+                        users_to_fetch.append(user_id)
+            else:
+                pass
+        for user_id, user in self.fetchUserInfo(*users_to_fetch).items():
+            users.append(user)
+        return users
+
     def fetchAllUsers(self):
         """
         Gets all users the client is currently chatting with
