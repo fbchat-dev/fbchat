@@ -501,24 +501,24 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         threads = []
-        threads += self.fetchThreadList(thread_location=thread_location)
-        if not threads:
-            return []
 
+        last_thread_timestamp = None
         while True:
             # break if limit is exceeded
             if limit and len(threads) >= limit:
                 break
 
-            last_thread_timestamp = threads[-1].last_message_timestamp
             # fetchThreadList returns at max 20 threads before last_thread_timestamp (included)
             candidates = self.fetchThreadList(before=last_thread_timestamp,
                                               thread_location=thread_location
                                               )
+
             if len(candidates) > 1:
                 threads += candidates[1:]
             else:  # End of threads
                 break
+
+            last_thread_timestamp = threads[-1].last_message_timestamp
 
             # FB returns a sorted list of threads
             if (before is not None and int(last_thread_timestamp) > before) or \
@@ -527,7 +527,7 @@ class Client(object):
 
         # Return only threads between before and after (if set)
         if before is not None or after is not None:
-            for t in list(threads):
+            for t in threads:
                 last_message_timestamp = int(t.last_message_timestamp)
                 if (before is not None and last_message_timestamp > before) or \
                     (after is not None and last_message_timestamp < after):
@@ -541,7 +541,7 @@ class Client(object):
     def fetchAllUsersFromThreads(self, threads):
         """
         Get all users involved in threads.
-        
+
         :param threads: models.Thread: List of threads to check for users
         :return: :class:`models.User` objects
         :rtype: list
@@ -559,7 +559,7 @@ class Client(object):
                         users_to_fetch.append(user_id)
             else:
                 pass
-        for user_id,user in self.fetchUserInfo(*users_to_fetch).items():
+        for user_id, user in self.fetchUserInfo(*users_to_fetch).items():
             users.append(user)
         return users
 
