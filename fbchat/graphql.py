@@ -168,7 +168,7 @@ def graphql_to_extensible_attachment(a):
                     url=story['url'],
                     original_url=get_url_parameter(story['url'], 'u') if "/l.php?u=" in story['url'] else story['url'],
                     title=story['title_with_entities'].get('text'),
-                    description=story['description'].get('text'),
+                    description=story['description'].get('text') if story.get('description') else None,
                     source=story['source']['text'],
                     image_url=story['media']['image']['uri'] if story.get('media') else None,
                     original_image_url=(get_url_parameter(story['media']['image']['uri'], 'url') if "/safe_image.php" in story['media']['image']['uri'] else story['media']['image']['uri']) if story.get('media') else None,
