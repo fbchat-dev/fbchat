@@ -9,6 +9,22 @@ That means that if you're submitting a breaking change, it will probably take a 
 In that case, you can point your PR to the ``2.0.0-dev`` branch, where the API is being properly developed.
 Otherwise, just point it to ``master``.
 
+Development Environment
+-----------------------
+
+You can use `flit` to install the package as a symlink:
+
+.. code-block::
+
+    $ # *nix:
+    $ flit install --symlink
+    $ # Windows:
+    $ flit install --pth-file
+
+After that, you can ``import`` the module as normal.
+
+Before committing, you should run ``black .`` in the main directory, to format your code.
+
 Testing Environment
 -------------------
 
