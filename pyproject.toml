@@ -1,3 +1,15 @@
+[tool.black]
+line-length = 88
+exclude = '''
+/(
+    \.git
+  | \.pytest_cache
+  | build
+  | dist
+  | venv
+)/
+'''
+
 [build-system]
 requires = ["flit"]
 build-backend = "flit.buildapi"

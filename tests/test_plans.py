@@ -9,17 +9,17 @@ from utils import random_hex, subset
 from time import time
 
 
-@pytest.fixture(scope="module", params=[
-    Plan(int(time()) + 100, random_hex()),
-    pytest.param(
-        Plan(int(time()), random_hex()),
-        marks=[pytest.mark.xfail(raises=FBchatFacebookError)]
-    ),
-    pytest.param(
-        Plan(0, None),
-        marks=[pytest.mark.xfail()],
-    ),
-])
+@pytest.fixture(
+    scope="module",
+    params=[
+        Plan(int(time()) + 100, random_hex()),
+        pytest.param(
+            Plan(int(time()), random_hex()),
+            marks=[pytest.mark.xfail(raises=FBchatFacebookError)],
+        ),
+        pytest.param(Plan(0, None), marks=[pytest.mark.xfail()]),
+    ],
+)
 def plan_data(request, client, user, thread, catch_event, compare):
     with catch_event("onPlanCreated") as x:
         client.createPlan(request.param, thread["id"])
@@ -50,15 +50,14 @@ def test_fetch_plan_info(client, catch_event, plan_data):
     event, plan = plan_data
     fetched_plan = client.fetchPlanInfo(plan.uid)
     assert subset(
-        vars(fetched_plan),
-        time=plan.time,
-        title=plan.title,
-        author_id=int(client.uid),
+        vars(fetched_plan), time=plan.time, title=plan.title, author_id=int(client.uid)
     )
 
 
 @pytest.mark.parametrize("take_part", [False, True])
-def test_change_plan_participation(client, thread, catch_event, compare, plan_data, take_part):
+def test_change_plan_participation(
+    client, thread, catch_event, compare, plan_data, take_part
+):
     event, plan = plan_data
     with catch_event("onPlanParticipation") as x:
         client.changePlanParticipation(plan, take_part=take_part)
@@ -94,18 +93,22 @@ def test_on_plan_ended(client, thread, catch_event, compare):
     with catch_event("onPlanEnded") as x:
         client.createPlan(Plan(int(time()) + 120, "Wait for ending"))
         x.wait(180)
-    assert subset(x.res, thread_id=client.uid if thread["type"] == ThreadType.USER else thread["id"], thread_type=thread["type"])
+    assert subset(
+        x.res,
+        thread_id=client.uid if thread["type"] == ThreadType.USER else thread["id"],
+        thread_type=thread["type"],
+    )
 
 
-#createPlan(self, plan, thread_id=None)
-#editPlan(self, plan, new_plan)
-#deletePlan(self, plan)
-#changePlanParticipation(self, plan, take_part=True)
+# createPlan(self, plan, thread_id=None)
+# editPlan(self, plan, new_plan)
+# deletePlan(self, plan)
+# changePlanParticipation(self, plan, take_part=True)
 
-#onPlanCreated(self, mid=None, plan=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None)
-#onPlanEnded(self, mid=None, plan=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None)
-#onPlanEdited(self, mid=None, plan=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None)
-#onPlanDeleted(self, mid=None, plan=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None)
-#onPlanParticipation(self, mid=None, plan=None, take_part=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None)
+# onPlanCreated(self, mid=None, plan=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None)
+# onPlanEnded(self, mid=None, plan=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None)
+# onPlanEdited(self, mid=None, plan=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None)
+# onPlanDeleted(self, mid=None, plan=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None)
+# onPlanParticipation(self, mid=None, plan=None, take_part=None, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None)
 
-#fetchPlanInfo(self, plan_id)
+# fetchPlanInfo(self, plan_id)

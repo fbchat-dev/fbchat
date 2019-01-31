@@ -19,6 +19,4 @@ __license__ = 'BSD 3-Clause'
 __author__ = 'Taehoon Kim; Moreels Pieter-Jan; Mads Marquart'
 __email__ = 'carpedm20@gmail.com'
 
-__all__ = [
-    'Client',
-]
+__all__ = ['Client']

@@ -38,7 +38,12 @@ def test_send_mentions(client, catch_event, compare, message_with_mentions):
         mid = client.send(message_with_mentions)
 
     assert compare(x, mid=mid, message=message_with_mentions.text)
-    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=message_with_mentions.text)
+    assert subset(
+        vars(x.res["message_object"]),
+        uid=mid,
+        author=client.uid,
+        text=message_with_mentions.text,
+    )
     # The mentions are not ordered by offset
     for m in x.res["message_object"].mentions:
         assert vars(m) in [vars(x) for x in message_with_mentions.mentions]
@@ -76,7 +81,15 @@ def test_send_images(client, catch_event, compare, method_name, url):
 
 
 def test_send_local_files(client, catch_event, compare):
-    files = ["image.png", "image.jpg", "image.gif", "file.json", "file.txt", "audio.mp3", "video.mp4"]
+    files = [
+        "image.png",
+        "image.jpg",
+        "image.gif",
+        "file.json",
+        "file.txt",
+        "audio.mp3",
+        "video.mp4",
+    ]
     text = "Files sent locally"
     with catch_event("onMessage") as x:
         mid = client.sendLocalFiles(
@@ -95,7 +108,10 @@ def test_send_remote_files(client, catch_event, compare):
     text = "Files sent from remote"
     with catch_event("onMessage") as x:
         mid = client.sendRemoteFiles(
-            ["https://github.com/carpedm20/fbchat/raw/master/tests/{}".format(f) for f in files],
+            [
+                "https://github.com/carpedm20/fbchat/raw/master/tests/{}".format(f)
+                for f in files
+            ],
             message=Message(text),
         )
 

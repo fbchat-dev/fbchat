@@ -48,7 +48,9 @@ def test_fetch_message_mentions(client, thread, message_with_mentions):
     mid = client.send(message_with_mentions)
     message, = client.fetchThreadMessages(limit=1)
 
-    assert subset(vars(message), uid=mid, author=client.uid, text=message_with_mentions.text)
+    assert subset(
+        vars(message), uid=mid, author=client.uid, text=message_with_mentions.text
+    )
     # The mentions are not ordered by offset
     for m in message.mentions:
         assert vars(m) in [vars(x) for x in message_with_mentions.mentions]
@@ -58,7 +60,9 @@ def test_fetch_message_info_mentions(client, thread, message_with_mentions):
     mid = client.send(message_with_mentions)
     message = client.fetchMessageInfo(mid, thread_id=thread["id"])
 
-    assert subset(vars(message), uid=mid, author=client.uid, text=message_with_mentions.text)
+    assert subset(
+        vars(message), uid=mid, author=client.uid, text=message_with_mentions.text
+    )
     # The mentions are not ordered by offset
     for m in message.mentions:
         assert vars(m) in [vars(x) for x in message_with_mentions.mentions]

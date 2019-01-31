@@ -17,17 +17,21 @@ def user(client2):
 
 @pytest.fixture(scope="session")
 def group(pytestconfig):
-    return {"id": load_variable("group_id", pytestconfig.cache), "type": ThreadType.GROUP}
+    return {
+        "id": load_variable("group_id", pytestconfig.cache),
+        "type": ThreadType.GROUP,
+    }
 
 
-@pytest.fixture(scope="session", params=[
-    "user", "group", pytest.param("none", marks=[pytest.mark.xfail()])
-])
+@pytest.fixture(
+    scope="session",
+    params=["user", "group", pytest.param("none", marks=[pytest.mark.xfail()])],
+)
 def thread(request, user, group):
     return {
         "user": user,
         "group": group,
-        "none": {"id": "0", "type": ThreadType.GROUP}
+        "none": {"id": "0", "type": ThreadType.GROUP},
     }[request.param]
 
 

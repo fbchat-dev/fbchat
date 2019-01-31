@@ -10,6 +10,7 @@ from .utils import *
 FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
 WHITESPACE = re.compile(r'[ \t\n\r]*', FLAGS)
 
+
 class ConcatJSONDecoder(json.JSONDecoder):
     def decode(self, s, _w=WHITESPACE.match):
         s_len = len(s)
@@ -21,7 +22,10 @@ class ConcatJSONDecoder(json.JSONDecoder):
             end = _w(s, end).end()
             objs.append(obj)
         return objs
+
+
 # End shameless copy
+
 
 def graphql_color_to_enum(color):
     if color is None:
@@ -32,6 +36,7 @@ def graphql_color_to_enum(color):
     color_value = '#{}'.format(color.lower())
     return enum_extend_if_invalid(ThreadColor, color_value)
 
+
 def get_customization_info(thread):
     if thread is None or thread.get('customization_info') is None:
         return {}
@@ -39,9 +44,13 @@ def get_customization_info(thread):
 
     rtn = {
         'emoji': info.get('emoji'),
-        'color': graphql_color_to_enum(info.get('outgoing_bubble_color'))
+        'color': graphql_color_to_enum(info.get('outgoing_bubble_color')),
     }
-    if thread.get('thread_type') == 'GROUP' or thread.get('is_group_thread') or thread.get('thread_key', {}).get('thread_fbid'):
+    if (
+        thread.get('thread_type') == 'GROUP'
+        or thread.get('is_group_thread')
+        or thread.get('thread_key', {}).get('thread_fbid')
+    ):
         rtn['nicknames'] = {}
         for k in info.get('participant_customizations', []):
             rtn['nicknames'][k['participant_id']] = k.get('nickname')
@@ -64,9 +73,7 @@ def get_customization_info(thread):
 def graphql_to_sticker(s):
     if not s:
         return None
-    sticker = Sticker(
-        uid=s['id']
-    )
+    sticker = Sticker(uid=s['id'])
     if s.get('pack'):
         sticker.pack = s['pack'].get('id')
     if s.get('sprite_image'):
@@ -83,19 +90,21 @@ def graphql_to_sticker(s):
         sticker.label = s['label']
     return sticker
 
+
 def graphql_to_attachment(a):
     _type = a['__typename']
     if _type in ['MessageImage', 'MessageAnimatedImage']:
         return ImageAttachment(
-            original_extension=a.get('original_extension') or (a['filename'].split('-')[0] if a.get('filename') else None),
+            original_extension=a.get('original_extension')
+            or (a['filename'].split('-')[0] if a.get('filename') else None),
             width=a.get('original_dimensions', {}).get('width'),
             height=a.get('original_dimensions', {}).get('height'),
-            is_animated=_type=='MessageAnimatedImage',
+            is_animated=_type == 'MessageAnimatedImage',
             thumbnail_url=a.get('thumbnail', {}).get('uri'),
             preview=a.get('preview') or a.get('preview_image'),
             large_preview=a.get('large_preview'),
             animated_preview=a.get('animated_image'),
-            uid=a.get('legacy_attachment_id')
+            uid=a.get('legacy_attachment_id'),
         )
     elif _type == 'MessageVideo':
         return VideoAttachment(
@@ -106,26 +115,25 @@ def graphql_to_attachment(a):
             small_image=a.get('chat_image'),
             medium_image=a.get('inbox_image'),
             large_image=a.get('large_image'),
-            uid=a.get('legacy_attachment_id')
+            uid=a.get('legacy_attachment_id'),
         )
     elif _type == 'MessageAudio':
         return AudioAttachment(
             filename=a.get('filename'),
             url=a.get('playable_url'),
             duration=a.get('playable_duration_in_ms'),
-            audio_type=a.get('audio_type')
+            audio_type=a.get('audio_type'),
         )
     elif _type == 'MessageFile':
         return FileAttachment(
             url=a.get('url'),
             name=a.get('filename'),
             is_malicious=a.get('is_malicious'),
-            uid=a.get('message_file_fbid')
+            uid=a.get('message_file_fbid'),
         )
     else:
-        return Attachment(
-            uid=a.get('legacy_attachment_id')
-        )
+        return Attachment(uid=a.get('legacy_attachment_id'))
+
 
 def graphql_to_extensible_attachment(a):
     story = a.get('story_attachment')
@@ -134,7 +142,9 @@ def graphql_to_extensible_attachment(a):
         if target:
             _type = target['__typename']
             if _type == 'MessageLocation':
-                latitude, longitude = get_url_parameter(get_url_parameter(story['url'], 'u'), 'where1').split(", ")
+                latitude, longitude = get_url_parameter(
+                    get_url_parameter(story['url'], 'u'), 'where1'
+                ).split(", ")
                 rtn = LocationAttachment(
                     uid=int(story['deduplication_key']),
                     latitude=float(latitude),
@@ -149,10 +159,16 @@ def graphql_to_extensible_attachment(a):
             elif _type == 'MessageLiveLocation':
                 rtn = LiveLocationAttachment(
                     uid=int(story['target']['live_location_id']),
-                    latitude=story['target']['coordinate']['latitude'] if story['target'].get('coordinate') else None,
-                    longitude=story['target']['coordinate']['longitude'] if story['target'].get('coordinate') else None,
+                    latitude=story['target']['coordinate']['latitude']
+                    if story['target'].get('coordinate')
+                    else None,
+                    longitude=story['target']['coordinate']['longitude']
+                    if story['target'].get('coordinate')
+                    else None,
                     name=story['title_with_entities']['text'],
-                    expiration_time=story['target']['expiration_time'] if story['target'].get('expiration_time') else None,
+                    expiration_time=story['target']['expiration_time']
+                    if story['target'].get('expiration_time')
+                    else None,
                     is_expired=story['target']['is_expired'],
                 )
                 if story['media']:
@@ -164,22 +180,41 @@ def graphql_to_extensible_attachment(a):
             elif _type in ['ExternalUrl', 'Story']:
                 return ShareAttachment(
                     uid=a.get('legacy_attachment_id'),
-                    author=story['target']['actors'][0]['id'] if story['target'].get('actors') else None,
+                    author=story['target']['actors'][0]['id']
+                    if story['target'].get('actors')
+                    else None,
                     url=story['url'],
-                    original_url=get_url_parameter(story['url'], 'u') if "/l.php?u=" in story['url'] else story['url'],
+                    original_url=get_url_parameter(story['url'], 'u')
+                    if "/l.php?u=" in story['url']
+                    else story['url'],
                     title=story['title_with_entities'].get('text'),
-                    description=story['description'].get('text') if story.get('description') else None,
+                    description=story['description'].get('text')
+                    if story.get('description')
+                    else None,
                     source=story['source']['text'],
-                    image_url=story['media']['image']['uri'] if story.get('media') else None,
-                    original_image_url=(get_url_parameter(story['media']['image']['uri'], 'url') if "/safe_image.php" in story['media']['image']['uri'] else story['media']['image']['uri']) if story.get('media') else None,
-                    image_width=story['media']['image']['width'] if story.get('media') else None,
-                    image_height=story['media']['image']['height'] if story.get('media') else None,
-                    attachments=[graphql_to_subattachment(attachment) for attachment in story.get('subattachments')],
+                    image_url=story['media']['image']['uri']
+                    if story.get('media')
+                    else None,
+                    original_image_url=(
+                        get_url_parameter(story['media']['image']['uri'], 'url')
+                        if "/safe_image.php" in story['media']['image']['uri']
+                        else story['media']['image']['uri']
+                    )
+                    if story.get('media')
+                    else None,
+                    image_width=story['media']['image']['width']
+                    if story.get('media')
+                    else None,
+                    image_height=story['media']['image']['height']
+                    if story.get('media')
+                    else None,
+                    attachments=[
+                        graphql_to_subattachment(attachment)
+                        for attachment in story.get('subattachments')
+                    ],
                 )
         else:
-            return UnsentMessage(
-                uid=a.get('legacy_attachment_id'),
-            )
+            return UnsentMessage(uid=a.get('legacy_attachment_id'))
 
 
 def graphql_to_subattachment(a):
@@ -192,24 +227,31 @@ def graphql_to_subattachment(a):
             uid=a['target'].get('video_id'),
         )
 
+
 def graphql_to_live_location(a):
     return LiveLocationAttachment(
         uid=a['id'],
-        latitude=a['coordinate']['latitude'] / (10 ** 8) if not a.get('stopReason') else None,
-        longitude=a['coordinate']['longitude'] / (10 ** 8)  if not a.get('stopReason') else None,
+        latitude=a['coordinate']['latitude'] / (10 ** 8)
+        if not a.get('stopReason')
+        else None,
+        longitude=a['coordinate']['longitude'] / (10 ** 8)
+        if not a.get('stopReason')
+        else None,
         name=a.get('locationTitle'),
         expiration_time=a['expirationTime'],
         is_expired=bool(a.get('stopReason')),
     )
 
+
 def graphql_to_poll(a):
     rtn = Poll(
         title=a.get('title') if a.get('title') else a.get('text'),
-        options=[graphql_to_poll_option(m) for m in a.get('options')]
+        options=[graphql_to_poll_option(m) for m in a.get('options')],
     )
     rtn.uid = int(a["id"])
     rtn.options_count = a.get("total_count")
     return rtn
+
 
 def graphql_to_poll_option(a):
     if a.get('viewer_has_voted') is None:
@@ -218,21 +260,27 @@ def graphql_to_poll_option(a):
         vote = a['viewer_has_voted']
     else:
         vote = a['viewer_has_voted'] == 'true'
-    rtn = PollOption(
-        text=a.get('text'),
-        vote=vote
-    )
+    rtn = PollOption(text=a.get('text'), vote=vote)
     rtn.uid = int(a["id"])
-    rtn.voters = [m.get('node').get('id') for m in a.get('voters').get('edges')] if isinstance(a.get('voters'), dict) else a.get('voters')
-    rtn.votes_count = a.get('voters').get('count') if isinstance(a.get('voters'), dict) else a.get('total_count')
+    rtn.voters = (
+        [m.get('node').get('id') for m in a.get('voters').get('edges')]
+        if isinstance(a.get('voters'), dict)
+        else a.get('voters')
+    )
+    rtn.votes_count = (
+        a.get('voters').get('count')
+        if isinstance(a.get('voters'), dict)
+        else a.get('total_count')
+    )
     return rtn
+
 
 def graphql_to_plan(a):
     if a.get('event_members'):
         rtn = Plan(
             time=a.get('event_time'),
             title=a.get('title'),
-            location=a.get('location_name')
+            location=a.get('location_name'),
         )
         if a.get('location_id') != 0:
             rtn.location_id = str(a.get('location_id'))
@@ -248,7 +296,7 @@ def graphql_to_plan(a):
             time=a.get('event_time'),
             title=a.get('event_title'),
             location=a.get('event_location_name'),
-            location_id=a.get('event_location_id')
+            location_id=a.get('event_location_id'),
         )
         rtn.uid = a.get('event_id')
         rtn.author_id = a.get('event_creator_id')
@@ -257,25 +305,40 @@ def graphql_to_plan(a):
         rtn = Plan(
             time=a.get('time'),
             title=a.get('event_title'),
-            location=a.get('location_name')
+            location=a.get('location_name'),
         )
         rtn.uid = a.get('id')
         rtn.author_id = a.get('lightweight_event_creator').get('id')
         guests = a.get('event_reminder_members').get('edges')
-    rtn.going = [m.get('node').get('id') for m in guests if m.get('guest_list_state') == "GOING"]
-    rtn.declined = [m.get('node').get('id') for m in guests if m.get('guest_list_state') == "DECLINED"]
-    rtn.invited = [m.get('node').get('id') for m in guests if m.get('guest_list_state') == "INVITED"]
+    rtn.going = [
+        m.get('node').get('id') for m in guests if m.get('guest_list_state') == "GOING"
+    ]
+    rtn.declined = [
+        m.get('node').get('id')
+        for m in guests
+        if m.get('guest_list_state') == "DECLINED"
+    ]
+    rtn.invited = [
+        m.get('node').get('id')
+        for m in guests
+        if m.get('guest_list_state') == "INVITED"
+    ]
     return rtn
+
 
 def graphql_to_quick_reply(q, is_response=False):
     data = dict()
     _type = q.get('content_type').lower()
-    if q.get('payload'): data["payload"] = q["payload"]
-    if q.get('data'): data["data"] = q["data"]
-    if q.get('image_url') and _type is not QuickReplyLocation._type: data["image_url"] = q["image_url"]
+    if q.get('payload'):
+        data["payload"] = q["payload"]
+    if q.get('data'):
+        data["data"] = q["data"]
+    if q.get('image_url') and _type is not QuickReplyLocation._type:
+        data["image_url"] = q["image_url"]
     data["is_response"] = is_response
     if _type == QuickReplyText._type:
-        if q.get('title') is not None: data["title"] = q["title"]
+        if q.get('title') is not None:
+            data["title"] = q["title"]
         rtn = QuickReplyText(**data)
     elif _type == QuickReplyLocation._type:
         rtn = QuickReplyLocation(**data)
@@ -285,6 +348,7 @@ def graphql_to_quick_reply(q, is_response=False):
         rtn = QuickReplyEmail(**data)
     return rtn
 
+
 def graphql_to_message(message):
     if message.get('message_sender') is None:
         message['message_sender'] = {}
@@ -292,9 +356,16 @@ def graphql_to_message(message):
         message['message'] = {}
     rtn = Message(
         text=message.get('message').get('text'),
-        mentions=[Mention(m.get('entity', {}).get('id'), offset=m.get('offset'), length=m.get('length')) for m in message.get('message').get('ranges', [])],
+        mentions=[
+            Mention(
+                m.get('entity', {}).get('id'),
+                offset=m.get('offset'),
+                length=m.get('length'),
+            )
+            for m in message.get('message').get('ranges', [])
+        ],
         emoji_size=get_emojisize_from_tags(message.get('tags_list')),
-        sticker=graphql_to_sticker(message.get('sticker'))
+        sticker=graphql_to_sticker(message.get('sticker')),
     )
     rtn.uid = str(message.get('message_id'))
     rtn.author = str(message.get('message_sender').get('id'))
@@ -307,13 +378,18 @@ def graphql_to_message(message):
         for r in message.get('message_reactions')
     }
     if message.get('blob_attachments') is not None:
-        rtn.attachments = [graphql_to_attachment(attachment) for attachment in message['blob_attachments']]
+        rtn.attachments = [
+            graphql_to_attachment(attachment)
+            for attachment in message['blob_attachments']
+        ]
     if message.get('platform_xmd_encoded'):
         quick_replies = json.loads(message['platform_xmd_encoded']).get('quick_replies')
         if isinstance(quick_replies, list):
             rtn.quick_replies = [graphql_to_quick_reply(q) for q in quick_replies]
         elif isinstance(quick_replies, dict):
-            rtn.quick_replies = [graphql_to_quick_reply(quick_replies, is_response=True)]
+            rtn.quick_replies = [
+                graphql_to_quick_reply(quick_replies, is_response=True)
+            ]
     if message.get('extensible_attachment') is not None:
         attachment = graphql_to_extensible_attachment(message['extensible_attachment'])
         if isinstance(attachment, UnsentMessage):
@@ -322,13 +398,18 @@ def graphql_to_message(message):
             rtn.attachments.append(attachment)
     return rtn
 
+
 def graphql_to_user(user):
     if user.get('profile_picture') is None:
         user['profile_picture'] = {}
     c_info = get_customization_info(user)
     plan = None
     if user.get('event_reminders'):
-        plan = graphql_to_plan(user['event_reminders']['nodes'][0]) if user['event_reminders'].get('nodes') else None
+        plan = (
+            graphql_to_plan(user['event_reminders']['nodes'][0])
+            if user['event_reminders'].get('nodes')
+            else None
+        )
     return User(
         user['id'],
         url=user.get('url'),
@@ -347,6 +428,7 @@ def graphql_to_user(user):
         plan=plan,
     )
 
+
 def graphql_to_thread(thread):
     if thread['thread_type'] == 'GROUP':
         return graphql_to_group(thread)
@@ -354,11 +436,17 @@ def graphql_to_thread(thread):
         if thread.get('big_image_src') is None:
             thread['big_image_src'] = {}
         c_info = get_customization_info(thread)
-        participants = [node['messaging_actor'] for node in thread['all_participants']['nodes']]
-        user = next(p for p in participants if p['id'] == thread['thread_key']['other_user_id'])
+        participants = [
+            node['messaging_actor'] for node in thread['all_participants']['nodes']
+        ]
+        user = next(
+            p for p in participants if p['id'] == thread['thread_key']['other_user_id']
+        )
         last_message_timestamp = None
         if 'last_message' in thread:
-            last_message_timestamp = thread['last_message']['nodes'][0]['timestamp_precise']
+            last_message_timestamp = thread['last_message']['nodes'][0][
+                'timestamp_precise'
+            ]
 
         first_name = user.get('short_name')
         if first_name is None:
@@ -368,7 +456,11 @@ def graphql_to_thread(thread):
 
         plan = None
         if thread.get('event_reminders'):
-            plan = graphql_to_plan(thread['event_reminders']['nodes'][0]) if thread['event_reminders'].get('nodes') else None
+            plan = (
+                graphql_to_plan(thread['event_reminders']['nodes'][0])
+                if thread['event_reminders'].get('nodes')
+                else None
+            )
 
         return User(
             user['id'],
@@ -389,7 +481,12 @@ def graphql_to_thread(thread):
             plan=plan,
         )
     else:
-        raise FBchatException('Unknown thread type: {}, with data: {}'.format(thread.get('thread_type'), thread))
+        raise FBchatException(
+            'Unknown thread type: {}, with data: {}'.format(
+                thread.get('thread_type'), thread
+            )
+        )
+
 
 def graphql_to_group(group):
     if group.get('image') is None:
@@ -400,23 +497,39 @@ def graphql_to_group(group):
         last_message_timestamp = group['last_message']['nodes'][0]['timestamp_precise']
     plan = None
     if group.get('event_reminders'):
-        plan = graphql_to_plan(group['event_reminders']['nodes'][0]) if group['event_reminders'].get('nodes') else None
+        plan = (
+            graphql_to_plan(group['event_reminders']['nodes'][0])
+            if group['event_reminders'].get('nodes')
+            else None
+        )
     return Group(
         group['thread_key']['thread_fbid'],
-        participants=set([node['messaging_actor']['id'] for node in group['all_participants']['nodes']]),
+        participants=set(
+            [
+                node['messaging_actor']['id']
+                for node in group['all_participants']['nodes']
+            ]
+        ),
         nicknames=c_info.get('nicknames'),
         color=c_info.get('color'),
         emoji=c_info.get('emoji'),
-        admins = set([node.get('id') for node in group.get('thread_admins')]),
-        approval_mode = bool(group.get('approval_mode')) if group.get('approval_mode') is not None else None,
-        approval_requests = set(node["requester"]['id'] for node in group['group_approval_queue']['nodes']) if group.get('group_approval_queue') else None,
-        join_link = group['joinable_mode'].get('link'),
+        admins=set([node.get('id') for node in group.get('thread_admins')]),
+        approval_mode=bool(group.get('approval_mode'))
+        if group.get('approval_mode') is not None
+        else None,
+        approval_requests=set(
+            node["requester"]['id'] for node in group['group_approval_queue']['nodes']
+        )
+        if group.get('group_approval_queue')
+        else None,
+        join_link=group['joinable_mode'].get('link'),
         photo=group['image'].get('uri'),
         name=group.get('name'),
         message_count=group.get('messages_count'),
         last_message_timestamp=last_message_timestamp,
         plan=plan,
     )
+
 
 def graphql_to_page(page):
     if page.get('profile_picture') is None:
@@ -425,7 +538,11 @@ def graphql_to_page(page):
         page['city'] = {}
     plan = None
     if page.get('event_reminders'):
-        plan = graphql_to_plan(page['event_reminders']['nodes'][0]) if page['event_reminders'].get('nodes') else None
+        plan = (
+            graphql_to_plan(page['event_reminders']['nodes'][0])
+            if page['event_reminders'].get('nodes')
+            else None
+        )
     return Page(
         page['id'],
         url=page.get('url'),
@@ -437,6 +554,7 @@ def graphql_to_page(page):
         plan=plan,
     )
 
+
 def graphql_queries_to_json(*queries):
     """
     Queries should be a list of GraphQL objects
@@ -446,14 +564,15 @@ def graphql_queries_to_json(*queries):
         rtn['q{}'.format(i)] = query.value
     return json.dumps(rtn)
 
+
 def graphql_response_to_json(content):
-    content = strip_to_json(content) # Usually only needed in some error cases
+    content = strip_to_json(content)  # Usually only needed in some error cases
     try:
         j = json.loads(content, cls=ConcatJSONDecoder)
     except Exception:
         raise FBchatException('Error while parsing JSON: {}'.format(repr(content)))
 
-    rtn = [None]*(len(j))
+    rtn = [None] * (len(j))
     for x in j:
         if 'error_results' in x:
             del rtn[-1]
@@ -470,24 +589,17 @@ def graphql_response_to_json(content):
 
     return rtn
 
+
 class GraphQL(object):
     def __init__(self, query=None, doc_id=None, params=None):
         if params is None:
             params = {}
         if query is not None:
-            self.value = {
-                'priority': 0,
-                'q': query,
-                'query_params': params
-            }
+            self.value = {'priority': 0, 'q': query, 'query_params': params}
         elif doc_id is not None:
-            self.value = {
-                'doc_id': doc_id,
-                'query_params': params
-            }
+            self.value = {'doc_id': doc_id, 'query_params': params}
         else:
             raise FBchatUserError('A query or doc_id must be specified')
-
 
     FRAGMENT_USER = """
     QueryFragment User: User {
@@ -582,7 +694,8 @@ class GraphQL(object):
     }
     """
 
-    SEARCH_USER = """
+    SEARCH_USER = (
+        """
     Query SearchUser(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.of_type(user).first(<limit>) as users {
@@ -592,9 +705,12 @@ class GraphQL(object):
             }
         }
     }
-    """ + FRAGMENT_USER
+    """
+        + FRAGMENT_USER
+    )
 
-    SEARCH_GROUP = """
+    SEARCH_GROUP = (
+        """
     Query SearchGroup(<search> = '', <limit> = 10, <pic_size> = 32) {
         viewer() {
             message_threads.with_thread_name(<search>).last(<limit>) as groups {
@@ -604,9 +720,12 @@ class GraphQL(object):
             }
         }
     }
-    """ + FRAGMENT_GROUP
+    """
+        + FRAGMENT_GROUP
+    )
 
-    SEARCH_PAGE = """
+    SEARCH_PAGE = (
+        """
     Query SearchPage(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.of_type(page).first(<limit>) as pages {
@@ -616,9 +735,12 @@ class GraphQL(object):
             }
         }
     }
-    """ + FRAGMENT_PAGE
+    """
+        + FRAGMENT_PAGE
+    )
 
-    SEARCH_THREAD = """
+    SEARCH_THREAD = (
+        """
     Query SearchThread(<search> = '', <limit> = 10) {
         entities_named(<search>) {
             search_results.first(<limit>) as threads {
@@ -631,4 +753,8 @@ class GraphQL(object):
             }
         }
     }
-    """ + FRAGMENT_USER + FRAGMENT_GROUP + FRAGMENT_PAGE
+    """
+        + FRAGMENT_USER
+        + FRAGMENT_GROUP
+        + FRAGMENT_PAGE
+    )
