@@ -210,6 +210,18 @@ class Message(object):
 
     @classmethod
     def formatMentions(cls, text, *args, **kwargs):
+        """Like `str.format`, but takes tuples with a thread id and text instead.
+
+        Returns a `Message` object, with the formatted string and relevant mentions.
+
+        ```
+        >>> Message.formatMentions("Hey {!r}! My name is {}", ("1234", "Peter"), ("4321", "Michael"))
+        <Message (None): "Hey 'Peter'! My name is Michael", mentions=[<Mention 1234: offset=4 length=7>, <Mention 4321: offset=24 length=7>] emoji_size=None attachments=[]>
+
+        >>> Message.formatMentions("Hey {p}! My name is {}", ("1234", "Michael"), p=("4321", "Peter"))
+        <Message (None): 'Hey Peter! My name is Michael', mentions=[<Mention 4321: offset=4 length=5>, <Mention 1234: offset=22 length=7>] emoji_size=None attachments=[]>
+        ```
+        """
         result = ""
         mentions = list()
         offset = 0
