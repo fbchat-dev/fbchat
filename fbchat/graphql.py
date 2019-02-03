@@ -142,20 +142,22 @@ def graphql_to_extensible_attachment(a):
         if target:
             _type = target["__typename"]
             if _type == "MessageLocation":
+                url = story.get("url")
                 latitude, longitude = get_url_parameter(
-                    get_url_parameter(story["url"], "u"), "where1"
+                    get_url_parameter(url, "u"), "where1"
                 ).split(", ")
                 rtn = LocationAttachment(
                     uid=int(story["deduplication_key"]),
                     latitude=float(latitude),
                     longitude=float(longitude),
                 )
-                if story.get("media"):
-                    if story["media"].get("image"):
-                        rtn.image_url = story["media"]["image"]["uri"]
-                        rtn.image_width = story["media"]["image"]["width"]
-                        rtn.image_height = story["media"]["image"]["height"]
-                rtn.url = story["url"]
+                media = story.get("media")
+                if media and media.get("image"):
+                    image = media["image"]
+                    rtn.image_url = image.get("uri")
+                    rtn.image_width = image.get("width")
+                    rtn.image_height = image.get("height")
+                rtn.url = url
                 return rtn
             elif _type == "MessageLiveLocation":
                 rtn = LiveLocationAttachment(
@@ -170,23 +172,25 @@ def graphql_to_extensible_attachment(a):
                     expiration_time=story["target"].get("expiration_time"),
                     is_expired=story["target"].get("is_expired"),
                 )
-                if story.get("media"):
-                    if story["media"].get("image"):
-                        rtn.image_url = story["media"]["image"]["uri"]
-                        rtn.image_width = story["media"]["image"]["width"]
-                        rtn.image_height = story["media"]["image"]["height"]
-                rtn.url = story["url"]
+                media = story.get("media")
+                if media and media.get("image"):
+                    image = media["image"]
+                    rtn.image_url = image.get("uri")
+                    rtn.image_width = image.get("width")
+                    rtn.image_height = image.get("height")
+                rtn.url = story.get("url")
                 return rtn
             elif _type in ["ExternalUrl", "Story"]:
+                url = story.get("url")
                 rtn = ShareAttachment(
                     uid=a.get("legacy_attachment_id"),
                     author=story["target"]["actors"][0]["id"]
                     if story["target"].get("actors")
                     else None,
-                    url=story["url"],
-                    original_url=get_url_parameter(story["url"], "u")
-                    if "/l.php?u=" in story["url"]
-                    else story["url"],
+                    url=url,
+                    original_url=get_url_parameter(url, "u")
+                    if "/l.php?u=" in url
+                    else url,
                     title=story["title_with_entities"].get("text"),
                     description=story["description"].get("text")
                     if story.get("description")
@@ -197,16 +201,18 @@ def graphql_to_extensible_attachment(a):
                         for attachment in story.get("subattachments")
                     ],
                 )
-                if story.get("media"):
-                    if story["media"].get("image"):
-                        rtn.image_url = story["media"]["image"]["uri"]
-                        rtn.original_image_url = (
-                            get_url_parameter(story["media"]["image"]["uri"], "url")
-                            if "/safe_image.php" in story["media"]["image"]["uri"]
-                            else story["media"]["image"]["uri"]
-                        )
-                        rtn.image_width = story["media"]["image"]["width"]
-                        rtn.image_height = story["media"]["image"]["height"]
+                media = story.get("media")
+                if media and media.get("image"):
+                    image = media["image"]
+                    rtn.image_url = image.get("uri")
+                    rtn.original_image_url = (
+                        get_url_parameter(rtn.image_url, "url")
+                        if "/safe_image.php" in rtn.image_url
+                        else rtn.image_url
+                    )
+                    rtn.image_width = image.get("width")
+                    rtn.image_height = image.get("height")
+                return rtn
         else:
             return UnsentMessage(uid=a.get("legacy_attachment_id"))
 
@@ -214,10 +220,11 @@ def graphql_to_extensible_attachment(a):
 def graphql_to_subattachment(a):
     _type = a["target"]["__typename"]
     if _type == "Video":
+        media = a["media"]
         return VideoAttachment(
-            duration=a["media"].get("playable_duration_in_ms"),
-            preview_url=a["media"].get("playable_url"),
-            medium_image=a["media"].get("image"),
+            duration=media.get("playable_duration_in_ms"),
+            preview_url=media.get("playable_url"),
+            medium_image=media.get("image"),
             uid=a["target"].get("video_id"),
         )
 
