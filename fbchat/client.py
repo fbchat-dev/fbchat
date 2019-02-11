@@ -1182,7 +1182,7 @@ class Client(object):
 
         payload = j["payload"]["unread_thread_fbids"][0]
 
-        return payload['thread_fbids'] + payload['other_user_fbids']
+        return payload["thread_fbids"] + payload["other_user_fbids"]
 
     def fetchUnseen(self):
         """
@@ -1198,7 +1198,7 @@ class Client(object):
 
         payload = j["payload"]["unseen_thread_fbids"][0]
 
-        return payload['thread_fbids'] + payload['other_user_fbids']
+        return payload["thread_fbids"] + payload["other_user_fbids"]
 
     def fetchImageUrl(self, image_id):
         """Fetches the url to the original image from an image attachment ID
