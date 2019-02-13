@@ -3051,7 +3051,7 @@ class Client(object):
 
         
         
-    def onWaved(self, author_id, thread_id=None, thread_type=None, ts=None):
+    def onWaved(self, author_id=None, thread_id=None, thread_type=None, ts=None, metadata=None, msg=None):
         """
         Called when the client is listening, and somebody waves to a thread
         :param author_id: The ID of the person who created the poll
