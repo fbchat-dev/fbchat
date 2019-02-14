@@ -143,13 +143,22 @@ def graphql_to_extensible_attachment(a):
             _type = target["__typename"]
             if _type == "MessageLocation":
                 url = story.get("url")
-                latitude, longitude = get_url_parameter(
+                location = get_url_parameter(
                     get_url_parameter(url, "u"), "where1"
-                ).split(", ")
+                )
+                if len(location.split(", ")) == 2:
+                    try:
+                        latitude, longitude = [float(x) for x in location.split(", ")]
+                        location = ""
+                    except:
+                        latitude, longitude = "", ""
+                else:
+                    latitude, longitude = "", ""
                 rtn = LocationAttachment(
                     uid=int(story["deduplication_key"]),
-                    latitude=float(latitude),
-                    longitude=float(longitude),
+                    latitude=latitude,
+                    longitude=longitude,
+                    location=location
                 )
                 media = story.get("media")
                 if media and media.get("image"):
