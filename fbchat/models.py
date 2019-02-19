@@ -444,7 +444,9 @@ class ShareAttachment(Attachment):
 
 
 class LocationAttachment(Attachment):
-    #: Latidute of the location
+    """Latitude and longitude OR address is provided by Facebook"""
+
+    #: Latitude of the location
     latitude = None
     #: Longitude of the location
     longitude = None
@@ -456,12 +458,15 @@ class LocationAttachment(Attachment):
     image_height = None
     #: URL to Bing maps with the location
     url = None
+    # Address of the location
+    address = None
 
-    def __init__(self, latitude=None, longitude=None, **kwargs):
+    def __init__(self, latitude=None, longitude=None, address=None, **kwargs):
         """Represents a user location"""
         super(LocationAttachment, self).__init__(**kwargs)
         self.latitude = latitude
         self.longitude = longitude
+        self.address = address
 
 
 class LiveLocationAttachment(LocationAttachment):
