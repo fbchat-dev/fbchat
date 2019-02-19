@@ -146,7 +146,7 @@ def graphql_to_extensible_attachment(a):
                 address = get_url_parameter(get_url_parameter(url, "u"), "where1")
                 try:
                     latitude, longitude = [float(x) for x in address.split(", ")]
-                    address = ""
+                    address = None
                 except ValueError:
                     latitude, longitude = None, None
                 rtn = LocationAttachment(
