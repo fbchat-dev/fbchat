@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from ._core import Enum
 from ._exception import FBchatException, FBchatFacebookError, FBchatUserError
 from ._thread import ThreadType, ThreadLocation, ThreadColor, Thread
-from ._user import User, ActiveStatus
+from ._user import TypingStatus, User, ActiveStatus
 from ._group import Group, Room
 from ._page import Page
 from ._message import Mention, Message
@@ -21,13 +21,6 @@ from ._quick_reply import (
 )
 from ._poll import Poll, PollOption
 from ._plan import Plan
-
-
-class TypingStatus(Enum):
-    """Used to specify whether the user is typing or has stopped typing"""
-
-    STOPPED = 0
-    TYPING = 1
 
 
 class EmojiSize(Enum):

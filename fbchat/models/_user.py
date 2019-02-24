@@ -2,6 +2,13 @@
 from __future__ import unicode_literals
 
 
+class TypingStatus(Enum):
+    """Used to specify whether the user is typing or has stopped typing"""
+
+    STOPPED = 0
+    TYPING = 1
+
+
 class User(Thread):
     #: The profile url
     url = None
