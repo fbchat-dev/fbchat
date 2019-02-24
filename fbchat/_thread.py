@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+import attr
 from ._core import Enum
 
 
@@ -42,21 +43,24 @@ class ThreadColor(Enum):
     BILOBA_FLOWER = "#a695c7"
 
 
+@attr.s(cmp=False, init=False)
 class Thread(object):
+    """Represents a Facebook thread"""
+
     #: The unique identifier of the thread. Can be used a `thread_id`. See :ref:`intro_threads` for more info
-    uid = None
+    uid = attr.ib(converter=str)
     #: Specifies the type of thread. Can be used a `thread_type`. See :ref:`intro_threads` for more info
-    type = None
+    type = attr.ib()
     #: A url to the thread's picture
-    photo = None
+    photo = attr.ib(None)
     #: The name of the thread
-    name = None
+    name = attr.ib(None)
     #: Timestamp of last message
-    last_message_timestamp = None
+    last_message_timestamp = attr.ib(None)
     #: Number of messages in the thread
-    message_count = None
+    message_count = attr.ib(None)
     #: Set :class:`Plan`
-    plan = None
+    plan = attr.ib(None)
 
     def __init__(
         self,
@@ -68,7 +72,6 @@ class Thread(object):
         message_count=None,
         plan=None,
     ):
-        """Represents a Facebook thread"""
         self.uid = str(uid)
         self.type = _type
         self.photo = photo
@@ -76,9 +79,3 @@ class Thread(object):
         self.last_message_timestamp = last_message_timestamp
         self.message_count = message_count
         self.plan = plan
-
-    def __repr__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        return "<{} {} ({})>".format(self.type.name, self.name, self.uid)

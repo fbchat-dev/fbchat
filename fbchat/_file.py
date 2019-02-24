@@ -1,83 +1,85 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+import attr
 from ._attachment import Attachment
 
 
+@attr.s(cmp=False)
 class FileAttachment(Attachment):
+    """Represents a file that has been sent as a Facebook attachment"""
+
     #: Url where you can download the file
-    url = None
+    url = attr.ib(None)
     #: Size of the file in bytes
-    size = None
+    size = attr.ib(None)
     #: Name of the file
-    name = None
+    name = attr.ib(None)
     #: Whether Facebook determines that this file may be harmful
-    is_malicious = None
+    is_malicious = attr.ib(None)
 
-    def __init__(self, url=None, size=None, name=None, is_malicious=None, **kwargs):
-        """Represents a file that has been sent as a Facebook attachment"""
-        super(FileAttachment, self).__init__(**kwargs)
-        self.url = url
-        self.size = size
-        self.name = name
-        self.is_malicious = is_malicious
+    # Put here for backwards compatibility, so that the init argument order is preserved
+    uid = attr.ib(None)
 
 
+@attr.s(cmp=False)
 class AudioAttachment(Attachment):
+    """Represents an audio file that has been sent as a Facebook attachment"""
+
     #: Name of the file
-    filename = None
+    filename = attr.ib(None)
     #: Url of the audio file
-    url = None
+    url = attr.ib(None)
     #: Duration of the audioclip in milliseconds
-    duration = None
+    duration = attr.ib(None)
     #: Audio type
-    audio_type = None
+    audio_type = attr.ib(None)
 
-    def __init__(
-        self, filename=None, url=None, duration=None, audio_type=None, **kwargs
-    ):
-        """Represents an audio file that has been sent as a Facebook attachment"""
-        super(AudioAttachment, self).__init__(**kwargs)
-        self.filename = filename
-        self.url = url
-        self.duration = duration
-        self.audio_type = audio_type
+    # Put here for backwards compatibility, so that the init argument order is preserved
+    uid = attr.ib(None)
 
 
+@attr.s(cmp=False, init=False)
 class ImageAttachment(Attachment):
+    """Represents an image that has been sent as a Facebook attachment
+
+    To retrieve the full image url, use: :func:`fbchat.Client.fetchImageUrl`, and pass
+    it the uid of the image attachment
+    """
+
     #: The extension of the original image (eg. 'png')
-    original_extension = None
+    original_extension = attr.ib(None)
     #: Width of original image
-    width = None
+    width = attr.ib(None, converter=lambda x: None if x is None else int(x))
     #: Height of original image
-    height = None
+    height = attr.ib(None, converter=lambda x: None if x is None else int(x))
 
     #: Whether the image is animated
-    is_animated = None
+    is_animated = attr.ib(None)
 
     #: URL to a thumbnail of the image
-    thumbnail_url = None
+    thumbnail_url = attr.ib(None)
 
     #: URL to a medium preview of the image
-    preview_url = None
+    preview_url = attr.ib(None)
     #: Width of the medium preview image
-    preview_width = None
+    preview_width = attr.ib(None)
     #: Height of the medium preview image
-    preview_height = None
+    preview_height = attr.ib(None)
 
     #: URL to a large preview of the image
-    large_preview_url = None
+    large_preview_url = attr.ib(None)
     #: Width of the large preview image
-    large_preview_width = None
+    large_preview_width = attr.ib(None)
     #: Height of the large preview image
-    large_preview_height = None
+    large_preview_height = attr.ib(None)
 
     #: URL to an animated preview of the image (eg. for gifs)
-    animated_preview_url = None
+    animated_preview_url = attr.ib(None)
     #: Width of the animated preview image
-    animated_preview_width = None
+    animated_preview_width = attr.ib(None)
     #: Height of the animated preview image
-    animated_preview_height = None
+    animated_preview_height = attr.ib(None)
 
     def __init__(
         self,
@@ -91,11 +93,6 @@ class ImageAttachment(Attachment):
         animated_preview=None,
         **kwargs
     ):
-        """
-        Represents an image that has been sent as a Facebook attachment
-        To retrieve the full image url, use: :func:`fbchat.Client.fetchImageUrl`,
-        and pass it the uid of the image attachment
-        """
         super(ImageAttachment, self).__init__(**kwargs)
         self.original_extension = original_extension
         if width is not None:
@@ -126,38 +123,41 @@ class ImageAttachment(Attachment):
         self.animated_preview_height = animated_preview.get("height")
 
 
+@attr.s(cmp=False, init=False)
 class VideoAttachment(Attachment):
+    """Represents a video that has been sent as a Facebook attachment"""
+
     #: Size of the original video in bytes
-    size = None
+    size = attr.ib(None)
     #: Width of original video
-    width = None
+    width = attr.ib(None)
     #: Height of original video
-    height = None
+    height = attr.ib(None)
     #: Length of video in milliseconds
-    duration = None
+    duration = attr.ib(None)
     #: URL to very compressed preview video
-    preview_url = None
+    preview_url = attr.ib(None)
 
     #: URL to a small preview image of the video
-    small_image_url = None
+    small_image_url = attr.ib(None)
     #: Width of the small preview image
-    small_image_width = None
+    small_image_width = attr.ib(None)
     #: Height of the small preview image
-    small_image_height = None
+    small_image_height = attr.ib(None)
 
     #: URL to a medium preview image of the video
-    medium_image_url = None
+    medium_image_url = attr.ib(None)
     #: Width of the medium preview image
-    medium_image_width = None
+    medium_image_width = attr.ib(None)
     #: Height of the medium preview image
-    medium_image_height = None
+    medium_image_height = attr.ib(None)
 
     #: URL to a large preview image of the video
-    large_image_url = None
+    large_image_url = attr.ib(None)
     #: Width of the large preview image
-    large_image_width = None
+    large_image_width = attr.ib(None)
     #: Height of the large preview image
-    large_image_height = None
+    large_image_height = attr.ib(None)
 
     def __init__(
         self,
@@ -171,7 +171,6 @@ class VideoAttachment(Attachment):
         large_image=None,
         **kwargs
     ):
-        """Represents a video that has been sent as a Facebook attachment"""
         super(VideoAttachment, self).__init__(**kwargs)
         self.size = size
         self.width = width

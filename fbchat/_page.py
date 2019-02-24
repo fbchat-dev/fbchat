@@ -1,20 +1,24 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+import attr
 from ._thread import ThreadType, Thread
 
 
+@attr.s(cmp=False, init=False)
 class Page(Thread):
+    """Represents a Facebook page. Inherits `Thread`"""
+
     #: The page's custom url
-    url = None
+    url = attr.ib(None)
     #: The name of the page's location city
-    city = None
+    city = attr.ib(None)
     #: Amount of likes the page has
-    likes = None
+    likes = attr.ib(None)
     #: Some extra information about the page
-    sub_title = None
+    sub_title = attr.ib(None)
     #: The page's category
-    category = None
+    category = attr.ib(None)
 
     def __init__(
         self,
@@ -26,7 +30,6 @@ class Page(Thread):
         category=None,
         **kwargs
     ):
-        """Represents a Facebook page. Inherits `Thread`"""
         super(Page, self).__init__(ThreadType.PAGE, uid, **kwargs)
         self.url = url
         self.city = city

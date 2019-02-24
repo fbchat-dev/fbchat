@@ -1,52 +1,34 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+import attr
 
+
+@attr.s(cmp=False)
 class Poll(object):
+    """Represents a poll"""
+
     #: ID of the poll
-    uid = None
+    uid = attr.ib(None, init=False)
     #: Title of the poll
-    title = None
+    title = attr.ib()
     #: List of :class:`PollOption`, can be fetched with :func:`fbchat.Client.fetchPollOptions`
-    options = None
+    options = attr.ib()
     #: Options count
-    options_count = None
-
-    def __init__(self, title, options):
-        """Represents a poll"""
-        self.title = title
-        self.options = options
-
-    def __repr__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        return "<Poll ({}): {} options={}>".format(
-            self.uid, repr(self.title), self.options
-        )
+    options_count = attr.ib(None, init=False)
 
 
+@attr.s(cmp=False)
 class PollOption(object):
+    """Represents a poll option"""
+
     #: ID of the poll option
-    uid = None
+    uid = attr.ib(None, init=False)
     #: Text of the poll option
-    text = None
+    text = attr.ib()
     #: Whether vote when creating or client voted
-    vote = None
+    vote = attr.ib(False)
     #: ID of the users who voted for this poll option
-    voters = None
+    voters = attr.ib(None, init=False)
     #: Votes count
-    votes_count = None
-
-    def __init__(self, text, vote=False):
-        """Represents a poll option"""
-        self.text = text
-        self.vote = vote
-
-    def __repr__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        return "<PollOption ({}): {} voters={}>".format(
-            self.uid, repr(self.text), self.voters
-        )
+    votes_count = attr.ib(None, init=False)

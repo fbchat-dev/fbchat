@@ -23,6 +23,7 @@ maintainer-email = "madsmtm@gmail.com"
 home-page = "https://github.com/carpedm20/fbchat/"
 requires = [
     "aenum",
+    "attrs~=18.2.0",
     "requests",
     "beautifulsoup4",
 ]

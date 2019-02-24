@@ -1,76 +1,76 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+import attr
 from ._attachment import Attachment
 
 
+@attr.s(cmp=False)
 class QuickReply(object):
+    """Represents a quick reply"""
+
     #: Payload of the quick reply
-    payload = None
+    payload = attr.ib(None)
     #: External payload for responses
-    external_payload = None
+    external_payload = attr.ib(None, init=False)
     #: Additional data
-    data = None
+    data = attr.ib(None)
     #: Whether it's a response for a quick reply
-    is_response = None
-
-    def __init__(self, payload=None, data=None, is_response=False):
-        """Represents a quick reply"""
-        self.payload = payload
-        self.data = data
-        self.is_response = is_response
-
-    def __repr__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        return "<{}: payload={!r}>".format(self.__class__.__name__, self.payload)
+    is_response = attr.ib(False)
 
 
+@attr.s(cmp=False, init=False)
 class QuickReplyText(QuickReply):
+    """Represents a text quick reply"""
+
     #: Title of the quick reply
-    title = None
+    title = attr.ib(None)
     #: URL of the quick reply image (optional)
-    image_url = None
+    image_url = attr.ib(None)
     #: Type of the quick reply
     _type = "text"
 
     def __init__(self, title=None, image_url=None, **kwargs):
-        """Represents a text quick reply"""
         super(QuickReplyText, self).__init__(**kwargs)
         self.title = title
         self.image_url = image_url
 
 
+@attr.s(cmp=False, init=False)
 class QuickReplyLocation(QuickReply):
+    """Represents a location quick reply (Doesn't work on mobile)"""
+
     #: Type of the quick reply
     _type = "location"
 
     def __init__(self, **kwargs):
-        """Represents a location quick reply (Doesn't work on mobile)"""
         super(QuickReplyLocation, self).__init__(**kwargs)
         self.is_response = False
 
 
+@attr.s(cmp=False, init=False)
 class QuickReplyPhoneNumber(QuickReply):
+    """Represents a phone number quick reply (Doesn't work on mobile)"""
+
     #: URL of the quick reply image (optional)
-    image_url = None
+    image_url = attr.ib(None)
     #: Type of the quick reply
     _type = "user_phone_number"
 
     def __init__(self, image_url=None, **kwargs):
-        """Represents a phone number quick reply (Doesn't work on mobile)"""
         super(QuickReplyPhoneNumber, self).__init__(**kwargs)
         self.image_url = image_url
 
 
+@attr.s(cmp=False, init=False)
 class QuickReplyEmail(QuickReply):
+    """Represents an email quick reply (Doesn't work on mobile)"""
+
     #: URL of the quick reply image (optional)
-    image_url = None
+    image_url = attr.ib(None)
     #: Type of the quick reply
     _type = "user_email"
 
     def __init__(self, image_url=None, **kwargs):
-        """Represents an email quick reply (Doesn't work on mobile)"""
         super(QuickReplyEmail, self).__init__(**kwargs)
         self.image_url = image_url
