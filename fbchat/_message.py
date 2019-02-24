@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+import attr
 from string import Formatter
 from ._core import Enum
 
@@ -25,94 +26,48 @@ class MessageReaction(Enum):
     NO = "👎"
 
 
+@attr.s(cmp=False)
 class Mention(object):
     """Represents a @mention"""
 
     #: The thread ID the mention is pointing at
-    thread_id = None
+    thread_id = attr.ib()
     #: The character where the mention starts
-    offset = None
+    offset = attr.ib(0)
     #: The length of the mention
-    length = None
-
-    def __init__(self, thread_id, offset=0, length=10):
-        self.thread_id = thread_id
-        self.offset = offset
-        self.length = length
-
-    def __repr__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        return "<Mention {}: offset={} length={}>".format(
-            self.thread_id, self.offset, self.length
-        )
+    length = attr.ib(10)
 
 
+@attr.s(cmp=False)
 class Message(object):
     """Represents a Facebook message"""
 
     #: The actual message
-    text = None
+    text = attr.ib(None)
     #: A list of :class:`Mention` objects
-    mentions = None
+    mentions = attr.ib(factory=list, converter=lambda x: [] if x is None else x)
     #: A :class:`EmojiSize`. Size of a sent emoji
-    emoji_size = None
+    emoji_size = attr.ib(None)
     #: The message ID
-    uid = None
+    uid = attr.ib(None, init=False)
     #: ID of the sender
-    author = None
+    author = attr.ib(None, init=False)
     #: Timestamp of when the message was sent
-    timestamp = None
+    timestamp = attr.ib(None, init=False)
     #: Whether the message is read
-    is_read = None
+    is_read = attr.ib(None, init=False)
     #: A list of pepole IDs who read the message, works only with :func:`fbchat.Client.fetchThreadMessages`
-    read_by = None
+    read_by = attr.ib(factory=list, init=False)
     #: A dict with user's IDs as keys, and their :class:`MessageReaction` as values
-    reactions = None
-    #: The actual message
-    text = None
+    reactions = attr.ib(factory=dict, init=False)
     #: A :class:`Sticker`
-    sticker = None
+    sticker = attr.ib(None)
     #: A list of attachments
-    attachments = None
+    attachments = attr.ib(factory=list, converter=lambda x: [] if x is None else x)
     #: A list of :class:`QuickReply`
-    quick_replies = None
+    quick_replies = attr.ib(factory=list, converter=lambda x: [] if x is None else x)
     #: Whether the message is unsent (deleted for everyone)
-    unsent = None
-
-    def __init__(
-        self,
-        text=None,
-        mentions=None,
-        emoji_size=None,
-        sticker=None,
-        attachments=None,
-        quick_replies=None,
-    ):
-        self.text = text
-        if mentions is None:
-            mentions = []
-        self.mentions = mentions
-        self.emoji_size = emoji_size
-        self.sticker = sticker
-        if attachments is None:
-            attachments = []
-        self.attachments = attachments
-        if quick_replies is None:
-            quick_replies = []
-        self.quick_replies = quick_replies
-        self.reactions = {}
-        self.read_by = []
-        self.deleted = False
-
-    def __repr__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        return "<Message ({}): {}, mentions={} emoji_size={} attachments={}>".format(
-            self.uid, repr(self.text), self.mentions, self.emoji_size, self.attachments
-        )
+    unsent = attr.ib(False, init=False)
 
     @classmethod
     def formatMentions(cls, text, *args, **kwargs):

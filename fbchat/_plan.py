@@ -1,47 +1,28 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+import attr
 
+
+@attr.s(cmp=False)
 class Plan(object):
     """Represents a plan"""
 
     #: ID of the plan
-    uid = None
+    uid = attr.ib(None, init=False)
     #: Plan time (unix time stamp), only precise down to the minute
-    time = None
+    time = attr.ib(converter=int)
     #: Plan title
-    title = None
+    title = attr.ib()
     #: Plan location name
-    location = None
+    location = attr.ib(None, converter=lambda x: x or "")
     #: Plan location ID
-    location_id = None
+    location_id = attr.ib(None, converter=lambda x: x or "")
     #: ID of the plan creator
-    author_id = None
+    author_id = attr.ib(None, init=False)
     #: List of the people IDs who will take part in the plan
-    going = None
+    going = attr.ib(factory=list, init=False)
     #: List of the people IDs who won't take part in the plan
-    declined = None
+    declined = attr.ib(factory=list, init=False)
     #: List of the people IDs who are invited to the plan
-    invited = None
-
-    def __init__(self, time, title, location=None, location_id=None):
-        self.time = int(time)
-        self.title = title
-        self.location = location or ""
-        self.location_id = location_id or ""
-        self.author_id = None
-        self.going = []
-        self.declined = []
-        self.invited = []
-
-    def __repr__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        return "<Plan ({}): {} time={}, location={}, location_id={}>".format(
-            self.uid,
-            repr(self.title),
-            self.time,
-            repr(self.location),
-            repr(self.location_id),
-        )
+    invited = attr.ib(factory=list, init=False)

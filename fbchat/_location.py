@@ -1,9 +1,11 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+import attr
 from ._attachment import Attachment
 
 
+@attr.s(cmp=False)
 class LocationAttachment(Attachment):
     """Represents a user location
 
@@ -11,36 +13,34 @@ class LocationAttachment(Attachment):
     """
 
     #: Latitude of the location
-    latitude = None
+    latitude = attr.ib(None)
     #: Longitude of the location
-    longitude = None
+    longitude = attr.ib(None)
     #: URL of image showing the map of the location
-    image_url = None
+    image_url = attr.ib(None, init=False)
     #: Width of the image
-    image_width = None
+    image_width = attr.ib(None, init=False)
     #: Height of the image
-    image_height = None
+    image_height = attr.ib(None, init=False)
     #: URL to Bing maps with the location
-    url = None
+    url = attr.ib(None, init=False)
     # Address of the location
-    address = None
+    address = attr.ib(None)
 
-    def __init__(self, latitude=None, longitude=None, address=None, **kwargs):
-        super(LocationAttachment, self).__init__(**kwargs)
-        self.latitude = latitude
-        self.longitude = longitude
-        self.address = address
+    # Put here for backwards compatibility, so that the init argument order is preserved
+    uid = attr.ib(None)
 
 
+@attr.s(cmp=False, init=False)
 class LiveLocationAttachment(LocationAttachment):
     """Represents a live user location"""
 
     #: Name of the location
-    name = None
+    name = attr.ib(None)
     #: Timestamp when live location expires
-    expiration_time = None
+    expiration_time = attr.ib(None)
     #: True if live location is expired
-    is_expired = None
+    is_expired = attr.ib(None)
 
     def __init__(self, name=None, expiration_time=None, is_expired=None, **kwargs):
         super(LiveLocationAttachment, self).__init__(**kwargs)
