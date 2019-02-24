@@ -1,4 +1,10 @@
 # -*- coding: UTF-8 -*-
+"""This file is here to maintain backwards compatability, and to re-export our models
+into the global module (see `__init__.py`).
+
+A common pattern was to use `from fbchat.models import *`, hence we need this while
+transitioning to a better code structure.
+"""
 from __future__ import unicode_literals
 
 from ._core import Enum
