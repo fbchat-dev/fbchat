@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
-
 from __future__ import unicode_literals
-import aenum
+
+from ._core import Enum
 from ._exception import FBchatException, FBchatFacebookError, FBchatUserError
 from ._thread import Thread
 from ._user import User, ActiveStatus
@@ -21,14 +21,6 @@ from ._quick_reply import (
 )
 from ._poll import Poll, PollOption
 from ._plan import Plan
-
-
-class Enum(aenum.Enum):
-    """Used internally by fbchat to support enumerations"""
-
-    def __repr__(self):
-        # For documentation:
-        return "{}.{}".format(type(self).__name__, self.name)
 
 
 class ThreadType(Enum):
