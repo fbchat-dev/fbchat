@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import aenum
 from ._exception import FBchatException, FBchatFacebookError, FBchatUserError
 from ._thread import Thread
-from ._user import User
+from ._user import User, ActiveStatus
 from ._group import Group, Room
 from ._page import Page
 from ._message import Mention, Message
@@ -21,28 +21,6 @@ from ._quick_reply import (
 )
 from ._poll import Poll, PollOption
 from ._plan import Plan
-
-
-class ActiveStatus(object):
-    #: Whether the user is active now
-    active = None
-    #: Timestamp when the user was last active
-    last_active = None
-    #: Whether the user is playing Messenger game now
-    in_game = None
-
-    def __init__(self, active=None, last_active=None, in_game=None):
-        self.active = active
-        self.last_active = last_active
-        self.in_game = in_game
-
-    def __repr__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        return "<ActiveStatus: active={} last_active={} in_game={}>".format(
-            self.active, self.last_active, self.in_game
-        )
 
 
 class Enum(aenum.Enum):

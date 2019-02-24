@@ -51,3 +51,25 @@ class User(Thread):
         self.own_nickname = own_nickname
         self.color = color
         self.emoji = emoji
+
+
+class ActiveStatus(object):
+    #: Whether the user is active now
+    active = None
+    #: Timestamp when the user was last active
+    last_active = None
+    #: Whether the user is playing Messenger game now
+    in_game = None
+
+    def __init__(self, active=None, last_active=None, in_game=None):
+        self.active = active
+        self.last_active = last_active
+        self.in_game = in_game
+
+    def __repr__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return "<ActiveStatus: active={} last_active={} in_game={}>".format(
+            self.active, self.last_active, self.in_game
+        )
