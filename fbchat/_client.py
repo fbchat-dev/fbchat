@@ -8,7 +8,7 @@ from random import choice
 from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
 from collections import OrderedDict
-from .utils import *
+from ._util import *
 from .models import *
 from .graphql import *
 import time

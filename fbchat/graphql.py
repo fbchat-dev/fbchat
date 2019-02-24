@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import json
 import re
 from .models import *
-from .utils import *
+from ._util import *
 
 # Shameless copy from https://stackoverflow.com/a/8730674
 FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
