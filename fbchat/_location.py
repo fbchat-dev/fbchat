@@ -5,7 +5,10 @@ from ._attachment import Attachment
 
 
 class LocationAttachment(Attachment):
-    """Latitude and longitude OR address is provided by Facebook"""
+    """Represents a user location
+
+    Latitude and longitude OR address is provided by Facebook
+    """
 
     #: Latitude of the location
     latitude = None
@@ -23,7 +26,6 @@ class LocationAttachment(Attachment):
     address = None
 
     def __init__(self, latitude=None, longitude=None, address=None, **kwargs):
-        """Represents a user location"""
         super(LocationAttachment, self).__init__(**kwargs)
         self.latitude = latitude
         self.longitude = longitude
@@ -31,6 +33,8 @@ class LocationAttachment(Attachment):
 
 
 class LiveLocationAttachment(LocationAttachment):
+    """Represents a live user location"""
+
     #: Name of the location
     name = None
     #: Timestamp when live location expires
@@ -39,7 +43,6 @@ class LiveLocationAttachment(LocationAttachment):
     is_expired = None
 
     def __init__(self, name=None, expiration_time=None, is_expired=None, **kwargs):
-        """Represents a live user location"""
         super(LiveLocationAttachment, self).__init__(**kwargs)
         self.expiration_time = expiration_time
         self.is_expired = is_expired

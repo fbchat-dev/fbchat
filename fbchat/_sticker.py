@@ -5,6 +5,8 @@ from ._attachment import Attachment
 
 
 class Sticker(Attachment):
+    """Represents a Facebook sticker that has been sent to a thread as an attachment"""
+
     #: The sticker-pack's ID
     pack = None
     #: Whether the sticker is animated
@@ -32,5 +34,4 @@ class Sticker(Attachment):
     label = None
 
     def __init__(self, *args, **kwargs):
-        """Represents a Facebook sticker that has been sent to a Facebook thread as an attachment"""
         super(Sticker, self).__init__(*args, **kwargs)

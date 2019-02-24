@@ -5,6 +5,8 @@ from ._attachment import Attachment
 
 
 class QuickReply(object):
+    """Represents a quick reply"""
+
     #: Payload of the quick reply
     payload = None
     #: External payload for responses
@@ -15,7 +17,6 @@ class QuickReply(object):
     is_response = None
 
     def __init__(self, payload=None, data=None, is_response=False):
-        """Represents a quick reply"""
         self.payload = payload
         self.data = data
         self.is_response = is_response
@@ -28,6 +29,8 @@ class QuickReply(object):
 
 
 class QuickReplyText(QuickReply):
+    """Represents a text quick reply"""
+
     #: Title of the quick reply
     title = None
     #: URL of the quick reply image (optional)
@@ -36,41 +39,43 @@ class QuickReplyText(QuickReply):
     _type = "text"
 
     def __init__(self, title=None, image_url=None, **kwargs):
-        """Represents a text quick reply"""
         super(QuickReplyText, self).__init__(**kwargs)
         self.title = title
         self.image_url = image_url
 
 
 class QuickReplyLocation(QuickReply):
+    """Represents a location quick reply (Doesn't work on mobile)"""
+
     #: Type of the quick reply
     _type = "location"
 
     def __init__(self, **kwargs):
-        """Represents a location quick reply (Doesn't work on mobile)"""
         super(QuickReplyLocation, self).__init__(**kwargs)
         self.is_response = False
 
 
 class QuickReplyPhoneNumber(QuickReply):
+    """Represents a phone number quick reply (Doesn't work on mobile)"""
+
     #: URL of the quick reply image (optional)
     image_url = None
     #: Type of the quick reply
     _type = "user_phone_number"
 
     def __init__(self, image_url=None, **kwargs):
-        """Represents a phone number quick reply (Doesn't work on mobile)"""
         super(QuickReplyPhoneNumber, self).__init__(**kwargs)
         self.image_url = image_url
 
 
 class QuickReplyEmail(QuickReply):
+    """Represents an email quick reply (Doesn't work on mobile)"""
+
     #: URL of the quick reply image (optional)
     image_url = None
     #: Type of the quick reply
     _type = "user_email"
 
     def __init__(self, image_url=None, **kwargs):
-        """Represents an email quick reply (Doesn't work on mobile)"""
         super(QuickReplyEmail, self).__init__(**kwargs)
         self.image_url = image_url

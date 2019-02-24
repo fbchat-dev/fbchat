@@ -3,21 +3,25 @@ from __future__ import unicode_literals
 
 
 class Attachment(object):
+    """Represents a Facebook attachment"""
+
     #: The attachment ID
     uid = None
 
     def __init__(self, uid=None):
-        """Represents a Facebook attachment"""
         self.uid = uid
 
 
 class UnsentMessage(Attachment):
+    """Represents an unsent message attachment"""
+
     def __init__(self, *args, **kwargs):
-        """Represents an unsent message attachment"""
         super(UnsentMessage, self).__init__(*args, **kwargs)
 
 
 class ShareAttachment(Attachment):
+    """Represents a shared item (eg. URL) that has been sent as a Facebook attachment"""
+
     #: ID of the author of the shared post
     author = None
     #: Target URL
@@ -56,7 +60,6 @@ class ShareAttachment(Attachment):
         attachments=None,
         **kwargs
     ):
-        """Represents a shared item (eg. URL) that has been sent as a Facebook attachment"""
         super(ShareAttachment, self).__init__(**kwargs)
         self.author = author
         self.url = url

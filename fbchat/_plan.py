@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 
 
 class Plan(object):
+    """Represents a plan"""
+
     #: ID of the plan
     uid = None
     #: Plan time (unix time stamp), only precise down to the minute
@@ -23,7 +25,6 @@ class Plan(object):
     invited = None
 
     def __init__(self, time, title, location=None, location_id=None):
-        """Represents a plan"""
         self.time = int(time)
         self.title = title
         self.location = location or ""

@@ -5,6 +5,8 @@ from ._thread import ThreadType, Thread
 
 
 class Page(Thread):
+    """Represents a Facebook page. Inherits `Thread`"""
+
     #: The page's custom url
     url = None
     #: The name of the page's location city
@@ -26,7 +28,6 @@ class Page(Thread):
         category=None,
         **kwargs
     ):
-        """Represents a Facebook page. Inherits `Thread`"""
         super(Page, self).__init__(ThreadType.PAGE, uid, **kwargs)
         self.url = url
         self.city = city

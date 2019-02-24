@@ -26,6 +26,8 @@ class MessageReaction(Enum):
 
 
 class Mention(object):
+    """Represents a @mention"""
+
     #: The thread ID the mention is pointing at
     thread_id = None
     #: The character where the mention starts
@@ -34,7 +36,6 @@ class Mention(object):
     length = None
 
     def __init__(self, thread_id, offset=0, length=10):
-        """Represents a @mention"""
         self.thread_id = thread_id
         self.offset = offset
         self.length = length
@@ -49,6 +50,8 @@ class Mention(object):
 
 
 class Message(object):
+    """Represents a Facebook message"""
+
     #: The actual message
     text = None
     #: A list of :class:`Mention` objects
@@ -87,7 +90,6 @@ class Message(object):
         attachments=None,
         quick_replies=None,
     ):
-        """Represents a Facebook message"""
         self.text = text
         if mentions is None:
             mentions = []

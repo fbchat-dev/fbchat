@@ -13,6 +13,8 @@ class TypingStatus(Enum):
 
 
 class User(Thread):
+    """Represents a Facebook user. Inherits `Thread`"""
+
     #: The profile url
     url = None
     #: The users first name
@@ -49,7 +51,6 @@ class User(Thread):
         emoji=None,
         **kwargs
     ):
-        """Represents a Facebook user. Inherits `Thread`"""
         super(User, self).__init__(ThreadType.USER, uid, **kwargs)
         self.url = url
         self.first_name = first_name

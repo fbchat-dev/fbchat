@@ -5,6 +5,8 @@ from ._attachment import Attachment
 
 
 class FileAttachment(Attachment):
+    """Represents a file that has been sent as a Facebook attachment"""
+
     #: Url where you can download the file
     url = None
     #: Size of the file in bytes
@@ -15,7 +17,6 @@ class FileAttachment(Attachment):
     is_malicious = None
 
     def __init__(self, url=None, size=None, name=None, is_malicious=None, **kwargs):
-        """Represents a file that has been sent as a Facebook attachment"""
         super(FileAttachment, self).__init__(**kwargs)
         self.url = url
         self.size = size
@@ -24,6 +25,8 @@ class FileAttachment(Attachment):
 
 
 class AudioAttachment(Attachment):
+    """Represents an audio file that has been sent as a Facebook attachment"""
+
     #: Name of the file
     filename = None
     #: Url of the audio file
@@ -36,7 +39,6 @@ class AudioAttachment(Attachment):
     def __init__(
         self, filename=None, url=None, duration=None, audio_type=None, **kwargs
     ):
-        """Represents an audio file that has been sent as a Facebook attachment"""
         super(AudioAttachment, self).__init__(**kwargs)
         self.filename = filename
         self.url = url
@@ -45,6 +47,12 @@ class AudioAttachment(Attachment):
 
 
 class ImageAttachment(Attachment):
+    """Represents an image that has been sent as a Facebook attachment
+
+    To retrieve the full image url, use: :func:`fbchat.Client.fetchImageUrl`, and pass
+    it the uid of the image attachment
+    """
+
     #: The extension of the original image (eg. 'png')
     original_extension = None
     #: Width of original image
@@ -91,11 +99,6 @@ class ImageAttachment(Attachment):
         animated_preview=None,
         **kwargs
     ):
-        """
-        Represents an image that has been sent as a Facebook attachment
-        To retrieve the full image url, use: :func:`fbchat.Client.fetchImageUrl`,
-        and pass it the uid of the image attachment
-        """
         super(ImageAttachment, self).__init__(**kwargs)
         self.original_extension = original_extension
         if width is not None:
@@ -127,6 +130,8 @@ class ImageAttachment(Attachment):
 
 
 class VideoAttachment(Attachment):
+    """Represents a video that has been sent as a Facebook attachment"""
+
     #: Size of the original video in bytes
     size = None
     #: Width of original video
@@ -171,7 +176,6 @@ class VideoAttachment(Attachment):
         large_image=None,
         **kwargs
     ):
-        """Represents a video that has been sent as a Facebook attachment"""
         super(VideoAttachment, self).__init__(**kwargs)
         self.size = size
         self.width = width

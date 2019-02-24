@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 
 
 class Poll(object):
+    """Represents a poll"""
+
     #: ID of the poll
     uid = None
     #: Title of the poll
@@ -13,7 +15,6 @@ class Poll(object):
     options_count = None
 
     def __init__(self, title, options):
-        """Represents a poll"""
         self.title = title
         self.options = options
 
@@ -27,6 +28,8 @@ class Poll(object):
 
 
 class PollOption(object):
+    """Represents a poll option"""
+
     #: ID of the poll option
     uid = None
     #: Text of the poll option
@@ -39,7 +42,6 @@ class PollOption(object):
     votes_count = None
 
     def __init__(self, text, vote=False):
-        """Represents a poll option"""
         self.text = text
         self.vote = vote
 

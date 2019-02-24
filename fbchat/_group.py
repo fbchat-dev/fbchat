@@ -5,6 +5,8 @@ from ._thread import ThreadType, Thread
 
 
 class Group(Thread):
+    """Represents a Facebook group. Inherits `Thread`"""
+
     #: Unique list (set) of the group thread's participant user IDs
     participants = None
     #: A dict, containing user nicknames mapped to their IDs
@@ -36,7 +38,6 @@ class Group(Thread):
         privacy_mode=None,
         **kwargs
     ):
-        """Represents a Facebook group. Inherits `Thread`"""
         super(Group, self).__init__(ThreadType.GROUP, uid, **kwargs)
         if participants is None:
             participants = set()
@@ -57,11 +58,12 @@ class Group(Thread):
 
 
 class Room(Group):
+    """Deprecated. Use :class:`Group` instead"""
+
     # True is room is not discoverable
     privacy_mode = None
 
     def __init__(self, uid, privacy_mode=None, **kwargs):
-        """Deprecated. Use :class:`Group` instead"""
         super(Room, self).__init__(uid, **kwargs)
         self.type = ThreadType.ROOM
         self.privacy_mode = privacy_mode

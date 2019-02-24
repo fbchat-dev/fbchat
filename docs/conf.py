@@ -174,5 +174,5 @@ html_sidebars = {"**": ["sidebar.html", "searchbox.html"]}
 
 html_show_sphinx = False
 html_show_sourcelink = False
-autoclass_content = "init"
+autoclass_content = "both"
 html_short_title = description
