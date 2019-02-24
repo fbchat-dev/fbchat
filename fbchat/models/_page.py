@@ -1,6 +1,8 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+from ._thread import ThreadType, Thread
+
 
 class Page(Thread):
     #: The page's custom url

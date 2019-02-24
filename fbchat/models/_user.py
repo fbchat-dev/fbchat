@@ -1,6 +1,9 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+from ._core import Enum
+from ._thread import ThreadType, Thread
+
 
 class TypingStatus(Enum):
     """Used to specify whether the user is typing or has stopped typing"""

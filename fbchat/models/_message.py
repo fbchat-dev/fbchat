@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from string import Formatter
+from ._core import Enum
 
 
 class EmojiSize(Enum):

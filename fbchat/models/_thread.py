@@ -1,6 +1,8 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+from ._core import Enum
+
 
 class ThreadType(Enum):
     """Used to specify what type of Facebook thread is being used. See :ref:`intro_threads` for more info"""

@@ -1,6 +1,8 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+from ._attachment import Attachment
+
 
 class QuickReply(object):
     #: Payload of the quick reply

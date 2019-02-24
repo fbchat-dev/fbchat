@@ -1,6 +1,8 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
+from ._attachment import Attachment
+
 
 class FileAttachment(Attachment):
     #: Url where you can download the file
