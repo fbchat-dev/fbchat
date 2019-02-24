@@ -7,34 +7,11 @@ from ._thread import Thread
 from ._user import User
 from ._group import Group, Room
 from ._page import Page
-from ._message import Message
+from ._message import Mention, Message
 from ._attachment import Attachment, UnsentMessage, ShareAttachment
 from ._sticker import Sticker
 from ._location import LocationAttachment, LiveLocationAttachment
 from ._file import FileAttachment, AudioAttachment, ImageAttachment, VideoAttachment
-
-
-class Mention(object):
-    #: The thread ID the mention is pointing at
-    thread_id = None
-    #: The character where the mention starts
-    offset = None
-    #: The length of the mention
-    length = None
-
-    def __init__(self, thread_id, offset=0, length=10):
-        """Represents a @mention"""
-        self.thread_id = thread_id
-        self.offset = offset
-        self.length = length
-
-    def __repr__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        return "<Mention {}: offset={} length={}>".format(
-            self.thread_id, self.offset, self.length
-        )
 
 
 class QuickReply(object):
