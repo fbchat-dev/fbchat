@@ -7,7 +7,7 @@ from ._thread import ThreadType, ThreadLocation, ThreadColor, Thread
 from ._user import TypingStatus, User, ActiveStatus
 from ._group import Group, Room
 from ._page import Page
-from ._message import Mention, Message
+from ._message import EmojiSize, MessageReaction, Mention, Message
 from ._attachment import Attachment, UnsentMessage, ShareAttachment
 from ._sticker import Sticker
 from ._location import LocationAttachment, LiveLocationAttachment
@@ -21,23 +21,3 @@ from ._quick_reply import (
 )
 from ._poll import Poll, PollOption
 from ._plan import Plan
-
-
-class EmojiSize(Enum):
-    """Used to specify the size of a sent emoji"""
-
-    LARGE = "369239383222810"
-    MEDIUM = "369239343222814"
-    SMALL = "369239263222822"
-
-
-class MessageReaction(Enum):
-    """Used to specify a message reaction"""
-
-    LOVE = "😍"
-    SMILE = "😆"
-    WOW = "😮"
-    SAD = "😢"
-    ANGRY = "😠"
-    YES = "👍"
-    NO = "👎"

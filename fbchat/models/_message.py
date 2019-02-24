@@ -4,6 +4,26 @@ from __future__ import unicode_literals
 from string import Formatter
 
 
+class EmojiSize(Enum):
+    """Used to specify the size of a sent emoji"""
+
+    LARGE = "369239383222810"
+    MEDIUM = "369239343222814"
+    SMALL = "369239263222822"
+
+
+class MessageReaction(Enum):
+    """Used to specify a message reaction"""
+
+    LOVE = "😍"
+    SMILE = "😆"
+    WOW = "😮"
+    SAD = "😢"
+    ANGRY = "😠"
+    YES = "👍"
+    NO = "👎"
+
+
 class Mention(object):
     #: The thread ID the mention is pointing at
     thread_id = None
