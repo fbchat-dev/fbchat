@@ -7,37 +7,7 @@ from ._exception import FBchatException, FBchatFacebookError, FBchatUserError
 from ._thread import Thread
 from ._user import User
 from ._group import Group, Room
-
-
-class Page(Thread):
-    #: The page's custom url
-    url = None
-    #: The name of the page's location city
-    city = None
-    #: Amount of likes the page has
-    likes = None
-    #: Some extra information about the page
-    sub_title = None
-    #: The page's category
-    category = None
-
-    def __init__(
-        self,
-        uid,
-        url=None,
-        city=None,
-        likes=None,
-        sub_title=None,
-        category=None,
-        **kwargs
-    ):
-        """Represents a Facebook page. Inherits `Thread`"""
-        super(Page, self).__init__(ThreadType.PAGE, uid, **kwargs)
-        self.url = url
-        self.city = city
-        self.likes = likes
-        self.sub_title = sub_title
-        self.category = category
+from ._page import Page
 
 
 class Message(object):
