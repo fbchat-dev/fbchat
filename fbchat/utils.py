@@ -10,6 +10,7 @@ from mimetypes import guess_type
 from os.path import basename
 import warnings
 import logging
+import inspect
 import requests
 import aenum
 from .models import *
@@ -156,6 +157,17 @@ class ReqUrl(object):
     UNSEND = "https://www.facebook.com/messaging/unsend_message/?dpr=1"
 
     pull_channel = 0
+
+    def __init__(self, use_tor=False):
+        super().__init__()
+        if use_tor:
+            urls = inspect.getmembers(
+                self,
+                lambda var: type(var) is str and "facebook" in var
+            )
+            for name, url in urls:
+                new_url = url.replace("facebook.com", "facebookcorewwwi.onion")
+                setattr(self, name, new_url)
 
     def change_pull_channel(self, channel=None):
         if channel is None:
