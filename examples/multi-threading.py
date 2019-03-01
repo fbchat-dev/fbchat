@@ -1,11 +1,16 @@
 # -*- coding: UTF-8 -*-
 
-from fbchat import Client
+from fbchat import Client, logging
 from fbchat.models import *
+import sys
 import threading
 
+user = "<email>"
+password = "<password>"
+
+
 # Subclass fbchat.Client and override required methods
-class PrintMessage(Client):
+class MessagePrinter(Client):
     def onMessage(self, author_id, message_object, thread_id, thread_type, **kwargs):
         self.markAsDelivered(thread_id, message_object.uid)
         self.markAsRead(thread_id)
@@ -17,26 +22,30 @@ class PrintMessage(Client):
         print("Login of {} successful.".format(email))
 
 
-# Logging in and setting logging level to WARNING to avoid some unessential output
-client = PrintMessage("<email>", "<password>", logging_level=30)
+# Login and set logging level to WARNING to avoid some unessential output
+client1 = Client(user, password, logging_level=logging.WARNING)
+client2 = MessagePrinter(user, password, logging_level=logging.WARNING)
 
 
-def send():
+# Creating and starting a separate thread for receiving messages
+t1 = threading.Thread(target=client2.listen, daemon=True)
+t1.start()
+
+
+# Loop checking for, and sending messages
+try:
     while True:
         payload = input("Message: ")
         if payload:
-            client.send(
-                Message(text=payload), thread_id=client.uid, thread_type=ThreadType.USER
+            client1.send(
+                Message(text=payload),
+                thread_id=client1.uid,
+                thread_type=ThreadType.USER,
             )
 
+# Clean-up on exit
+except KeyboardInterrupt:
+    client1.logout()
+    client2.logout()
+    sys.exit(0)
 
-def receive():
-    while True:
-        client.doOneListen()
-
-
-# Creating and starting separate threads for handling the receiving and sending of messages
-t1 = threading.Thread(target=receive)
-t2 = threading.Thread(target=send)
-t1.start()
-t2.start()
