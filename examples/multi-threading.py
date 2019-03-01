@@ -2,8 +2,8 @@
 
 from fbchat import Client, logging
 from fbchat.models import *
-import sys
 import threading
+import sys
 
 user = "<email>"
 password = "<password>"
@@ -48,4 +48,3 @@ except KeyboardInterrupt:
     client1.logout()
     client2.logout()
     sys.exit(0)
-
