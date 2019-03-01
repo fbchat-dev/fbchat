@@ -43,6 +43,7 @@ class Client(object):
         email,
         password,
         user_agent=None,
+        use_tor=False,
         max_tries=5,
         session_cookies=None,
         logging_level=logging.INFO,
@@ -52,12 +53,14 @@ class Client(object):
         :param email: Facebook `email`, `id` or `phone number`
         :param password: Facebook account password
         :param user_agent: Custom user agent to use when sending requests. If `None`, user agent will be chosen from a premade list (see :any:`utils.USER_AGENTS`)
+        :param use_tor: Defines whether to use TOR to connect to Facebook. Requires the `requests[socks]` module.
         :param max_tries: Maximum number of times to try logging in
         :param session_cookies: Cookies from a previous session (Will default to login if these are invalid)
         :param logging_level: Configures the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. Defaults to `INFO`
         :type max_tries: int
         :type session_cookies: dict
         :type logging_level: int
+        :type use_tor: bool
         :raises: FBchatException on failed login
         """
 
@@ -70,7 +73,7 @@ class Client(object):
         self.client = "mercury"
         self.default_thread_id = None
         self.default_thread_type = None
-        self.req_url = ReqUrl()
+        self.req_url = ReqUrl(use_tor=use_tor)
         self._markAlive = True
         self._buddylist = dict()
 
@@ -86,6 +89,11 @@ class Client(object):
         }
 
         handler.setLevel(logging_level)
+
+        if use_tor:
+            self._session.proxies = {}
+            self._session.proxies['http'] = 'socks5h://localhost:9050'
+            self._session.proxies['https'] = 'socks5h://localhost:9050'
 
         # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
         if (
