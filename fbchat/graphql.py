@@ -9,7 +9,6 @@ from ._graphql import (
     WHITESPACE,
     ConcatJSONDecoder,
     get_customization_info,
-    graphql_to_sticker,
     graphql_to_attachment,
     graphql_to_extensible_attachment,
     graphql_to_subattachment,

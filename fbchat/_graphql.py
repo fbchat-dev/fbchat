@@ -60,27 +60,6 @@ def get_customization_info(thread):
     return rtn
 
 
-def graphql_to_sticker(s):
-    if not s:
-        return None
-    sticker = Sticker(uid=s["id"])
-    if s.get("pack"):
-        sticker.pack = s["pack"].get("id")
-    if s.get("sprite_image"):
-        sticker.is_animated = True
-        sticker.medium_sprite_image = s["sprite_image"].get("uri")
-        sticker.large_sprite_image = s["sprite_image_2x"].get("uri")
-        sticker.frames_per_row = s.get("frames_per_row")
-        sticker.frames_per_col = s.get("frames_per_column")
-        sticker.frame_rate = s.get("frame_rate")
-    sticker.url = s.get("url")
-    sticker.width = s.get("width")
-    sticker.height = s.get("height")
-    if s.get("label"):
-        sticker.label = s["label"]
-    return sticker
-
-
 def graphql_to_attachment(a):
     _type = a["__typename"]
     if _type in ["MessageImage", "MessageAnimatedImage"]:
@@ -360,7 +339,7 @@ def graphql_to_message(message):
             for m in message.get("message").get("ranges", [])
         ],
         emoji_size=get_emojisize_from_tags(message.get("tags_list")),
-        sticker=graphql_to_sticker(message.get("sticker")),
+        sticker=Sticker._from_graphql(message.get("sticker")),
     )
     rtn.uid = str(message.get("message_id"))
     rtn.author = str(message.get("message_sender").get("id"))

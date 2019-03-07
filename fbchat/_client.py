@@ -3077,7 +3077,9 @@ class Client(object):
                             attachments.append(attachment)
 
                         elif mercury.get("sticker_attachment"):
-                            sticker = graphql_to_sticker(mercury["sticker_attachment"])
+                            sticker = Sticker._from_graphql(
+                                mercury["sticker_attachment"]
+                            )
 
                         elif mercury.get("extensible_attachment"):
                             attachment = graphql_to_extensible_attachment(
