@@ -12,7 +12,6 @@ import warnings
 import logging
 import requests
 import aenum
-from .models import *
 
 try:
     from urllib.parse import urlencode, parse_qs, urlparse
@@ -46,15 +45,6 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11",
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6",
 ]
-
-LIKES = {
-    "large": EmojiSize.LARGE,
-    "medium": EmojiSize.MEDIUM,
-    "small": EmojiSize.SMALL,
-    "l": EmojiSize.LARGE,
-    "m": EmojiSize.MEDIUM,
-    "s": EmojiSize.SMALL,
-}
 
 
 GENDERS = {
@@ -291,20 +281,6 @@ def get_jsmods_require(j, index):
                 "Error when getting jsmods_require: {}. Facebook might have changed protocol".format(
                     j
                 )
-            )
-    return None
-
-
-def get_emojisize_from_tags(tags):
-    if tags is None:
-        return None
-    tmp = [tag for tag in tags if tag.startswith("hot_emoji_size:")]
-    if len(tmp) > 0:
-        try:
-            return LIKES[tmp[0].split(":")[1]]
-        except (KeyError, IndexError):
-            log.exception(
-                "Could not determine emoji size from {} - {}".format(tags, tmp)
             )
     return None
 

@@ -13,6 +13,22 @@ class EmojiSize(Enum):
     MEDIUM = "369239343222814"
     SMALL = "369239263222822"
 
+    @classmethod
+    def _from_tags(cls, tags):
+        string_to_emojisize = {
+            "large": cls.LARGE,
+            "medium": cls.MEDIUM,
+            "small": cls.SMALL,
+            "l": cls.LARGE,
+            "m": cls.MEDIUM,
+            "s": cls.SMALL,
+        }
+        for tag in tags or ():
+            data = tag.split(":", maxsplit=1)
+            if len(data) > 1 and data[0] == "hot_emoji_size":
+                return string_to_emojisize.get(data[1])
+        return None
+
 
 class MessageReaction(Enum):
     """Used to specify a message reaction"""

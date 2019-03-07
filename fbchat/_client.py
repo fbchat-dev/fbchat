@@ -3096,7 +3096,7 @@ class Client(object):
                     )
 
             if metadata and metadata.get("tags"):
-                emoji_size = get_emojisize_from_tags(metadata.get("tags"))
+                emoji_size = EmojiSize._from_tags(metadata.get("tags"))
 
             message = Message(
                 text=delta.get("body"),
