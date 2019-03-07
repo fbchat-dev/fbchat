@@ -74,3 +74,19 @@ class ActiveStatus(object):
     last_active = attr.ib(None)
     #: Whether the user is playing Messenger game now
     in_game = attr.ib(None)
+
+    @classmethod
+    def _from_chatproxy_presence(cls, id_, data):
+        return cls(
+            active=data["p"] in [2, 3] if "p" in data else None,
+            last_active=data.get("lat"),
+            in_game=int(id_) in data.get("gamers", {}),
+        )
+
+    @classmethod
+    def _from_buddylist_overlay(cls, data, in_game=None):
+        return cls(
+            active=data["a"] in [2, 3] if "a" in data else None,
+            last_active=data.get("la"),
+            in_game=None,
+        )

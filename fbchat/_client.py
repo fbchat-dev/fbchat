@@ -3199,53 +3199,25 @@ class Client(object):
 
                 # Chat timestamp
                 elif mtype == "chatproxy-presence":
-                    buddylist = dict()
-                    for _id in m.get("buddyList", {}):
-                        payload = m["buddyList"][_id]
+                    statuses = dict()
+                    for id_, data in m.get("buddyList", {}).items():
+                        statuses[id_] = ActiveStatus._from_chatproxy_presence(id_, data)
+                        self._buddylist[id_] = statuses[id_]
 
-                        last_active = payload.get("lat")
-                        active = payload.get("p") in [2, 3]
-                        in_game = int(_id) in m.get("gamers", {})
-
-                        buddylist[_id] = last_active
-
-                        if self._buddylist.get(_id):
-                            self._buddylist[_id].last_active = last_active
-                            self._buddylist[_id].active = active
-                            self._buddylist[_id].in_game = in_game
-                        else:
-                            self._buddylist[_id] = ActiveStatus(
-                                active=active, last_active=last_active, in_game=in_game
-                            )
-
-                    self.onChatTimestamp(buddylist=buddylist, msg=m)
+                    self.onChatTimestamp(buddylist=statuses, msg=m)
 
                 # Buddylist overlay
                 elif mtype == "buddylist_overlay":
                     statuses = dict()
-                    for _id in m.get("overlay", {}):
-                        payload = m["overlay"][_id]
+                    for id_, data in m.get("overlay", {}).items():
+                        old_in_game = None
+                        if id_ in self._buddylist:
+                            old_in_game = self._buddylist[id_].in_game
 
-                        last_active = payload.get("la")
-                        active = payload.get("a") in [2, 3]
-                        in_game = (
-                            self._buddylist[_id].in_game
-                            if self._buddylist.get(_id)
-                            else False
+                        statuses[id_] = ActiveStatus._from_buddylist_overlay(
+                            data, old_in_game
                         )
-
-                        status = ActiveStatus(
-                            active=active, last_active=last_active, in_game=in_game
-                        )
-
-                        if self._buddylist.get(_id):
-                            self._buddylist[_id].last_active = last_active
-                            self._buddylist[_id].active = active
-                            self._buddylist[_id].in_game = in_game
-                        else:
-                            self._buddylist[_id] = status
-
-                        statuses[_id] = status
+                        self._buddylist[id_] = statuses[id_]
 
                     self.onBuddylistOverlay(statuses=statuses, msg=m)
 
