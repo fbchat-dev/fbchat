@@ -2836,7 +2836,7 @@ class Client(object):
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
             event_type = delta["untypedData"]["event_type"]
             poll_json = json.loads(delta["untypedData"]["question_json"])
-            poll = graphql_to_poll(poll_json)
+            poll = Poll._from_graphql(poll_json)
             if event_type == "question_creation":
                 # User created group poll
                 self.onPollCreated(

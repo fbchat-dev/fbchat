@@ -217,16 +217,6 @@ def graphql_to_live_location(a):
     )
 
 
-def graphql_to_poll(a):
-    rtn = Poll(
-        title=a.get("title") if a.get("title") else a.get("text"),
-        options=[PollOption._from_graphql(m) for m in a.get("options")],
-    )
-    rtn.uid = int(a["id"])
-    rtn.options_count = a.get("total_count")
-    return rtn
-
-
 def graphql_to_plan(a):
     if a.get("event_members"):
         rtn = Plan(

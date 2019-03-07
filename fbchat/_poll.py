@@ -17,6 +17,15 @@ class Poll(object):
     #: Options count
     options_count = attr.ib(None, init=False)
 
+    @classmethod
+    def _from_graphql(cls, data):
+        return cls(
+            uid=int(data["id"]),
+            title=data.get("title") if data.get("title") else data.get("text"),
+            options=[PollOption._from_graphql(m) for m in data.get("options")],
+            options_count=data.get("total_count"),
+        )
+
 
 @attr.s(cmp=False)
 class PollOption(object):
