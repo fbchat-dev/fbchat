@@ -11,6 +11,7 @@ from os.path import basename
 import warnings
 import logging
 import requests
+from ._exception import FBchatException, FBchatFacebookError
 
 try:
     from urllib.parse import urlencode, parse_qs, urlparse
