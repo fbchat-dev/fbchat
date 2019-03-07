@@ -1248,7 +1248,7 @@ class Client(object):
             self.req_url.GET_POLL_OPTIONS, data, fix_request=True, as_json=True
         )
 
-        return [graphql_to_poll_option(m) for m in j["payload"]]
+        return [PollOption._from_graphql(m) for m in j["payload"]]
 
     def fetchPlanInfo(self, plan_id):
         """

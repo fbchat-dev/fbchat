@@ -32,3 +32,27 @@ class PollOption(object):
     voters = attr.ib(None, init=False)
     #: Votes count
     votes_count = attr.ib(None, init=False)
+
+    @classmethod
+    def _from_graphql(cls, data):
+        if data.get("viewer_has_voted") is None:
+            vote = None
+        elif isinstance(data["viewer_has_voted"], bool):
+            vote = data["viewer_has_voted"]
+        else:
+            vote = data["viewer_has_voted"] == "true"
+        return cls(
+            uid=int(data["id"]),
+            text=data.get("text"),
+            vote=vote,
+            voters=(
+                [m.get("node").get("id") for m in data.get("voters").get("edges")]
+                if isinstance(data.get("voters"), dict)
+                else data.get("voters")
+            ),
+            votes_count=(
+                data.get("voters").get("count")
+                if isinstance(data.get("voters"), dict)
+                else data.get("total_count")
+            ),
+        )

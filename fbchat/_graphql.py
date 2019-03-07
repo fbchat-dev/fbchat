@@ -220,32 +220,10 @@ def graphql_to_live_location(a):
 def graphql_to_poll(a):
     rtn = Poll(
         title=a.get("title") if a.get("title") else a.get("text"),
-        options=[graphql_to_poll_option(m) for m in a.get("options")],
+        options=[PollOption._from_graphql(m) for m in a.get("options")],
     )
     rtn.uid = int(a["id"])
     rtn.options_count = a.get("total_count")
-    return rtn
-
-
-def graphql_to_poll_option(a):
-    if a.get("viewer_has_voted") is None:
-        vote = None
-    elif isinstance(a["viewer_has_voted"], bool):
-        vote = a["viewer_has_voted"]
-    else:
-        vote = a["viewer_has_voted"] == "true"
-    rtn = PollOption(text=a.get("text"), vote=vote)
-    rtn.uid = int(a["id"])
-    rtn.voters = (
-        [m.get("node").get("id") for m in a.get("voters").get("edges")]
-        if isinstance(a.get("voters"), dict)
-        else a.get("voters")
-    )
-    rtn.votes_count = (
-        a.get("voters").get("count")
-        if isinstance(a.get("voters"), dict)
-        else a.get("total_count")
-    )
     return rtn
 
 
