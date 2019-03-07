@@ -42,6 +42,16 @@ class ThreadColor(Enum):
     BRILLIANT_ROSE = "#ff5ca1"
     BILOBA_FLOWER = "#a695c7"
 
+    @classmethod
+    def _from_graphql(cls, color):
+        if color is None:
+            return None
+        if not color:
+            return cls.MESSENGER_BLUE
+        color = color[2:]  # Strip the alpha value
+        value = "#{}".format(color.lower())
+        return cls._extend_if_invalid(value)
+
 
 @attr.s(cmp=False, init=False)
 class Thread(object):

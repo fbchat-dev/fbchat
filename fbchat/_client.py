@@ -2577,7 +2577,7 @@ class Client(object):
 
         # Color change
         elif delta_type == "change_thread_theme":
-            new_color = graphql_color_to_enum(delta["untypedData"]["theme_color"])
+            new_color = ThreadColor._from_graphql(delta["untypedData"]["theme_color"])
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
             self.onColorChange(
                 mid=mid,

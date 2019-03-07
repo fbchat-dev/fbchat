@@ -27,16 +27,6 @@ class ConcatJSONDecoder(json.JSONDecoder):
 # End shameless copy
 
 
-def graphql_color_to_enum(color):
-    if color is None:
-        return None
-    if not color:
-        return ThreadColor.MESSENGER_BLUE
-    color = color[2:]  # Strip the alpha value
-    color_value = "#{}".format(color.lower())
-    return ThreadColor._extend_if_invalid(color_value)
-
-
 def get_customization_info(thread):
     if thread is None or thread.get("customization_info") is None:
         return {}
@@ -44,7 +34,7 @@ def get_customization_info(thread):
 
     rtn = {
         "emoji": info.get("emoji"),
-        "color": graphql_color_to_enum(info.get("outgoing_bubble_color")),
+        "color": ThreadColor._from_graphql(info.get("outgoing_bubble_color")),
     }
     if (
         thread.get("thread_type") == "GROUP"

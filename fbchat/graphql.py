@@ -8,7 +8,6 @@ from ._graphql import (
     FLAGS,
     WHITESPACE,
     ConcatJSONDecoder,
-    graphql_color_to_enum,
     get_customization_info,
     graphql_to_sticker,
     graphql_to_attachment,
