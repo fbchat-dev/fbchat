@@ -202,21 +202,6 @@ def graphql_to_subattachment(a):
         )
 
 
-def graphql_to_live_location(a):
-    return LiveLocationAttachment(
-        uid=a["id"],
-        latitude=a["coordinate"]["latitude"] / (10 ** 8)
-        if not a.get("stopReason")
-        else None,
-        longitude=a["coordinate"]["longitude"] / (10 ** 8)
-        if not a.get("stopReason")
-        else None,
-        name=a.get("locationTitle"),
-        expiration_time=a["expirationTime"],
-        is_expired=bool(a.get("stopReason")),
-    )
-
-
 def graphql_to_plan(a):
     if a.get("event_members"):
         rtn = Plan(

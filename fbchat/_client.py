@@ -3010,7 +3010,7 @@ class Client(object):
                     for l in i["messageLiveLocations"]:
                         mid = l["messageId"]
                         author_id = str(l["senderId"])
-                        location = graphql_to_live_location(l)
+                        location = LiveLocationAttachment._from_pull(l)
                         self.onLiveLocation(
                             mid=mid,
                             location=location,
