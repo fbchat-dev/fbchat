@@ -106,88 +106,22 @@ def graphql_to_attachment(a):
 
 def graphql_to_extensible_attachment(a):
     story = a.get("story_attachment")
-    if story:
-        target = story.get("target")
-        if target:
-            _type = target["__typename"]
-            if _type == "MessageLocation":
-                url = story.get("url")
-                address = get_url_parameter(get_url_parameter(url, "u"), "where1")
-                try:
-                    latitude, longitude = [float(x) for x in address.split(", ")]
-                    address = None
-                except ValueError:
-                    latitude, longitude = None, None
-                rtn = LocationAttachment(
-                    uid=int(story["deduplication_key"]),
-                    latitude=latitude,
-                    longitude=longitude,
-                    address=address,
-                )
-                media = story.get("media")
-                if media and media.get("image"):
-                    image = media["image"]
-                    rtn.image_url = image.get("uri")
-                    rtn.image_width = image.get("width")
-                    rtn.image_height = image.get("height")
-                rtn.url = url
-                return rtn
-            elif _type == "MessageLiveLocation":
-                rtn = LiveLocationAttachment(
-                    uid=int(story["target"]["live_location_id"]),
-                    latitude=story["target"]["coordinate"]["latitude"]
-                    if story["target"].get("coordinate")
-                    else None,
-                    longitude=story["target"]["coordinate"]["longitude"]
-                    if story["target"].get("coordinate")
-                    else None,
-                    name=story["title_with_entities"]["text"],
-                    expiration_time=story["target"].get("expiration_time"),
-                    is_expired=story["target"].get("is_expired"),
-                )
-                media = story.get("media")
-                if media and media.get("image"):
-                    image = media["image"]
-                    rtn.image_url = image.get("uri")
-                    rtn.image_width = image.get("width")
-                    rtn.image_height = image.get("height")
-                rtn.url = story.get("url")
-                return rtn
-            elif _type in ["ExternalUrl", "Story"]:
-                url = story.get("url")
-                rtn = ShareAttachment(
-                    uid=a.get("legacy_attachment_id"),
-                    author=story["target"]["actors"][0]["id"]
-                    if story["target"].get("actors")
-                    else None,
-                    url=url,
-                    original_url=get_url_parameter(url, "u")
-                    if "/l.php?u=" in url
-                    else url,
-                    title=story["title_with_entities"].get("text"),
-                    description=story["description"].get("text")
-                    if story.get("description")
-                    else None,
-                    source=story["source"].get("text"),
-                    attachments=[
-                        graphql_to_subattachment(attachment)
-                        for attachment in story.get("subattachments")
-                    ],
-                )
-                media = story.get("media")
-                if media and media.get("image"):
-                    image = media["image"]
-                    rtn.image_url = image.get("uri")
-                    rtn.original_image_url = (
-                        get_url_parameter(rtn.image_url, "url")
-                        if "/safe_image.php" in rtn.image_url
-                        else rtn.image_url
-                    )
-                    rtn.image_width = image.get("width")
-                    rtn.image_height = image.get("height")
-                return rtn
-        else:
-            return UnsentMessage(uid=a.get("legacy_attachment_id"))
+    if not story:
+        return None
+
+    target = story.get("target")
+    if not target:
+        return UnsentMessage(uid=a.get("legacy_attachment_id"))
+
+    _type = target["__typename"]
+    if _type == "MessageLocation":
+        return LocationAttachment._from_graphql(story)
+    elif _type == "MessageLiveLocation":
+        return LiveLocationAttachment._from_graphql(story)
+    elif _type in ["ExternalUrl", "Story"]:
+        return ShareAttachment._from_graphql(story)
+
+    return None
 
 
 def graphql_to_subattachment(a):
