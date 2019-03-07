@@ -28,7 +28,6 @@ from ._util import (
     mimetype_to_key,
     get_files_from_urls,
     get_files_from_paths,
-    enum_extend_if_invalid,
     get_url_parameters,
     get_url_parameter,
 )

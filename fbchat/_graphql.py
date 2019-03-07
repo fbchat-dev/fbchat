@@ -34,7 +34,7 @@ def graphql_color_to_enum(color):
         return ThreadColor.MESSENGER_BLUE
     color = color[2:]  # Strip the alpha value
     color_value = "#{}".format(color.lower())
-    return enum_extend_if_invalid(ThreadColor, color_value)
+    return ThreadColor._extend_if_invalid(color_value)
 
 
 def get_customization_info(thread):
@@ -379,7 +379,7 @@ def graphql_to_message(message):
     if message.get("unread") is not None:
         rtn.is_read = not message["unread"]
     rtn.reactions = {
-        str(r["user"]["id"]): enum_extend_if_invalid(MessageReaction, r["reaction"])
+        str(r["user"]["id"]): MessageReaction._extend_if_invalid(r["reaction"])
         for r in message.get("message_reactions")
     }
     if message.get("blob_attachments") is not None:
