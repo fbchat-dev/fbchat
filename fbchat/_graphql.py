@@ -63,43 +63,13 @@ def get_customization_info(thread):
 def graphql_to_attachment(a):
     _type = a["__typename"]
     if _type in ["MessageImage", "MessageAnimatedImage"]:
-        return ImageAttachment(
-            original_extension=a.get("original_extension")
-            or (a["filename"].split("-")[0] if a.get("filename") else None),
-            width=a.get("original_dimensions", {}).get("width"),
-            height=a.get("original_dimensions", {}).get("height"),
-            is_animated=_type == "MessageAnimatedImage",
-            thumbnail_url=a.get("thumbnail", {}).get("uri"),
-            preview=a.get("preview") or a.get("preview_image"),
-            large_preview=a.get("large_preview"),
-            animated_preview=a.get("animated_image"),
-            uid=a.get("legacy_attachment_id"),
-        )
+        return ImageAttachment._from_graphql(a)
     elif _type == "MessageVideo":
-        return VideoAttachment(
-            width=a.get("original_dimensions", {}).get("width"),
-            height=a.get("original_dimensions", {}).get("height"),
-            duration=a.get("playable_duration_in_ms"),
-            preview_url=a.get("playable_url"),
-            small_image=a.get("chat_image"),
-            medium_image=a.get("inbox_image"),
-            large_image=a.get("large_image"),
-            uid=a.get("legacy_attachment_id"),
-        )
+        return VideoAttachment._from_graphql(a)
     elif _type == "MessageAudio":
-        return AudioAttachment(
-            filename=a.get("filename"),
-            url=a.get("playable_url"),
-            duration=a.get("playable_duration_in_ms"),
-            audio_type=a.get("audio_type"),
-        )
+        return AudioAttachment._from_graphql(a)
     elif _type == "MessageFile":
-        return FileAttachment(
-            url=a.get("url"),
-            name=a.get("filename"),
-            is_malicious=a.get("is_malicious"),
-            uid=a.get("message_file_fbid"),
-        )
+        return FileAttachment._from_graphql(a)
     else:
         return Attachment(uid=a.get("legacy_attachment_id"))
 
