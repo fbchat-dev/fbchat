@@ -8,14 +8,14 @@ import attr
 class Poll(object):
     """Represents a poll"""
 
-    #: ID of the poll
-    uid = attr.ib(None, init=False)
     #: Title of the poll
     title = attr.ib()
     #: List of :class:`PollOption`, can be fetched with :func:`fbchat.Client.fetchPollOptions`
     options = attr.ib()
     #: Options count
-    options_count = attr.ib(None, init=False)
+    options_count = attr.ib(None)
+    #: ID of the poll
+    uid = attr.ib(None)
 
     @classmethod
     def _from_graphql(cls, data):
@@ -31,16 +31,16 @@ class Poll(object):
 class PollOption(object):
     """Represents a poll option"""
 
-    #: ID of the poll option
-    uid = attr.ib(None, init=False)
     #: Text of the poll option
     text = attr.ib()
     #: Whether vote when creating or client voted
     vote = attr.ib(False)
     #: ID of the users who voted for this poll option
-    voters = attr.ib(None, init=False)
+    voters = attr.ib(None)
     #: Votes count
-    votes_count = attr.ib(None, init=False)
+    votes_count = attr.ib(None)
+    #: ID of the poll option
+    uid = attr.ib(None)
 
     @classmethod
     def _from_graphql(cls, data):
