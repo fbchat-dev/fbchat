@@ -1261,8 +1261,7 @@ class Client(object):
         """
         data = {"event_reminder_id": plan_id}
         j = self._post(self.req_url.PLAN_INFO, data, fix_request=True, as_json=True)
-        plan = graphql_to_plan(j["payload"])
-        return plan
+        return Plan._from_fetch(j["payload"])
 
     def _getPrivateData(self):
         j = self.graphql_request(GraphQL(doc_id="1868889766468115"))
@@ -2869,10 +2868,9 @@ class Client(object):
         # Plan created
         elif delta_type == "lightweight_event_create":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
-            plan = graphql_to_plan(delta["untypedData"])
             self.onPlanCreated(
                 mid=mid,
-                plan=plan,
+                plan=Plan._from_pull(delta["untypedData"]),
                 author_id=author_id,
                 thread_id=thread_id,
                 thread_type=thread_type,
@@ -2884,10 +2882,9 @@ class Client(object):
         # Plan ended
         elif delta_type == "lightweight_event_notify":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
-            plan = graphql_to_plan(delta["untypedData"])
             self.onPlanEnded(
                 mid=mid,
-                plan=plan,
+                plan=Plan._from_pull(delta["untypedData"]),
                 thread_id=thread_id,
                 thread_type=thread_type,
                 ts=ts,
@@ -2898,10 +2895,9 @@ class Client(object):
         # Plan edited
         elif delta_type == "lightweight_event_update":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
-            plan = graphql_to_plan(delta["untypedData"])
             self.onPlanEdited(
                 mid=mid,
-                plan=plan,
+                plan=Plan._from_pull(delta["untypedData"]),
                 author_id=author_id,
                 thread_id=thread_id,
                 thread_type=thread_type,
@@ -2913,10 +2909,9 @@ class Client(object):
         # Plan deleted
         elif delta_type == "lightweight_event_delete":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
-            plan = graphql_to_plan(delta["untypedData"])
             self.onPlanDeleted(
                 mid=mid,
-                plan=plan,
+                plan=Plan._from_pull(delta["untypedData"]),
                 author_id=author_id,
                 thread_id=thread_id,
                 thread_type=thread_type,
@@ -2928,11 +2923,10 @@ class Client(object):
         # Plan participation change
         elif delta_type == "lightweight_event_rsvp":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
-            plan = graphql_to_plan(delta["untypedData"])
             take_part = delta["untypedData"]["guest_status"] == "GOING"
             self.onPlanParticipation(
                 mid=mid,
-                plan=plan,
+                plan=Plan._from_pull(delta["untypedData"]),
                 take_part=take_part,
                 author_id=author_id,
                 thread_id=thread_id,

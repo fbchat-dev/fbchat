@@ -106,57 +106,6 @@ def graphql_to_subattachment(a):
         )
 
 
-def graphql_to_plan(a):
-    if a.get("event_members"):
-        rtn = Plan(
-            time=a.get("event_time"),
-            title=a.get("title"),
-            location=a.get("location_name"),
-        )
-        if a.get("location_id") != 0:
-            rtn.location_id = str(a.get("location_id"))
-        rtn.uid = a.get("oid")
-        rtn.author_id = a.get("creator_id")
-        guests = a.get("event_members")
-        rtn.going = [uid for uid in guests if guests[uid] == "GOING"]
-        rtn.declined = [uid for uid in guests if guests[uid] == "DECLINED"]
-        rtn.invited = [uid for uid in guests if guests[uid] == "INVITED"]
-        return rtn
-    elif a.get("id") is None:
-        rtn = Plan(
-            time=a.get("event_time"),
-            title=a.get("event_title"),
-            location=a.get("event_location_name"),
-            location_id=a.get("event_location_id"),
-        )
-        rtn.uid = a.get("event_id")
-        rtn.author_id = a.get("event_creator_id")
-        guests = json.loads(a.get("guest_state_list"))
-    else:
-        rtn = Plan(
-            time=a.get("time"),
-            title=a.get("event_title"),
-            location=a.get("location_name"),
-        )
-        rtn.uid = a.get("id")
-        rtn.author_id = a.get("lightweight_event_creator").get("id")
-        guests = a.get("event_reminder_members").get("edges")
-    rtn.going = [
-        m.get("node").get("id") for m in guests if m.get("guest_list_state") == "GOING"
-    ]
-    rtn.declined = [
-        m.get("node").get("id")
-        for m in guests
-        if m.get("guest_list_state") == "DECLINED"
-    ]
-    rtn.invited = [
-        m.get("node").get("id")
-        for m in guests
-        if m.get("guest_list_state") == "INVITED"
-    ]
-    return rtn
-
-
 def graphql_to_quick_reply(q, is_response=False):
     data = dict()
     _type = q.get("content_type").lower()
@@ -235,12 +184,9 @@ def graphql_to_user(user):
         user["profile_picture"] = {}
     c_info = get_customization_info(user)
     plan = None
-    if user.get("event_reminders"):
-        plan = (
-            graphql_to_plan(user["event_reminders"]["nodes"][0])
-            if user["event_reminders"].get("nodes")
-            else None
-        )
+    if user.get("event_reminders") and user["event_reminders"].get("nodes"):
+        plan = Plan._from_graphql(user["event_reminders"]["nodes"][0])
+
     return User(
         user["id"],
         url=user.get("url"),
@@ -286,12 +232,8 @@ def graphql_to_thread(thread):
             last_name = user.get("name").split(first_name, 1).pop().strip()
 
         plan = None
-        if thread.get("event_reminders"):
-            plan = (
-                graphql_to_plan(thread["event_reminders"]["nodes"][0])
-                if thread["event_reminders"].get("nodes")
-                else None
-            )
+        if thread.get("event_reminders") and thread["event_reminders"].get("nodes"):
+            plan = Plan._from_graphql(thread["event_reminders"]["nodes"][0])
 
         return User(
             user["id"],
@@ -327,12 +269,9 @@ def graphql_to_group(group):
     if "last_message" in group:
         last_message_timestamp = group["last_message"]["nodes"][0]["timestamp_precise"]
     plan = None
-    if group.get("event_reminders"):
-        plan = (
-            graphql_to_plan(group["event_reminders"]["nodes"][0])
-            if group["event_reminders"].get("nodes")
-            else None
-        )
+    if group.get("event_reminders") and group["event_reminders"].get("nodes"):
+        plan = Plan._from_graphql(group["event_reminders"]["nodes"][0])
+
     return Group(
         group["thread_key"]["thread_fbid"],
         participants=set(
@@ -368,12 +307,9 @@ def graphql_to_page(page):
     if page.get("city") is None:
         page["city"] = {}
     plan = None
-    if page.get("event_reminders"):
-        plan = (
-            graphql_to_plan(page["event_reminders"]["nodes"][0])
-            if page["event_reminders"].get("nodes")
-            else None
-        )
+    if page.get("event_reminders") and page["event_reminders"].get("nodes"):
+        plan = Plan._from_graphql(page["event_reminders"]["nodes"][0])
+
     return Page(
         page["id"],
         url=page.get("url"),
