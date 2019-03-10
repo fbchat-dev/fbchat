@@ -146,33 +146,6 @@ def graphql_to_message(message):
     return rtn
 
 
-def graphql_to_user(user):
-    if user.get("profile_picture") is None:
-        user["profile_picture"] = {}
-    c_info = User._parse_customization_info(user)
-    plan = None
-    if user.get("event_reminders") and user["event_reminders"].get("nodes"):
-        plan = Plan._from_graphql(user["event_reminders"]["nodes"][0])
-
-    return User(
-        user["id"],
-        url=user.get("url"),
-        first_name=user.get("first_name"),
-        last_name=user.get("last_name"),
-        is_friend=user.get("is_viewer_friend"),
-        gender=GENDERS.get(user.get("gender")),
-        affinity=user.get("affinity"),
-        nickname=c_info.get("nickname"),
-        color=c_info.get("color"),
-        emoji=c_info.get("emoji"),
-        own_nickname=c_info.get("own_nickname"),
-        photo=user["profile_picture"].get("uri"),
-        name=user.get("name"),
-        message_count=user.get("messages_count"),
-        plan=plan,
-    )
-
-
 def graphql_to_thread(thread):
     if thread["thread_type"] == "GROUP":
         return graphql_to_group(thread)

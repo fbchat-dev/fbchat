@@ -730,7 +730,7 @@ class Client(object):
             GraphQL(query=GraphQL.SEARCH_USER, params={"search": name, "limit": limit})
         )
 
-        return [graphql_to_user(node) for node in j[name]["users"]["nodes"]]
+        return [User._from_graphql(node) for node in j[name]["users"]["nodes"]]
 
     def searchForPages(self, name, limit=10):
         """
@@ -785,7 +785,7 @@ class Client(object):
         rtn = []
         for node in j[name]["threads"]["nodes"]:
             if node["__typename"] == "User":
-                rtn.append(graphql_to_user(node))
+                rtn.append(User._from_graphql(node))
             elif node["__typename"] == "MessageThread":
                 # MessageThread => Group thread
                 rtn.append(graphql_to_group(node))
@@ -1056,7 +1056,7 @@ class Client(object):
                     raise FBchatException("Could not fetch thread {}".format(_id))
                 entry.update(pages_and_users[_id])
                 if entry["type"] == ThreadType.USER:
-                    rtn[_id] = graphql_to_user(entry)
+                    rtn[_id] = User._from_graphql(entry)
                 else:
                     rtn[_id] = graphql_to_page(entry)
             else:

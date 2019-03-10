@@ -13,7 +13,6 @@ from ._graphql import (
     graphql_to_subattachment,
     graphql_to_quick_reply,
     graphql_to_message,
-    graphql_to_user,
     graphql_to_thread,
     graphql_to_group,
     graphql_to_page,

@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import attr
 from ._core import Enum
+from . import _util, _plan
 from ._thread import ThreadType, Thread
 
 
@@ -64,6 +65,33 @@ class User(Thread):
         self.own_nickname = own_nickname
         self.color = color
         self.emoji = emoji
+
+    @classmethod
+    def _from_graphql(cls, data):
+        if data.get("profile_picture") is None:
+            data["profile_picture"] = {}
+        c_info = cls._parse_customization_info(data)
+        plan = None
+        if data.get("event_reminders") and data["event_reminders"].get("nodes"):
+            plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
+
+        return cls(
+            data["id"],
+            url=data.get("url"),
+            first_name=data.get("first_name"),
+            last_name=data.get("last_name"),
+            is_friend=data.get("is_viewer_friend"),
+            gender=_util.GENDERS.get(data.get("gender")),
+            affinity=data.get("affinity"),
+            nickname=c_info.get("nickname"),
+            color=c_info.get("color"),
+            emoji=c_info.get("emoji"),
+            own_nickname=c_info.get("own_nickname"),
+            photo=data["profile_picture"].get("uri"),
+            name=data.get("name"),
+            message_count=data.get("messages_count"),
+            plan=plan,
+        )
 
 
 @attr.s(cmp=False)
