@@ -251,3 +251,25 @@ class VideoAttachment(Attachment):
             medium_image=media.get("image"),
             uid=data["target"].get("video_id"),
         )
+
+
+def graphql_to_attachment(data):
+    _type = data["__typename"]
+    if _type in ["MessageImage", "MessageAnimatedImage"]:
+        return ImageAttachment._from_graphql(data)
+    elif _type == "MessageVideo":
+        return VideoAttachment._from_graphql(data)
+    elif _type == "MessageAudio":
+        return AudioAttachment._from_graphql(data)
+    elif _type == "MessageFile":
+        return FileAttachment._from_graphql(data)
+
+    return Attachment(uid=data.get("legacy_attachment_id"))
+
+
+def graphql_to_subattachment(data):
+    _type = data["target"]["__typename"]
+    if _type == "Video":
+        return VideoAttachment._from_subattachment(data)
+
+    return None

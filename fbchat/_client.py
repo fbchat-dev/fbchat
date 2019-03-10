@@ -8,6 +8,7 @@ from random import choice
 from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
 from collections import OrderedDict
+from . import _file
 from ._util import *
 from .models import *
 from .graphql import *
@@ -3057,7 +3058,7 @@ class Client(object):
                         if mercury.get("blob_attachment"):
                             image_metadata = a.get("imageMetadata", {})
                             attach_type = mercury["blob_attachment"]["__typename"]
-                            attachment = graphql_to_attachment(
+                            attachment = _file.graphql_to_attachment(
                                 mercury["blob_attachment"]
                             )
 

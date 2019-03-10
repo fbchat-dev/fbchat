@@ -50,7 +50,7 @@ class ShareAttachment(Attachment):
 
     @classmethod
     def _from_graphql(cls, data):
-        from . import _graphql
+        from . import _file
 
         url = data.get("url")
         rtn = cls(
@@ -68,7 +68,7 @@ class ShareAttachment(Attachment):
             else None,
             source=data["source"].get("text"),
             attachments=[
-                _graphql.graphql_to_subattachment(attachment)
+                _file.graphql_to_subattachment(attachment)
                 for attachment in data.get("subattachments")
             ],
         )

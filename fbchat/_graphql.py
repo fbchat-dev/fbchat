@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 import json
 import re
+from . import _file
 from .models import *
 from ._util import *
 
@@ -27,20 +28,6 @@ class ConcatJSONDecoder(json.JSONDecoder):
 # End shameless copy
 
 
-def graphql_to_attachment(a):
-    _type = a["__typename"]
-    if _type in ["MessageImage", "MessageAnimatedImage"]:
-        return ImageAttachment._from_graphql(a)
-    elif _type == "MessageVideo":
-        return VideoAttachment._from_graphql(a)
-    elif _type == "MessageAudio":
-        return AudioAttachment._from_graphql(a)
-    elif _type == "MessageFile":
-        return FileAttachment._from_graphql(a)
-    else:
-        return Attachment(uid=a.get("legacy_attachment_id"))
-
-
 def graphql_to_extensible_attachment(a):
     story = a.get("story_attachment")
     if not story:
@@ -57,14 +44,6 @@ def graphql_to_extensible_attachment(a):
         return LiveLocationAttachment._from_graphql(story)
     elif _type in ["ExternalUrl", "Story"]:
         return ShareAttachment._from_graphql(story)
-
-    return None
-
-
-def graphql_to_subattachment(data):
-    _type = data["target"]["__typename"]
-    if _type == "Video":
-        return VideoAttachment._from_subattachment(data)
 
     return None
 
@@ -122,7 +101,7 @@ def graphql_to_message(message):
     }
     if message.get("blob_attachments") is not None:
         rtn.attachments = [
-            graphql_to_attachment(attachment)
+            _file.graphql_to_attachment(attachment)
             for attachment in message["blob_attachments"]
         ]
     if message.get("platform_xmd_encoded"):
