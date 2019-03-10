@@ -746,7 +746,7 @@ class Client(object):
             GraphQL(query=GraphQL.SEARCH_PAGE, params={"search": name, "limit": limit})
         )
 
-        return [graphql_to_page(node) for node in j[name]["pages"]["nodes"]]
+        return [Page._from_graphql(node) for node in j[name]["pages"]["nodes"]]
 
     def searchForGroups(self, name, limit=10):
         """
@@ -790,7 +790,7 @@ class Client(object):
                 # MessageThread => Group thread
                 rtn.append(Group._from_graphql(node))
             elif node["__typename"] == "Page":
-                rtn.append(graphql_to_page(node))
+                rtn.append(Page._from_graphql(node))
             elif node["__typename"] == "Group":
                 # We don't handle Facebook "Groups"
                 pass
@@ -1058,7 +1058,7 @@ class Client(object):
                 if entry["type"] == ThreadType.USER:
                     rtn[_id] = User._from_graphql(entry)
                 else:
-                    rtn[_id] = graphql_to_page(entry)
+                    rtn[_id] = Page._from_graphql(entry)
             else:
                 raise FBchatException(
                     "{} had an unknown thread type: {}".format(thread_ids[i], entry)

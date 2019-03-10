@@ -159,27 +159,6 @@ def graphql_to_thread(thread):
         )
 
 
-def graphql_to_page(page):
-    if page.get("profile_picture") is None:
-        page["profile_picture"] = {}
-    if page.get("city") is None:
-        page["city"] = {}
-    plan = None
-    if page.get("event_reminders") and page["event_reminders"].get("nodes"):
-        plan = Plan._from_graphql(page["event_reminders"]["nodes"][0])
-
-    return Page(
-        page["id"],
-        url=page.get("url"),
-        city=page.get("city").get("name"),
-        category=page.get("category_type"),
-        photo=page["profile_picture"].get("uri"),
-        name=page.get("name"),
-        message_count=page.get("messages_count"),
-        plan=plan,
-    )
-
-
 def graphql_queries_to_json(*queries):
     """
     Queries should be a list of GraphQL objects
