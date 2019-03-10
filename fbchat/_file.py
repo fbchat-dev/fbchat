@@ -241,3 +241,13 @@ class VideoAttachment(Attachment):
             large_image=data.get("large_image"),
             uid=data.get("legacy_attachment_id"),
         )
+
+    @classmethod
+    def _from_subattachment(cls, data):
+        media = data["media"]
+        return cls(
+            duration=media.get("playable_duration_in_ms"),
+            preview_url=media.get("playable_url"),
+            medium_image=media.get("image"),
+            uid=data["target"].get("video_id"),
+        )

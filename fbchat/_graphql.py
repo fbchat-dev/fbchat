@@ -61,16 +61,12 @@ def graphql_to_extensible_attachment(a):
     return None
 
 
-def graphql_to_subattachment(a):
-    _type = a["target"]["__typename"]
+def graphql_to_subattachment(data):
+    _type = data["target"]["__typename"]
     if _type == "Video":
-        media = a["media"]
-        return VideoAttachment(
-            duration=media.get("playable_duration_in_ms"),
-            preview_url=media.get("playable_url"),
-            medium_image=media.get("image"),
-            uid=a["target"].get("video_id"),
-        )
+        return VideoAttachment._from_subattachment(data)
+
+    return None
 
 
 def graphql_to_quick_reply(q, is_response=False):
