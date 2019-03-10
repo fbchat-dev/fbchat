@@ -1158,9 +1158,18 @@ class Client(object):
             )
         )
 
-        return [
-            graphql_to_thread(node) for node in j["viewer"]["message_threads"]["nodes"]
-        ]
+        rtn = []
+        for node in j["viewer"]["message_threads"]["nodes"]:
+            _type = node.get("thread_type")
+            if _type == "GROUP":
+                rtn.append(Group._from_graphql(node))
+            elif _type == "ONE_TO_ONE":
+                rtn.append(User._from_thread_fetch(node))
+            else:
+                raise FBchatException(
+                    "Unknown thread type: {}, with data: {}".format(_type, node)
+                )
+        return rtn
 
     def fetchUnread(self):
         """

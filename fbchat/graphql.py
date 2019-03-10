@@ -9,7 +9,6 @@ from ._graphql import (
     WHITESPACE,
     ConcatJSONDecoder,
     graphql_to_message,
-    graphql_to_thread,
     graphql_queries_to_json,
     graphql_response_to_json,
     GraphQL,

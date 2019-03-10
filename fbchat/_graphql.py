@@ -82,19 +82,6 @@ def graphql_to_message(message):
     return rtn
 
 
-def graphql_to_thread(thread):
-    if thread["thread_type"] == "GROUP":
-        return Group._from_graphql(thread)
-    elif thread["thread_type"] == "ONE_TO_ONE":
-        return User._from_thread_fetch(thread)
-    else:
-        raise FBchatException(
-            "Unknown thread type: {}, with data: {}".format(
-                thread.get("thread_type"), thread
-            )
-        )
-
-
 def graphql_queries_to_json(*queries):
     """
     Queries should be a list of GraphQL objects
