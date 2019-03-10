@@ -89,3 +89,36 @@ class Thread(object):
         self.last_message_timestamp = last_message_timestamp
         self.message_count = message_count
         self.plan = plan
+
+    @staticmethod
+    def _parse_customization_info(data):
+        if data is None or data.get("customization_info") is None:
+            return {}
+        info = data["customization_info"]
+
+        rtn = {
+            "emoji": info.get("emoji"),
+            "color": ThreadColor._from_graphql(info.get("outgoing_bubble_color")),
+        }
+        if (
+            data.get("thread_type") == "GROUP"
+            or data.get("is_group_thread")
+            or data.get("thread_key", {}).get("thread_fbid")
+        ):
+            rtn["nicknames"] = {}
+            for k in info.get("participant_customizations", []):
+                rtn["nicknames"][k["participant_id"]] = k.get("nickname")
+        elif info.get("participant_customizations"):
+            uid = data.get("thread_key", {}).get("other_user_id") or data.get("id")
+            pc = info["participant_customizations"]
+            if len(pc) > 0:
+                if pc[0].get("participant_id") == uid:
+                    rtn["nickname"] = pc[0].get("nickname")
+                else:
+                    rtn["own_nickname"] = pc[0].get("nickname")
+            if len(pc) > 1:
+                if pc[1].get("participant_id") == uid:
+                    rtn["nickname"] = pc[1].get("nickname")
+                else:
+                    rtn["own_nickname"] = pc[1].get("nickname")
+        return rtn

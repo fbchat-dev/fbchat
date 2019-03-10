@@ -27,39 +27,6 @@ class ConcatJSONDecoder(json.JSONDecoder):
 # End shameless copy
 
 
-def get_customization_info(thread):
-    if thread is None or thread.get("customization_info") is None:
-        return {}
-    info = thread["customization_info"]
-
-    rtn = {
-        "emoji": info.get("emoji"),
-        "color": ThreadColor._from_graphql(info.get("outgoing_bubble_color")),
-    }
-    if (
-        thread.get("thread_type") == "GROUP"
-        or thread.get("is_group_thread")
-        or thread.get("thread_key", {}).get("thread_fbid")
-    ):
-        rtn["nicknames"] = {}
-        for k in info.get("participant_customizations", []):
-            rtn["nicknames"][k["participant_id"]] = k.get("nickname")
-    elif info.get("participant_customizations"):
-        uid = thread.get("thread_key", {}).get("other_user_id") or thread.get("id")
-        pc = info["participant_customizations"]
-        if len(pc) > 0:
-            if pc[0].get("participant_id") == uid:
-                rtn["nickname"] = pc[0].get("nickname")
-            else:
-                rtn["own_nickname"] = pc[0].get("nickname")
-        if len(pc) > 1:
-            if pc[1].get("participant_id") == uid:
-                rtn["nickname"] = pc[1].get("nickname")
-            else:
-                rtn["own_nickname"] = pc[1].get("nickname")
-    return rtn
-
-
 def graphql_to_attachment(a):
     _type = a["__typename"]
     if _type in ["MessageImage", "MessageAnimatedImage"]:
@@ -144,7 +111,7 @@ def graphql_to_message(message):
             )
             for m in message.get("message").get("ranges", [])
         ],
-        emoji_size=get_emojisize_from_tags(message.get("tags_list")),
+        emoji_size=EmojiSize._from_tags(message.get("tags_list")),
         sticker=Sticker._from_graphql(message.get("sticker")),
     )
     rtn.uid = str(message.get("message_id"))
@@ -182,7 +149,7 @@ def graphql_to_message(message):
 def graphql_to_user(user):
     if user.get("profile_picture") is None:
         user["profile_picture"] = {}
-    c_info = get_customization_info(user)
+    c_info = User._parse_customization_info(user)
     plan = None
     if user.get("event_reminders") and user["event_reminders"].get("nodes"):
         plan = Plan._from_graphql(user["event_reminders"]["nodes"][0])
@@ -212,7 +179,7 @@ def graphql_to_thread(thread):
     elif thread["thread_type"] == "ONE_TO_ONE":
         if thread.get("big_image_src") is None:
             thread["big_image_src"] = {}
-        c_info = get_customization_info(thread)
+        c_info = User._parse_customization_info(thread)
         participants = [
             node["messaging_actor"] for node in thread["all_participants"]["nodes"]
         ]
@@ -264,7 +231,7 @@ def graphql_to_thread(thread):
 def graphql_to_group(group):
     if group.get("image") is None:
         group["image"] = {}
-    c_info = get_customization_info(group)
+    c_info = Group._parse_customization_info(group)
     last_message_timestamp = None
     if "last_message" in group:
         last_message_timestamp = group["last_message"]["nodes"][0]["timestamp_precise"]
