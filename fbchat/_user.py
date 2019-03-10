@@ -139,6 +139,18 @@ class User(Thread):
             plan=plan,
         )
 
+    @classmethod
+    def _from_all_fetch(cls, data):
+        return cls(
+            data["id"],
+            first_name=data.get("firstName"),
+            url=data.get("uri"),
+            photo=data.get("thumbSrc"),
+            name=data.get("name"),
+            is_friend=data.get("is_friend"),
+            gender=_util.GENDERS.get(data.get("gender")),
+        )
+
 
 @attr.s(cmp=False)
 class ActiveStatus(object):

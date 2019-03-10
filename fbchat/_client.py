@@ -694,24 +694,12 @@ class Client(object):
             raise FBchatException("Missing payload while fetching users: {}".format(j))
 
         users = []
-
-        for key in j["payload"]:
-            k = j["payload"][key]
-            if k["type"] in ["user", "friend"]:
-                if k["id"] in ["0", 0]:
+        for data in j["payload"].values():
+            if data["type"] in ["user", "friend"]:
+                if data["id"] in ["0", 0]:
                     # Skip invalid users
-                    pass
-                users.append(
-                    User(
-                        k["id"],
-                        first_name=k.get("firstName"),
-                        url=k.get("uri"),
-                        photo=k.get("thumbSrc"),
-                        name=k.get("name"),
-                        is_friend=k.get("is_friend"),
-                        gender=GENDERS.get(k.get("gender")),
-                    )
-                )
+                    continue
+                users.append(User._from_all_fetch(data))
 
         return users
 
