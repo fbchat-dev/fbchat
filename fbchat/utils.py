@@ -7,7 +7,6 @@ from ._util import (
     log,
     handler,
     USER_AGENTS,
-    GENDERS,
     ReqUrl,
     facebookEncoding,
     now,

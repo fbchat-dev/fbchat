@@ -47,36 +47,6 @@ USER_AGENTS = [
 ]
 
 
-GENDERS = {
-    # For standard requests
-    0: "unknown",
-    1: "female_singular",
-    2: "male_singular",
-    3: "female_singular_guess",
-    4: "male_singular_guess",
-    5: "mixed",
-    6: "neuter_singular",
-    7: "unknown_singular",
-    8: "female_plural",
-    9: "male_plural",
-    10: "neuter_plural",
-    11: "unknown_plural",
-    # For graphql requests
-    "UNKNOWN": "unknown",
-    "FEMALE": "female_singular",
-    "MALE": "male_singular",
-    # '': 'female_singular_guess',
-    # '': 'male_singular_guess',
-    # '': 'mixed',
-    "NEUTER": "neuter_singular",
-    # '': 'unknown_singular',
-    # '': 'female_plural',
-    # '': 'male_plural',
-    # '': 'neuter_plural',
-    # '': 'unknown_plural',
-}
-
-
 class ReqUrl(object):
     """A class containing all urls used by `fbchat`"""
 

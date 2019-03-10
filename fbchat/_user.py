@@ -3,8 +3,38 @@ from __future__ import unicode_literals
 
 import attr
 from ._core import Enum
-from . import _util, _plan
+from . import _plan
 from ._thread import ThreadType, Thread
+
+
+GENDERS = {
+    # For standard requests
+    0: "unknown",
+    1: "female_singular",
+    2: "male_singular",
+    3: "female_singular_guess",
+    4: "male_singular_guess",
+    5: "mixed",
+    6: "neuter_singular",
+    7: "unknown_singular",
+    8: "female_plural",
+    9: "male_plural",
+    10: "neuter_plural",
+    11: "unknown_plural",
+    # For graphql requests
+    "UNKNOWN": "unknown",
+    "FEMALE": "female_singular",
+    "MALE": "male_singular",
+    # '': 'female_singular_guess',
+    # '': 'male_singular_guess',
+    # '': 'mixed',
+    "NEUTER": "neuter_singular",
+    # '': 'unknown_singular',
+    # '': 'female_plural',
+    # '': 'male_plural',
+    # '': 'neuter_plural',
+    # '': 'unknown_plural',
+}
 
 
 class TypingStatus(Enum):
@@ -81,7 +111,7 @@ class User(Thread):
             first_name=data.get("first_name"),
             last_name=data.get("last_name"),
             is_friend=data.get("is_viewer_friend"),
-            gender=_util.GENDERS.get(data.get("gender")),
+            gender=GENDERS.get(data.get("gender")),
             affinity=data.get("affinity"),
             nickname=c_info.get("nickname"),
             color=c_info.get("color"),
@@ -127,7 +157,7 @@ class User(Thread):
             first_name=first_name,
             last_name=last_name,
             is_friend=user.get("is_viewer_friend"),
-            gender=_util.GENDERS.get(user.get("gender")),
+            gender=GENDERS.get(user.get("gender")),
             affinity=user.get("affinity"),
             nickname=c_info.get("nickname"),
             color=c_info.get("color"),
@@ -148,7 +178,7 @@ class User(Thread):
             photo=data.get("thumbSrc"),
             name=data.get("name"),
             is_friend=data.get("is_friend"),
-            gender=_util.GENDERS.get(data.get("gender")),
+            gender=GENDERS.get(data.get("gender")),
         )
 
 
