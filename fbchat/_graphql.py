@@ -150,49 +150,7 @@ def graphql_to_thread(thread):
     if thread["thread_type"] == "GROUP":
         return graphql_to_group(thread)
     elif thread["thread_type"] == "ONE_TO_ONE":
-        if thread.get("big_image_src") is None:
-            thread["big_image_src"] = {}
-        c_info = User._parse_customization_info(thread)
-        participants = [
-            node["messaging_actor"] for node in thread["all_participants"]["nodes"]
-        ]
-        user = next(
-            p for p in participants if p["id"] == thread["thread_key"]["other_user_id"]
-        )
-        last_message_timestamp = None
-        if "last_message" in thread:
-            last_message_timestamp = thread["last_message"]["nodes"][0][
-                "timestamp_precise"
-            ]
-
-        first_name = user.get("short_name")
-        if first_name is None:
-            last_name = None
-        else:
-            last_name = user.get("name").split(first_name, 1).pop().strip()
-
-        plan = None
-        if thread.get("event_reminders") and thread["event_reminders"].get("nodes"):
-            plan = Plan._from_graphql(thread["event_reminders"]["nodes"][0])
-
-        return User(
-            user["id"],
-            url=user.get("url"),
-            name=user.get("name"),
-            first_name=first_name,
-            last_name=last_name,
-            is_friend=user.get("is_viewer_friend"),
-            gender=GENDERS.get(user.get("gender")),
-            affinity=user.get("affinity"),
-            nickname=c_info.get("nickname"),
-            color=c_info.get("color"),
-            emoji=c_info.get("emoji"),
-            own_nickname=c_info.get("own_nickname"),
-            photo=user["big_image_src"].get("uri"),
-            message_count=thread.get("messages_count"),
-            last_message_timestamp=last_message_timestamp,
-            plan=plan,
-        )
+        return User._from_thread_fetch(thread)
     else:
         raise FBchatException(
             "Unknown thread type: {}, with data: {}".format(

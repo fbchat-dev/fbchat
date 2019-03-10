@@ -93,6 +93,52 @@ class User(Thread):
             plan=plan,
         )
 
+    @classmethod
+    def _from_thread_fetch(cls, data):
+        if data.get("big_image_src") is None:
+            data["big_image_src"] = {}
+        c_info = cls._parse_customization_info(data)
+        participants = [
+            node["messaging_actor"] for node in data["all_participants"]["nodes"]
+        ]
+        user = next(
+            p for p in participants if p["id"] == data["thread_key"]["other_user_id"]
+        )
+        last_message_timestamp = None
+        if "last_message" in data:
+            last_message_timestamp = data["last_message"]["nodes"][0][
+                "timestamp_precise"
+            ]
+
+        first_name = user.get("short_name")
+        if first_name is None:
+            last_name = None
+        else:
+            last_name = user.get("name").split(first_name, 1).pop().strip()
+
+        plan = None
+        if data.get("event_reminders") and data["event_reminders"].get("nodes"):
+            plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
+
+        return cls(
+            user["id"],
+            url=user.get("url"),
+            name=user.get("name"),
+            first_name=first_name,
+            last_name=last_name,
+            is_friend=user.get("is_viewer_friend"),
+            gender=_util.GENDERS.get(user.get("gender")),
+            affinity=user.get("affinity"),
+            nickname=c_info.get("nickname"),
+            color=c_info.get("color"),
+            emoji=c_info.get("emoji"),
+            own_nickname=c_info.get("own_nickname"),
+            photo=user["big_image_src"].get("uri"),
+            message_count=data.get("messages_count"),
+            last_message_timestamp=last_message_timestamp,
+            plan=plan,
+        )
+
 
 @attr.s(cmp=False)
 class ActiveStatus(object):
