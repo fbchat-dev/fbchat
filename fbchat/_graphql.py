@@ -1,11 +1,10 @@
 # -*- coding: UTF-8 -*-
-
 from __future__ import unicode_literals
+
 import json
 import re
-from . import _file, _message, _quick_reply
-from .models import *
-from ._util import *
+from . import _util
+from ._exception import FBchatException, FBchatUserError
 
 # Shameless copy from https://stackoverflow.com/a/8730674
 FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
@@ -39,7 +38,7 @@ def graphql_queries_to_json(*queries):
 
 
 def graphql_response_to_json(content):
-    content = strip_to_json(content)  # Usually only needed in some error cases
+    content = _util.strip_to_json(content)  # Usually only needed in some error cases
     try:
         j = json.loads(content, cls=ConcatJSONDecoder)
     except Exception:
@@ -50,15 +49,15 @@ def graphql_response_to_json(content):
         if "error_results" in x:
             del rtn[-1]
             continue
-        check_json(x)
+        _util.check_json(x)
         [(key, value)] = x.items()
-        check_json(value)
+        _util.check_json(value)
         if "response" in value:
             rtn[int(key[1:])] = value["response"]
         else:
             rtn[int(key[1:])] = value["data"]
 
-    log.debug(rtn)
+    _util.log.debug(rtn)
 
     return rtn
 
