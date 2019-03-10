@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
-
 from __future__ import unicode_literals
+
 import requests
 import urllib
 from uuid import uuid1
@@ -10,7 +10,7 @@ from mimetypes import guess_type
 from collections import OrderedDict
 from ._util import *
 from .models import *
-from .graphql import *
+from ._graphql import graphql_queries_to_json, graphql_response_to_json, GraphQL
 import time
 import json
 
