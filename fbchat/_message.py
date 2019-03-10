@@ -2,8 +2,9 @@
 from __future__ import unicode_literals
 
 import attr
+import json
 from string import Formatter
-from . import _attachment, _location
+from . import _attachment, _location, _file, _quick_reply, _sticker
 from ._core import Enum
 
 
@@ -138,6 +139,60 @@ class Message(object):
 
         message = cls(text=result, mentions=mentions)
         return message
+
+    @classmethod
+    def _from_graphql(cls, data):
+        if data.get("message_sender") is None:
+            data["message_sender"] = {}
+        if data.get("message") is None:
+            data["message"] = {}
+        rtn = cls(
+            text=data["message"].get("text"),
+            mentions=[
+                Mention(
+                    m.get("entity", {}).get("id"),
+                    offset=m.get("offset"),
+                    length=m.get("length"),
+                )
+                for m in data["message"].get("ranges") or ()
+            ],
+            emoji_size=EmojiSize._from_tags(data.get("tags_list")),
+            sticker=_sticker.Sticker._from_graphql(data.get("sticker")),
+        )
+        rtn.uid = str(data["message_id"])
+        rtn.author = str(data["message_sender"]["id"])
+        rtn.timestamp = data.get("timestamp_precise")
+        rtn.unsent = False
+        if data.get("unread") is not None:
+            rtn.is_read = not data["unread"]
+        rtn.reactions = {
+            str(r["user"]["id"]): MessageReaction._extend_if_invalid(r["reaction"])
+            for r in data["message_reactions"]
+        }
+        if data.get("blob_attachments") is not None:
+            rtn.attachments = [
+                _file.graphql_to_attachment(attachment)
+                for attachment in data["blob_attachments"]
+            ]
+        if data.get("platform_xmd_encoded"):
+            quick_replies = json.loads(data["platform_xmd_encoded"]).get(
+                "quick_replies"
+            )
+            if isinstance(quick_replies, list):
+                rtn.quick_replies = [
+                    _quick_reply.graphql_to_quick_reply(q) for q in quick_replies
+                ]
+            elif isinstance(quick_replies, dict):
+                rtn.quick_replies = [
+                    _quick_reply.graphql_to_quick_reply(quick_replies, is_response=True)
+                ]
+        if data.get("extensible_attachment") is not None:
+            attachment = graphql_to_extensible_attachment(data["extensible_attachment"])
+            if isinstance(attachment, _attachment.UnsentMessage):
+                rtn.unsent = True
+            elif attachment:
+                rtn.attachments.append(attachment)
+        return rtn
 
 
 def graphql_to_extensible_attachment(data):

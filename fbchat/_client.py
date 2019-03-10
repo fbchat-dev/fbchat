@@ -1102,7 +1102,7 @@ class Client(object):
         messages = list(
             reversed(
                 [
-                    graphql_to_message(message)
+                    Message._from_graphql(message)
                     for message in j["message_thread"]["messages"]["nodes"]
                 ]
             )
@@ -1241,8 +1241,7 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         message_info = self._forcedFetch(thread_id, mid).get("message")
-        message = graphql_to_message(message_info)
-        return message
+        return Message._from_graphql(message_info)
 
     def fetchPollOptions(self, poll_id):
         """

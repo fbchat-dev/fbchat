@@ -28,60 +28,6 @@ class ConcatJSONDecoder(json.JSONDecoder):
 # End shameless copy
 
 
-def graphql_to_message(message):
-    if message.get("message_sender") is None:
-        message["message_sender"] = {}
-    if message.get("message") is None:
-        message["message"] = {}
-    rtn = Message(
-        text=message.get("message").get("text"),
-        mentions=[
-            Mention(
-                m.get("entity", {}).get("id"),
-                offset=m.get("offset"),
-                length=m.get("length"),
-            )
-            for m in message.get("message").get("ranges", [])
-        ],
-        emoji_size=EmojiSize._from_tags(message.get("tags_list")),
-        sticker=Sticker._from_graphql(message.get("sticker")),
-    )
-    rtn.uid = str(message.get("message_id"))
-    rtn.author = str(message.get("message_sender").get("id"))
-    rtn.timestamp = message.get("timestamp_precise")
-    rtn.unsent = False
-    if message.get("unread") is not None:
-        rtn.is_read = not message["unread"]
-    rtn.reactions = {
-        str(r["user"]["id"]): MessageReaction._extend_if_invalid(r["reaction"])
-        for r in message.get("message_reactions")
-    }
-    if message.get("blob_attachments") is not None:
-        rtn.attachments = [
-            _file.graphql_to_attachment(attachment)
-            for attachment in message["blob_attachments"]
-        ]
-    if message.get("platform_xmd_encoded"):
-        quick_replies = json.loads(message["platform_xmd_encoded"]).get("quick_replies")
-        if isinstance(quick_replies, list):
-            rtn.quick_replies = [
-                _quick_reply.graphql_to_quick_reply(q) for q in quick_replies
-            ]
-        elif isinstance(quick_replies, dict):
-            rtn.quick_replies = [
-                _quick_reply.graphql_to_quick_reply(quick_replies, is_response=True)
-            ]
-    if message.get("extensible_attachment") is not None:
-        attachment = _message.graphql_to_extensible_attachment(
-            message["extensible_attachment"]
-        )
-        if isinstance(attachment, UnsentMessage):
-            rtn.unsent = True
-        elif attachment:
-            rtn.attachments.append(attachment)
-    return rtn
-
-
 def graphql_queries_to_json(*queries):
     """
     Queries should be a list of GraphQL objects
