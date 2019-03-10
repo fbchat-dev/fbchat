@@ -148,7 +148,7 @@ def graphql_to_message(message):
 
 def graphql_to_thread(thread):
     if thread["thread_type"] == "GROUP":
-        return graphql_to_group(thread)
+        return Group._from_graphql(thread)
     elif thread["thread_type"] == "ONE_TO_ONE":
         return User._from_thread_fetch(thread)
     else:
@@ -157,46 +157,6 @@ def graphql_to_thread(thread):
                 thread.get("thread_type"), thread
             )
         )
-
-
-def graphql_to_group(group):
-    if group.get("image") is None:
-        group["image"] = {}
-    c_info = Group._parse_customization_info(group)
-    last_message_timestamp = None
-    if "last_message" in group:
-        last_message_timestamp = group["last_message"]["nodes"][0]["timestamp_precise"]
-    plan = None
-    if group.get("event_reminders") and group["event_reminders"].get("nodes"):
-        plan = Plan._from_graphql(group["event_reminders"]["nodes"][0])
-
-    return Group(
-        group["thread_key"]["thread_fbid"],
-        participants=set(
-            [
-                node["messaging_actor"]["id"]
-                for node in group["all_participants"]["nodes"]
-            ]
-        ),
-        nicknames=c_info.get("nicknames"),
-        color=c_info.get("color"),
-        emoji=c_info.get("emoji"),
-        admins=set([node.get("id") for node in group.get("thread_admins")]),
-        approval_mode=bool(group.get("approval_mode"))
-        if group.get("approval_mode") is not None
-        else None,
-        approval_requests=set(
-            node["requester"]["id"] for node in group["group_approval_queue"]["nodes"]
-        )
-        if group.get("group_approval_queue")
-        else None,
-        join_link=group["joinable_mode"].get("link"),
-        photo=group["image"].get("uri"),
-        name=group.get("name"),
-        message_count=group.get("messages_count"),
-        last_message_timestamp=last_message_timestamp,
-        plan=plan,
-    )
 
 
 def graphql_to_page(page):

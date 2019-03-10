@@ -763,7 +763,7 @@ class Client(object):
             GraphQL(query=GraphQL.SEARCH_GROUP, params={"search": name, "limit": limit})
         )
 
-        return [graphql_to_group(node) for node in j["viewer"]["groups"]["nodes"]]
+        return [Group._from_graphql(node) for node in j["viewer"]["groups"]["nodes"]]
 
     def searchForThreads(self, name, limit=10):
         """
@@ -788,7 +788,7 @@ class Client(object):
                 rtn.append(User._from_graphql(node))
             elif node["__typename"] == "MessageThread":
                 # MessageThread => Group thread
-                rtn.append(graphql_to_group(node))
+                rtn.append(Group._from_graphql(node))
             elif node["__typename"] == "Page":
                 rtn.append(graphql_to_page(node))
             elif node["__typename"] == "Group":
@@ -1049,7 +1049,7 @@ class Client(object):
             entry = entry["message_thread"]
             if entry.get("thread_type") == "GROUP":
                 _id = entry["thread_key"]["thread_fbid"]
-                rtn[_id] = graphql_to_group(entry)
+                rtn[_id] = Group._from_graphql(entry)
             elif entry.get("thread_type") == "ONE_TO_ONE":
                 _id = entry["thread_key"]["other_user_id"]
                 if pages_and_users.get(_id) is None:
