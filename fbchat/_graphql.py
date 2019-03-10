@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 import json
 import re
-from . import _file
+from . import _file, _message
 from .models import *
 from ._util import *
 
@@ -26,26 +26,6 @@ class ConcatJSONDecoder(json.JSONDecoder):
 
 
 # End shameless copy
-
-
-def graphql_to_extensible_attachment(a):
-    story = a.get("story_attachment")
-    if not story:
-        return None
-
-    target = story.get("target")
-    if not target:
-        return UnsentMessage(uid=a.get("legacy_attachment_id"))
-
-    _type = target["__typename"]
-    if _type == "MessageLocation":
-        return LocationAttachment._from_graphql(story)
-    elif _type == "MessageLiveLocation":
-        return LiveLocationAttachment._from_graphql(story)
-    elif _type in ["ExternalUrl", "Story"]:
-        return ShareAttachment._from_graphql(story)
-
-    return None
 
 
 def graphql_to_quick_reply(q, is_response=False):
@@ -113,7 +93,9 @@ def graphql_to_message(message):
                 graphql_to_quick_reply(quick_replies, is_response=True)
             ]
     if message.get("extensible_attachment") is not None:
-        attachment = graphql_to_extensible_attachment(message["extensible_attachment"])
+        attachment = _message.graphql_to_extensible_attachment(
+            message["extensible_attachment"]
+        )
         if isinstance(attachment, UnsentMessage):
             rtn.unsent = True
         elif attachment:

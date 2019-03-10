@@ -8,7 +8,7 @@ from random import choice
 from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
 from collections import OrderedDict
-from . import _file
+from . import _file, _message
 from ._util import *
 from .models import *
 from .graphql import *
@@ -3077,7 +3077,7 @@ class Client(object):
                             )
 
                         elif mercury.get("extensible_attachment"):
-                            attachment = graphql_to_extensible_attachment(
+                            attachment = _message.graphql_to_extensible_attachment(
                                 mercury["extensible_attachment"]
                             )
                             if isinstance(attachment, UnsentMessage):

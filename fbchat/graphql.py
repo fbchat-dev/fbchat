@@ -8,7 +8,6 @@ from ._graphql import (
     FLAGS,
     WHITESPACE,
     ConcatJSONDecoder,
-    graphql_to_extensible_attachment,
     graphql_to_quick_reply,
     graphql_to_message,
     graphql_to_thread,

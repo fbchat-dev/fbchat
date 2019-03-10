@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import attr
 from string import Formatter
+from . import _attachment, _location
 from ._core import Enum
 
 
@@ -137,3 +138,23 @@ class Message(object):
 
         message = cls(text=result, mentions=mentions)
         return message
+
+
+def graphql_to_extensible_attachment(data):
+    story = data.get("story_attachment")
+    if not story:
+        return None
+
+    target = story.get("target")
+    if not target:
+        return _attachment.UnsentMessage(uid=data.get("legacy_attachment_id"))
+
+    _type = target["__typename"]
+    if _type == "MessageLocation":
+        return _location.LocationAttachment._from_graphql(story)
+    elif _type == "MessageLiveLocation":
+        return _location.LiveLocationAttachment._from_graphql(story)
+    elif _type in ["ExternalUrl", "Story"]:
+        return _attachment.ShareAttachment._from_graphql(story)
+
+    return None
