@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import attr
 import json
 from string import Formatter
-from . import _attachment, _location, _file, _quick_reply, _sticker
+from . import _util, _attachment, _location, _file, _quick_reply, _sticker
 from ._core import Enum
 
 
@@ -192,6 +192,71 @@ class Message(object):
                 rtn.unsent = True
             elif attachment:
                 rtn.attachments.append(attachment)
+        return rtn
+
+    @classmethod
+    def _from_pull(cls, data, mid=None, tags=None, author=None, timestamp=None):
+        rtn = cls(text=data.get("body"))
+        rtn.uid = mid
+        rtn.author = author
+        rtn.timestamp = timestamp
+
+        if data.get("data") and data["data"].get("prng"):
+            try:
+                rtn.mentions = [
+                    Mention(
+                        str(mention.get("i")),
+                        offset=mention.get("o"),
+                        length=mention.get("l"),
+                    )
+                    for mention in _util.parse_json(data["data"]["prng"])
+                ]
+            except Exception:
+                _util.log.exception("An exception occured while reading attachments")
+
+        if data.get("attachments"):
+            try:
+                for a in data["attachments"]:
+                    mercury = a["mercury"]
+                    if mercury.get("blob_attachment"):
+                        image_metadata = a.get("imageMetadata", {})
+                        attach_type = mercury["blob_attachment"]["__typename"]
+                        attachment = _file.graphql_to_attachment(
+                            mercury["blob_attachment"]
+                        )
+
+                        if attach_type in [
+                            "MessageFile",
+                            "MessageVideo",
+                            "MessageAudio",
+                        ]:
+                            # TODO: Add more data here for audio files
+                            attachment.size = int(a["fileSize"])
+                        rtn.attachments.append(attachment)
+
+                    elif mercury.get("sticker_attachment"):
+                        rtn.sticker = _sticker.Sticker._from_graphql(
+                            mercury["sticker_attachment"]
+                        )
+
+                    elif mercury.get("extensible_attachment"):
+                        attachment = graphql_to_extensible_attachment(
+                            mercury["extensible_attachment"]
+                        )
+                        if isinstance(attachment, _attachment.UnsentMessage):
+                            rtn.unsent = True
+                        elif attachment:
+                            rtn.attachments.append(attachment)
+
+            except Exception:
+                _util.log.exception(
+                    "An exception occured while reading attachments: {}".format(
+                        data["attachments"]
+                    )
+                )
+
+        rtn.emoji_size = EmojiSize._from_tags(tags)
+
         return rtn
 
 

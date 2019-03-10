@@ -8,7 +8,6 @@ from random import choice
 from bs4 import BeautifulSoup as bs
 from mimetypes import guess_type
 from collections import OrderedDict
-from . import _file, _message
 from ._util import *
 from .models import *
 from .graphql import *
@@ -3042,85 +3041,14 @@ class Client(object):
 
         # New message
         elif delta.get("class") == "NewMessage":
-            mentions = []
-            if delta.get("data") and delta["data"].get("prng"):
-                try:
-                    mentions = [
-                        Mention(
-                            str(mention.get("i")),
-                            offset=mention.get("o"),
-                            length=mention.get("l"),
-                        )
-                        for mention in parse_json(delta["data"]["prng"])
-                    ]
-                except Exception:
-                    log.exception("An exception occured while reading attachments")
-
-            sticker = None
-            attachments = []
-            unsent = False
-            if delta.get("attachments"):
-                try:
-                    for a in delta["attachments"]:
-                        mercury = a["mercury"]
-                        if mercury.get("blob_attachment"):
-                            image_metadata = a.get("imageMetadata", {})
-                            attach_type = mercury["blob_attachment"]["__typename"]
-                            attachment = _file.graphql_to_attachment(
-                                mercury["blob_attachment"]
-                            )
-
-                            if attach_type in [
-                                "MessageFile",
-                                "MessageVideo",
-                                "MessageAudio",
-                            ]:
-                                # TODO: Add more data here for audio files
-                                attachment.size = int(a["fileSize"])
-                            attachments.append(attachment)
-
-                        elif mercury.get("sticker_attachment"):
-                            sticker = Sticker._from_graphql(
-                                mercury["sticker_attachment"]
-                            )
-
-                        elif mercury.get("extensible_attachment"):
-                            attachment = _message.graphql_to_extensible_attachment(
-                                mercury["extensible_attachment"]
-                            )
-                            if isinstance(attachment, UnsentMessage):
-                                unsent = True
-                            elif attachment:
-                                attachments.append(attachment)
-
-                except Exception:
-                    log.exception(
-                        "An exception occured while reading attachments: {}".format(
-                            delta["attachments"]
-                        )
-                    )
-
-            if metadata and metadata.get("tags"):
-                emoji_size = EmojiSize._from_tags(metadata.get("tags"))
-
-            message = Message(
-                text=delta.get("body"),
-                mentions=mentions,
-                emoji_size=emoji_size,
-                sticker=sticker,
-                attachments=attachments,
-            )
-            message.uid = mid
-            message.author = author_id
-            message.timestamp = ts
-            # message.reactions = {}
-            message.unsent = unsent
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
             self.onMessage(
                 mid=mid,
                 author_id=author_id,
                 message=delta.get("body", ""),
-                message_object=message,
+                message_object=Message._from_pull(
+                    delta, tags=metadata.get("tags"), author=author_id, timestamp=ts
+                ),
                 thread_id=thread_id,
                 thread_type=thread_type,
                 ts=ts,
