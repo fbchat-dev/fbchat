@@ -11,7 +11,7 @@ from .models import *
 from .client import *
 
 __title__ = "fbchat"
-__version__ = "1.6.3"
+__version__ = "1.6.4"
 __description__ = "Facebook Chat (Messenger) for Python"
 
 __copyright__ = "Copyright 2015 - 2019 by Taehoon Kim"
