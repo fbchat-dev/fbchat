@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 import json
 import re
-from . import _file, _message
+from . import _file, _message, _quick_reply
 from .models import *
 from ._util import *
 
@@ -26,29 +26,6 @@ class ConcatJSONDecoder(json.JSONDecoder):
 
 
 # End shameless copy
-
-
-def graphql_to_quick_reply(q, is_response=False):
-    data = dict()
-    _type = q.get("content_type").lower()
-    if q.get("payload"):
-        data["payload"] = q["payload"]
-    if q.get("data"):
-        data["data"] = q["data"]
-    if q.get("image_url") and _type is not QuickReplyLocation._type:
-        data["image_url"] = q["image_url"]
-    data["is_response"] = is_response
-    if _type == QuickReplyText._type:
-        if q.get("title") is not None:
-            data["title"] = q["title"]
-        rtn = QuickReplyText(**data)
-    elif _type == QuickReplyLocation._type:
-        rtn = QuickReplyLocation(**data)
-    elif _type == QuickReplyPhoneNumber._type:
-        rtn = QuickReplyPhoneNumber(**data)
-    elif _type == QuickReplyEmail._type:
-        rtn = QuickReplyEmail(**data)
-    return rtn
 
 
 def graphql_to_message(message):
@@ -87,10 +64,12 @@ def graphql_to_message(message):
     if message.get("platform_xmd_encoded"):
         quick_replies = json.loads(message["platform_xmd_encoded"]).get("quick_replies")
         if isinstance(quick_replies, list):
-            rtn.quick_replies = [graphql_to_quick_reply(q) for q in quick_replies]
+            rtn.quick_replies = [
+                _quick_reply.graphql_to_quick_reply(q) for q in quick_replies
+            ]
         elif isinstance(quick_replies, dict):
             rtn.quick_replies = [
-                graphql_to_quick_reply(quick_replies, is_response=True)
+                _quick_reply.graphql_to_quick_reply(quick_replies, is_response=True)
             ]
     if message.get("extensible_attachment") is not None:
         attachment = _message.graphql_to_extensible_attachment(
