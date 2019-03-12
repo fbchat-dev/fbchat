@@ -41,6 +41,11 @@ class ThreadColor(Enum):
     CAMEO = "#d4a88c"
     BRILLIANT_ROSE = "#ff5ca1"
     BILOBA_FLOWER = "#a695c7"
+    TICKLE_ME_PINK = "#ff7ca8"
+    MALACHITE = "#1adb5b"
+    RUBY = "#f01d6a"
+    DARK_TANGERINE = "#ff9c19"
+    BRIGHT_TURQUOISE = "#0edcde"
 
 
 @attr.s(cmp=False, init=False)
