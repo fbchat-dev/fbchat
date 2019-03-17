@@ -78,7 +78,13 @@ class Client(object):
         self._buddylist = dict()
 
         if not user_agent:
-            user_agent = choice(USER_AGENTS)
+            if use_tor:
+                user_agent = (
+                    "Mozilla/5.0 (Windows NT 6.1; rv:60.0) Gecko/20100101 "
+                    "Firefox/60.0"
+                )
+            else:
+                user_agent = choice(USER_AGENTS)
 
         self._header = {
             "Content-Type": "application/x-www-form-urlencoded",
