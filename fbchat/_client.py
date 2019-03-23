@@ -390,9 +390,9 @@ class Client(object):
         if "home" in r.url:
             return r
 
-        del (data["approvals_code"])
-        del (data["submit[Submit Code]"])
-        del (data["codes_submitted"])
+        del data["approvals_code"]
+        del data["submit[Submit Code]"]
+        del data["codes_submitted"]
 
         data["name_action_selected"] = "save_device"
         data["submit[Continue]"] = "Continue"
@@ -404,7 +404,7 @@ class Client(object):
         if "home" in r.url:
             return r
 
-        del (data["name_action_selected"])
+        del data["name_action_selected"]
         log.info(
             "Starting Facebook checkup flow."
         )  # At this stage, we have dtsg, nh, submit[Continue]
@@ -413,7 +413,7 @@ class Client(object):
         if "home" in r.url:
             return r
 
-        del (data["submit[Continue]"])
+        del data["submit[Continue]"]
         data["submit[This was me]"] = "This Was Me"
         log.info(
             "Verifying login attempt."
@@ -423,7 +423,7 @@ class Client(object):
         if "home" in r.url:
             return r
 
-        del (data["submit[This was me]"])
+        del data["submit[This was me]"]
         data["submit[Continue]"] = "Continue"
         data["name_action_selected"] = "save_device"
         log.info(
@@ -1084,7 +1084,7 @@ class Client(object):
 
         j = self.graphql_request(
             GraphQL(
-                doc_id="1386147188135407",
+                doc_id="1860982147341344",
                 params={
                     "id": thread_id,
                     "message_limit": limit,
@@ -1378,6 +1378,9 @@ class Client(object):
             if len(message.quick_replies) == 1 and message.quick_replies[0].is_response:
                 xmd["quick_replies"] = xmd["quick_replies"][0]
             data["platform_xmd"] = json.dumps(xmd)
+
+        if message.reply_to_id:
+            data["replied_to_message_id"] = message.reply_to_id
 
         return data
 

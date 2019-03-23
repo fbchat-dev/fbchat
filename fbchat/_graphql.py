@@ -401,6 +401,8 @@ def graphql_to_message(message):
             rtn.unsent = True
         elif attachment:
             rtn.attachments.append(attachment)
+    if message.get("replied_to_message") is not None:
+        rtn.replied_to = graphql_to_message(message["replied_to_message"]["message"])
     return rtn
 
 

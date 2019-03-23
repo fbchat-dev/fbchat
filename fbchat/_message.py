@@ -68,6 +68,10 @@ class Message(object):
     quick_replies = attr.ib(factory=list, converter=lambda x: [] if x is None else x)
     #: Whether the message is unsent (deleted for everyone)
     unsent = attr.ib(False, init=False)
+    #: Message ID you want to reply to
+    reply_to_id = attr.ib(None)
+    #: Replied message
+    replied_to = attr.ib(None, init=False)
 
     @classmethod
     def formatMentions(cls, text, *args, **kwargs):
