@@ -406,6 +406,48 @@ def graphql_to_message(message):
     return rtn
 
 
+def graphql_to_message_reply(message):
+    rtn = Message(
+        text=message.get("body"),
+        mentions=[
+            Mention(m.get("i"), offset=m.get("o"), length=m.get("l"))
+            for m in json.loads(message.get("data", {}).get("prng", "[]"))
+        ],
+        emoji_size=get_emojisize_from_tags(message["messageMetadata"].get("tags")),
+    )
+    metadata = message.get("messageMetadata", {})
+    rtn.uid = metadata.get("messageId")
+    rtn.author = str(metadata.get("actorFbId"))
+    rtn.timestamp = metadata.get("timestamp")
+    rtn.unsent = False
+    if message.get("data", {}).get("platform_xmd"):
+        quick_replies = json.loads(message["data"]["platform_xmd"]).get("quick_replies")
+        if isinstance(quick_replies, list):
+            rtn.quick_replies = [graphql_to_quick_reply(q) for q in quick_replies]
+        elif isinstance(quick_replies, dict):
+            rtn.quick_replies = [
+                graphql_to_quick_reply(quick_replies, is_response=True)
+            ]
+    if message.get("attachments") is not None:
+        for attachment in message["attachments"]:
+            attachment = json.loads(attachment["mercuryJSON"])
+            if attachment.get("blob_attachment"):
+                rtn.attachments.append(
+                    graphql_to_attachment(attachment["blob_attachment"])
+                )
+            if attachment.get("extensible_attachment"):
+                extensible_attachment = graphql_to_extensible_attachment(
+                    attachment["extensible_attachment"]
+                )
+                if isinstance(extensible_attachment, UnsentMessage):
+                    rtn.unsent = True
+                else:
+                    rtn.attachments.append(extensible_attachment)
+            if attachment.get("sticker_attachment"):
+                rtn.sticker = graphql_to_sticker(attachment["sticker_attachment"])
+    return rtn
+
+
 def graphql_to_user(user):
     if user.get("profile_picture") is None:
         user["profile_picture"] = {}

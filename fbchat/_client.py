@@ -3040,6 +3040,24 @@ class Client(object):
                         msg=m,
                     )
 
+                elif d.get("deltaMessageReply"):
+                    i = d["deltaMessageReply"]
+                    metadata = i["message"]["messageMetadata"]
+                    thread_id, thread_type = getThreadIdAndThreadType(metadata)
+                    message = graphql_to_message_reply(i["message"])
+                    message.replied_to = graphql_to_message_reply(i["repliedToMessage"])
+                    self.onMessage(
+                        mid=message.uid,
+                        author_id=message.author,
+                        message=message.text,
+                        message_object=message,
+                        thread_id=thread_id,
+                        thread_type=thread_type,
+                        ts=message.timestamp,
+                        metadata=metadata,
+                        msg=m,
+                    )
+
         # New message
         elif delta.get("class") == "NewMessage":
             mentions = []
