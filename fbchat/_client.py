@@ -311,32 +311,32 @@ class Client(object):
         if self.uid is None:
             raise FBchatException("Could not find c_user cookie")
         self.uid = str(self.uid)
-        self.ttstamp = ""
 
         r = self._get(self.req_url.BASE)
         soup = bs(r.text, "html.parser")
 
         fb_dtsg_element = soup.find("input", {"name": "fb_dtsg"})
         if fb_dtsg_element:
-            self.fb_dtsg = fb_dtsg_element["value"]
+            fb_dtsg = fb_dtsg_element["value"]
         else:
-            self.fb_dtsg = re.search(r'name="fb_dtsg" value="(.*?)"', r.text).group(1)
+            fb_dtsg = re.search(r'name="fb_dtsg" value="(.*?)"', r.text).group(1)
 
         fb_h_element = soup.find("input", {"name": "h"})
         if fb_h_element:
             self.fb_h = fb_h_element["value"]
 
-        for i in self.fb_dtsg:
-            self.ttstamp += str(ord(i))
-        self.ttstamp += "2"
+        ttstamp = ""
+        for i in fb_dtsg:
+            ttstamp += str(ord(i))
+        ttstamp += "2"
         # Set default payload
         self.payloadDefault["__rev"] = int(
             r.text.split('"client_revision":', 1)[1].split(",", 1)[0]
         )
         self.payloadDefault["__user"] = self.uid
         self.payloadDefault["__a"] = "1"
-        self.payloadDefault["ttstamp"] = self.ttstamp
-        self.payloadDefault["fb_dtsg"] = self.fb_dtsg
+        self.payloadDefault["ttstamp"] = ttstamp
+        self.payloadDefault["fb_dtsg"] = fb_dtsg
 
     def _login(self):
         if not (self.email and self.password):
