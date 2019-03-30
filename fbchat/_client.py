@@ -73,8 +73,8 @@ class Client(object):
         self.seq = "0"
         # See `createPoll` for the reason for using `OrderedDict` here
         self.payloadDefault = OrderedDict()
-        self.default_thread_id = None
-        self.default_thread_type = None
+        self._default_thread_id = None
+        self._default_thread_type = None
         self.req_url = ReqUrl()
         self._markAlive = True
         self._buddylist = dict()
@@ -539,8 +539,8 @@ class Client(object):
         :rtype: tuple
         """
         if given_thread_id is None:
-            if self.default_thread_id is not None:
-                return self.default_thread_id, self.default_thread_type
+            if self._default_thread_id is not None:
+                return self._default_thread_id, self._default_thread_type
             else:
                 raise ValueError("Thread ID is not set")
         else:
@@ -554,8 +554,8 @@ class Client(object):
         :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
         """
-        self.default_thread_id = thread_id
-        self.default_thread_type = thread_type
+        self._default_thread_id = thread_id
+        self._default_thread_type = thread_type
 
     def resetDefaultThread(self):
         """Resets default thread"""
