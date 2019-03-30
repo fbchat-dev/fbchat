@@ -60,7 +60,6 @@ class Client(object):
         :type logging_level: int
         :raises: FBchatException on failed login
         """
-
         self.sticky, self.pool = (None, None)
         self._session = requests.session()
         self.req_counter = 1
@@ -267,7 +266,6 @@ class Client(object):
         :return: A tuple containing json graphql queries
         :rtype: tuple
         """
-
         return tuple(
             self._post(
                 {
@@ -455,7 +453,6 @@ class Client(object):
         :return: False if `session_cookies` does not contain proper cookies
         :rtype: bool
         """
-
         # Quick check to see if session_cookies is formatted properly
         if not session_cookies or "c_user" not in session_cookies:
             return False
@@ -521,7 +518,6 @@ class Client(object):
         :return: True if the action was successful
         :rtype: bool
         """
-
         if not hasattr(self, "fb_h"):
             h_r = self._post(self.req_url.MODERN_SETTINGS_MENU, {"pmid": "4"})
             self.fb_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
@@ -681,7 +677,6 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-
         data = {"viewer": self.uid}
         j = self._post(
             self.req_url.ALL_USERS, query=data, fix_request=True, as_json=True
@@ -708,7 +703,6 @@ class Client(object):
                         gender=GENDERS.get(k.get("gender")),
                     )
                 )
-
         return users
 
     def searchForUsers(self, name, limit=10):
@@ -721,7 +715,6 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-
         j = self.graphql_request(
             GraphQL(query=GraphQL.SEARCH_USER, params={"search": name, "limit": limit})
         )
@@ -737,7 +730,6 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-
         j = self.graphql_request(
             GraphQL(query=GraphQL.SEARCH_PAGE, params={"search": name, "limit": limit})
         )
@@ -754,7 +746,6 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-
         j = self.graphql_request(
             GraphQL(query=GraphQL.SEARCH_GROUP, params={"search": name, "limit": limit})
         )
@@ -771,7 +762,6 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-
         j = self.graphql_request(
             GraphQL(
                 query=GraphQL.SEARCH_THREAD, params={"search": name, "limit": limit}
@@ -872,7 +862,6 @@ class Client(object):
         j = self._post(
             self.req_url.SEARCH_MESSAGES, data, fix_request=True, as_json=True
         )
-
         result = j["payload"]["search_snippets"][query]
 
         if fetch_messages:
@@ -939,7 +928,6 @@ class Client(object):
         :rtype: dict
         :raises: FBchatException if request failed
         """
-
         threads = self.fetchThreadInfo(*user_ids)
         users = {}
         for k in threads:
@@ -962,7 +950,6 @@ class Client(object):
         :rtype: dict
         :raises: FBchatException if request failed
         """
-
         threads = self.fetchThreadInfo(*page_ids)
         pages = {}
         for k in threads:
@@ -982,7 +969,6 @@ class Client(object):
         :rtype: dict
         :raises: FBchatException if request failed
         """
-
         threads = self.fetchThreadInfo(*group_ids)
         groups = {}
         for k in threads:
@@ -1005,7 +991,6 @@ class Client(object):
         :rtype: dict
         :raises: FBchatException if request failed
         """
-
         queries = []
         for thread_id in thread_ids:
             queries.append(
@@ -1075,7 +1060,6 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-
         thread_id, thread_type = self._getThread(thread_id, None)
 
         j = self.graphql_request(
@@ -1126,7 +1110,6 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-
         if offset is not None:
             log.warning(
                 "Using `offset` in `fetchThreadList` is no longer supported, since Facebook migrated to the use of GraphQL in this request. Use `before` instead"
@@ -1171,13 +1154,11 @@ class Client(object):
             "last_action_timestamp": now() - 60 * 1000
             # 'last_action_timestamp': 0
         }
-
         j = self._post(
             self.req_url.UNREAD_THREADS, form, fix_request=True, as_json=True
         )
 
         payload = j["payload"]["unread_thread_fbids"][0]
-
         return payload["thread_fbids"] + payload["other_user_fbids"]
 
     def fetchUnseen(self):
@@ -1193,7 +1174,6 @@ class Client(object):
         )
 
         payload = j["payload"]["unseen_thread_fbids"][0]
-
         return payload["thread_fbids"] + payload["other_user_fbids"]
 
     def fetchImageUrl(self, image_id):
@@ -1239,11 +1219,9 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {"question_id": poll_id}
-
         j = self._post(
             self.req_url.GET_POLL_OPTIONS, data, fix_request=True, as_json=True
         )
-
         return [graphql_to_poll_option(m) for m in j["payload"]]
 
     def fetchPlanInfo(self, plan_id):
@@ -1421,7 +1399,6 @@ class Client(object):
         data = self._getSendData(
             message=message, thread_id=thread_id, thread_type=thread_type
         )
-
         return self._doSendRequest(data)
 
     def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
@@ -1815,11 +1792,9 @@ class Client(object):
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
-
         thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {"uid": user_id, "tid": thread_id}
-
         j = self._post(self.req_url.REMOVE_USER, data, fix_request=True, as_json=True)
 
     def _adminStatus(self, admin_ids, admin, thread_id=None):
@@ -1865,7 +1840,6 @@ class Client(object):
         thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {"set_mode": int(require_admin_approval), "thread_fbid": thread_id}
-
         j = self._post(self.req_url.APPROVAL_MODE, data, fix_request=True, as_json=True)
 
     def _usersApproval(self, user_ids, approve, thread_id=None):
@@ -1917,7 +1891,6 @@ class Client(object):
         :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
-
         thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {"thread_image_id": image_id, "thread_id": thread_id}
@@ -1933,7 +1906,6 @@ class Client(object):
         :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
-
         (image_id, mimetype), = self._upload(get_files_from_urls([image_url]))
         return self._changeGroupImage(image_id, thread_id)
 
@@ -1945,7 +1917,6 @@ class Client(object):
         :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
-
         with get_files_from_paths([image_path]) as files:
             (image_id, mimetype), = self._upload(files)
 
@@ -1962,7 +1933,6 @@ class Client(object):
         :type thread_type: models.ThreadType
         :raises: FBchatException if request failed
         """
-
         thread_id, thread_type = self._getThread(thread_id, thread_type)
 
         if thread_type == ThreadType.USER:
@@ -1972,7 +1942,6 @@ class Client(object):
             )
 
         data = {"thread_name": title, "thread_id": thread_id}
-
         j = self._post(self.req_url.THREAD_NAME, data, fix_request=True, as_json=True)
 
     def changeNickname(
@@ -1995,7 +1964,6 @@ class Client(object):
             "participant_id": user_id,
             "thread_or_other_fbid": thread_id,
         }
-
         j = self._post(
             self.req_url.THREAD_NICKNAME, data, fix_request=True, as_json=True
         )
@@ -2015,7 +1983,6 @@ class Client(object):
             "color_choice": color.value if color != ThreadColor.MESSENGER_BLUE else "",
             "thread_or_other_fbid": thread_id,
         }
-
         j = self._post(self.req_url.THREAD_COLOR, data, fix_request=True, as_json=True)
 
     def changeThreadEmoji(self, emoji, thread_id=None):
@@ -2031,7 +1998,6 @@ class Client(object):
         thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {"emoji_choice": emoji, "thread_or_other_fbid": thread_id}
-
         j = self._post(self.req_url.THREAD_EMOJI, data, fix_request=True, as_json=True)
 
     def reactToMessage(self, message_id, reaction):
@@ -2110,7 +2076,6 @@ class Client(object):
                 ]
             },
         }
-
         j = self._post(
             self.req_url.PLAN_CHANGE, full_data, fix_request=True, as_json=True
         )
@@ -2131,7 +2096,6 @@ class Client(object):
                 ]
             },
         }
-
         j = self._post(
             self.req_url.PLAN_CHANGE, full_data, fix_request=True, as_json=True
         )
@@ -2153,7 +2117,6 @@ class Client(object):
                 ]
             },
         }
-
         j = self._post(
             self.req_url.PLAN_PARTICIPATION, full_data, fix_request=True, as_json=True
         )
@@ -2236,7 +2199,6 @@ class Client(object):
             "to": thread_id if thread_type == ThreadType.USER else "",
             "source": "mercury-chat",
         }
-
         j = self._post(self.req_url.TYPING, data, fix_request=True, as_json=True)
 
     """
@@ -2508,7 +2470,6 @@ class Client(object):
 
     def _pullMessage(self):
         """Call pull api with seq value to get message data."""
-
         data = {
             "msgs_recv": 0,
             "sticky_token": self.sticky,
@@ -2516,9 +2477,7 @@ class Client(object):
             "clientid": self.client_id,
             "state": "active" if self._markAlive else "offline",
         }
-
         j = self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
-
         self.seq = j.get("seq", "0")
         return j
 
