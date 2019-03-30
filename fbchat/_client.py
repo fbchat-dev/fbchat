@@ -73,7 +73,6 @@ class Client(object):
         self.seq = "0"
         # See `createPoll` for the reason for using `OrderedDict` here
         self.payloadDefault = OrderedDict()
-        self.client = "mercury"
         self.default_thread_id = None
         self.default_thread_type = None
         self.req_url = ReqUrl()
@@ -308,12 +307,10 @@ class Client(object):
     def _postLogin(self):
         self.payloadDefault = OrderedDict()
         self.client_id = hex(int(random() * 2147483648))[2:]
-        self.start_time = now()
         self.uid = self._session.cookies.get_dict().get("c_user")
         if self.uid is None:
             raise FBchatException("Could not find c_user cookie")
         self.uid = str(self.uid)
-        self.user_channel = "p_{}".format(self.uid)
         self.ttstamp = ""
 
         r = self._get(self.req_url.BASE)
@@ -1260,7 +1257,7 @@ class Client(object):
         messageAndOTID = generateOfflineThreadingID()
         timestamp = now()
         data = {
-            "client": self.client,
+            "client": "mercury",
             "author": "fbid:{}".format(self.uid),
             "timestamp": timestamp,
             "source": "source:chat:web",
@@ -2388,7 +2385,7 @@ class Client(object):
 
     def _ping(self):
         data = {
-            "channel": self.user_channel,
+            "channel": "p_" + self.uid,
             "clientid": self.client_id,
             "partition": -2,
             "cap": 0,
