@@ -303,7 +303,7 @@ class Client(object):
 
     def _postLogin(self):
         self.payloadDefault = OrderedDict()
-        self.client_id = hex(int(random() * 2147483648))[2:]
+        self._client_id = hex(int(random() * 2147483648))[2:]
         self.uid = self._session.cookies.get_dict().get("c_user")
         if self.uid is None:
             raise FBchatException("Could not find c_user cookie")
@@ -320,7 +320,7 @@ class Client(object):
 
         fb_h_element = soup.find("input", {"name": "h"})
         if fb_h_element:
-            self.fb_h = fb_h_element["value"]
+            self._fb_h = fb_h_element["value"]
 
         ttstamp = ""
         for i in fb_dtsg:
@@ -510,11 +510,11 @@ class Client(object):
         :return: True if the action was successful
         :rtype: bool
         """
-        if not hasattr(self, "fb_h"):
+        if not hasattr(self, "_fb_h"):
             h_r = self._post(self.req_url.MODERN_SETTINGS_MENU, {"pmid": "4"})
-            self.fb_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
+            self._fb_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
 
-        data = {"ref": "mb", "h": self.fb_h}
+        data = {"ref": "mb", "h": self._fb_h}
 
         r = self._get(self.req_url.LOGOUT, data)
 
@@ -1254,7 +1254,7 @@ class Client(object):
             "source": "source:chat:web",
             "offline_threading_id": messageAndOTID,
             "message_id": messageAndOTID,
-            "threading_id": generateMessageID(self.client_id),
+            "threading_id": generateMessageID(self._client_id),
             "ephemeral_ttl_mode:": "0",
         }
 
@@ -2377,7 +2377,7 @@ class Client(object):
     def _ping(self):
         data = {
             "channel": "p_" + self.uid,
-            "clientid": self.client_id,
+            "clientid": self._client_id,
             "partition": -2,
             "cap": 0,
             "uid": self.uid,
@@ -2394,7 +2394,7 @@ class Client(object):
             "msgs_recv": 0,
             "sticky_token": self.sticky,
             "sticky_pool": self.pool,
-            "clientid": self.client_id,
+            "clientid": self._client_id,
             "state": "active" if self._markAlive else "offline",
         }
         return self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
