@@ -37,13 +37,14 @@ class Client(object):
     """Verify ssl certificate, set to False to allow debugging with a proxy"""
     listening = False
     """Whether the client is listening. Used when creating an external event loop to determine when to stop listening"""
-    uid = None
-    """
-    The ID of the client.
-    Can be used as `thread_id`. See :ref:`intro_threads` for more info.
 
-    Note: Modifying this results in undefined behaviour
-    """
+    @property
+    def uid(self):
+        """The ID of the client.
+
+        Can be used as `thread_id`. See :ref:`intro_threads` for more info.
+        """
+        return self._uid
 
     def __init__(
         self,
@@ -299,15 +300,15 @@ class Client(object):
         self._session = requests.session()
         self.req_counter = 1
         self.seq = "0"
-        self.uid = None
+        self._uid = None
 
     def _postLogin(self):
         self.payloadDefault = OrderedDict()
         self._client_id = hex(int(random() * 2147483648))[2:]
-        self.uid = self._session.cookies.get_dict().get("c_user")
-        if self.uid is None:
+        self._uid = self._session.cookies.get_dict().get("c_user")
+        if self._uid is None:
             raise FBchatException("Could not find c_user cookie")
-        self.uid = str(self.uid)
+        self._uid = str(self._uid)
 
         r = self._get(self.req_url.BASE)
         soup = bs(r.text, "html.parser")
@@ -330,7 +331,7 @@ class Client(object):
         self.payloadDefault["__rev"] = int(
             r.text.split('"client_revision":', 1)[1].split(",", 1)[0]
         )
-        self.payloadDefault["__user"] = self.uid
+        self.payloadDefault["__user"] = self._uid
         self.payloadDefault["__a"] = "1"
         self.payloadDefault["ttstamp"] = ttstamp
         self.payloadDefault["fb_dtsg"] = fb_dtsg
@@ -660,7 +661,7 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-        data = {"viewer": self.uid}
+        data = {"viewer": self._uid}
         j = self._post(
             self.req_url.ALL_USERS, query=data, fix_request=True, as_json=True
         )
@@ -1249,7 +1250,7 @@ class Client(object):
         timestamp = now()
         data = {
             "client": "mercury",
-            "author": "fbid:{}".format(self.uid),
+            "author": "fbid:{}".format(self._uid),
             "timestamp": timestamp,
             "source": "source:chat:web",
             "offline_threading_id": messageAndOTID,
@@ -1709,7 +1710,7 @@ class Client(object):
         if len(user_ids) < 2:
             raise FBchatUserError("Error when creating group: Not enough participants")
 
-        for i, user_id in enumerate(user_ids + [self.uid]):
+        for i, user_id in enumerate(user_ids + [self._uid]):
             data["specific_to_list[{}]".format(i)] = "fbid:{}".format(user_id)
 
         message_id, thread_id = self._doSendRequest(data, get_thread_id=True)
@@ -1737,7 +1738,7 @@ class Client(object):
         user_ids = require_list(user_ids)
 
         for i, user_id in enumerate(user_ids):
-            if user_id == self.uid:
+            if user_id == self._uid:
                 raise FBchatUserError(
                     "Error when adding users: Cannot add self to group thread"
                 )
@@ -1813,7 +1814,7 @@ class Client(object):
 
         data = {
             "client_mutation_id": "0",
-            "actor_id": self.uid,
+            "actor_id": self._uid,
             "thread_fbid": thread_id,
             "user_ids": user_ids,
             "response": "ACCEPT" if approve else "DENY",
@@ -1972,7 +1973,7 @@ class Client(object):
         data = {
             "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
             "client_mutation_id": "1",
-            "actor_id": self.uid,
+            "actor_id": self._uid,
             "message_id": str(message_id),
             "reaction": reaction.value if reaction else None,
         }
@@ -2376,14 +2377,14 @@ class Client(object):
 
     def _ping(self):
         data = {
-            "channel": "p_" + self.uid,
+            "channel": "p_" + self._uid,
             "clientid": self._client_id,
             "partition": -2,
             "cap": 0,
-            "uid": self.uid,
+            "uid": self._uid,
             "sticky_token": self.sticky,
             "sticky_pool": self.pool,
-            "viewer_uid": self.uid,
+            "viewer_uid": self._uid,
             "state": "active",
         }
         self._get(self.req_url.PING, data, fix_request=True, as_json=False)
@@ -2984,7 +2985,7 @@ class Client(object):
                         thread_id = str(thread_id)
                     else:
                         thread_type = ThreadType.USER
-                        if author_id == self.uid:
+                        if author_id == self._uid:
                             thread_id = m.get("to")
                         else:
                             thread_id = author_id
