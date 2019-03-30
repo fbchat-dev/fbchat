@@ -850,19 +850,14 @@ class Client(object):
         result = j["payload"]["search_snippets"][query]
 
         if fetch_messages:
-            return {
-                thread_id: self.searchForMessages(
-                    query, limit=message_limit, thread_id=thread_id
-                )
-                for thread_id in result
-            }
+            search_method = self.searchForMessages
         else:
-            return {
-                thread_id: self.searchForMessageIDs(
-                    query, limit=message_limit, thread_id=thread_id
-                )
-                for thread_id in result
-            }
+            search_method = self.searchForMessageIDs
+
+        return {
+            thread_id: search_method(query, limit=message_limit, thread_id=thread_id)
+            for thread_id in result
+        }
 
     def _fetchInfo(self, *ids):
         data = {"ids[{}]".format(i): _id for i, _id in enumerate(ids)}
@@ -915,11 +910,11 @@ class Client(object):
         """
         threads = self.fetchThreadInfo(*user_ids)
         users = {}
-        for k in threads:
-            if threads[k].type == ThreadType.USER:
-                users[k] = threads[k]
+        for id_, thread in threads.items():
+            if thread.type == ThreadType.USER:
+                users[id_] = thread
             else:
-                raise FBchatUserError("Thread {} was not a user".format(threads[k]))
+                raise FBchatUserError("Thread {} was not a user".format(thread))
 
         return users
 
@@ -937,11 +932,11 @@ class Client(object):
         """
         threads = self.fetchThreadInfo(*page_ids)
         pages = {}
-        for k in threads:
-            if threads[k].type == ThreadType.PAGE:
-                pages[k] = threads[k]
+        for id_, thread in threads.items():
+            if thread.type == ThreadType.PAGE:
+                pages[id_] = thread
             else:
-                raise FBchatUserError("Thread {} was not a page".format(threads[k]))
+                raise FBchatUserError("Thread {} was not a page".format(thread))
 
         return pages
 
@@ -956,11 +951,11 @@ class Client(object):
         """
         threads = self.fetchThreadInfo(*group_ids)
         groups = {}
-        for k in threads:
-            if threads[k].type == ThreadType.GROUP:
-                groups[k] = threads[k]
+        for id_, thread in threads.items():
+            if thread.type == ThreadType.GROUP:
+                groups[id_] = thread
             else:
-                raise FBchatUserError("Thread {} was not a group".format(threads[k]))
+                raise FBchatUserError("Thread {} was not a group".format(thread))
 
         return groups
 
@@ -1662,19 +1657,15 @@ class Client(object):
         Deprecated. Use :func:`fbchat.Client._sendFiles` instead
         """
         if is_gif:
-            return self._sendFiles(
-                files=[(image_id, "image/png")],
-                message=message,
-                thread_id=thread_id,
-                thread_type=thread_type,
-            )
+            mimetype = "image/gif"
         else:
-            return self._sendFiles(
-                files=[(image_id, "image/gif")],
-                message=message,
-                thread_id=thread_id,
-                thread_type=thread_type,
-            )
+            mimetype = "image/png"
+        return self._sendFiles(
+            files=[(image_id, mimetype)],
+            message=message,
+            thread_id=thread_id,
+            thread_type=thread_type,
+        )
 
     def sendRemoteImage(
         self, image_url, message=None, thread_id=None, thread_type=ThreadType.USER
@@ -2329,8 +2320,7 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"mute_settings": str(mute_time), "thread_fbid": thread_id}
-        r = self._post(self.req_url.MUTE_THREAD, data)
-        r.raise_for_status()
+        content = self._post(self.req_url.MUTE_THREAD, data, fix_request=True)
 
     def unmuteThread(self, thread_id=None):
         """
@@ -2349,8 +2339,7 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"reactions_mute_mode": int(mute), "thread_fbid": thread_id}
-        r = self._post(self.req_url.MUTE_REACTIONS, data)
-        r.raise_for_status()
+        r = self._post(self.req_url.MUTE_REACTIONS, data, fix_request=True)
 
     def unmuteThreadReactions(self, thread_id=None):
         """
@@ -2369,8 +2358,7 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"mentions_mute_mode": int(mute), "thread_fbid": thread_id}
-        r = self._post(self.req_url.MUTE_MENTIONS, data)
-        r.raise_for_status()
+        r = self._post(self.req_url.MUTE_MENTIONS, data, fix_request=True)
 
     def unmuteThreadMentions(self, thread_id=None):
         """
@@ -2407,9 +2395,7 @@ class Client(object):
             "clientid": self.client_id,
             "state": "active" if self._markAlive else "offline",
         }
-        j = self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
-        self.seq = j.get("seq", "0")
-        return j
+        return self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
 
     def _parseDelta(self, m):
         def getThreadIdAndThreadType(msg_metadata):
@@ -3014,6 +3000,7 @@ class Client(object):
 
     def _parseMessage(self, content):
         """Get message and author name from content. May contain multiple messages in the content."""
+        self.seq = j.get("seq", "0")
 
         if "lb_info" in content:
             self.sticky = content["lb_info"]["sticky"]
