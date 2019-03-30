@@ -70,10 +70,10 @@ class Client(object):
         """
         self._sticky, self._pool = (None, None)
         self._session = requests.session()
-        self.req_counter = 1
-        self.seq = "0"
+        self._req_counter = 1
+        self._seq = "0"
         # See `createPoll` for the reason for using `OrderedDict` here
-        self.payloadDefault = OrderedDict()
+        self._payload_default = OrderedDict()
         self._default_thread_id = None
         self._default_thread_type = None
         self.req_url = ReqUrl()
@@ -109,12 +109,12 @@ class Client(object):
         """Adds the following defaults to the payload:
           __rev, __user, __a, ttstamp, fb_dtsg, __req
         """
-        payload = self.payloadDefault.copy()
+        payload = self._payload_default.copy()
         if query:
             payload.update(query)
-        payload["__req"] = str_base(self.req_counter, 36)
-        payload["seq"] = self.seq
-        self.req_counter += 1
+        payload["__req"] = str_base(self._req_counter, 36)
+        payload["seq"] = self._seq
+        self._req_counter += 1
         return payload
 
     def _fix_fb_errors(self, error_code):
@@ -212,7 +212,7 @@ class Client(object):
         )
 
     def _cleanPost(self, url, query=None, timeout=30):
-        self.req_counter += 1
+        self._req_counter += 1
         return self._session.post(
             url,
             headers=self._header,
@@ -296,14 +296,14 @@ class Client(object):
     """
 
     def _resetValues(self):
-        self.payloadDefault = OrderedDict()
+        self._payload_default = OrderedDict()
         self._session = requests.session()
-        self.req_counter = 1
-        self.seq = "0"
+        self._req_counter = 1
+        self._seq = "0"
         self._uid = None
 
     def _postLogin(self):
-        self.payloadDefault = OrderedDict()
+        self._payload_default = OrderedDict()
         self._client_id = hex(int(random() * 2147483648))[2:]
         self._uid = self._session.cookies.get_dict().get("c_user")
         if self._uid is None:
@@ -328,13 +328,13 @@ class Client(object):
             ttstamp += str(ord(i))
         ttstamp += "2"
         # Set default payload
-        self.payloadDefault["__rev"] = int(
+        self._payload_default["__rev"] = int(
             r.text.split('"client_revision":', 1)[1].split(",", 1)[0]
         )
-        self.payloadDefault["__user"] = self._uid
-        self.payloadDefault["__a"] = "1"
-        self.payloadDefault["ttstamp"] = ttstamp
-        self.payloadDefault["fb_dtsg"] = fb_dtsg
+        self._payload_default["__user"] = self._uid
+        self._payload_default["__a"] = "1"
+        self._payload_default["ttstamp"] = ttstamp
+        self._payload_default["fb_dtsg"] = fb_dtsg
 
     def _login(self, email, password):
         soup = bs(self._get(self.req_url.MOBILE).text, "html.parser")
@@ -1320,7 +1320,7 @@ class Client(object):
         # update JS token if received in response
         fb_dtsg = get_jsmods_require(j, 2)
         if fb_dtsg is not None:
-            self.payloadDefault["fb_dtsg"] = fb_dtsg
+            self._payload_default["fb_dtsg"] = fb_dtsg
 
         try:
             message_ids = [
@@ -2069,7 +2069,7 @@ class Client(object):
 
         # We're using ordered dicts, because the Facebook endpoint that parses the POST
         # parameters is badly implemented, and deals with ordering the options wrongly.
-        # This also means we had to change `client.payloadDefault` to an ordered dict,
+        # This also means we had to change `client._payload_default` to an ordered dict,
         # since that's being copied in between this point and the `requests` call
         #
         # If you can find a way to fix this for the endpoint, or if you find another
@@ -2948,7 +2948,7 @@ class Client(object):
 
     def _parseMessage(self, content):
         """Get message and author name from content. May contain multiple messages in the content."""
-        self.seq = content.get("seq", "0")
+        self._seq = content.get("seq", "0")
 
         if "lb_info" in content:
             self._sticky = content["lb_info"]["sticky"]
