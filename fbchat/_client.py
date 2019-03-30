@@ -99,9 +99,6 @@ class Client(object):
             or not self.isLoggedIn()
         ):
             self.login(email, password, max_tries)
-        else:
-            self.email = email
-            self.password = password
 
     """
     INTERNAL REQUEST METHODS
@@ -338,18 +335,15 @@ class Client(object):
         self.payloadDefault["ttstamp"] = ttstamp
         self.payloadDefault["fb_dtsg"] = fb_dtsg
 
-    def _login(self):
-        if not (self.email and self.password):
-            raise FBchatUserError("Email and password not found.")
-
+    def _login(self, email, password):
         soup = bs(self._get(self.req_url.MOBILE).text, "html.parser")
         data = dict(
             (elem["name"], elem["value"])
             for elem in soup.findAll("input")
             if elem.has_attr("value") and elem.has_attr("name")
         )
-        data["email"] = self.email
-        data["pass"] = self.password
+        data["email"] = email
+        data["pass"] = password
         data["login"] = "Log In"
 
         r = self._cleanPost(self.req_url.LOGIN, data)
@@ -489,11 +483,8 @@ class Client(object):
         if not (email and password):
             raise FBchatUserError("Email and password not set")
 
-        self.email = email
-        self.password = password
-
         for i in range(1, max_tries + 1):
-            login_successful, login_url = self._login()
+            login_successful, login_url = self._login(email, password)
             if not login_successful:
                 log.warning(
                     "Attempt #{} failed{}".format(
