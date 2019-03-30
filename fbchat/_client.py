@@ -166,6 +166,7 @@ class Client(object):
         timeout=30,
         fix_request=False,
         as_json=False,
+        as_graphql=False,
         error_retries=3,
     ):
         payload = self._generatePayload(query)
@@ -179,7 +180,11 @@ class Client(object):
         if not fix_request:
             return r
         try:
-            return check_request(r, as_json=as_json)
+            if as_graphql:
+                content = check_request(r, as_json=False)
+                return graphql_response_to_json(content)
+            else:
+                return check_request(r, as_json=as_json)
         except FBchatFacebookError as e:
             if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._post(
@@ -188,19 +193,9 @@ class Client(object):
                     timeout=timeout,
                     fix_request=fix_request,
                     as_json=as_json,
+                    as_graphql=as_graphql,
                     error_retries=error_retries - 1,
                 )
-            raise e
-
-    def _graphql(self, payload, error_retries=3):
-        content = self._post(
-            self.req_url.GRAPHQL, payload, fix_request=True, as_json=False
-        )
-        try:
-            return graphql_response_to_json(content)
-        except FBchatFacebookError as e:
-            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
-                return self._graphql(payload, error_retries=error_retries - 1)
             raise e
 
     def _cleanGet(self, url, query=None, timeout=30, allow_redirects=True):
@@ -274,12 +269,13 @@ class Client(object):
         """
 
         return tuple(
-            self._graphql(
+            self._post(
                 {
                     "method": "GET",
                     "response_format": "json",
                     "queries": graphql_queries_to_json(*queries),
-                }
+                },
+                as_graphql=True,
             )
         )
 
