@@ -68,7 +68,7 @@ class Client(object):
         :type logging_level: int
         :raises: FBchatException on failed login
         """
-        self.sticky, self.pool = (None, None)
+        self._sticky, self._pool = (None, None)
         self._session = requests.session()
         self.req_counter = 1
         self.seq = "0"
@@ -2382,8 +2382,8 @@ class Client(object):
             "partition": -2,
             "cap": 0,
             "uid": self._uid,
-            "sticky_token": self.sticky,
-            "sticky_pool": self.pool,
+            "sticky_token": self._sticky,
+            "sticky_pool": self._pool,
             "viewer_uid": self._uid,
             "state": "active",
         }
@@ -2393,8 +2393,8 @@ class Client(object):
         """Call pull api with seq value to get message data."""
         data = {
             "msgs_recv": 0,
-            "sticky_token": self.sticky,
-            "sticky_pool": self.pool,
+            "sticky_token": self._sticky,
+            "sticky_pool": self._pool,
             "clientid": self._client_id,
             "state": "active" if self._markAlive else "offline",
         }
@@ -2951,8 +2951,8 @@ class Client(object):
         self.seq = content.get("seq", "0")
 
         if "lb_info" in content:
-            self.sticky = content["lb_info"]["sticky"]
-            self.pool = content["lb_info"]["pool"]
+            self._sticky = content["lb_info"]["sticky"]
+            self._pool = content["lb_info"]["pool"]
 
         if "batches" in content:
             for batch in content["batches"]:
@@ -3098,7 +3098,7 @@ class Client(object):
     def stopListening(self):
         """Cleans up the variables from startListening"""
         self.listening = False
-        self.sticky, self.pool = (None, None)
+        self._sticky, self._pool = (None, None)
 
     def listen(self, markAlive=None):
         """
