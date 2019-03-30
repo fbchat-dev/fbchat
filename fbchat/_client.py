@@ -311,7 +311,7 @@ class Client(object):
         if self.uid is None:
             raise FBchatException("Could not find c_user cookie")
         self.uid = str(self.uid)
-        self.user_channel = "p_" + self.uid
+        self.user_channel = "p_{}".format(self.uid)
         self.ttstamp = ""
 
         r = self._get(self.req_url.BASE)
@@ -508,9 +508,8 @@ class Client(object):
                 break
         else:
             raise FBchatUserError(
-                "Login failed. Check email/password. (Failed on url: {})".format(
-                    login_url
-                )
+                "Login failed. Check email/password. "
+                "(Failed on url: {})".format(login_url)
             )
 
     def logout(self):
@@ -659,8 +658,6 @@ class Client(object):
                         and user_id not in users_to_fetch
                     ):
                         users_to_fetch.append(user_id)
-            else:
-                pass
         for user_id, user in self.fetchUserInfo(*users_to_fetch).items():
             users.append(user)
         return users
@@ -772,9 +769,7 @@ class Client(object):
                 pass
             else:
                 log.warning(
-                    "Unknown __typename: {} in {}".format(
-                        repr(node["__typename"]), node
-                    )
+                    "Unknown type {} in {}".format(repr(node["__typename"]), node)
                 )
 
         return rtn
@@ -1092,7 +1087,9 @@ class Client(object):
         """
         if offset is not None:
             log.warning(
-                "Using `offset` in `fetchThreadList` is no longer supported, since Facebook migrated to the use of GraphQL in this request. Use `before` instead"
+                "Using `offset` in `fetchThreadList` is no longer supported, "
+                "since Facebook migrated to the use of GraphQL in this request. "
+                "Use `before` instead."
             )
 
         if limit > 20 or limit < 1:
@@ -1184,8 +1181,7 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         message_info = self._forcedFetch(thread_id, mid).get("message")
-        message = graphql_to_message(message_info)
-        return message
+        return graphql_to_message(message_info)
 
     def fetchPollOptions(self, poll_id):
         """
@@ -1212,8 +1208,7 @@ class Client(object):
         """
         data = {"event_reminder_id": plan_id}
         j = self._post(self.req_url.PLAN_INFO, data, fix_request=True, as_json=True)
-        plan = graphql_to_plan(j["payload"])
-        return plan
+        return graphql_to_plan(j["payload"])
 
     def _getPrivateData(self):
         j = self.graphql_request(GraphQL(doc_id="1868889766468115"))
@@ -1272,7 +1267,7 @@ class Client(object):
         timestamp = now()
         data = {
             "client": self.client,
-            "author": "fbid:" + str(self.uid),
+            "author": "fbid:{}".format(self.uid),
             "timestamp": timestamp,
             "source": "source:chat:web",
             "offline_threading_id": messageAndOTID,
@@ -1355,9 +1350,8 @@ class Client(object):
                 return message_ids[0][0]
         except (KeyError, IndexError, TypeError) as e:
             raise FBchatException(
-                "Error when sending message: No message IDs could be found: {}".format(
-                    j
-                )
+                "Error when sending message: "
+                "No message IDs could be found: {}".format(j)
             )
 
     def send(self, message, thread_id=None, thread_type=ThreadType.USER):
@@ -1756,8 +1750,8 @@ class Client(object):
                 )
             else:
                 data[
-                    "log_message_data[added_participants][" + str(i) + "]"
-                ] = "fbid:" + str(user_id)
+                    "log_message_data[added_participants][{}]".format(i)
+                ] = "fbid:{}".format(user_id)
 
         return self._doSendRequest(data)
 
@@ -1782,7 +1776,7 @@ class Client(object):
         admin_ids = require_list(admin_ids)
 
         for i, admin_id in enumerate(admin_ids):
-            data["admin_ids[" + str(i) + "]"] = str(admin_id)
+            data["admin_ids[{}]".format(i)] = str(admin_id)
 
         j = self._post(self.req_url.SAVE_ADMINS, data, fix_request=True, as_json=True)
 
