@@ -20,6 +20,13 @@ except ImportError:
     from urlparse import urlparse, parse_qs
 
 
+_ACONTEXT = {
+    "action_history": [
+        {"surface": "messenger_chat_tab", "mechanism": "messenger_composer"}
+    ]
+}
+
+
 class Client(object):
     """A client for the Facebook Chat (Messenger).
 
@@ -266,16 +273,12 @@ class Client(object):
         :return: A tuple containing json graphql queries
         :rtype: tuple
         """
-        return tuple(
-            self._post(
-                {
-                    "method": "GET",
-                    "response_format": "json",
-                    "queries": graphql_queries_to_json(*queries),
-                },
-                as_graphql=True,
-            )
-        )
+        data = {
+            "method": "GET",
+            "response_format": "json",
+            "queries": graphql_queries_to_json(*queries),
+        }
+        return tuple(self._post(data, as_graphql=True))
 
     def graphql_request(self, query):
         """
@@ -578,15 +581,8 @@ class Client(object):
     """
 
     def _forcedFetch(self, thread_id, mid):
-        j = self.graphql_request(
-            GraphQL(
-                doc_id="1768656253222505",
-                params={
-                    "thread_and_message_id": {"thread_id": thread_id, "message_id": mid}
-                },
-            )
-        )
-        return j
+        params = {"thread_and_message_id": {"thread_id": thread_id, "message_id": mid}}
+        return self.graphql_request(GraphQL(doc_id="1768656253222505", params=params))
 
     def fetchThreads(self, thread_location, before=None, after=None, limit=None):
         """
@@ -715,9 +711,8 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-        j = self.graphql_request(
-            GraphQL(query=GraphQL.SEARCH_USER, params={"search": name, "limit": limit})
-        )
+        params = {"search": name, "limit": limit}
+        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_USER, params=params))
 
         return [graphql_to_user(node) for node in j[name]["users"]["nodes"]]
 
@@ -730,9 +725,8 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-        j = self.graphql_request(
-            GraphQL(query=GraphQL.SEARCH_PAGE, params={"search": name, "limit": limit})
-        )
+        params = {"search": name, "limit": limit}
+        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_PAGE, params=params))
 
         return [graphql_to_page(node) for node in j[name]["pages"]["nodes"]]
 
@@ -746,9 +740,8 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-        j = self.graphql_request(
-            GraphQL(query=GraphQL.SEARCH_GROUP, params={"search": name, "limit": limit})
-        )
+        params = {"search": name, "limit": limit}
+        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_GROUP, params=params))
 
         return [graphql_to_group(node) for node in j["viewer"]["groups"]["nodes"]]
 
@@ -762,11 +755,8 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-        j = self.graphql_request(
-            GraphQL(
-                query=GraphQL.SEARCH_THREAD, params={"search": name, "limit": limit}
-            )
-        )
+        params = {"search": name, "limit": limit}
+        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_THREAD, params=params))
 
         rtn = []
         for node in j[name]["threads"]["nodes"]:
@@ -993,18 +983,14 @@ class Client(object):
         """
         queries = []
         for thread_id in thread_ids:
-            queries.append(
-                GraphQL(
-                    doc_id="2147762685294928",
-                    params={
-                        "id": thread_id,
-                        "message_limit": 0,
-                        "load_messages": False,
-                        "load_read_receipts": False,
-                        "before": None,
-                    },
-                )
-            )
+            params = {
+                "id": thread_id,
+                "message_limit": 0,
+                "load_messages": False,
+                "load_read_receipts": False,
+                "before": None,
+            }
+            queries.append(GraphQL(doc_id="2147762685294928", params=params))
 
         j = self.graphql_requests(*queries)
 
@@ -1062,30 +1048,24 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
-        j = self.graphql_request(
-            GraphQL(
-                doc_id="1386147188135407",
-                params={
-                    "id": thread_id,
-                    "message_limit": limit,
-                    "load_messages": True,
-                    "load_read_receipts": True,
-                    "before": before,
-                },
-            )
-        )
+        params = {
+            "id": thread_id,
+            "message_limit": limit,
+            "load_messages": True,
+            "load_read_receipts": True,
+            "before": before,
+        }
+        j = self.graphql_request(GraphQL(doc_id="1386147188135407", params=params))
 
         if j.get("message_thread") is None:
             raise FBchatException("Could not fetch thread {}: {}".format(thread_id, j))
 
-        messages = list(
-            reversed(
-                [
-                    graphql_to_message(message)
-                    for message in j["message_thread"]["messages"]["nodes"]
-                ]
-            )
-        )
+        messages = [
+            graphql_to_message(message)
+            for message in j["message_thread"]["messages"]["nodes"]
+        ]
+        messages.reverse()
+
         read_receipts = j["message_thread"]["read_receipts"]["nodes"]
 
         for message in messages:
@@ -1123,18 +1103,14 @@ class Client(object):
         else:
             raise FBchatUserError('"thread_location" must be a value of ThreadLocation')
 
-        j = self.graphql_request(
-            GraphQL(
-                doc_id="1349387578499440",
-                params={
-                    "limit": limit,
-                    "tags": [loc_str],
-                    "before": before,
-                    "includeDeliveryReceipts": True,
-                    "includeSeqID": False,
-                },
-            )
-        )
+        params = {
+            "limit": limit,
+            "tags": [loc_str],
+            "before": before,
+            "includeDeliveryReceipts": True,
+            "includeSeqID": False,
+        }
+        j = self.graphql_request(GraphQL(doc_id="1349387578499440", params=params))
 
         return [
             graphql_to_thread(node) for node in j["viewer"]["message_threads"]["nodes"]
@@ -1186,8 +1162,9 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         image_id = str(image_id)
-        j = check_request(
-            self._get(ReqUrl.ATTACHMENT_PHOTO, query={"photo_id": str(image_id)})
+        data = {"photo_id": str(image_id)}
+        j = self._get(
+            ReqUrl.ATTACHMENT_PHOTO, query=data, fix_request=True, as_json=True
         )
 
         url = get_jsmods_require(j, 3)
@@ -1847,20 +1824,16 @@ class Client(object):
 
         user_ids = list(require_list(user_ids))
 
+        data = {
+            "client_mutation_id": "0",
+            "actor_id": self.uid,
+            "thread_fbid": thread_id,
+            "user_ids": user_ids,
+            "response": "ACCEPT" if approve else "DENY",
+            "surface": "ADMIN_MODEL_APPROVAL_CENTER",
+        }
         j = self.graphql_request(
-            GraphQL(
-                doc_id="1574519202665847",
-                params={
-                    "data": {
-                        "client_mutation_id": "0",
-                        "actor_id": self.uid,
-                        "thread_fbid": thread_id,
-                        "user_ids": user_ids,
-                        "response": "ACCEPT" if approve else "DENY",
-                        "surface": "ADMIN_MODEL_APPROVAL_CENTER",
-                    }
-                },
-            )
+            GraphQL(doc_id="1574519202665847", params={"data": data})
         )
 
     def acceptUsersToGroup(self, user_ids, thread_id=None):
@@ -2010,19 +1983,13 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {
-            "doc_id": 1491398900900362,
-            "variables": json.dumps(
-                {
-                    "data": {
-                        "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
-                        "client_mutation_id": "1",
-                        "actor_id": self.uid,
-                        "message_id": str(message_id),
-                        "reaction": reaction.value if reaction else None,
-                    }
-                }
-            ),
+            "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
+            "client_mutation_id": "1",
+            "actor_id": self.uid,
+            "message_id": str(message_id),
+            "reaction": reaction.value if reaction else None,
         }
+        data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
         self._post(self.req_url.MESSAGE_REACTION, data, fix_request=True, as_json=True)
 
     def createPlan(self, plan, thread_id=None):
@@ -2036,23 +2003,16 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
-        full_data = {
+        data = {
             "event_type": "EVENT",
             "event_time": plan.time,
             "title": plan.title,
             "thread_id": thread_id,
             "location_id": plan.location_id or "",
             "location_name": plan.location or "",
-            "acontext": {
-                "action_history": [
-                    {"surface": "messenger_chat_tab", "mechanism": "messenger_composer"}
-                ]
-            },
+            "acontext": _ACONTEXT,
         }
-
-        j = self._post(
-            self.req_url.PLAN_CREATE, full_data, fix_request=True, as_json=True
-        )
+        j = self._post(self.req_url.PLAN_CREATE, data, fix_request=True, as_json=True)
 
     def editPlan(self, plan, new_plan):
         """
@@ -2063,22 +2023,16 @@ class Client(object):
         :type plan: models.Plan
         :raises: FBchatException if request failed
         """
-        full_data = {
+        data = {
             "event_reminder_id": plan.uid,
             "delete": "false",
             "date": new_plan.time,
             "location_name": new_plan.location or "",
             "location_id": new_plan.location_id or "",
             "title": new_plan.title,
-            "acontext": {
-                "action_history": [
-                    {"surface": "messenger_chat_tab", "mechanism": "reminder_banner"}
-                ]
-            },
+            "acontext": _ACONTEXT,
         }
-        j = self._post(
-            self.req_url.PLAN_CHANGE, full_data, fix_request=True, as_json=True
-        )
+        j = self._post(self.req_url.PLAN_CHANGE, data, fix_request=True, as_json=True)
 
     def deletePlan(self, plan):
         """
@@ -2087,18 +2041,8 @@ class Client(object):
         :param plan: Plan to delete
         :raises: FBchatException if request failed
         """
-        full_data = {
-            "event_reminder_id": plan.uid,
-            "delete": "true",
-            "acontext": {
-                "action_history": [
-                    {"surface": "messenger_chat_tab", "mechanism": "reminder_banner"}
-                ]
-            },
-        }
-        j = self._post(
-            self.req_url.PLAN_CHANGE, full_data, fix_request=True, as_json=True
-        )
+        data = {"event_reminder_id": plan.uid, "delete": "true", "acontext": _ACONTEXT}
+        j = self._post(self.req_url.PLAN_CHANGE, data, fix_request=True, as_json=True)
 
     def changePlanParticipation(self, plan, take_part=True):
         """
@@ -2108,29 +2052,21 @@ class Client(object):
         :param take_part: Whether to take part in the plan
         :raises: FBchatException if request failed
         """
-        full_data = {
+        data = {
             "event_reminder_id": plan.uid,
             "guest_state": "GOING" if take_part else "DECLINED",
-            "acontext": {
-                "action_history": [
-                    {"surface": "messenger_chat_tab", "mechanism": "reminder_banner"}
-                ]
-            },
+            "acontext": _ACONTEXT,
         }
         j = self._post(
-            self.req_url.PLAN_PARTICIPATION, full_data, fix_request=True, as_json=True
+            self.req_url.PLAN_PARTICIPATION, data, fix_request=True, as_json=True
         )
 
     def eventReminder(self, thread_id, time, title, location="", location_id=""):
         """
         Deprecated. Use :func:`fbchat.Client.createPlan` instead
         """
-        self.createPlan(
-            plan=Plan(
-                time=time, title=title, location=location, location_id=location_id
-            ),
-            thread_id=thread_id,
-        )
+        plan = Plan(time=time, title=title, location=location, location_id=location_id)
+        self.createPlan(plan=plan, thread_id=thread_id)
 
     def createPoll(self, poll, thread_id=None):
         """
