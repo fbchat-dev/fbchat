@@ -1526,9 +1526,13 @@ class Client(object):
         r = self._post(self.req_url.UNSEND, data)
         r.raise_for_status()
 
-    def _sendLocation(self, location, current=True, message=None, thread_id=None, thread_type=None):
+    def _sendLocation(
+        self, location, current=True, message=None, thread_id=None, thread_type=None
+    ):
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(message=message, thread_id=thread_id, thread_type=thread_type)
+        data = self._getSendData(
+            message=message, thread_id=thread_id, thread_type=thread_type
+        )
         data["action_type"] = "ma-type:user-generated-message"
         data["location_attachment[coordinates][latitude]"] = location.latitude
         data["location_attachment[coordinates][longitude]"] = location.longitude
@@ -1557,7 +1561,9 @@ class Client(object):
             thread_type=thread_type,
         )
 
-    def sendPinnedLocation(self, location, message=None, thread_id=None, thread_type=None):
+    def sendPinnedLocation(
+        self, location, message=None, thread_id=None, thread_type=None
+    ):
         """
         Sends a given location to a thread as a pinned location
 
