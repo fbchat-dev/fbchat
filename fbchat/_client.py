@@ -278,7 +278,9 @@ class Client(object):
             "response_format": "json",
             "queries": graphql_queries_to_json(*queries),
         }
-        return tuple(self._post(data, as_graphql=True))
+        return tuple(
+            self._post(self.req_url.GRAPHQL, data, fix_request=True, as_graphql=True)
+        )
 
     def graphql_request(self, query):
         """
@@ -3021,7 +3023,7 @@ class Client(object):
 
     def _parseMessage(self, content):
         """Get message and author name from content. May contain multiple messages in the content."""
-        self.seq = j.get("seq", "0")
+        self.seq = content.get("seq", "0")
 
         if "lb_info" in content:
             self.sticky = content["lb_info"]["sticky"]
