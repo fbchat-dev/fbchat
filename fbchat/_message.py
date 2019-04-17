@@ -86,6 +86,10 @@ class Message(object):
     quick_replies = attr.ib(factory=list, converter=lambda x: [] if x is None else x)
     #: Whether the message is unsent (deleted for everyone)
     unsent = attr.ib(False, init=False)
+    #: Message ID you want to reply to
+    reply_to_id = attr.ib(None)
+    #: Replied message
+    replied_to = attr.ib(None, init=False)
 
     @classmethod
     def formatMentions(cls, text, *args, **kwargs):
@@ -192,6 +196,56 @@ class Message(object):
                 rtn.unsent = True
             elif attachment:
                 rtn.attachments.append(attachment)
+        if data.get("replied_to_message") is not None:
+            rtn.replied_to = cls._from_graphql(data["replied_to_message"]["message"])
+        return rtn
+
+    @classmethod
+    def _from_reply(cls, data):
+        rtn = cls(
+            text=data.get("body"),
+            mentions=[
+                Mention(m.get("i"), offset=m.get("o"), length=m.get("l"))
+                for m in json.loads(data.get("data", {}).get("prng", "[]"))
+            ],
+            emoji_size=EmojiSize._from_tags(data["messageMetadata"].get("tags")),
+        )
+        metadata = data.get("messageMetadata", {})
+        rtn.uid = metadata.get("messageId")
+        rtn.author = str(metadata.get("actorFbId"))
+        rtn.timestamp = metadata.get("timestamp")
+        rtn.unsent = False
+        if data.get("data", {}).get("platform_xmd"):
+            quick_replies = json.loads(data["data"]["platform_xmd"]).get(
+                "quick_replies"
+            )
+            if isinstance(quick_replies, list):
+                rtn.quick_replies = [
+                    _quick_reply.graphql_to_quick_reply(q) for q in quick_replies
+                ]
+            elif isinstance(quick_replies, dict):
+                rtn.quick_replies = [
+                    _quick_reply.graphql_to_quick_reply(quick_replies, is_response=True)
+                ]
+        if data.get("attachments") is not None:
+            for attachment in data["attachments"]:
+                attachment = json.loads(attachment["mercuryJSON"])
+                if attachment.get("blob_attachment"):
+                    rtn.attachments.append(
+                        _file.graphql_to_attachment(attachment["blob_attachment"])
+                    )
+                if attachment.get("extensible_attachment"):
+                    extensible_attachment = graphql_to_extensible_attachment(
+                        attachment["extensible_attachment"]
+                    )
+                    if isinstance(extensible_attachment, _attachment.UnsentMessage):
+                        rtn.unsent = True
+                    else:
+                        rtn.attachments.append(extensible_attachment)
+                if attachment.get("sticker_attachment"):
+                    rtn.sticker = _sticker.Sticker._from_graphql(
+                        attachment["sticker_attachment"]
+                    )
         return rtn
 
     @classmethod
