@@ -1464,23 +1464,29 @@ class Client(object):
         r = self._post(self.req_url.UNSEND, data)
         r.raise_for_status()
 
-    def _sendLocation(self, location, current=True, thread_id=None, thread_type=None):
+    def _sendLocation(
+        self, location, current=True, message=None, thread_id=None, thread_type=None
+    ):
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        data = self._getSendData(
+            message=message, thread_id=thread_id, thread_type=thread_type
+        )
         data["action_type"] = "ma-type:user-generated-message"
         data["location_attachment[coordinates][latitude]"] = location.latitude
         data["location_attachment[coordinates][longitude]"] = location.longitude
         data["location_attachment[is_current_location]"] = current
         return self._doSendRequest(data)
 
-    def sendLocation(self, location, thread_id=None, thread_type=None):
+    def sendLocation(self, location, message=None, thread_id=None, thread_type=None):
         """
         Sends a given location to a thread as the user's current location
 
         :param location: Location to send
+        :param message: Additional message
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
         :type location: models.LocationAttachment
+        :type message: models.Message
         :type thread_type: models.ThreadType
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
         :raises: FBchatException if request failed
@@ -1488,18 +1494,23 @@ class Client(object):
         self._sendLocation(
             location=location,
             current=True,
+            message=message,
             thread_id=thread_id,
             thread_type=thread_type,
         )
 
-    def sendPinnedLocation(self, location, thread_id=None, thread_type=None):
+    def sendPinnedLocation(
+        self, location, message=None, thread_id=None, thread_type=None
+    ):
         """
         Sends a given location to a thread as a pinned location
 
         :param location: Location to send
+        :param message: Additional message
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
         :type location: models.LocationAttachment
+        :type message: models.Message
         :type thread_type: models.ThreadType
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
         :raises: FBchatException if request failed
@@ -1507,6 +1518,7 @@ class Client(object):
         self._sendLocation(
             location=location,
             current=False,
+            message=message,
             thread_id=thread_id,
             thread_type=thread_type,
         )
@@ -2911,6 +2923,7 @@ class Client(object):
                     thread_id, thread_type = getThreadIdAndThreadType(metadata)
                     message = Message._from_reply(i["message"])
                     message.replied_to = Message._from_reply(i["repliedToMessage"])
+                    message.reply_to_id = message.replied_to.uid
                     self.onMessage(
                         mid=message.uid,
                         author_id=message.author,

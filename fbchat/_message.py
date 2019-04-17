@@ -198,6 +198,7 @@ class Message(object):
                 rtn.attachments.append(attachment)
         if data.get("replied_to_message") is not None:
             rtn.replied_to = cls._from_graphql(data["replied_to_message"]["message"])
+            rtn.reply_to_id = rtn.replied_to.uid
         return rtn
 
     @classmethod
