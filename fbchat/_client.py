@@ -20,7 +20,7 @@ except ImportError:
     from urlparse import urlparse, parse_qs
 
 
-_ACONTEXT = {
+ACONTEXT = {
     "action_history": [
         {"surface": "messenger_chat_tab", "mechanism": "messenger_composer"}
     ]
@@ -1995,7 +1995,7 @@ class Client(object):
             "thread_id": thread_id,
             "location_id": plan.location_id or "",
             "location_name": plan.location or "",
-            "acontext": _ACONTEXT,
+            "acontext": ACONTEXT,
         }
         j = self._post(self.req_url.PLAN_CREATE, data, fix_request=True, as_json=True)
 
@@ -2015,7 +2015,7 @@ class Client(object):
             "location_name": new_plan.location or "",
             "location_id": new_plan.location_id or "",
             "title": new_plan.title,
-            "acontext": _ACONTEXT,
+            "acontext": ACONTEXT,
         }
         j = self._post(self.req_url.PLAN_CHANGE, data, fix_request=True, as_json=True)
 
@@ -2026,7 +2026,7 @@ class Client(object):
         :param plan: Plan to delete
         :raises: FBchatException if request failed
         """
-        data = {"event_reminder_id": plan.uid, "delete": "true", "acontext": _ACONTEXT}
+        data = {"event_reminder_id": plan.uid, "delete": "true", "acontext": ACONTEXT}
         j = self._post(self.req_url.PLAN_CHANGE, data, fix_request=True, as_json=True)
 
     def changePlanParticipation(self, plan, take_part=True):
@@ -2040,7 +2040,7 @@ class Client(object):
         data = {
             "event_reminder_id": plan.uid,
             "guest_state": "GOING" if take_part else "DECLINED",
-            "acontext": _ACONTEXT,
+            "acontext": ACONTEXT,
         }
         j = self._post(
             self.req_url.PLAN_PARTICIPATION, data, fix_request=True, as_json=True
