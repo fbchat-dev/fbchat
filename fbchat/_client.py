@@ -1109,6 +1109,8 @@ class Client(object):
         read_receipts = j["message_thread"]["read_receipts"]["nodes"]
 
         for message in messages:
+            if message.replied_to:
+                message.reply_to_id = message.replied_to.uid
             for receipt in read_receipts:
                 if int(receipt["watermark"]) >= int(message.timestamp):
                     message.read_by.append(receipt["actor"]["id"])
@@ -1232,6 +1234,8 @@ class Client(object):
         thread_id, thread_type = self._getThread(thread_id, None)
         message_info = self._forcedFetch(thread_id, mid).get("message")
         message = graphql_to_message(message_info)
+        if message.replied_to:
+            message.reply_to_id = message.replied_to.uid
         return message
 
     def fetchPollOptions(self, poll_id):
@@ -3046,6 +3050,7 @@ class Client(object):
                     thread_id, thread_type = getThreadIdAndThreadType(metadata)
                     message = graphql_to_message_reply(i["message"])
                     message.replied_to = graphql_to_message_reply(i["repliedToMessage"])
+                    message.reply_to_id = message.replied_to.uid
                     self.onMessage(
                         mid=message.uid,
                         author_id=message.author,
