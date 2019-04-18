@@ -1728,7 +1728,9 @@ class Client(object):
             "attachment_id": attachment_id,
             "recipient_map[{}]".format(generateOfflineThreadingID()): thread_id,
         }
-        j = self._post(self.req_url.FORWARD_ATTACHMENT, data, fix_request=True, as_json=True)
+        j = self._post(
+            self.req_url.FORWARD_ATTACHMENT, data, fix_request=True, as_json=True
+        )
 
     def createGroup(self, message, user_ids):
         """
