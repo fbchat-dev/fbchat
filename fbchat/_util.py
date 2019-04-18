@@ -154,6 +154,7 @@ class ReqUrl(object):
     SEARCH_MESSAGES = "https://www.facebook.com/ajax/mercury/search_snippets.php?dpr=1"
     MARK_SPAM = "https://www.facebook.com/ajax/mercury/mark_spam.php?dpr=1"
     UNSEND = "https://www.facebook.com/messaging/unsend_message/?dpr=1"
+    FORWARD_ATTACHMENT = "https://www.facebook.com/mercury/attachments/forward/"
 
     pull_channel = 0
 
