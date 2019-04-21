@@ -259,7 +259,8 @@ def check_json(j):
             )
         else:
             raise FBchatFacebookError(
-                "Error {} when sending request".format(j["error"]), fb_error_code=j["error"]
+                "Error {} when sending request".format(j["error"]),
+                fb_error_code=j["error"],
             )
 
 
