@@ -2985,6 +2985,7 @@ class Client(object):
             sticker = None
             attachments = []
             unsent = False
+            forwarded = False
             if delta.get("attachments"):
                 try:
                     for a in delta["attachments"]:
@@ -3026,6 +3027,7 @@ class Client(object):
 
             if metadata and metadata.get("tags"):
                 emoji_size = get_emojisize_from_tags(metadata.get("tags"))
+                forwarded = get_forwarded_from_tags(metadata.get("tags"))
 
             message = Message(
                 text=delta.get("body"),
@@ -3039,6 +3041,7 @@ class Client(object):
             message.timestamp = ts
             # message.reactions = {}
             message.unsent = unsent
+            message.forwarded = forwarded
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
             self.onMessage(
                 mid=mid,

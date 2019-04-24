@@ -316,6 +316,12 @@ def get_emojisize_from_tags(tags):
     return None
 
 
+def get_forwarded_from_tags(tags):
+    if tags is None:
+        return False
+    return any(map(lambda tag: "forward" in tag or "copy" in tag, tags))
+
+
 def require_list(list_):
     if isinstance(list_, list):
         return set(list_)

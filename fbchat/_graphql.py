@@ -359,6 +359,7 @@ def graphql_to_message(message):
         message["message_sender"] = {}
     if message.get("message") is None:
         message["message"] = {}
+    tags = message.get("tags_list")
     rtn = Message(
         text=message.get("message").get("text"),
         mentions=[
@@ -369,7 +370,7 @@ def graphql_to_message(message):
             )
             for m in message.get("message").get("ranges", [])
         ],
-        emoji_size=get_emojisize_from_tags(message.get("tags_list")),
+        emoji_size=get_emojisize_from_tags(tags),
         sticker=graphql_to_sticker(message.get("sticker")),
     )
     rtn.uid = str(message.get("message_id"))
@@ -403,17 +404,19 @@ def graphql_to_message(message):
             rtn.attachments.append(attachment)
     if message.get("replied_to_message") is not None:
         rtn.replied_to = graphql_to_message(message["replied_to_message"]["message"])
+    rtn.forwarded = get_forwarded_from_tags(tags)
     return rtn
 
 
 def graphql_to_message_reply(message):
+    tags = message["messageMetadata"].get("tags")
     rtn = Message(
         text=message.get("body"),
         mentions=[
             Mention(m.get("i"), offset=m.get("o"), length=m.get("l"))
             for m in json.loads(message.get("data", {}).get("prng", "[]"))
         ],
-        emoji_size=get_emojisize_from_tags(message["messageMetadata"].get("tags")),
+        emoji_size=get_emojisize_from_tags(tags),
     )
     metadata = message.get("messageMetadata", {})
     rtn.uid = metadata.get("messageId")
@@ -445,6 +448,7 @@ def graphql_to_message_reply(message):
                     rtn.attachments.append(extensible_attachment)
             if attachment.get("sticker_attachment"):
                 rtn.sticker = graphql_to_sticker(attachment["sticker_attachment"])
+    rtn.forwarded = get_forwarded_from_tags(tags)
     return rtn
 
 
