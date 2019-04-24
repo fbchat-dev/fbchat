@@ -335,7 +335,7 @@ def get_files_from_urls(file_urls):
         # https://stackoverflow.com/a/37060758
         files.append(
             (
-                basename(file_url),
+                basename(file_url).split("?")[0],
                 r.content,
                 r.headers.get("Content-Type") or guess_type(file_url)[0],
             )
