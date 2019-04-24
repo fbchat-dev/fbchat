@@ -26,7 +26,6 @@ from ._util import (
     check_request,
     get_jsmods_require,
     get_emojisize_from_tags,
-    get_forwarded_from_tags,
     require_list,
     mimetype_to_key,
     get_files_from_urls,
