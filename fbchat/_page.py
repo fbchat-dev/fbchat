@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import attr
+from . import _plan
 from ._thread import ThreadType, Thread
 
 
@@ -36,3 +37,24 @@ class Page(Thread):
         self.likes = likes
         self.sub_title = sub_title
         self.category = category
+
+    @classmethod
+    def _from_graphql(cls, data):
+        if data.get("profile_picture") is None:
+            data["profile_picture"] = {}
+        if data.get("city") is None:
+            data["city"] = {}
+        plan = None
+        if data.get("event_reminders") and data["event_reminders"].get("nodes"):
+            plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
+
+        return cls(
+            data["id"],
+            url=data.get("url"),
+            city=data.get("city").get("name"),
+            category=data.get("category_type"),
+            photo=data["profile_picture"].get("uri"),
+            name=data.get("name"),
+            message_count=data.get("messages_count"),
+            plan=plan,
+        )

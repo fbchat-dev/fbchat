@@ -21,6 +21,15 @@ class FileAttachment(Attachment):
     # Put here for backwards compatibility, so that the init argument order is preserved
     uid = attr.ib(None)
 
+    @classmethod
+    def _from_graphql(cls, data):
+        return cls(
+            url=data.get("url"),
+            name=data.get("filename"),
+            is_malicious=data.get("is_malicious"),
+            uid=data.get("message_file_fbid"),
+        )
+
 
 @attr.s(cmp=False)
 class AudioAttachment(Attachment):
@@ -37,6 +46,15 @@ class AudioAttachment(Attachment):
 
     # Put here for backwards compatibility, so that the init argument order is preserved
     uid = attr.ib(None)
+
+    @classmethod
+    def _from_graphql(cls, data):
+        return cls(
+            filename=data.get("filename"),
+            url=data.get("playable_url"),
+            duration=data.get("playable_duration_in_ms"),
+            audio_type=data.get("audio_type"),
+        )
 
 
 @attr.s(cmp=False, init=False)
@@ -122,6 +140,21 @@ class ImageAttachment(Attachment):
         self.animated_preview_width = animated_preview.get("width")
         self.animated_preview_height = animated_preview.get("height")
 
+    @classmethod
+    def _from_graphql(cls, data):
+        return cls(
+            original_extension=data.get("original_extension")
+            or (data["filename"].split("-")[0] if data.get("filename") else None),
+            width=data.get("original_dimensions", {}).get("width"),
+            height=data.get("original_dimensions", {}).get("height"),
+            is_animated=data["__typename"] == "MessageAnimatedImage",
+            thumbnail_url=data.get("thumbnail", {}).get("uri"),
+            preview=data.get("preview") or data.get("preview_image"),
+            large_preview=data.get("large_preview"),
+            animated_preview=data.get("animated_image"),
+            uid=data.get("legacy_attachment_id"),
+        )
+
 
 @attr.s(cmp=False, init=False)
 class VideoAttachment(Attachment):
@@ -195,3 +228,48 @@ class VideoAttachment(Attachment):
         self.large_image_url = large_image.get("uri")
         self.large_image_width = large_image.get("width")
         self.large_image_height = large_image.get("height")
+
+    @classmethod
+    def _from_graphql(cls, data):
+        return cls(
+            width=data.get("original_dimensions", {}).get("width"),
+            height=data.get("original_dimensions", {}).get("height"),
+            duration=data.get("playable_duration_in_ms"),
+            preview_url=data.get("playable_url"),
+            small_image=data.get("chat_image"),
+            medium_image=data.get("inbox_image"),
+            large_image=data.get("large_image"),
+            uid=data.get("legacy_attachment_id"),
+        )
+
+    @classmethod
+    def _from_subattachment(cls, data):
+        media = data["media"]
+        return cls(
+            duration=media.get("playable_duration_in_ms"),
+            preview_url=media.get("playable_url"),
+            medium_image=media.get("image"),
+            uid=data["target"].get("video_id"),
+        )
+
+
+def graphql_to_attachment(data):
+    _type = data["__typename"]
+    if _type in ["MessageImage", "MessageAnimatedImage"]:
+        return ImageAttachment._from_graphql(data)
+    elif _type == "MessageVideo":
+        return VideoAttachment._from_graphql(data)
+    elif _type == "MessageAudio":
+        return AudioAttachment._from_graphql(data)
+    elif _type == "MessageFile":
+        return FileAttachment._from_graphql(data)
+
+    return Attachment(uid=data.get("legacy_attachment_id"))
+
+
+def graphql_to_subattachment(data):
+    _type = data["target"]["__typename"]
+    if _type == "Video":
+        return VideoAttachment._from_subattachment(data)
+
+    return None

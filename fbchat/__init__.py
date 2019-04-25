@@ -8,8 +8,9 @@ from __future__ import unicode_literals
 
 # These imports are far too general, but they're needed for backwards compatbility.
 from .utils import *
-from .graphql import *
 from .models import *
+
+from ._graphql import graphql_queries_to_json, graphql_response_to_json, GraphQL
 from ._client import Client
 
 __title__ = "fbchat"

@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
-
 from __future__ import unicode_literals
+
 import requests
 import urllib
 from uuid import uuid1
@@ -10,7 +10,7 @@ from mimetypes import guess_type
 from collections import OrderedDict
 from ._util import *
 from .models import *
-from .graphql import *
+from ._graphql import graphql_queries_to_json, graphql_response_to_json, GraphQL
 import time
 import json
 
@@ -680,24 +680,12 @@ class Client(object):
             raise FBchatException("Missing payload while fetching users: {}".format(j))
 
         users = []
-
-        for key in j["payload"]:
-            k = j["payload"][key]
-            if k["type"] in ["user", "friend"]:
-                if k["id"] in ["0", 0]:
+        for data in j["payload"].values():
+            if data["type"] in ["user", "friend"]:
+                if data["id"] in ["0", 0]:
                     # Skip invalid users
-                    pass
-                users.append(
-                    User(
-                        k["id"],
-                        first_name=k.get("firstName"),
-                        url=k.get("uri"),
-                        photo=k.get("thumbSrc"),
-                        name=k.get("name"),
-                        is_friend=k.get("is_friend"),
-                        gender=GENDERS.get(k.get("gender")),
-                    )
-                )
+                    continue
+                users.append(User._from_all_fetch(data))
         return users
 
     def searchForUsers(self, name, limit=10):
@@ -713,7 +701,7 @@ class Client(object):
         params = {"search": name, "limit": limit}
         j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_USER, params=params))
 
-        return [graphql_to_user(node) for node in j[name]["users"]["nodes"]]
+        return [User._from_graphql(node) for node in j[name]["users"]["nodes"]]
 
     def searchForPages(self, name, limit=10):
         """
@@ -727,7 +715,7 @@ class Client(object):
         params = {"search": name, "limit": limit}
         j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_PAGE, params=params))
 
-        return [graphql_to_page(node) for node in j[name]["pages"]["nodes"]]
+        return [Page._from_graphql(node) for node in j[name]["pages"]["nodes"]]
 
     def searchForGroups(self, name, limit=10):
         """
@@ -742,7 +730,7 @@ class Client(object):
         params = {"search": name, "limit": limit}
         j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_GROUP, params=params))
 
-        return [graphql_to_group(node) for node in j["viewer"]["groups"]["nodes"]]
+        return [Group._from_graphql(node) for node in j["viewer"]["groups"]["nodes"]]
 
     def searchForThreads(self, name, limit=10):
         """
@@ -760,12 +748,12 @@ class Client(object):
         rtn = []
         for node in j[name]["threads"]["nodes"]:
             if node["__typename"] == "User":
-                rtn.append(graphql_to_user(node))
+                rtn.append(User._from_graphql(node))
             elif node["__typename"] == "MessageThread":
                 # MessageThread => Group thread
-                rtn.append(graphql_to_group(node))
+                rtn.append(Group._from_graphql(node))
             elif node["__typename"] == "Page":
-                rtn.append(graphql_to_page(node))
+                rtn.append(Page._from_graphql(node))
             elif node["__typename"] == "Group":
                 # We don't handle Facebook "Groups"
                 pass
@@ -1008,16 +996,16 @@ class Client(object):
             entry = entry["message_thread"]
             if entry.get("thread_type") == "GROUP":
                 _id = entry["thread_key"]["thread_fbid"]
-                rtn[_id] = graphql_to_group(entry)
+                rtn[_id] = Group._from_graphql(entry)
             elif entry.get("thread_type") == "ONE_TO_ONE":
                 _id = entry["thread_key"]["other_user_id"]
                 if pages_and_users.get(_id) is None:
                     raise FBchatException("Could not fetch thread {}".format(_id))
                 entry.update(pages_and_users[_id])
                 if entry["type"] == ThreadType.USER:
-                    rtn[_id] = graphql_to_user(entry)
+                    rtn[_id] = User._from_graphql(entry)
                 else:
-                    rtn[_id] = graphql_to_page(entry)
+                    rtn[_id] = Page._from_graphql(entry)
             else:
                 raise FBchatException(
                     "{} had an unknown thread type: {}".format(thread_ids[i], entry)
@@ -1053,7 +1041,7 @@ class Client(object):
             raise FBchatException("Could not fetch thread {}: {}".format(thread_id, j))
 
         messages = [
-            graphql_to_message(message)
+            Message._from_graphql(message)
             for message in j["message_thread"]["messages"]["nodes"]
         ]
         messages.reverse()
@@ -1061,8 +1049,6 @@ class Client(object):
         read_receipts = j["message_thread"]["read_receipts"]["nodes"]
 
         for message in messages:
-            if message.replied_to:
-                message.reply_to_id = message.replied_to.uid
             for receipt in read_receipts:
                 if int(receipt["watermark"]) >= int(message.timestamp):
                     message.read_by.append(receipt["actor"]["id"])
@@ -1108,9 +1094,18 @@ class Client(object):
         }
         j = self.graphql_request(GraphQL(doc_id="1349387578499440", params=params))
 
-        return [
-            graphql_to_thread(node) for node in j["viewer"]["message_threads"]["nodes"]
-        ]
+        rtn = []
+        for node in j["viewer"]["message_threads"]["nodes"]:
+            _type = node.get("thread_type")
+            if _type == "GROUP":
+                rtn.append(Group._from_graphql(node))
+            elif _type == "ONE_TO_ONE":
+                rtn.append(User._from_thread_fetch(node))
+            else:
+                raise FBchatException(
+                    "Unknown thread type: {}, with data: {}".format(_type, node)
+                )
+        return rtn
 
     def fetchUnread(self):
         """
@@ -1180,10 +1175,7 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         message_info = self._forcedFetch(thread_id, mid).get("message")
-        message = graphql_to_message(message_info)
-        if message.replied_to:
-            message.reply_to_id = message.replied_to.uid
-        return message
+        return Message._from_graphql(message_info)
 
     def fetchPollOptions(self, poll_id):
         """
@@ -1197,7 +1189,7 @@ class Client(object):
         j = self._post(
             self.req_url.GET_POLL_OPTIONS, data, fix_request=True, as_json=True
         )
-        return [graphql_to_poll_option(m) for m in j["payload"]]
+        return [PollOption._from_graphql(m) for m in j["payload"]]
 
     def fetchPlanInfo(self, plan_id):
         """
@@ -1210,7 +1202,7 @@ class Client(object):
         """
         data = {"event_reminder_id": plan_id}
         j = self._post(self.req_url.PLAN_INFO, data, fix_request=True, as_json=True)
-        return graphql_to_plan(j["payload"])
+        return Plan._from_fetch(j["payload"])
 
     def _getPrivateData(self):
         j = self.graphql_request(GraphQL(doc_id="1868889766468115"))
@@ -2487,7 +2479,7 @@ class Client(object):
 
         # Color change
         elif delta_type == "change_thread_theme":
-            new_color = graphql_color_to_enum(delta["untypedData"]["theme_color"])
+            new_color = ThreadColor._from_graphql(delta["untypedData"]["theme_color"])
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
             self.onColorChange(
                 mid=mid,
@@ -2746,7 +2738,7 @@ class Client(object):
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
             event_type = delta["untypedData"]["event_type"]
             poll_json = json.loads(delta["untypedData"]["question_json"])
-            poll = graphql_to_poll(poll_json)
+            poll = Poll._from_graphql(poll_json)
             if event_type == "question_creation":
                 # User created group poll
                 self.onPollCreated(
@@ -2779,10 +2771,9 @@ class Client(object):
         # Plan created
         elif delta_type == "lightweight_event_create":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
-            plan = graphql_to_plan(delta["untypedData"])
             self.onPlanCreated(
                 mid=mid,
-                plan=plan,
+                plan=Plan._from_pull(delta["untypedData"]),
                 author_id=author_id,
                 thread_id=thread_id,
                 thread_type=thread_type,
@@ -2794,10 +2785,9 @@ class Client(object):
         # Plan ended
         elif delta_type == "lightweight_event_notify":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
-            plan = graphql_to_plan(delta["untypedData"])
             self.onPlanEnded(
                 mid=mid,
-                plan=plan,
+                plan=Plan._from_pull(delta["untypedData"]),
                 thread_id=thread_id,
                 thread_type=thread_type,
                 ts=ts,
@@ -2808,10 +2798,9 @@ class Client(object):
         # Plan edited
         elif delta_type == "lightweight_event_update":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
-            plan = graphql_to_plan(delta["untypedData"])
             self.onPlanEdited(
                 mid=mid,
-                plan=plan,
+                plan=Plan._from_pull(delta["untypedData"]),
                 author_id=author_id,
                 thread_id=thread_id,
                 thread_type=thread_type,
@@ -2823,10 +2812,9 @@ class Client(object):
         # Plan deleted
         elif delta_type == "lightweight_event_delete":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
-            plan = graphql_to_plan(delta["untypedData"])
             self.onPlanDeleted(
                 mid=mid,
-                plan=plan,
+                plan=Plan._from_pull(delta["untypedData"]),
                 author_id=author_id,
                 thread_id=thread_id,
                 thread_type=thread_type,
@@ -2838,11 +2826,10 @@ class Client(object):
         # Plan participation change
         elif delta_type == "lightweight_event_rsvp":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
-            plan = graphql_to_plan(delta["untypedData"])
             take_part = delta["untypedData"]["guest_status"] == "GOING"
             self.onPlanParticipation(
                 mid=mid,
-                plan=plan,
+                plan=Plan._from_pull(delta["untypedData"]),
                 take_part=take_part,
                 author_id=author_id,
                 thread_id=thread_id,
@@ -2920,7 +2907,7 @@ class Client(object):
                     for l in i["messageLiveLocations"]:
                         mid = l["messageId"]
                         author_id = str(l["senderId"])
-                        location = graphql_to_live_location(l)
+                        location = LiveLocationAttachment._from_pull(l)
                         self.onLiveLocation(
                             mid=mid,
                             location=location,
@@ -2951,8 +2938,8 @@ class Client(object):
                     i = d["deltaMessageReply"]
                     metadata = i["message"]["messageMetadata"]
                     thread_id, thread_type = getThreadIdAndThreadType(metadata)
-                    message = graphql_to_message_reply(i["message"])
-                    message.replied_to = graphql_to_message_reply(i["repliedToMessage"])
+                    message = Message._from_reply(i["message"])
+                    message.replied_to = Message._from_reply(i["repliedToMessage"])
                     message.reply_to_id = message.replied_to.uid
                     self.onMessage(
                         mid=message.uid,
@@ -2968,86 +2955,14 @@ class Client(object):
 
         # New message
         elif delta.get("class") == "NewMessage":
-            mentions = []
-            if delta.get("data") and delta["data"].get("prng"):
-                try:
-                    mentions = [
-                        Mention(
-                            str(mention.get("i")),
-                            offset=mention.get("o"),
-                            length=mention.get("l"),
-                        )
-                        for mention in parse_json(delta["data"]["prng"])
-                    ]
-                except Exception:
-                    log.exception("An exception occured while reading attachments")
-
-            sticker = None
-            attachments = []
-            unsent = False
-            forwarded = False
-            if delta.get("attachments"):
-                try:
-                    for a in delta["attachments"]:
-                        mercury = a["mercury"]
-                        if mercury.get("blob_attachment"):
-                            image_metadata = a.get("imageMetadata", {})
-                            attach_type = mercury["blob_attachment"]["__typename"]
-                            attachment = graphql_to_attachment(
-                                mercury["blob_attachment"]
-                            )
-
-                            if attach_type in [
-                                "MessageFile",
-                                "MessageVideo",
-                                "MessageAudio",
-                            ]:
-                                # TODO: Add more data here for audio files
-                                attachment.size = int(a["fileSize"])
-                            attachments.append(attachment)
-
-                        elif mercury.get("sticker_attachment"):
-                            sticker = graphql_to_sticker(mercury["sticker_attachment"])
-
-                        elif mercury.get("extensible_attachment"):
-                            attachment = graphql_to_extensible_attachment(
-                                mercury["extensible_attachment"]
-                            )
-                            if isinstance(attachment, UnsentMessage):
-                                unsent = True
-                            elif attachment:
-                                attachments.append(attachment)
-
-                except Exception:
-                    log.exception(
-                        "An exception occured while reading attachments: {}".format(
-                            delta["attachments"]
-                        )
-                    )
-
-            if metadata and metadata.get("tags"):
-                emoji_size = get_emojisize_from_tags(metadata.get("tags"))
-                forwarded = get_forwarded_from_tags(metadata.get("tags"))
-
-            message = Message(
-                text=delta.get("body"),
-                mentions=mentions,
-                emoji_size=emoji_size,
-                sticker=sticker,
-                attachments=attachments,
-            )
-            message.uid = mid
-            message.author = author_id
-            message.timestamp = ts
-            # message.reactions = {}
-            message.unsent = unsent
-            message.forwarded = forwarded
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
             self.onMessage(
                 mid=mid,
                 author_id=author_id,
                 message=delta.get("body", ""),
-                message_object=message,
+                message_object=Message._from_pull(
+                    delta, tags=metadata.get("tags"), author=author_id, timestamp=ts
+                ),
                 thread_id=thread_id,
                 thread_type=thread_type,
                 ts=ts,
@@ -3132,53 +3047,25 @@ class Client(object):
 
                 # Chat timestamp
                 elif mtype == "chatproxy-presence":
-                    buddylist = dict()
-                    for _id in m.get("buddyList", {}):
-                        payload = m["buddyList"][_id]
+                    statuses = dict()
+                    for id_, data in m.get("buddyList", {}).items():
+                        statuses[id_] = ActiveStatus._from_chatproxy_presence(id_, data)
+                        self._buddylist[id_] = statuses[id_]
 
-                        last_active = payload.get("lat")
-                        active = payload.get("p") in [2, 3]
-                        in_game = int(_id) in m.get("gamers", {})
-
-                        buddylist[_id] = last_active
-
-                        if self._buddylist.get(_id):
-                            self._buddylist[_id].last_active = last_active
-                            self._buddylist[_id].active = active
-                            self._buddylist[_id].in_game = in_game
-                        else:
-                            self._buddylist[_id] = ActiveStatus(
-                                active=active, last_active=last_active, in_game=in_game
-                            )
-
-                    self.onChatTimestamp(buddylist=buddylist, msg=m)
+                    self.onChatTimestamp(buddylist=statuses, msg=m)
 
                 # Buddylist overlay
                 elif mtype == "buddylist_overlay":
                     statuses = dict()
-                    for _id in m.get("overlay", {}):
-                        payload = m["overlay"][_id]
+                    for id_, data in m.get("overlay", {}).items():
+                        old_in_game = None
+                        if id_ in self._buddylist:
+                            old_in_game = self._buddylist[id_].in_game
 
-                        last_active = payload.get("la")
-                        active = payload.get("a") in [2, 3]
-                        in_game = (
-                            self._buddylist[_id].in_game
-                            if self._buddylist.get(_id)
-                            else False
+                        statuses[id_] = ActiveStatus._from_buddylist_overlay(
+                            data, old_in_game
                         )
-
-                        status = ActiveStatus(
-                            active=active, last_active=last_active, in_game=in_game
-                        )
-
-                        if self._buddylist.get(_id):
-                            self._buddylist[_id].last_active = last_active
-                            self._buddylist[_id].active = active
-                            self._buddylist[_id].in_game = in_game
-                        else:
-                            self._buddylist[_id] = status
-
-                        statuses[_id] = status
+                        self._buddylist[id_] = statuses[id_]
 
                     self.onBuddylistOverlay(statuses=statuses, msg=m)
 
