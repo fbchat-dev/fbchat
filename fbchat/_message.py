@@ -2,7 +2,9 @@
 from __future__ import unicode_literals
 
 import attr
+import json
 from string import Formatter
+from . import _util, _attachment, _location, _file, _quick_reply, _sticker
 from ._core import Enum
 
 
@@ -12,6 +14,22 @@ class EmojiSize(Enum):
     LARGE = "369239383222810"
     MEDIUM = "369239343222814"
     SMALL = "369239263222822"
+
+    @classmethod
+    def _from_tags(cls, tags):
+        string_to_emojisize = {
+            "large": cls.LARGE,
+            "medium": cls.MEDIUM,
+            "small": cls.SMALL,
+            "l": cls.LARGE,
+            "m": cls.MEDIUM,
+            "s": cls.SMALL,
+        }
+        for tag in tags or ():
+            data = tag.split(":", maxsplit=1)
+            if len(data) > 1 and data[0] == "hot_emoji_size":
+                return string_to_emojisize.get(data[1])
+        return None
 
 
 class MessageReaction(Enum):
@@ -125,3 +143,193 @@ class Message(object):
 
         message = cls(text=result, mentions=mentions)
         return message
+
+    @classmethod
+    def _from_graphql(cls, data):
+        if data.get("message_sender") is None:
+            data["message_sender"] = {}
+        if data.get("message") is None:
+            data["message"] = {}
+        rtn = cls(
+            text=data["message"].get("text"),
+            mentions=[
+                Mention(
+                    m.get("entity", {}).get("id"),
+                    offset=m.get("offset"),
+                    length=m.get("length"),
+                )
+                for m in data["message"].get("ranges") or ()
+            ],
+            emoji_size=EmojiSize._from_tags(data.get("tags_list")),
+            sticker=_sticker.Sticker._from_graphql(data.get("sticker")),
+        )
+        rtn.uid = str(data["message_id"])
+        rtn.author = str(data["message_sender"]["id"])
+        rtn.timestamp = data.get("timestamp_precise")
+        rtn.unsent = False
+        if data.get("unread") is not None:
+            rtn.is_read = not data["unread"]
+        rtn.reactions = {
+            str(r["user"]["id"]): MessageReaction._extend_if_invalid(r["reaction"])
+            for r in data["message_reactions"]
+        }
+        if data.get("blob_attachments") is not None:
+            rtn.attachments = [
+                _file.graphql_to_attachment(attachment)
+                for attachment in data["blob_attachments"]
+            ]
+        if data.get("platform_xmd_encoded"):
+            quick_replies = json.loads(data["platform_xmd_encoded"]).get(
+                "quick_replies"
+            )
+            if isinstance(quick_replies, list):
+                rtn.quick_replies = [
+                    _quick_reply.graphql_to_quick_reply(q) for q in quick_replies
+                ]
+            elif isinstance(quick_replies, dict):
+                rtn.quick_replies = [
+                    _quick_reply.graphql_to_quick_reply(quick_replies, is_response=True)
+                ]
+        if data.get("extensible_attachment") is not None:
+            attachment = graphql_to_extensible_attachment(data["extensible_attachment"])
+            if isinstance(attachment, _attachment.UnsentMessage):
+                rtn.unsent = True
+            elif attachment:
+                rtn.attachments.append(attachment)
+        if data.get("replied_to_message") is not None:
+            rtn.replied_to = cls._from_graphql(data["replied_to_message"]["message"])
+            rtn.reply_to_id = rtn.replied_to.uid
+        return rtn
+
+    @classmethod
+    def _from_reply(cls, data):
+        rtn = cls(
+            text=data.get("body"),
+            mentions=[
+                Mention(m.get("i"), offset=m.get("o"), length=m.get("l"))
+                for m in json.loads(data.get("data", {}).get("prng", "[]"))
+            ],
+            emoji_size=EmojiSize._from_tags(data["messageMetadata"].get("tags")),
+        )
+        metadata = data.get("messageMetadata", {})
+        rtn.uid = metadata.get("messageId")
+        rtn.author = str(metadata.get("actorFbId"))
+        rtn.timestamp = metadata.get("timestamp")
+        rtn.unsent = False
+        if data.get("data", {}).get("platform_xmd"):
+            quick_replies = json.loads(data["data"]["platform_xmd"]).get(
+                "quick_replies"
+            )
+            if isinstance(quick_replies, list):
+                rtn.quick_replies = [
+                    _quick_reply.graphql_to_quick_reply(q) for q in quick_replies
+                ]
+            elif isinstance(quick_replies, dict):
+                rtn.quick_replies = [
+                    _quick_reply.graphql_to_quick_reply(quick_replies, is_response=True)
+                ]
+        if data.get("attachments") is not None:
+            for attachment in data["attachments"]:
+                attachment = json.loads(attachment["mercuryJSON"])
+                if attachment.get("blob_attachment"):
+                    rtn.attachments.append(
+                        _file.graphql_to_attachment(attachment["blob_attachment"])
+                    )
+                if attachment.get("extensible_attachment"):
+                    extensible_attachment = graphql_to_extensible_attachment(
+                        attachment["extensible_attachment"]
+                    )
+                    if isinstance(extensible_attachment, _attachment.UnsentMessage):
+                        rtn.unsent = True
+                    else:
+                        rtn.attachments.append(extensible_attachment)
+                if attachment.get("sticker_attachment"):
+                    rtn.sticker = _sticker.Sticker._from_graphql(
+                        attachment["sticker_attachment"]
+                    )
+        return rtn
+
+    @classmethod
+    def _from_pull(cls, data, mid=None, tags=None, author=None, timestamp=None):
+        rtn = cls(text=data.get("body"))
+        rtn.uid = mid
+        rtn.author = author
+        rtn.timestamp = timestamp
+
+        if data.get("data") and data["data"].get("prng"):
+            try:
+                rtn.mentions = [
+                    Mention(
+                        str(mention.get("i")),
+                        offset=mention.get("o"),
+                        length=mention.get("l"),
+                    )
+                    for mention in _util.parse_json(data["data"]["prng"])
+                ]
+            except Exception:
+                _util.log.exception("An exception occured while reading attachments")
+
+        if data.get("attachments"):
+            try:
+                for a in data["attachments"]:
+                    mercury = a["mercury"]
+                    if mercury.get("blob_attachment"):
+                        image_metadata = a.get("imageMetadata", {})
+                        attach_type = mercury["blob_attachment"]["__typename"]
+                        attachment = _file.graphql_to_attachment(
+                            mercury["blob_attachment"]
+                        )
+
+                        if attach_type in [
+                            "MessageFile",
+                            "MessageVideo",
+                            "MessageAudio",
+                        ]:
+                            # TODO: Add more data here for audio files
+                            attachment.size = int(a["fileSize"])
+                        rtn.attachments.append(attachment)
+
+                    elif mercury.get("sticker_attachment"):
+                        rtn.sticker = _sticker.Sticker._from_graphql(
+                            mercury["sticker_attachment"]
+                        )
+
+                    elif mercury.get("extensible_attachment"):
+                        attachment = graphql_to_extensible_attachment(
+                            mercury["extensible_attachment"]
+                        )
+                        if isinstance(attachment, _attachment.UnsentMessage):
+                            rtn.unsent = True
+                        elif attachment:
+                            rtn.attachments.append(attachment)
+
+            except Exception:
+                _util.log.exception(
+                    "An exception occured while reading attachments: {}".format(
+                        data["attachments"]
+                    )
+                )
+
+        rtn.emoji_size = EmojiSize._from_tags(tags)
+
+        return rtn
+
+
+def graphql_to_extensible_attachment(data):
+    story = data.get("story_attachment")
+    if not story:
+        return None
+
+    target = story.get("target")
+    if not target:
+        return _attachment.UnsentMessage(uid=data.get("legacy_attachment_id"))
+
+    _type = target["__typename"]
+    if _type == "MessageLocation":
+        return _location.LocationAttachment._from_graphql(story)
+    elif _type == "MessageLiveLocation":
+        return _location.LiveLocationAttachment._from_graphql(story)
+    elif _type in ["ExternalUrl", "Story"]:
+        return _attachment.ShareAttachment._from_graphql(story)
+
+    return None

@@ -74,3 +74,26 @@ class QuickReplyEmail(QuickReply):
     def __init__(self, image_url=None, **kwargs):
         super(QuickReplyEmail, self).__init__(**kwargs)
         self.image_url = image_url
+
+
+def graphql_to_quick_reply(q, is_response=False):
+    data = dict()
+    _type = q.get("content_type").lower()
+    if q.get("payload"):
+        data["payload"] = q["payload"]
+    if q.get("data"):
+        data["data"] = q["data"]
+    if q.get("image_url") and _type is not QuickReplyLocation._type:
+        data["image_url"] = q["image_url"]
+    data["is_response"] = is_response
+    if _type == QuickReplyText._type:
+        if q.get("title") is not None:
+            data["title"] = q["title"]
+        rtn = QuickReplyText(**data)
+    elif _type == QuickReplyLocation._type:
+        rtn = QuickReplyLocation(**data)
+    elif _type == QuickReplyPhoneNumber._type:
+        rtn = QuickReplyPhoneNumber(**data)
+    elif _type == QuickReplyEmail._type:
+        rtn = QuickReplyEmail(**data)
+    return rtn

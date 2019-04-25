@@ -11,8 +11,7 @@ from os.path import basename
 import warnings
 import logging
 import requests
-import aenum
-from .models import *
+from ._exception import FBchatException, FBchatFacebookError
 
 try:
     from urllib.parse import urlencode, parse_qs, urlparse
@@ -46,45 +45,6 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11",
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6",
 ]
-
-LIKES = {
-    "large": EmojiSize.LARGE,
-    "medium": EmojiSize.MEDIUM,
-    "small": EmojiSize.SMALL,
-    "l": EmojiSize.LARGE,
-    "m": EmojiSize.MEDIUM,
-    "s": EmojiSize.SMALL,
-}
-
-
-GENDERS = {
-    # For standard requests
-    0: "unknown",
-    1: "female_singular",
-    2: "male_singular",
-    3: "female_singular_guess",
-    4: "male_singular_guess",
-    5: "mixed",
-    6: "neuter_singular",
-    7: "unknown_singular",
-    8: "female_plural",
-    9: "male_plural",
-    10: "neuter_plural",
-    11: "unknown_plural",
-    # For graphql requests
-    "UNKNOWN": "unknown",
-    "FEMALE": "female_singular",
-    "MALE": "male_singular",
-    # '': 'female_singular_guess',
-    # '': 'male_singular_guess',
-    # '': 'mixed',
-    "NEUTER": "neuter_singular",
-    # '': 'unknown_singular',
-    # '': 'female_plural',
-    # '': 'male_plural',
-    # '': 'neuter_plural',
-    # '': 'unknown_plural',
-}
 
 
 class ReqUrl(object):
@@ -295,20 +255,6 @@ def get_jsmods_require(j, index):
     return None
 
 
-def get_emojisize_from_tags(tags):
-    if tags is None:
-        return None
-    tmp = [tag for tag in tags if tag.startswith("hot_emoji_size:")]
-    if len(tmp) > 0:
-        try:
-            return LIKES[tmp[0].split(":")[1]]
-        except (KeyError, IndexError):
-            log.exception(
-                "Could not determine emoji size from {} - {}".format(tags, tmp)
-            )
-    return None
-
-
 def require_list(list_):
     if isinstance(list_, list):
         return set(list_)
@@ -353,19 +299,6 @@ def get_files_from_paths(filenames):
     yield files
     for fn, fp, ft in files:
         fp.close()
-
-
-def enum_extend_if_invalid(enumeration, value):
-    try:
-        return enumeration(value)
-    except ValueError:
-        log.warning(
-            "Failed parsing {.__name__}({!r}). Extending enum.".format(
-                enumeration, value
-            )
-        )
-        aenum.extend_enum(enumeration, "UNKNOWN_{}".format(value).upper(), value)
-        return enumeration(value)
 
 
 def get_url_parameters(url, *args):
