@@ -268,8 +268,10 @@ def graphql_to_attachment(data):
 
 
 def graphql_to_subattachment(data):
-    _type = data["target"]["__typename"]
-    if _type == "Video":
+    target = data.get("target")
+    type_ = target.get("__typename") if target else None
+
+    if type_ == "Video":
         return VideoAttachment._from_subattachment(data)
 
     return None
