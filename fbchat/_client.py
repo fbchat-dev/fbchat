@@ -37,13 +37,14 @@ class Client(object):
     """Verify ssl certificate, set to False to allow debugging with a proxy"""
     listening = False
     """Whether the client is listening. Used when creating an external event loop to determine when to stop listening"""
-    uid = None
-    """
-    The ID of the client.
-    Can be used as `thread_id`. See :ref:`intro_threads` for more info.
 
-    Note: Modifying this results in undefined behaviour
-    """
+    @property
+    def uid(self):
+        """The ID of the client.
+
+        Can be used as `thread_id`. See :ref:`intro_threads` for more info.
+        """
+        return self._uid
 
     def __init__(
         self,
@@ -67,15 +68,14 @@ class Client(object):
         :type logging_level: int
         :raises: FBchatException on failed login
         """
-        self.sticky, self.pool = (None, None)
+        self._sticky, self._pool = (None, None)
         self._session = requests.session()
-        self.req_counter = 1
-        self.seq = "0"
+        self._req_counter = 1
+        self._seq = "0"
         # See `createPoll` for the reason for using `OrderedDict` here
-        self.payloadDefault = OrderedDict()
-        self.client = "mercury"
-        self.default_thread_id = None
-        self.default_thread_type = None
+        self._payload_default = OrderedDict()
+        self._default_thread_id = None
+        self._default_thread_type = None
         self.req_url = ReqUrl()
         self._markAlive = True
         self._buddylist = dict()
@@ -100,9 +100,6 @@ class Client(object):
             or not self.isLoggedIn()
         ):
             self.login(email, password, max_tries)
-        else:
-            self.email = email
-            self.password = password
 
     """
     INTERNAL REQUEST METHODS
@@ -112,12 +109,12 @@ class Client(object):
         """Adds the following defaults to the payload:
           __rev, __user, __a, ttstamp, fb_dtsg, __req
         """
-        payload = self.payloadDefault.copy()
+        payload = self._payload_default.copy()
         if query:
             payload.update(query)
-        payload["__req"] = str_base(self.req_counter, 36)
-        payload["seq"] = self.seq
-        self.req_counter += 1
+        payload["__req"] = str_base(self._req_counter, 36)
+        payload["seq"] = self._seq
+        self._req_counter += 1
         return payload
 
     def _fix_fb_errors(self, error_code):
@@ -215,7 +212,7 @@ class Client(object):
         )
 
     def _cleanPost(self, url, query=None, timeout=30):
-        self.req_counter += 1
+        self._req_counter += 1
         return self._session.post(
             url,
             headers=self._header,
@@ -299,60 +296,55 @@ class Client(object):
     """
 
     def _resetValues(self):
-        self.payloadDefault = OrderedDict()
+        self._payload_default = OrderedDict()
         self._session = requests.session()
-        self.req_counter = 1
-        self.seq = "0"
-        self.uid = None
+        self._req_counter = 1
+        self._seq = "0"
+        self._uid = None
 
     def _postLogin(self):
-        self.payloadDefault = OrderedDict()
-        self.client_id = hex(int(random() * 2147483648))[2:]
-        self.start_time = now()
-        self.uid = self._session.cookies.get_dict().get("c_user")
-        if self.uid is None:
+        self._payload_default = OrderedDict()
+        self._client_id = hex(int(random() * 2147483648))[2:]
+        self._uid = self._session.cookies.get_dict().get("c_user")
+        if self._uid is None:
             raise FBchatException("Could not find c_user cookie")
-        self.uid = str(self.uid)
-        self.user_channel = "p_{}".format(self.uid)
-        self.ttstamp = ""
+        self._uid = str(self._uid)
 
         r = self._get(self.req_url.BASE)
         soup = bs(r.text, "html.parser")
 
         fb_dtsg_element = soup.find("input", {"name": "fb_dtsg"})
         if fb_dtsg_element:
-            self.fb_dtsg = fb_dtsg_element["value"]
+            fb_dtsg = fb_dtsg_element["value"]
         else:
-            self.fb_dtsg = re.search(r'name="fb_dtsg" value="(.*?)"', r.text).group(1)
+            fb_dtsg = re.search(r'name="fb_dtsg" value="(.*?)"', r.text).group(1)
 
         fb_h_element = soup.find("input", {"name": "h"})
         if fb_h_element:
-            self.fb_h = fb_h_element["value"]
+            self._fb_h = fb_h_element["value"]
 
-        for i in self.fb_dtsg:
-            self.ttstamp += str(ord(i))
-        self.ttstamp += "2"
+        ttstamp = ""
+        for i in fb_dtsg:
+            ttstamp += str(ord(i))
+        ttstamp += "2"
         # Set default payload
-        self.payloadDefault["__rev"] = int(
+        self._payload_default["__rev"] = int(
             r.text.split('"client_revision":', 1)[1].split(",", 1)[0]
         )
-        self.payloadDefault["__user"] = self.uid
-        self.payloadDefault["__a"] = "1"
-        self.payloadDefault["ttstamp"] = self.ttstamp
-        self.payloadDefault["fb_dtsg"] = self.fb_dtsg
+        self._payload_default["__user"] = self._uid
+        self._payload_default["__a"] = "1"
+        self._payload_default["ttstamp"] = ttstamp
+        self._payload_default["fb_dtsg"] = fb_dtsg
 
-    def _login(self):
-        if not (self.email and self.password):
-            raise FBchatUserError("Email and password not found.")
-
+    def _login(self, email, password):
         soup = bs(self._get(self.req_url.MOBILE).text, "html.parser")
         data = dict(
             (elem["name"], elem["value"])
             for elem in soup.findAll("input")
             if elem.has_attr("value") and elem.has_attr("name")
         )
-        data["email"] = self.email
-        data["pass"] = self.password
+        data["email"] = email
+        data["pass"] = password
         data["login"] = "Log In"
 
         r = self._cleanPost(self.req_url.LOGIN, data)
@@ -492,11 +484,8 @@ class Client(object):
         if not (email and password):
             raise FBchatUserError("Email and password not set")
 
-        self.email = email
-        self.password = password
-
         for i in range(1, max_tries + 1):
-            login_successful, login_url = self._login()
+            login_successful, login_url = self._login(email, password)
             if not login_successful:
                 log.warning(
                     "Attempt #{} failed{}".format(
@@ -522,11 +511,11 @@ class Client(object):
         :return: True if the action was successful
         :rtype: bool
         """
-        if not hasattr(self, "fb_h"):
+        if not hasattr(self, "_fb_h"):
             h_r = self._post(self.req_url.MODERN_SETTINGS_MENU, {"pmid": "4"})
-            self.fb_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
+            self._fb_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
 
-        data = {"ref": "mb", "h": self.fb_h}
+        data = {"ref": "mb", "h": self._fb_h}
 
         r = self._get(self.req_url.LOGOUT, data)
 
@@ -551,8 +540,8 @@ class Client(object):
         :rtype: tuple
         """
         if given_thread_id is None:
-            if self.default_thread_id is not None:
-                return self.default_thread_id, self.default_thread_type
+            if self._default_thread_id is not None:
+                return self._default_thread_id, self._default_thread_type
             else:
                 raise ValueError("Thread ID is not set")
         else:
@@ -566,8 +555,8 @@ class Client(object):
         :param thread_type: See :ref:`intro_threads`
         :type thread_type: models.ThreadType
         """
-        self.default_thread_id = thread_id
-        self.default_thread_type = thread_type
+        self._default_thread_id = thread_id
+        self._default_thread_type = thread_type
 
     def resetDefaultThread(self):
         """Resets default thread"""
@@ -672,7 +661,7 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-        data = {"viewer": self.uid}
+        data = {"viewer": self._uid}
         j = self._post(
             self.req_url.ALL_USERS, query=data, fix_request=True, as_json=True
         )
@@ -1260,13 +1249,13 @@ class Client(object):
         messageAndOTID = generateOfflineThreadingID()
         timestamp = now()
         data = {
-            "client": self.client,
-            "author": "fbid:{}".format(self.uid),
+            "client": "mercury",
+            "author": "fbid:{}".format(self._uid),
             "timestamp": timestamp,
             "source": "source:chat:web",
             "offline_threading_id": messageAndOTID,
             "message_id": messageAndOTID,
-            "threading_id": generateMessageID(self.client_id),
+            "threading_id": generateMessageID(self._client_id),
             "ephemeral_ttl_mode:": "0",
         }
 
@@ -1331,7 +1320,7 @@ class Client(object):
         # update JS token if received in response
         fb_dtsg = get_jsmods_require(j, 2)
         if fb_dtsg is not None:
-            self.payloadDefault["fb_dtsg"] = fb_dtsg
+            self._payload_default["fb_dtsg"] = fb_dtsg
 
         try:
             message_ids = [
@@ -1738,7 +1727,7 @@ class Client(object):
         if len(user_ids) < 2:
             raise FBchatUserError("Error when creating group: Not enough participants")
 
-        for i, user_id in enumerate(user_ids + [self.uid]):
+        for i, user_id in enumerate(user_ids + [self._uid]):
             data["specific_to_list[{}]".format(i)] = "fbid:{}".format(user_id)
 
         message_id, thread_id = self._doSendRequest(data, get_thread_id=True)
@@ -1766,7 +1755,7 @@ class Client(object):
         user_ids = require_list(user_ids)
 
         for i, user_id in enumerate(user_ids):
-            if user_id == self.uid:
+            if user_id == self._uid:
                 raise FBchatUserError(
                     "Error when adding users: Cannot add self to group thread"
                 )
@@ -1842,7 +1831,7 @@ class Client(object):
 
         data = {
             "client_mutation_id": "0",
-            "actor_id": self.uid,
+            "actor_id": self._uid,
             "thread_fbid": thread_id,
             "user_ids": user_ids,
             "response": "ACCEPT" if approve else "DENY",
@@ -2001,7 +1990,7 @@ class Client(object):
         data = {
             "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
             "client_mutation_id": "1",
-            "actor_id": self.uid,
+            "actor_id": self._uid,
             "message_id": str(message_id),
             "reaction": reaction.value if reaction else None,
         }
@@ -2097,7 +2086,7 @@ class Client(object):
 
         # We're using ordered dicts, because the Facebook endpoint that parses the POST
         # parameters is badly implemented, and deals with ordering the options wrongly.
-        # This also means we had to change `client.payloadDefault` to an ordered dict,
+        # This also means we had to change `client._payload_default` to an ordered dict,
         # since that's being copied in between this point and the `requests` call
         #
         # If you can find a way to fix this for the endpoint, or if you find another
@@ -2405,14 +2394,14 @@ class Client(object):
 
     def _ping(self):
         data = {
-            "channel": self.user_channel,
-            "clientid": self.client_id,
+            "channel": "p_" + self._uid,
+            "clientid": self._client_id,
             "partition": -2,
             "cap": 0,
-            "uid": self.uid,
-            "sticky_token": self.sticky,
-            "sticky_pool": self.pool,
-            "viewer_uid": self.uid,
+            "uid": self._uid,
+            "sticky_token": self._sticky,
+            "sticky_pool": self._pool,
+            "viewer_uid": self._uid,
             "state": "active",
         }
         self._get(self.req_url.PING, data, fix_request=True, as_json=False)
@@ -2421,9 +2410,9 @@ class Client(object):
         """Call pull api with seq value to get message data."""
         data = {
             "msgs_recv": 0,
-            "sticky_token": self.sticky,
-            "sticky_pool": self.pool,
-            "clientid": self.client_id,
+            "sticky_token": self._sticky,
+            "sticky_pool": self._pool,
+            "clientid": self._client_id,
             "state": "active" if self._markAlive else "offline",
         }
         return self._get(self.req_url.STICKY, data, fix_request=True, as_json=True)
@@ -2976,11 +2965,11 @@ class Client(object):
 
     def _parseMessage(self, content):
         """Get message and author name from content. May contain multiple messages in the content."""
-        self.seq = content.get("seq", "0")
+        self._seq = content.get("seq", "0")
 
         if "lb_info" in content:
-            self.sticky = content["lb_info"]["sticky"]
-            self.pool = content["lb_info"]["pool"]
+            self._sticky = content["lb_info"]["sticky"]
+            self._pool = content["lb_info"]["pool"]
 
         if "batches" in content:
             for batch in content["batches"]:
@@ -3013,7 +3002,7 @@ class Client(object):
                         thread_id = str(thread_id)
                     else:
                         thread_type = ThreadType.USER
-                        if author_id == self.uid:
+                        if author_id == self._uid:
                             thread_id = m.get("to")
                         else:
                             thread_id = author_id
@@ -3126,7 +3115,7 @@ class Client(object):
     def stopListening(self):
         """Cleans up the variables from startListening"""
         self.listening = False
-        self.sticky, self.pool = (None, None)
+        self._sticky, self._pool = (None, None)
 
     def listen(self, markAlive=None):
         """
