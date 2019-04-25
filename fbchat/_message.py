@@ -90,6 +90,8 @@ class Message(object):
     reply_to_id = attr.ib(None)
     #: Replied message
     replied_to = attr.ib(None, init=False)
+    #: Whether the message was forwarded
+    forwarded = attr.ib(False, init=False)
 
     @classmethod
     def formatMentions(cls, text, *args, **kwargs):
@@ -144,12 +146,19 @@ class Message(object):
         message = cls(text=result, mentions=mentions)
         return message
 
+    @staticmethod
+    def _get_forwarded_from_tags(tags):
+        if tags is None:
+            return False
+        return any(map(lambda tag: "forward" in tag or "copy" in tag, tags))
+
     @classmethod
     def _from_graphql(cls, data):
         if data.get("message_sender") is None:
             data["message_sender"] = {}
         if data.get("message") is None:
             data["message"] = {}
+        tags = data.get("tags_list")
         rtn = cls(
             text=data["message"].get("text"),
             mentions=[
@@ -160,7 +169,8 @@ class Message(object):
                 )
                 for m in data["message"].get("ranges") or ()
             ],
-            emoji_size=EmojiSize._from_tags(data.get("tags_list")),
+            emoji_size=EmojiSize._from_tags(tags),
+            forwarded=cls._get_forwarded_from_tags(tags),
             sticker=_sticker.Sticker._from_graphql(data.get("sticker")),
         )
         rtn.uid = str(data["message_id"])
@@ -203,13 +213,15 @@ class Message(object):
 
     @classmethod
     def _from_reply(cls, data):
+        tags = data["messageMetadata"].get("tags")
         rtn = cls(
             text=data.get("body"),
             mentions=[
                 Mention(m.get("i"), offset=m.get("o"), length=m.get("l"))
                 for m in json.loads(data.get("data", {}).get("prng", "[]"))
             ],
-            emoji_size=EmojiSize._from_tags(data["messageMetadata"].get("tags")),
+            emoji_size=EmojiSize._from_tags(tags),
+            forwarded=cls._get_forwarded_from_tags(tags),
         )
         metadata = data.get("messageMetadata", {})
         rtn.uid = metadata.get("messageId")
@@ -311,6 +323,7 @@ class Message(object):
                 )
 
         rtn.emoji_size = EmojiSize._from_tags(tags)
+        rtn.forwarded = cls._get_forwarded_from_tags(tags)
 
         return rtn
 

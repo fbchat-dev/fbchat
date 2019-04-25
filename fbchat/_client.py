@@ -1707,6 +1707,23 @@ class Client(object):
             thread_type=thread_type,
         )
 
+    def forwardAttachment(self, attachment_id, thread_id=None):
+        """
+        Forwards an attachment
+
+        :param attachment_id: Attachment ID to forward
+        :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
+        :raises: FBchatException if request failed
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+        data = {
+            "attachment_id": attachment_id,
+            "recipient_map[{}]".format(generateOfflineThreadingID()): thread_id,
+        }
+        j = self._post(
+            self.req_url.FORWARD_ATTACHMENT, data, fix_request=True, as_json=True
+        )
+
     def createGroup(self, message, user_ids):
         """
         Creates a group with the given ids

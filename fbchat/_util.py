@@ -114,6 +114,7 @@ class ReqUrl(object):
     SEARCH_MESSAGES = "https://www.facebook.com/ajax/mercury/search_snippets.php?dpr=1"
     MARK_SPAM = "https://www.facebook.com/ajax/mercury/mark_spam.php?dpr=1"
     UNSEND = "https://www.facebook.com/messaging/unsend_message/?dpr=1"
+    FORWARD_ATTACHMENT = "https://www.facebook.com/mercury/attachments/forward/"
 
     pull_channel = 0
 
@@ -192,29 +193,35 @@ def generateOfflineThreadingID():
 
 
 def check_json(j):
-    if j.get("error") is None:
-        return
-    if "errorDescription" in j:
-        # 'errorDescription' is in the users own language!
+    if j.get("payload") and j["payload"].get("error"):
         raise FBchatFacebookError(
-            "Error #{} when sending request: {}".format(
-                j["error"], j["errorDescription"]
-            ),
-            fb_error_code=j["error"],
-            fb_error_message=j["errorDescription"],
+            "Error when sending request: {}".format(j["payload"]["error"]),
+            fb_error_code=None,
+            fb_error_message=j["payload"]["error"],
         )
-    elif "debug_info" in j["error"] and "code" in j["error"]:
-        raise FBchatFacebookError(
-            "Error #{} when sending request: {}".format(
-                j["error"]["code"], repr(j["error"]["debug_info"])
-            ),
-            fb_error_code=j["error"]["code"],
-            fb_error_message=j["error"]["debug_info"],
-        )
-    else:
-        raise FBchatFacebookError(
-            "Error {} when sending request".format(j["error"]), fb_error_code=j["error"]
-        )
+    elif j.get("error"):
+        if "errorDescription" in j:
+            # 'errorDescription' is in the users own language!
+            raise FBchatFacebookError(
+                "Error #{} when sending request: {}".format(
+                    j["error"], j["errorDescription"]
+                ),
+                fb_error_code=j["error"],
+                fb_error_message=j["errorDescription"],
+            )
+        elif "debug_info" in j["error"] and "code" in j["error"]:
+            raise FBchatFacebookError(
+                "Error #{} when sending request: {}".format(
+                    j["error"]["code"], repr(j["error"]["debug_info"])
+                ),
+                fb_error_code=j["error"]["code"],
+                fb_error_message=j["error"]["debug_info"],
+            )
+        else:
+            raise FBchatFacebookError(
+                "Error {} when sending request".format(j["error"]),
+                fb_error_code=j["error"],
+            )
 
 
 def check_request(r, as_json=True):
