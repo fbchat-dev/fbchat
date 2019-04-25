@@ -66,7 +66,7 @@ class ShareAttachment(Attachment):
             description=data["description"].get("text")
             if data.get("description")
             else None,
-            source=data["source"].get("text"),
+            source=data["source"].get("text") if data.get("source") else None,
             attachments=[
                 _file.graphql_to_subattachment(attachment)
                 for attachment in data.get("subattachments")
