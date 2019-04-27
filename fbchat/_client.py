@@ -2950,7 +2950,11 @@ class Client(object):
                 author_id=author_id,
                 message=delta.get("body", ""),
                 message_object=Message._from_pull(
-                    delta, mid=mid, tags=metadata.get("tags"), author=author_id, timestamp=ts
+                    delta,
+                    mid=mid,
+                    tags=metadata.get("tags"),
+                    author=author_id,
+                    timestamp=ts,
                 ),
                 thread_id=thread_id,
                 thread_type=thread_type,
