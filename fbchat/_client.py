@@ -828,6 +828,9 @@ class Client(object):
         )
         result = j["payload"]["search_snippets"][query]
 
+        if not result:
+            return {}
+
         if fetch_messages:
             search_method = self.searchForMessages
         else:
