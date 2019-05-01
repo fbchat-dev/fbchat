@@ -193,7 +193,7 @@ def generateOfflineThreadingID():
 
 
 def check_json(j):
-    if j.get("payload") and j["payload"].get("error"):
+    if hasattr(j.get("payload"), "get") and j["payload"].get("error"):
         raise FBchatFacebookError(
             "Error when sending request: {}".format(j["payload"]["error"]),
             fb_error_code=None,
