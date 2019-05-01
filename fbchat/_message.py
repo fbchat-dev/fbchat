@@ -170,9 +170,9 @@ class Message(object):
                 for m in data["message"].get("ranges") or ()
             ],
             emoji_size=EmojiSize._from_tags(tags),
-            forwarded=cls._get_forwarded_from_tags(tags),
             sticker=_sticker.Sticker._from_graphql(data.get("sticker")),
         )
+        rtn.forwarded = cls._get_forwarded_from_tags(tags)
         rtn.uid = str(data["message_id"])
         rtn.author = str(data["message_sender"]["id"])
         rtn.timestamp = data.get("timestamp_precise")
@@ -221,9 +221,9 @@ class Message(object):
                 for m in json.loads(data.get("data", {}).get("prng", "[]"))
             ],
             emoji_size=EmojiSize._from_tags(tags),
-            forwarded=cls._get_forwarded_from_tags(tags),
         )
         metadata = data.get("messageMetadata", {})
+        rtn.forwarded = cls._get_forwarded_from_tags(tags)
         rtn.uid = metadata.get("messageId")
         rtn.author = str(metadata.get("actorFbId"))
         rtn.timestamp = metadata.get("timestamp")
@@ -324,7 +324,6 @@ class Message(object):
 
         rtn.emoji_size = EmojiSize._from_tags(tags)
         rtn.forwarded = cls._get_forwarded_from_tags(tags)
-
         return rtn
 
 
