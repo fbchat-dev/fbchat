@@ -109,13 +109,12 @@ class Client(object):
         """Adds the following defaults to the payload:
           __rev, __user, __a, ttstamp, fb_dtsg, __req
         """
-        payload = self._payload_default.copy()
-        if query:
-            payload.update(query)
-        payload["__req"] = str_base(self._req_counter, 36)
-        payload["seq"] = self._seq
+        if not query:
+            query = {}
+        query.update(self._payload_default)
+        query["__req"] = str_base(self._req_counter, 36)
         self._req_counter += 1
-        return payload
+        return query
 
     def _fix_fb_errors(self, error_code):
         """
@@ -323,17 +322,11 @@ class Client(object):
         if fb_h_element:
             self._fb_h = fb_h_element["value"]
 
-        ttstamp = ""
-        for i in fb_dtsg:
-            ttstamp += str(ord(i))
-        ttstamp += "2"
         # Set default payload
         self._payload_default["__rev"] = int(
             r.text.split('"client_revision":', 1)[1].split(",", 1)[0]
         )
-        self._payload_default["__user"] = self._uid
         self._payload_default["__a"] = "1"
-        self._payload_default["ttstamp"] = ttstamp
         self._payload_default["fb_dtsg"] = fb_dtsg
 
     def _login(self, email, password):
@@ -2399,6 +2392,7 @@ class Client(object):
 
     def _ping(self):
         data = {
+            "seq": self._seq,
             "channel": "p_" + self._uid,
             "clientid": self._client_id,
             "partition": -2,
@@ -2414,6 +2408,7 @@ class Client(object):
     def _pullMessage(self):
         """Call pull api with seq value to get message data."""
         data = {
+            "seq": self._seq,
             "msgs_recv": 0,
             "sticky_token": self._sticky,
             "sticky_pool": self._pool,
