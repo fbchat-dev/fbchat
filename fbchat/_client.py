@@ -266,32 +266,16 @@ class Client(object):
         self._session = requests.session()
         self._seq = "0"
         self._uid = None
+        self._client_id = hex(int(random() * 2147483648))[2:]
 
     def _postLogin(self):
-        self._state = State()
-        self._client_id = hex(int(random() * 2147483648))[2:]
         self._uid = self._session.cookies.get_dict().get("c_user")
         if self._uid is None:
             raise FBchatException("Could not find c_user cookie")
         self._uid = str(self._uid)
 
         r = self._get("/")
-        soup = bs(r.text, "html.parser")
-
-        fb_dtsg_element = soup.find("input", {"name": "fb_dtsg"})
-        if fb_dtsg_element:
-            fb_dtsg = fb_dtsg_element["value"]
-        else:
-            fb_dtsg = re.search(r'name="fb_dtsg" value="(.*?)"', r.text).group(1)
-
-        logout_h = None
-        logout_h_element = soup.find("input", {"name": "h"})
-        if logout_h_element:
-            logout_h = logout_h_element["value"]
-
-        revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])
-
-        self._state = State(fb_dtsg=fb_dtsg, revision=revision, logout_h=logout_h)
+        self._state = State.from_base_request(r.text)
 
     def _login(self, email, password):
         soup = bs(self._get("https://m.facebook.com/").text, "html.parser")
