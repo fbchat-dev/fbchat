@@ -13,6 +13,11 @@ class State(object):
     fb_dtsg = attr.ib(None)
     _revision = attr.ib(None)
     _counter = attr.ib(0)
+    _logout_h = attr.ib(None)
+
+    @property
+    def logout_h(self):
+        return self._logout_h
 
     def get_params(self):
         if self.fb_dtsg is None:

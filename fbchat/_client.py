@@ -284,13 +284,14 @@ class Client(object):
         else:
             fb_dtsg = re.search(r'name="fb_dtsg" value="(.*?)"', r.text).group(1)
 
-        fb_h_element = soup.find("input", {"name": "h"})
-        if fb_h_element:
-            self._fb_h = fb_h_element["value"]
+        logout_h = None
+        logout_h_element = soup.find("input", {"name": "h"})
+        if logout_h_element:
+            logout_h = logout_h_element["value"]
 
         revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])
 
-        self._state = State(fb_dtsg=fb_dtsg, revision=revision)
+        self._state = State(fb_dtsg=fb_dtsg, revision=revision, logout_h=logout_h)
 
     def _login(self, email, password):
         soup = bs(self._get("https://m.facebook.com/").text, "html.parser")
@@ -468,16 +469,15 @@ class Client(object):
         :return: True if the action was successful
         :rtype: bool
         """
-        if not hasattr(self, "_fb_h"):
+        logout_h = self._state.logout_h
+        if not logout_h:
             h_r = self._post("/bluebar/modern_settings_menu/", {"pmid": "4"})
-            self._fb_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
+            logout_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
 
-        data = {"ref": "mb", "h": self._fb_h}
+        data = {"ref": "mb", "h": logout_h}
 
         r = self._get("/logout.php", data)
-
         self._resetValues()
-
         return r.ok
 
     """
