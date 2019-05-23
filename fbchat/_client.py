@@ -120,13 +120,22 @@ class Client(object):
             return True
         return False
 
-    def _get(self, url, query=None, fix_request=False, as_json=False, error_retries=3):
+    def _get(
+        self,
+        url,
+        query=None,
+        fix_request=False,
+        as_json=False,
+        error_retries=3,
+        allow_redirects=True,
+    ):
         payload = self._generatePayload(query)
         r = self._session.get(
             prefix_url(url),
             headers=self._header,
             params=payload,
             verify=self.ssl_verify,
+            allow_redirects=allow_redirects,
         )
         if not fix_request:
             return r
@@ -140,6 +149,7 @@ class Client(object):
                     fix_request=fix_request,
                     as_json=as_json,
                     error_retries=error_retries - 1,
+                    allow_redirects=allow_redirects,
                 )
             raise e
 
@@ -175,20 +185,6 @@ class Client(object):
                     error_retries=error_retries - 1,
                 )
             raise e
-
-    def _cleanGet(self, url, query=None, allow_redirects=True):
-        return self._session.get(
-            prefix_url(url),
-            headers=self._header,
-            params=query,
-            verify=self.ssl_verify,
-            allow_redirects=allow_redirects,
-        )
-
-    def _cleanPost(self, url, query=None):
-        return self._session.post(
-            prefix_url(url), headers=self._header, data=query, verify=self.ssl_verify
-        )
 
     def _postFile(
         self,
@@ -288,7 +284,7 @@ class Client(object):
         data["pass"] = password
         data["login"] = "Log In"
 
-        r = self._cleanPost("https://m.facebook.com/login.php?login_attempt=1", data)
+        r = self._post("https://m.facebook.com/login.php?login_attempt=1", data)
 
         # Usually, 'Checkpoint' will refer to 2FA
         if "checkpoint" in r.url and ('id="approvals_code"' in r.text.lower()):
@@ -296,7 +292,7 @@ class Client(object):
 
         # Sometimes Facebook tries to show the user a "Save Device" dialog
         if "save-device" in r.url:
-            r = self._cleanGet("https://m.facebook.com/login/save-device/cancel/")
+            r = self._get("https://m.facebook.com/login/save-device/cancel/")
 
         if "home" in r.url:
             self._postLogin()
@@ -317,7 +313,7 @@ class Client(object):
         data["codes_submitted"] = 0
         log.info("Submitting 2FA code.")
 
-        r = self._cleanPost("https://m.facebook.com/login/checkpoint/", data)
+        r = self._post("https://m.facebook.com/login/checkpoint/", data)
 
         if "home" in r.url:
             return r
@@ -331,7 +327,7 @@ class Client(object):
         log.info(
             "Saving browser."
         )  # At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
-        r = self._cleanPost("https://m.facebook.com/login/checkpoint/", data)
+        r = self._post("https://m.facebook.com/login/checkpoint/", data)
 
         if "home" in r.url:
             return r
@@ -340,7 +336,7 @@ class Client(object):
         log.info(
             "Starting Facebook checkup flow."
         )  # At this stage, we have dtsg, nh, submit[Continue]
-        r = self._cleanPost("https://m.facebook.com/login/checkpoint/", data)
+        r = self._post("https://m.facebook.com/login/checkpoint/", data)
 
         if "home" in r.url:
             return r
@@ -350,7 +346,7 @@ class Client(object):
         log.info(
             "Verifying login attempt."
         )  # At this stage, we have dtsg, nh, submit[This was me]
-        r = self._cleanPost("https://m.facebook.com/login/checkpoint/", data)
+        r = self._post("https://m.facebook.com/login/checkpoint/", data)
 
         if "home" in r.url:
             return r
@@ -361,7 +357,7 @@ class Client(object):
         log.info(
             "Saving device again."
         )  # At this stage, we have dtsg, nh, submit[Continue], name_action_selected
-        r = self._cleanPost("https://m.facebook.com/login/checkpoint/", data)
+        r = self._post("https://m.facebook.com/login/checkpoint/", data)
         return r
 
     def isLoggedIn(self):
@@ -372,7 +368,7 @@ class Client(object):
         :rtype: bool
         """
         # Send a request to the login url, to see if we're directed to the home page
-        r = self._cleanGet(
+        r = self._get(
             "https://m.facebook.com/login.php?login_attempt=1", allow_redirects=False
         )
         return "Location" in r.headers and "home" in r.headers["Location"]
