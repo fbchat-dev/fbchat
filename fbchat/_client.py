@@ -128,22 +128,10 @@ class Client(object):
             return True
         return False
 
-    def _get(
-        self,
-        url,
-        query=None,
-        timeout=30,
-        fix_request=False,
-        as_json=False,
-        error_retries=3,
-    ):
+    def _get(self, url, query=None, fix_request=False, as_json=False, error_retries=3):
         payload = self._generatePayload(query)
         r = self._session.get(
-            url,
-            headers=self._header,
-            params=payload,
-            timeout=timeout,
-            verify=self.ssl_verify,
+            url, headers=self._header, params=payload, verify=self.ssl_verify
         )
         if not fix_request:
             return r
@@ -154,7 +142,6 @@ class Client(object):
                 return self._get(
                     url,
                     query=query,
-                    timeout=timeout,
                     fix_request=fix_request,
                     as_json=as_json,
                     error_retries=error_retries - 1,
@@ -165,7 +152,6 @@ class Client(object):
         self,
         url,
         query=None,
-        timeout=30,
         fix_request=False,
         as_json=False,
         as_graphql=False,
@@ -173,11 +159,7 @@ class Client(object):
     ):
         payload = self._generatePayload(query)
         r = self._session.post(
-            url,
-            headers=self._header,
-            data=payload,
-            timeout=timeout,
-            verify=self.ssl_verify,
+            url, headers=self._header, data=payload, verify=self.ssl_verify
         )
         if not fix_request:
             return r
@@ -192,7 +174,6 @@ class Client(object):
                 return self._post(
                     url,
                     query=query,
-                    timeout=timeout,
                     fix_request=fix_request,
                     as_json=as_json,
                     as_graphql=as_graphql,
@@ -200,24 +181,19 @@ class Client(object):
                 )
             raise e
 
-    def _cleanGet(self, url, query=None, timeout=30, allow_redirects=True):
+    def _cleanGet(self, url, query=None, allow_redirects=True):
         return self._session.get(
             url,
             headers=self._header,
             params=query,
-            timeout=timeout,
             verify=self.ssl_verify,
             allow_redirects=allow_redirects,
         )
 
-    def _cleanPost(self, url, query=None, timeout=30):
+    def _cleanPost(self, url, query=None):
         self._req_counter += 1
         return self._session.post(
-            url,
-            headers=self._header,
-            data=query,
-            timeout=timeout,
-            verify=self.ssl_verify,
+            url, headers=self._header, data=query, verify=self.ssl_verify
         )
 
     def _postFile(
@@ -225,7 +201,6 @@ class Client(object):
         url,
         files=None,
         query=None,
-        timeout=30,
         fix_request=False,
         as_json=False,
         error_retries=3,
@@ -236,12 +211,7 @@ class Client(object):
             (i, self._header[i]) for i in self._header if i != "Content-Type"
         )
         r = self._session.post(
-            url,
-            headers=headers,
-            data=payload,
-            timeout=timeout,
-            files=files,
-            verify=self.ssl_verify,
+            url, headers=headers, data=payload, files=files, verify=self.ssl_verify
         )
         if not fix_request:
             return r
@@ -253,7 +223,6 @@ class Client(object):
                     url,
                     files=files,
                     query=query,
-                    timeout=timeout,
                     fix_request=fix_request,
                     as_json=as_json,
                     error_retries=error_retries - 1,
@@ -500,7 +469,6 @@ class Client(object):
         """
         Safely logs out the client
 
-        :param timeout: See `requests timeout <http://docs.python-requests.org/en/master/user/advanced/#timeouts>`_
         :return: True if the action was successful
         :rtype: bool
         """
