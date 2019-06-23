@@ -59,7 +59,7 @@ class Client(object):
 
         :param email: Facebook `email`, `id` or `phone number`
         :param password: Facebook account password
-        :param user_agent: Custom user agent to use when sending requests. If `None`, user agent will be chosen from a premade list (see :any:`utils.USER_AGENTS`)
+        :param user_agent: Custom user agent to use when sending requests. If `None`, user agent will be chosen from a premade list
         :param max_tries: Maximum number of times to try logging in
         :param session_cookies: Cookies from a previous session (Will default to login if these are invalid)
         :param logging_level: Configures the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. Defaults to `INFO`

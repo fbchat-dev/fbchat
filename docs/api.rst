@@ -31,14 +31,3 @@ A good tip is to write ``from fbchat.models import *`` at the start of your sour
 .. automodule:: fbchat.models
     :members:
     :undoc-members:
-
-
-.. _api_utils:
-
-Utils
------
-
-These functions and values are used internally by fbchat, and are subject to change. Do **NOT** rely on these to be backwards compatible!
-
-.. automodule:: fbchat.utils
-    :members:
