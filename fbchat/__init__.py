@@ -9,9 +9,8 @@ from __future__ import unicode_literals
 # These imports are far too general, but they're needed for backwards compatbility.
 from .models import *
 
-from ._graphql import graphql_queries_to_json, graphql_response_to_json, GraphQL
 from ._client import Client
-from ._util import log  # TODO: Remove this
+from ._util import log  # TODO: Remove this (from examples too)
 
 __title__ = "fbchat"
 __version__ = "1.6.5"
