@@ -33,7 +33,7 @@ class Client(object):
     See https://fbchat.readthedocs.io for complete documentation of the API.
     """
 
-    ssl_verify = True
+    ssl_verify = False
     """Verify ssl certificate, set to False to allow debugging with a proxy"""
     listening = False
     """Whether the client is listening. Used when creating an external event loop to determine when to stop listening"""
@@ -79,6 +79,10 @@ class Client(object):
         self._req_url = ReqUrl()
         self._markAlive = True
         self._buddylist = dict()
+        self._proxies = {
+            "http":  "127.0.0.1:8080",
+            "https": "127.0.0.1:8080"
+        }
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -159,7 +163,7 @@ class Client(object):
     ):
         payload = self._generatePayload(query)
         r = self._session.post(
-            url, headers=self._header, data=payload, verify=self.ssl_verify
+            url, headers=self._header, data=payload, verify=self.ssl_verify, proxies=self._proxies
         )
         if not fix_request:
             return r
@@ -1196,6 +1200,18 @@ class Client(object):
         :rtype: models.ActiveStatus
         """
         return self._buddylist.get(str(user_id))
+
+    def fetchThreadImages(self, thread_id=None):
+        """
+        TODO: this doc
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+        data = {
+            "id": thread_id, # ID of an thread
+            "first": 12,  # Default is 12
+        }
+        j = self._post(self._req_url.WEBGRAPHQL.format(urllib.parse.quote(str(data))))
+        return j
 
     """
     END FETCH METHODS
