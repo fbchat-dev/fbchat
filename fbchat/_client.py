@@ -34,10 +34,18 @@ class Client(object):
     See https://fbchat.readthedocs.io for complete documentation of the API.
     """
 
-    ssl_verify = True
-    """Verify ssl certificate, set to False to allow debugging with a proxy"""
     listening = False
     """Whether the client is listening. Used when creating an external event loop to determine when to stop listening"""
+
+    @property
+    def ssl_verify(self):
+        """Verify ssl certificate, set to False to allow debugging with a proxy."""
+        # TODO: Deprecate this
+        return self._state._session.verify
+
+    @ssl_verify.setter
+    def ssl_verify(self, value):
+        self._state._session.verify = value
 
     @property
     def uid(self):
@@ -134,7 +142,6 @@ class Client(object):
             prefix_url(url),
             headers=self._header,
             params=payload,
-            verify=self.ssl_verify,
             allow_redirects=allow_redirects,
         )
         if not fix_request:
@@ -164,7 +171,7 @@ class Client(object):
     ):
         payload = self._generatePayload(query)
         r = self._state._session.post(
-            prefix_url(url), headers=self._header, data=payload, verify=self.ssl_verify
+            prefix_url(url), headers=self._header, data=payload
         )
         if not fix_request:
             return r
@@ -201,11 +208,7 @@ class Client(object):
             (i, self._header[i]) for i in self._header if i != "Content-Type"
         )
         r = self._state._session.post(
-            prefix_url(url),
-            headers=headers,
-            data=payload,
-            files=files,
-            verify=self.ssl_verify,
+            prefix_url(url), headers=headers, data=payload, files=files
         )
         if not fix_request:
             return r
