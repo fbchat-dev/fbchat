@@ -115,8 +115,8 @@ class Client(object):
         It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
         """
         if error_code == "1357004":
-            log.warning("Got error #1357004. Doing a _postLogin, and resending request")
-            self._postLogin()
+            log.warning("Got error #1357004. Refreshing state and resending request")
+            self._state = State.from_session(session=self._state._session)
             return True
         return False
 
@@ -263,15 +263,6 @@ class Client(object):
         self._uid = None
         self._client_id = hex(int(random() * 2147483648))[2:]
 
-    def _postLogin(self):
-        self._uid = self._state._session.cookies.get_dict().get("c_user")
-        if self._uid is None:
-            raise FBchatException("Could not find c_user cookie")
-        self._uid = str(self._uid)
-
-        r = self._get("/")
-        self._state = State.from_base_request(self._state._session, r.text)
-
     def _login(self, email, password):
         soup = bs(self._get("https://m.facebook.com/").text, "html.parser")
         data = dict(
@@ -294,7 +285,10 @@ class Client(object):
             r = self._get("https://m.facebook.com/login/save-device/cancel/")
 
         if "home" in r.url:
-            self._postLogin()
+            self._state = State.from_session(session=self._state._session)
+            self._uid = self._state.get_user_id()
+            if self._uid is None:
+                raise FBchatException("Could not find c_user cookie")
             return True, r.url
         else:
             return False, r.url
@@ -378,7 +372,7 @@ class Client(object):
         :return: A dictionay containing session cookies
         :rtype: dict
         """
-        return self._state._session.cookies.get_dict()
+        return self._state.get_cookies()
 
     def setSession(self, session_cookies):
         """Loads session cookies
@@ -394,14 +388,16 @@ class Client(object):
 
         try:
             # Load cookies into current session
-            self._state._session.cookies = requests.cookies.merge_cookies(
-                self._state._session.cookies, session_cookies
-            )
-            self._postLogin()
+            self._state = State.from_cookies(session_cookies)
         except Exception as e:
             log.exception("Failed loading session")
-            self._resetValues()
+            self._state = State()
             return False
+        uid = self._state.get_user_id()
+        if uid is None:
+            log.warning("Could not find c_user cookie")
+            return False
+        self._uid = uid
         return True
 
     def login(self, email, password, max_tries=5):

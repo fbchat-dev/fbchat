@@ -21,6 +21,12 @@ class State(object):
     _counter = attr.ib(0)
     _logout_h = attr.ib(None)
 
+    def get_user_id(self):
+        rtn = self.get_cookies().get("c_user")
+        if rtn is None:
+            return None
+        return str(rtn)
+
     @property
     def logout_h(self):
         return self._logout_h
@@ -37,17 +43,19 @@ class State(object):
         }
 
     @classmethod
-    def from_base_request(cls, session, content):
-        soup = bs4.BeautifulSoup(content, "html.parser")
+    def from_session(cls, session):
+        r = session.get(_util.prefix_url("/"))
+
+        soup = bs4.BeautifulSoup(r.text, "html.parser")
 
         fb_dtsg_element = soup.find("input", {"name": "fb_dtsg"})
         if fb_dtsg_element:
             fb_dtsg = fb_dtsg_element["value"]
         else:
             # Fall back to searching with a regex
-            fb_dtsg = FB_DTSG_REGEX.search(content).group(1)
+            fb_dtsg = FB_DTSG_REGEX.search(r.text).group(1)
 
-        revision = int(content.split('"client_revision":', 1)[1].split(",", 1)[0])
+        revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])
 
         logout_h_element = soup.find("input", {"name": "h"})
         logout_h = logout_h_element["value"] if logout_h_element else None
@@ -55,3 +63,12 @@ class State(object):
         return cls(
             session=session, fb_dtsg=fb_dtsg, revision=revision, logout_h=logout_h
         )
+
+    def get_cookies(self):
+        return self._session.cookies.get_dict()
+
+    @classmethod
+    def from_cookies(cls, cookies):
+        session = requests.session()
+        session.cookies = requests.cookies.merge_cookies(session.cookies, cookies)
+        return cls.from_session(session=session)
