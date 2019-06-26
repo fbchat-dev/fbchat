@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import attr
 import bs4
 import re
+import requests
 
 from . import _util
 
@@ -14,6 +15,7 @@ FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
 class State(object):
     """Stores and manages state required for most Facebook requests."""
 
+    _session = attr.ib(factory=requests.session)
     fb_dtsg = attr.ib(None)
     _revision = attr.ib(None)
     _counter = attr.ib(0)
@@ -35,7 +37,7 @@ class State(object):
         }
 
     @classmethod
-    def from_base_request(cls, content):
+    def from_base_request(cls, session, content):
         soup = bs4.BeautifulSoup(content, "html.parser")
 
         fb_dtsg_element = soup.find("input", {"name": "fb_dtsg"})
@@ -50,4 +52,6 @@ class State(object):
         logout_h_element = soup.find("input", {"name": "h"})
         logout_h = logout_h_element["value"] if logout_h_element else None
 
-        return cls(fb_dtsg=fb_dtsg, revision=revision, logout_h=logout_h)
+        return cls(
+            session=session, fb_dtsg=fb_dtsg, revision=revision, logout_h=logout_h
+        )

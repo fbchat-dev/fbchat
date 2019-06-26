@@ -130,7 +130,7 @@ class Client(object):
         allow_redirects=True,
     ):
         payload = self._generatePayload(query)
-        r = self._session.get(
+        r = self._state._session.get(
             prefix_url(url),
             headers=self._header,
             params=payload,
@@ -163,7 +163,7 @@ class Client(object):
         error_retries=3,
     ):
         payload = self._generatePayload(query)
-        r = self._session.post(
+        r = self._state._session.post(
             prefix_url(url), headers=self._header, data=payload, verify=self.ssl_verify
         )
         if not fix_request:
@@ -200,7 +200,7 @@ class Client(object):
         headers = dict(
             (i, self._header[i]) for i in self._header if i != "Content-Type"
         )
-        r = self._session.post(
+        r = self._state._session.post(
             prefix_url(url),
             headers=headers,
             data=payload,
@@ -259,19 +259,18 @@ class Client(object):
 
     def _resetValues(self):
         self._state = State()
-        self._session = requests.session()
         self._seq = "0"
         self._uid = None
         self._client_id = hex(int(random() * 2147483648))[2:]
 
     def _postLogin(self):
-        self._uid = self._session.cookies.get_dict().get("c_user")
+        self._uid = self._state._session.cookies.get_dict().get("c_user")
         if self._uid is None:
             raise FBchatException("Could not find c_user cookie")
         self._uid = str(self._uid)
 
         r = self._get("/")
-        self._state = State.from_base_request(r.text)
+        self._state = State.from_base_request(self._state._session, r.text)
 
     def _login(self, email, password):
         soup = bs(self._get("https://m.facebook.com/").text, "html.parser")
@@ -379,7 +378,7 @@ class Client(object):
         :return: A dictionay containing session cookies
         :rtype: dict
         """
-        return self._session.cookies.get_dict()
+        return self._state._session.cookies.get_dict()
 
     def setSession(self, session_cookies):
         """Loads session cookies
@@ -395,8 +394,8 @@ class Client(object):
 
         try:
             # Load cookies into current session
-            self._session.cookies = requests.cookies.merge_cookies(
-                self._session.cookies, session_cookies
+            self._state._session.cookies = requests.cookies.merge_cookies(
+                self._state._session.cookies, session_cookies
             )
             self._postLogin()
         except Exception as e:
