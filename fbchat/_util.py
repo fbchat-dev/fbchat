@@ -47,14 +47,12 @@ USER_AGENTS = [
 ]
 
 
-facebookEncoding = "UTF-8"
-
-
 def now():
     return int(time() * 1000)
 
 
-def strip_to_json(text):
+def strip_json_cruft(text):
+    """Removes `for(;;);` (and other cruft) that preceeds JSON responses."""
     try:
         return text[text.index("{") :]
     except ValueError:
@@ -66,15 +64,14 @@ def get_decoded_r(r):
 
 
 def get_decoded(content):
-    return content.decode(facebookEncoding)
+    return content.decode("utf-8")
 
 
 def parse_json(content):
-    return json.loads(content)
-
-
-def get_json(r):
-    return json.loads(strip_to_json(get_decoded_r(r)))
+    try:
+        return json.loads(content)
+    except ValueError:
+        raise FBchatFacebookError("Error while parsing JSON: {!r}".format(content))
 
 
 def digitToChar(digit):
@@ -155,11 +152,8 @@ def check_request(r, as_json=True):
         raise FBchatFacebookError("Error when sending request: Got empty response")
 
     if as_json:
-        content = strip_to_json(content)
-        try:
-            j = json.loads(content)
-        except ValueError:
-            raise FBchatFacebookError("Error while parsing JSON: {!r}".format(content))
+        content = strip_json_cruft(content)
+        j = parse_json(content)
         check_json(j)
         log.debug(j)
         return j
@@ -173,9 +167,8 @@ def get_jsmods_require(j, index):
             return j["jsmods"]["require"][0][index][0]
         except (KeyError, IndexError) as e:
             log.warning(
-                "Error when getting jsmods_require: {}. Facebook might have changed protocol".format(
-                    j
-                )
+                "Error when getting jsmods_require: "
+                "{}. Facebook might have changed protocol".format(j)
             )
     return None
 

@@ -38,7 +38,7 @@ def graphql_queries_to_json(*queries):
 
 
 def graphql_response_to_json(content):
-    content = _util.strip_to_json(content)  # Usually only needed in some error cases
+    content = _util.strip_json_cruft(content)  # Usually only needed in some error cases
     try:
         j = json.loads(content, cls=ConcatJSONDecoder)
     except Exception:
