@@ -96,7 +96,7 @@ class Client(object):
             or not self.setSession(session_cookies)
             or not self.isLoggedIn()
         ):
-            self.login(email, password, max_tries)
+            self.login(email, password, max_tries, user_agent=user_agent)
 
     """
     INTERNAL REQUEST METHODS
@@ -241,96 +241,6 @@ class Client(object):
     LOGIN METHODS
     """
 
-    def _login(self, email, password):
-        soup = bs(self._get("https://m.facebook.com/").text, "html.parser")
-        data = dict(
-            (elem["name"], elem["value"])
-            for elem in soup.findAll("input")
-            if elem.has_attr("value") and elem.has_attr("name")
-        )
-        data["email"] = email
-        data["pass"] = password
-        data["login"] = "Log In"
-
-        r = self._post("https://m.facebook.com/login.php?login_attempt=1", data)
-
-        # Usually, 'Checkpoint' will refer to 2FA
-        if "checkpoint" in r.url and ('id="approvals_code"' in r.text.lower()):
-            r = self._2FA(r)
-
-        # Sometimes Facebook tries to show the user a "Save Device" dialog
-        if "save-device" in r.url:
-            r = self._get("https://m.facebook.com/login/save-device/cancel/")
-
-        if "home" in r.url:
-            self._state = State.from_session(session=self._state._session)
-            self._uid = self._state.get_user_id()
-            if self._uid is None:
-                raise FBchatException("Could not find c_user cookie")
-            return True, r.url
-        else:
-            return False, r.url
-
-    def _2FA(self, r):
-        soup = bs(r.text, "html.parser")
-        data = dict()
-
-        s = self.on2FACode()
-
-        data["approvals_code"] = s
-        data["fb_dtsg"] = soup.find("input", {"name": "fb_dtsg"})["value"]
-        data["nh"] = soup.find("input", {"name": "nh"})["value"]
-        data["submit[Submit Code]"] = "Submit Code"
-        data["codes_submitted"] = 0
-        log.info("Submitting 2FA code.")
-
-        r = self._post("https://m.facebook.com/login/checkpoint/", data)
-
-        if "home" in r.url:
-            return r
-
-        del data["approvals_code"]
-        del data["submit[Submit Code]"]
-        del data["codes_submitted"]
-
-        data["name_action_selected"] = "save_device"
-        data["submit[Continue]"] = "Continue"
-        log.info(
-            "Saving browser."
-        )  # At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
-        r = self._post("https://m.facebook.com/login/checkpoint/", data)
-
-        if "home" in r.url:
-            return r
-
-        del data["name_action_selected"]
-        log.info(
-            "Starting Facebook checkup flow."
-        )  # At this stage, we have dtsg, nh, submit[Continue]
-        r = self._post("https://m.facebook.com/login/checkpoint/", data)
-
-        if "home" in r.url:
-            return r
-
-        del data["submit[Continue]"]
-        data["submit[This was me]"] = "This Was Me"
-        log.info(
-            "Verifying login attempt."
-        )  # At this stage, we have dtsg, nh, submit[This was me]
-        r = self._post("https://m.facebook.com/login/checkpoint/", data)
-
-        if "home" in r.url:
-            return r
-
-        del data["submit[This was me]"]
-        data["submit[Continue]"] = "Continue"
-        data["name_action_selected"] = "save_device"
-        log.info(
-            "Saving device again."
-        )  # At this stage, we have dtsg, nh, submit[Continue], name_action_selected
-        r = self._post("https://m.facebook.com/login/checkpoint/", data)
-        return r
-
     def isLoggedIn(self):
         """
         Sends a request to Facebook to check the login status
@@ -380,7 +290,7 @@ class Client(object):
         self._uid = uid
         return True
 
-    def login(self, email, password, max_tries=5):
+    def login(self, email, password, max_tries=5, user_agent=None):
         """
         Uses `email` and `password` to login the user (If the user is already logged in, this will do a re-login)
 
@@ -399,23 +309,21 @@ class Client(object):
             raise FBchatUserError("Email and password not set")
 
         for i in range(1, max_tries + 1):
-            login_successful, login_url = self._login(email, password)
-            if not login_successful:
-                log.warning(
-                    "Attempt #{} failed{}".format(
-                        i, {True: ", retrying"}.get(i < max_tries, "")
-                    )
-                )
+            try:
+                state = State.login(email, password, user_agent=user_agent)
+                uid = state.get_user_id()
+                if uid is None:
+                    raise FBchatException("Could not find user id")
+            except Exception:
+                if i >= max_tries:
+                    raise
+                log.exception("Attempt #{} failed, retrying".format(i))
                 time.sleep(1)
-                continue
             else:
+                self._state = state
+                self._uid = uid
                 self.onLoggedIn(email=email)
                 break
-        else:
-            raise FBchatUserError(
-                "Login failed. Check email/password. "
-                "(Failed on url: {})".format(login_url)
-            )
 
     def logout(self):
         """

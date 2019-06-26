@@ -7,7 +7,7 @@ import re
 import requests
 import random
 
-from . import _util
+from . import _util, _exception
 
 FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
 
@@ -18,6 +18,63 @@ def session_factory(user_agent=None):
     # TODO: Deprecate setting the user agent manually
     session.headers["User-Agent"] = user_agent or random.choice(_util.USER_AGENTS)
     return session
+
+
+def _2fa_helper(session, code, r):
+    soup = bs4.BeautifulSoup(r.text, "html.parser")
+    data = dict()
+
+    url = "https://m.facebook.com/login/checkpoint/"
+
+    data["approvals_code"] = code
+    data["fb_dtsg"] = soup.find("input", {"name": "fb_dtsg"})["value"]
+    data["nh"] = soup.find("input", {"name": "nh"})["value"]
+    data["submit[Submit Code]"] = "Submit Code"
+    data["codes_submitted"] = 0
+    _util.log.info("Submitting 2FA code.")
+
+    r = session.post(url, data=data)
+
+    if "home" in r.url:
+        return r
+
+    del data["approvals_code"]
+    del data["submit[Submit Code]"]
+    del data["codes_submitted"]
+
+    data["name_action_selected"] = "save_device"
+    data["submit[Continue]"] = "Continue"
+    _util.log.info("Saving browser.")
+    # At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
+    r = session.post(url, data=data)
+
+    if "home" in r.url:
+        return r
+
+    del data["name_action_selected"]
+    _util.log.info("Starting Facebook checkup flow.")
+    # At this stage, we have dtsg, nh, submit[Continue]
+    r = session.post(url, data=data)
+
+    if "home" in r.url:
+        return r
+
+    del data["submit[Continue]"]
+    data["submit[This was me]"] = "This Was Me"
+    _util.log.info("Verifying login attempt.")
+    # At this stage, we have dtsg, nh, submit[This was me]
+    r = session.post(url, data=data)
+
+    if "home" in r.url:
+        return r
+
+    del data["submit[This was me]"]
+    data["submit[Continue]"] = "Continue"
+    data["name_action_selected"] = "save_device"
+    _util.log.info("Saving device again.")
+    # At this stage, we have dtsg, nh, submit[Continue], name_action_selected
+    r = session.post(url, data=data)
+    return r
 
 
 @attr.s(slots=True, kw_only=True)
@@ -50,6 +107,41 @@ class State(object):
             "__rev": self._revision,
             "fb_dtsg": self.fb_dtsg,
         }
+
+    @classmethod
+    def login(cls, email, password, user_agent=None):
+        session = session_factory(user_agent=user_agent)
+
+        soup = bs4.BeautifulSoup(
+            session.get("https://m.facebook.com/").text, "html.parser"
+        )
+        data = dict(
+            (elem["name"], elem["value"])
+            for elem in soup.findAll("input")
+            if elem.has_attr("value") and elem.has_attr("name")
+        )
+        data["email"] = email
+        data["pass"] = password
+        data["login"] = "Log In"
+
+        r = session.post("https://m.facebook.com/login.php?login_attempt=1", data=data)
+
+        # Usually, 'Checkpoint' will refer to 2FA
+        if "checkpoint" in r.url and ('id="approvals_code"' in r.text.lower()):
+            code = on_2fa_callback()
+            r = _2fa_helper(session, code, r)
+
+        # Sometimes Facebook tries to show the user a "Save Device" dialog
+        if "save-device" in r.url:
+            r = session.get("https://m.facebook.com/login/save-device/cancel/")
+
+        if "home" in r.url:
+            return cls.from_session(session=session)
+        else:
+            raise _exception.FBchatUserError(
+                "Login failed. Check email/password. "
+                "(Failed on url: {})".format(r.url)
+            )
 
     @classmethod
     def from_session(cls, session):
