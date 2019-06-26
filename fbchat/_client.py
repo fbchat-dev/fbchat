@@ -332,17 +332,11 @@ class Client(object):
         :return: True if the action was successful
         :rtype: bool
         """
-        logout_h = self._state.logout_h
-        if not logout_h:
-            h_r = self._post("/bluebar/modern_settings_menu/", {"pmid": "4"})
-            logout_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
-
-        data = {"ref": "mb", "h": logout_h}
-
-        r = self._get("/logout.php", data)
-        self._state = None
-        self._uid = None
-        return r.ok
+        if self._state.logout():
+            self._state = None
+            self._uid = None
+            return True
+        return False
 
     """
     END LOGIN METHODS

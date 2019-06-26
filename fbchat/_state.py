@@ -93,10 +93,6 @@ class State(object):
             return None
         return str(rtn)
 
-    @property
-    def logout_h(self):
-        return self._logout_h
-
     def get_params(self):
         if self.fb_dtsg is None:
             return {}
@@ -142,6 +138,16 @@ class State(object):
                 "Login failed. Check email/password. "
                 "(Failed on url: {})".format(r.url)
             )
+
+    def logout(self):
+        logout_h = self._logout_h
+        if not logout_h:
+            url = _util.prefix_url("/bluebar/modern_settings_menu/")
+            h_r = self._session.post(url, data={"pmid": "4"})
+            logout_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
+
+        url = _util.prefix_url("/logout.php")
+        return self._session.get(url, params={"ref": "mb", "h": logout_h}).ok
 
     @classmethod
     def from_session(cls, session):
