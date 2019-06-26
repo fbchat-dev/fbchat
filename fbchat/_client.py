@@ -120,19 +120,9 @@ class Client(object):
             return True
         return False
 
-    def _get(
-        self,
-        url,
-        query=None,
-        fix_request=False,
-        as_json=False,
-        error_retries=3,
-        allow_redirects=True,
-    ):
+    def _get(self, url, query=None, fix_request=False, as_json=False, error_retries=3):
         payload = self._generatePayload(query)
-        r = self._state._session.get(
-            prefix_url(url), params=payload, allow_redirects=allow_redirects
-        )
+        r = self._state._session.get(prefix_url(url), params=payload)
         if not fix_request:
             return r
         try:
@@ -145,7 +135,6 @@ class Client(object):
                     fix_request=fix_request,
                     as_json=as_json,
                     error_retries=error_retries - 1,
-                    allow_redirects=allow_redirects,
                 )
             raise e
 
@@ -248,11 +237,7 @@ class Client(object):
         :return: True if the client is still logged in
         :rtype: bool
         """
-        # Send a request to the login url, to see if we're directed to the home page
-        r = self._get(
-            "https://m.facebook.com/login.php?login_attempt=1", allow_redirects=False
-        )
-        return "Location" in r.headers and "home" in r.headers["Location"]
+        return self._state.is_logged_in()
 
     def getSession(self):
         """Retrieves session cookies

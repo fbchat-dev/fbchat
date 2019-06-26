@@ -139,6 +139,12 @@ class State(object):
                 "(Failed on url: {})".format(r.url)
             )
 
+    def is_logged_in(self):
+        # Send a request to the login url, to see if we're directed to the home page
+        url = "https://m.facebook.com/login.php?login_attempt=1"
+        r = self._session.get(url, allow_redirects=False)
+        return "Location" in r.headers and "home" in r.headers["Location"]
+
     def logout(self):
         logout_h = self._logout_h
         if not logout_h:
