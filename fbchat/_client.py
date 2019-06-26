@@ -78,9 +78,7 @@ class Client(object):
         :raises: FBchatException on failed login
         """
         self._sticky, self._pool = (None, None)
-        self._state = State.with_user_agent(user_agent=user_agent)
         self._seq = "0"
-        self._uid = None
         self._client_id = hex(int(random() * 2 ** 31))[2:]
         self._default_thread_id = None
         self._default_thread_type = None
@@ -93,7 +91,7 @@ class Client(object):
         # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
         if (
             not session_cookies
-            or not self.setSession(session_cookies)
+            or not self.setSession(session_cookies, user_agent=user_agent)
             or not self.isLoggedIn()
         ):
             self.login(email, password, max_tries, user_agent=user_agent)
@@ -247,7 +245,7 @@ class Client(object):
         """
         return self._state.get_cookies()
 
-    def setSession(self, session_cookies):
+    def setSession(self, session_cookies, user_agent=None):
         """Loads session cookies
 
         :param session_cookies: A dictionay containing session cookies
@@ -255,23 +253,17 @@ class Client(object):
         :return: False if `session_cookies` does not contain proper cookies
         :rtype: bool
         """
-        # Quick check to see if session_cookies is formatted properly
-        if not session_cookies or "c_user" not in session_cookies:
-            return False
-
         try:
             # Load cookies into current session
-            self._state = State.from_cookies(
-                session_cookies, user_agent=self._state._session.headers["User-Agent"]
-            )
+            state = State.from_cookies(session_cookies, user_agent=user_agent)
         except Exception as e:
             log.exception("Failed loading session")
-            self._state = State()
             return False
-        uid = self._state.get_user_id()
+        uid = state.get_user_id()
         if uid is None:
             log.warning("Could not find c_user cookie")
             return False
+        self._state = state
         self._uid = uid
         return True
 

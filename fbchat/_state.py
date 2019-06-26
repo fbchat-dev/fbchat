@@ -82,8 +82,8 @@ class State(object):
     """Stores and manages state required for most Facebook requests."""
 
     _session = attr.ib(factory=session_factory)
-    fb_dtsg = attr.ib(None)
-    _revision = attr.ib(None)
+    fb_dtsg = attr.ib()
+    _revision = attr.ib()
     _counter = attr.ib(0)
     _logout_h = attr.ib(None)
 
@@ -94,8 +94,6 @@ class State(object):
         return str(rtn)
 
     def get_params(self):
-        if self.fb_dtsg is None:
-            return {}
         self._counter += 1  # TODO: Make this operation atomic / thread-safe
         return {
             "__a": 1,
@@ -185,7 +183,3 @@ class State(object):
         session = session_factory(user_agent=user_agent)
         session.cookies = requests.cookies.merge_cookies(session.cookies, cookies)
         return cls.from_session(session=session)
-
-    @classmethod
-    def with_user_agent(cls, user_agent=None, **kwargs):
-        return cls(session=session_factory(user_agent=user_agent), **kwargs)
