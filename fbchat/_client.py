@@ -78,23 +78,15 @@ class Client(object):
         :raises: FBchatException on failed login
         """
         self._sticky, self._pool = (None, None)
-        self._resetValues()
+        self._state = State.with_user_agent(user_agent=user_agent)
+        self._seq = "0"
+        self._uid = None
+        self._client_id = hex(int(random() * 2 ** 31))[2:]
         self._default_thread_id = None
         self._default_thread_type = None
         self._pull_channel = 0
         self._markAlive = True
         self._buddylist = dict()
-
-        if not user_agent:
-            user_agent = choice(USER_AGENTS)
-
-        self._header = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Referer": "https://www.facebook.com",
-            "Origin": "https://www.facebook.com",
-            "User-Agent": user_agent,
-            "Connection": "keep-alive",
-        }
 
         handler.setLevel(logging_level)
 
@@ -139,10 +131,7 @@ class Client(object):
     ):
         payload = self._generatePayload(query)
         r = self._state._session.get(
-            prefix_url(url),
-            headers=self._header,
-            params=payload,
-            allow_redirects=allow_redirects,
+            prefix_url(url), params=payload, allow_redirects=allow_redirects
         )
         if not fix_request:
             return r
@@ -170,9 +159,7 @@ class Client(object):
         error_retries=3,
     ):
         payload = self._generatePayload(query)
-        r = self._state._session.post(
-            prefix_url(url), headers=self._header, data=payload
-        )
+        r = self._state._session.post(prefix_url(url), data=payload)
         if not fix_request:
             return r
         try:
@@ -203,13 +190,7 @@ class Client(object):
         error_retries=3,
     ):
         payload = self._generatePayload(query)
-        # Removes 'Content-Type' from the header
-        headers = dict(
-            (i, self._header[i]) for i in self._header if i != "Content-Type"
-        )
-        r = self._state._session.post(
-            prefix_url(url), headers=headers, data=payload, files=files
-        )
+        r = self._state._session.post(prefix_url(url), data=payload, files=files)
         if not fix_request:
             return r
         try:
@@ -259,12 +240,6 @@ class Client(object):
     """
     LOGIN METHODS
     """
-
-    def _resetValues(self):
-        self._state = State()
-        self._seq = "0"
-        self._uid = None
-        self._client_id = hex(int(random() * 2147483648))[2:]
 
     def _login(self, email, password):
         soup = bs(self._get("https://m.facebook.com/").text, "html.parser")
@@ -391,7 +366,9 @@ class Client(object):
 
         try:
             # Load cookies into current session
-            self._state = State.from_cookies(session_cookies)
+            self._state = State.from_cookies(
+                session_cookies, user_agent=self._state._session.headers["User-Agent"]
+            )
         except Exception as e:
             log.exception("Failed loading session")
             self._state = State()
@@ -455,7 +432,8 @@ class Client(object):
         data = {"ref": "mb", "h": logout_h}
 
         r = self._get("/logout.php", data)
-        self._resetValues()
+        self._state = None
+        self._uid = None
         return r.ok
 
     """
