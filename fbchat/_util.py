@@ -47,88 +47,6 @@ USER_AGENTS = [
 ]
 
 
-class ReqUrl(object):
-    """A class containing all urls used by `fbchat`"""
-
-    SEARCH = "https://www.facebook.com/ajax/typeahead/search.php"
-    LOGIN = "https://m.facebook.com/login.php?login_attempt=1"
-    SEND = "https://www.facebook.com/messaging/send/"
-    UNREAD_THREADS = "https://www.facebook.com/ajax/mercury/unread_threads.php"
-    UNSEEN_THREADS = "https://www.facebook.com/mercury/unseen_thread_ids/"
-    THREADS = "https://www.facebook.com/ajax/mercury/threadlist_info.php"
-    MOVE_THREAD = "https://www.facebook.com/ajax/mercury/move_thread.php"
-    ARCHIVED_STATUS = (
-        "https://www.facebook.com/ajax/mercury/change_archived_status.php?dpr=1"
-    )
-    PINNED_STATUS = (
-        "https://www.facebook.com/ajax/mercury/change_pinned_status.php?dpr=1"
-    )
-    MESSAGES = "https://www.facebook.com/ajax/mercury/thread_info.php"
-    READ_STATUS = "https://www.facebook.com/ajax/mercury/change_read_status.php"
-    DELIVERED = "https://www.facebook.com/ajax/mercury/delivery_receipts.php"
-    MARK_SEEN = "https://www.facebook.com/ajax/mercury/mark_seen.php"
-    BASE = "https://www.facebook.com"
-    MOBILE = "https://m.facebook.com/"
-    STICKY = "https://0-edge-chat.facebook.com/pull"
-    PING = "https://0-edge-chat.facebook.com/active_ping"
-    UPLOAD = "https://upload.facebook.com/ajax/mercury/upload.php"
-    INFO = "https://www.facebook.com/chat/user_info/"
-    CONNECT = "https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
-    REMOVE_USER = "https://www.facebook.com/chat/remove_participants/"
-    LOGOUT = "https://www.facebook.com/logout.php"
-    ALL_USERS = "https://www.facebook.com/chat/user_info_all"
-    SAVE_DEVICE = "https://m.facebook.com/login/save-device/cancel/"
-    CHECKPOINT = "https://m.facebook.com/login/checkpoint/"
-    THREAD_COLOR = "https://www.facebook.com/messaging/save_thread_color/?source=thread_settings&dpr=1"
-    THREAD_NICKNAME = "https://www.facebook.com/messaging/save_thread_nickname/?source=thread_settings&dpr=1"
-    THREAD_EMOJI = "https://www.facebook.com/messaging/save_thread_emoji/?source=thread_settings&dpr=1"
-    THREAD_IMAGE = "https://www.facebook.com/messaging/set_thread_image/?dpr=1"
-    THREAD_NAME = "https://www.facebook.com/messaging/set_thread_name/?dpr=1"
-    MESSAGE_REACTION = "https://www.facebook.com/webgraphql/mutation"
-    TYPING = "https://www.facebook.com/ajax/messaging/typ.php"
-    GRAPHQL = "https://www.facebook.com/api/graphqlbatch/"
-    ATTACHMENT_PHOTO = "https://www.facebook.com/mercury/attachments/photo/"
-    PLAN_CREATE = "https://www.facebook.com/ajax/eventreminder/create"
-    PLAN_INFO = "https://www.facebook.com/ajax/eventreminder"
-    PLAN_CHANGE = "https://www.facebook.com/ajax/eventreminder/submit"
-    PLAN_PARTICIPATION = "https://www.facebook.com/ajax/eventreminder/rsvp"
-    MODERN_SETTINGS_MENU = "https://www.facebook.com/bluebar/modern_settings_menu/"
-    REMOVE_FRIEND = "https://m.facebook.com/a/removefriend.php"
-    BLOCK_USER = "https://www.facebook.com/messaging/block_messages/?dpr=1"
-    UNBLOCK_USER = "https://www.facebook.com/messaging/unblock_messages/?dpr=1"
-    SAVE_ADMINS = "https://www.facebook.com/messaging/save_admins/?dpr=1"
-    APPROVAL_MODE = "https://www.facebook.com/messaging/set_approval_mode/?dpr=1"
-    CREATE_GROUP = "https://m.facebook.com/messages/send/?icm=1"
-    DELETE_THREAD = "https://www.facebook.com/ajax/mercury/delete_thread.php?dpr=1"
-    DELETE_MESSAGES = "https://www.facebook.com/ajax/mercury/delete_messages.php?dpr=1"
-    MUTE_THREAD = "https://www.facebook.com/ajax/mercury/change_mute_thread.php?dpr=1"
-    MUTE_REACTIONS = (
-        "https://www.facebook.com/ajax/mercury/change_reactions_mute_thread/?dpr=1"
-    )
-    MUTE_MENTIONS = (
-        "https://www.facebook.com/ajax/mercury/change_mentions_mute_thread/?dpr=1"
-    )
-    CREATE_POLL = "https://www.facebook.com/messaging/group_polling/create_poll/?dpr=1"
-    UPDATE_VOTE = "https://www.facebook.com/messaging/group_polling/update_vote/?dpr=1"
-    GET_POLL_OPTIONS = "https://www.facebook.com/ajax/mercury/get_poll_options"
-    SEARCH_MESSAGES = "https://www.facebook.com/ajax/mercury/search_snippets.php?dpr=1"
-    MARK_SPAM = "https://www.facebook.com/ajax/mercury/mark_spam.php?dpr=1"
-    UNSEND = "https://www.facebook.com/messaging/unsend_message/?dpr=1"
-    FORWARD_ATTACHMENT = "https://www.facebook.com/mercury/attachments/forward/"
-
-    pull_channel = 0
-
-    def change_pull_channel(self, channel=None):
-        if channel is None:
-            self.pull_channel = (self.pull_channel + 1) % 5  # Pull channel will be 0-4
-        else:
-            self.pull_channel = channel
-        self.STICKY = "https://{}-edge-chat.facebook.com/pull".format(self.pull_channel)
-        self.PING = "https://{}-edge-chat.facebook.com/active_ping".format(
-            self.pull_channel
-        )
-
-
 facebookEncoding = "UTF-8"
 
 
@@ -315,3 +233,9 @@ def get_url_parameters(url, *args):
 
 def get_url_parameter(url, param):
     return get_url_parameters(url, param)[0]
+
+
+def prefix_url(url):
+    if url.startswith("/"):
+        return "https://www.facebook.com" + url
+    return url
