@@ -77,6 +77,7 @@ class Client(object):
         self._default_thread_id = None
         self._default_thread_type = None
         self._req_url = ReqUrl()
+        self._pull_channel = 0
         self._markAlive = True
         self._buddylist = dict()
 
@@ -2378,7 +2379,12 @@ class Client(object):
             "viewer_uid": self._uid,
             "state": "active",
         }
-        self._get(self._req_url.PING, data, fix_request=True, as_json=False)
+        self._get(
+            self._req_url.PING.format(self._pull_channel),
+            data,
+            fix_request=True,
+            as_json=False,
+        )
 
     def _pullMessage(self):
         """Call pull api with seq value to get message data."""
@@ -2390,7 +2396,12 @@ class Client(object):
             "clientid": self._client_id,
             "state": "active" if self._markAlive else "offline",
         }
-        return self._get(self._req_url.STICKY, data, fix_request=True, as_json=True)
+        return self._get(
+            self._req_url.STICKY.format(self._pull_channel),
+            data,
+            fix_request=True,
+            as_json=True,
+        )
 
     def _parseDelta(self, m):
         def getThreadIdAndThreadType(msg_metadata):
@@ -3082,7 +3093,8 @@ class Client(object):
         except FBchatFacebookError as e:
             # Fix 502 and 503 pull errors
             if e.request_status_code in [502, 503]:
-                self._req_url.change_pull_channel()
+                # Bump pull channel, while contraining withing 0-4
+                self._pull_channel = (self._pull_channel + 1) % 5
                 self.startListening()
             else:
                 raise e

@@ -69,8 +69,8 @@ class ReqUrl(object):
     MARK_SEEN = "https://www.facebook.com/ajax/mercury/mark_seen.php"
     BASE = "https://www.facebook.com"
     MOBILE = "https://m.facebook.com/"
-    STICKY = "https://0-edge-chat.facebook.com/pull"
-    PING = "https://0-edge-chat.facebook.com/active_ping"
+    STICKY = "https://{}-edge-chat.facebook.com/pull"
+    PING = "https://{}-edge-chat.facebook.com/active_ping"
     UPLOAD = "https://upload.facebook.com/ajax/mercury/upload.php"
     INFO = "https://www.facebook.com/chat/user_info/"
     CONNECT = "https://www.facebook.com/ajax/add_friend/action.php?dpr=1"
@@ -115,18 +115,6 @@ class ReqUrl(object):
     MARK_SPAM = "https://www.facebook.com/ajax/mercury/mark_spam.php?dpr=1"
     UNSEND = "https://www.facebook.com/messaging/unsend_message/?dpr=1"
     FORWARD_ATTACHMENT = "https://www.facebook.com/mercury/attachments/forward/"
-
-    pull_channel = 0
-
-    def change_pull_channel(self, channel=None):
-        if channel is None:
-            self.pull_channel = (self.pull_channel + 1) % 5  # Pull channel will be 0-4
-        else:
-            self.pull_channel = channel
-        self.STICKY = "https://{}-edge-chat.facebook.com/pull".format(self.pull_channel)
-        self.PING = "https://{}-edge-chat.facebook.com/active_ping".format(
-            self.pull_channel
-        )
 
 
 facebookEncoding = "UTF-8"
