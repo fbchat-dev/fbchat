@@ -315,3 +315,9 @@ def get_url_parameters(url, *args):
 
 def get_url_parameter(url, param):
     return get_url_parameters(url, param)[0]
+
+
+def prefix_url(url):
+    if url.startswith("/"):
+        return "https://www.facebook.com" + url
+    return url

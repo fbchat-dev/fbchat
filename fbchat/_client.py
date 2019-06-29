@@ -131,7 +131,10 @@ class Client(object):
     def _get(self, url, query=None, fix_request=False, as_json=False, error_retries=3):
         payload = self._generatePayload(query)
         r = self._session.get(
-            url, headers=self._header, params=payload, verify=self.ssl_verify
+            prefix_url(url),
+            headers=self._header,
+            params=payload,
+            verify=self.ssl_verify,
         )
         if not fix_request:
             return r
@@ -159,7 +162,7 @@ class Client(object):
     ):
         payload = self._generatePayload(query)
         r = self._session.post(
-            url, headers=self._header, data=payload, verify=self.ssl_verify
+            prefix_url(url), headers=self._header, data=payload, verify=self.ssl_verify
         )
         if not fix_request:
             return r
@@ -183,7 +186,7 @@ class Client(object):
 
     def _cleanGet(self, url, query=None, allow_redirects=True):
         return self._session.get(
-            url,
+            prefix_url(url),
             headers=self._header,
             params=query,
             verify=self.ssl_verify,
@@ -193,7 +196,7 @@ class Client(object):
     def _cleanPost(self, url, query=None):
         self._req_counter += 1
         return self._session.post(
-            url, headers=self._header, data=query, verify=self.ssl_verify
+            prefix_url(url), headers=self._header, data=query, verify=self.ssl_verify
         )
 
     def _postFile(
@@ -211,7 +214,11 @@ class Client(object):
             (i, self._header[i]) for i in self._header if i != "Content-Type"
         )
         r = self._session.post(
-            url, headers=headers, data=payload, files=files, verify=self.ssl_verify
+            prefix_url(url),
+            headers=headers,
+            data=payload,
+            files=files,
+            verify=self.ssl_verify,
         )
         if not fix_request:
             return r
