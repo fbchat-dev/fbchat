@@ -2054,17 +2054,17 @@ class Client(object):
         Removes a specifed friend from your friend list
 
         :param friend_id: The ID of the friend that you want to remove
-        :return: Returns error if the removing was unsuccessful, returns True when successful.
+        :return: True
+        :raises: FBchatException if request failed
         """
-        payload = {"friend_id": friend_id, "unref": "none", "confirm": "Confirm"}
-        r = self._post("https://m.facebook.com/a/removefriend.php", payload)
-        query = parse_qs(urlparse(r.url).query)
-        if "err" not in query:
-            log.debug("Remove was successful!")
-            return True
-        else:
-            log.warning("Error while removing friend")
-            return False
+        data = {"uid": friend_id}
+        j = self._post(
+            "/ajax/profile/removefriendconfirm.php",
+            data,
+            fix_request=True,
+            as_json=True,
+        )
+        return True
 
     def blockUser(self, user_id):
         """
