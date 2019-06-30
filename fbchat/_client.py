@@ -33,7 +33,7 @@ class Client(object):
     See https://fbchat.readthedocs.io for complete documentation of the API.
     """
 
-    ssl_verify = False
+    ssl_verify = True
     """Verify ssl certificate, set to False to allow debugging with a proxy"""
     listening = False
     """Whether the client is listening. Used when creating an external event loop to determine when to stop listening"""
