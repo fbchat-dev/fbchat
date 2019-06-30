@@ -115,6 +115,7 @@ class ReqUrl(object):
     MARK_SPAM = "https://www.facebook.com/ajax/mercury/mark_spam.php?dpr=1"
     UNSEND = "https://www.facebook.com/messaging/unsend_message/?dpr=1"
     FORWARD_ATTACHMENT = "https://www.facebook.com/mercury/attachments/forward/"
+    WEBGRAPHQL = "https://www.facebook.com/webgraphql/query/?query_id=515216185516880&variables={}"
 
     pull_channel = 0
 
