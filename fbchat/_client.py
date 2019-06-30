@@ -79,10 +79,6 @@ class Client(object):
         self._req_url = ReqUrl()
         self._markAlive = True
         self._buddylist = dict()
-        self._proxies = {
-            "http":  "127.0.0.1:8080",
-            "https": "127.0.0.1:8080"
-        }
 
         if not user_agent:
             user_agent = choice(USER_AGENTS)
@@ -163,7 +159,7 @@ class Client(object):
     ):
         payload = self._generatePayload(query)
         r = self._session.post(
-            url, headers=self._header, data=payload, verify=self.ssl_verify, proxies=self._proxies
+            url, headers=self._header, data=payload, verify=self.ssl_verify
         )
         if not fix_request:
             return r
@@ -1201,17 +1197,49 @@ class Client(object):
         """
         return self._buddylist.get(str(user_id))
 
-    def fetchThreadImages(self, thread_id=None):
+    def _fetchImages(self, thread_id=None, after=None):
+        if after is None:
+            data = urllib.parse.quote(
+                str(
+                    {
+                        "id": thread_id,  # ID of an thread
+                        "first": 12,  # Default is 12, facebook will do more, but im kinda scared
+                    }
+                )
+            )
+        else:
+            data = urllib.parse.quote(
+                str(
+                    {
+                        "id": thread_id,
+                        "after": after,  # id of an image from which you want to start the query
+                        "first": 12,  # passed as "token", 154 characters
+                    }
+                )
+            )
+        j = self._post(self._req_url.WEBGRAPHQL.format(data))
+        if j.status_code == 200:
+            return json.loads(j.text[9:])
+        else:
+            raise (FBchatUserError("Passed something thread_id"))
+
+    def fetchThreadImages(self, thread_id=None, after=None):
         """
-        TODO: this doc
+        Gets list of images sent in given thread.
+        :param thread_id: ID of the thread
+        :param after: So called Cursor
+        :return: List of images in thread with corresponding Cursor values.
+        :rtype: list
         """
         thread_id, thread_type = self._getThread(thread_id, None)
-        data = {
-            "id": thread_id, # ID of an thread
-            "first": 12,  # Default is 12
-        }
-        j = self._post(self._req_url.WEBGRAPHQL.format(urllib.parse.quote(str(data))))
-        return j
+        reply = self._fetchImages(thread_id=thread_id, after=after)
+        try:
+            return [
+                [i["cursor"], i["node"]["image"]["uri"]]
+                for i in reply["payload"][thread_id]["message_shared_media"]["edges"]
+            ]
+        except TypeError:
+            return []
 
     """
     END FETCH METHODS
