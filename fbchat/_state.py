@@ -77,13 +77,13 @@ def _2fa_helper(session, code, r):
     return r
 
 
-@attr.s(slots=True, kw_only=True)
+@attr.s(slots=True)  # TODO i Python 3: Add kw_only=True
 class State(object):
     """Stores and manages state required for most Facebook requests."""
 
-    _session = attr.ib(factory=session_factory)
     fb_dtsg = attr.ib()
     _revision = attr.ib()
+    _session = attr.ib(factory=session_factory)
     _counter = attr.ib(0)
     _logout_h = attr.ib(None)
 
@@ -172,7 +172,7 @@ class State(object):
         logout_h = logout_h_element["value"] if logout_h_element else None
 
         return cls(
-            session=session, fb_dtsg=fb_dtsg, revision=revision, logout_h=logout_h
+            fb_dtsg=fb_dtsg, revision=revision, session=session, logout_h=logout_h
         )
 
     def get_cookies(self):
