@@ -105,8 +105,6 @@ class Client(object):
     def _generatePayload(self, query):
         if not query:
             query = {}
-        query["__req"] = str_base(self._req_counter, 36)
-        self._req_counter += 1
         query.update(self._state.get_params())
         return query
 
@@ -188,7 +186,6 @@ class Client(object):
         )
 
     def _cleanPost(self, url, query=None):
-        self._req_counter += 1
         return self._session.post(
             prefix_url(url), headers=self._header, data=query, verify=self.ssl_verify
         )
@@ -267,7 +264,6 @@ class Client(object):
     def _resetValues(self):
         self._state = State()
         self._session = requests.session()
-        self._req_counter = 1
         self._seq = "0"
         self._uid = None
 
