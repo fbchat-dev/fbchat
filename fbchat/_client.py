@@ -11,6 +11,7 @@ from collections import OrderedDict
 from ._util import *
 from .models import *
 from ._graphql import graphql_queries_to_json, graphql_response_to_json, GraphQL
+from ._state import State
 import time
 import json
 
@@ -69,11 +70,7 @@ class Client(object):
         :raises: FBchatException on failed login
         """
         self._sticky, self._pool = (None, None)
-        self._session = requests.session()
-        self._req_counter = 1
-        self._seq = "0"
-        # See `createPoll` for the reason for using `OrderedDict` here
-        self._payload_default = OrderedDict()
+        self._resetValues()
         self._default_thread_id = None
         self._default_thread_type = None
         self._pull_channel = 0
@@ -106,14 +103,11 @@ class Client(object):
     """
 
     def _generatePayload(self, query):
-        """Adds the following defaults to the payload:
-          __rev, __user, __a, ttstamp, fb_dtsg, __req
-        """
         if not query:
             query = {}
-        query.update(self._payload_default)
         query["__req"] = str_base(self._req_counter, 36)
         self._req_counter += 1
+        query.update(self._state.get_params())
         return query
 
     def _fix_fb_errors(self, error_code):
@@ -271,14 +265,14 @@ class Client(object):
     """
 
     def _resetValues(self):
-        self._payload_default = OrderedDict()
+        self._state = State()
         self._session = requests.session()
         self._req_counter = 1
         self._seq = "0"
         self._uid = None
 
     def _postLogin(self):
-        self._payload_default = OrderedDict()
+        self._state = State()
         self._client_id = hex(int(random() * 2147483648))[2:]
         self._uid = self._session.cookies.get_dict().get("c_user")
         if self._uid is None:
@@ -298,12 +292,9 @@ class Client(object):
         if fb_h_element:
             self._fb_h = fb_h_element["value"]
 
-        # Set default payload
-        self._payload_default["__rev"] = int(
-            r.text.split('"client_revision":', 1)[1].split(",", 1)[0]
-        )
-        self._payload_default["__a"] = "1"
-        self._payload_default["fb_dtsg"] = fb_dtsg
+        revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])
+
+        self._state = State(fb_dtsg=fb_dtsg, revision=revision)
 
     def _login(self, email, password):
         soup = bs(self._get("https://m.facebook.com/").text, "html.parser")
@@ -1299,7 +1290,7 @@ class Client(object):
         # update JS token if received in response
         fb_dtsg = get_jsmods_require(j, 2)
         if fb_dtsg is not None:
-            self._payload_default["fb_dtsg"] = fb_dtsg
+            self._state.fb_dtsg = fb_dtsg
 
         try:
             message_ids = [
@@ -2092,9 +2083,6 @@ class Client(object):
 
         # We're using ordered dicts, because the Facebook endpoint that parses the POST
         # parameters is badly implemented, and deals with ordering the options wrongly.
-        # This also means we had to change `client._payload_default` to an ordered dict,
-        # since that's being copied in between this point and the `requests` call
-        #
         # If you can find a way to fix this for the endpoint, or if you find another
         # endpoint, please do suggest it ;)
         data = OrderedDict([("question_text", poll.title), ("target_id", thread_id)])
