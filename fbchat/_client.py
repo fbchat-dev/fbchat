@@ -944,8 +944,8 @@ class Client(object):
         """
         image_id = str(image_id)
         data = {"photo_id": str(image_id)}
-        j = self._get(
-            "/mercury/attachments/photo/", query=data, fix_request=True, as_json=True
+        j = self._post(
+            "/mercury/attachments/photo/", data, fix_request=True, as_json=True
         )
 
         url = get_jsmods_require(j, 3)
