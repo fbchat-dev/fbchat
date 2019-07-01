@@ -118,19 +118,17 @@ class Client(object):
             return True
         return False
 
-    def _get(self, url, query=None, as_json=False, error_retries=3):
+    def _get(self, url, query=None, error_retries=3):
         payload = self._generatePayload(query)
         r = self._state._session.get(prefix_url(url), params=payload)
         try:
-            return check_request(r, as_json=as_json)
+            return check_request(r)
         except FBchatFacebookError as e:
             if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
-                return self._get(
-                    url, query=query, as_json=as_json, error_retries=error_retries - 1
-                )
+                return self._get(url, query=query, error_retries=error_retries - 1)
             raise e
 
-    def _post(self, url, query=None, as_json=False, as_graphql=False, error_retries=3):
+    def _post(self, url, query=None, as_graphql=False, error_retries=3):
         payload = self._generatePayload(query)
         r = self._state._session.post(prefix_url(url), data=payload)
         try:
@@ -138,31 +136,26 @@ class Client(object):
                 content = check_request(r, as_json=False)
                 return graphql_response_to_json(content)
             else:
-                return check_request(r, as_json=as_json)
+                return check_request(r)
         except FBchatFacebookError as e:
             if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._post(
                     url,
                     query=query,
-                    as_json=as_json,
                     as_graphql=as_graphql,
                     error_retries=error_retries - 1,
                 )
             raise e
 
-    def _postFile(self, url, files=None, query=None, as_json=False, error_retries=3):
+    def _postFile(self, url, files=None, query=None, error_retries=3):
         payload = self._generatePayload(query)
         r = self._state._session.post(prefix_url(url), data=payload, files=files)
         try:
-            return check_request(r, as_json=as_json)
+            return check_request(r)
         except FBchatFacebookError as e:
             if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._postFile(
-                    url,
-                    files=files,
-                    query=query,
-                    as_json=as_json,
-                    error_retries=error_retries - 1,
+                    url, files=files, query=query, error_retries=error_retries - 1
                 )
             raise e
 
@@ -424,7 +417,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {"viewer": self._uid}
-        j = self._post("/chat/user_info_all", query=data, as_json=True)
+        j = self._post("/chat/user_info_all", query=data)
         if j.get("payload") is None:
             raise FBchatException("Missing payload while fetching users: {}".format(j))
 
@@ -536,7 +529,7 @@ class Client(object):
             "identifier": "thread_fbid",
             "thread_fbid": thread_id,
         }
-        j = self._post("/ajax/mercury/search_snippets.php?dpr=1", data, as_json=True)
+        j = self._post("/ajax/mercury/search_snippets.php?dpr=1", data)
 
         result = j["payload"]["search_snippets"][query]
         snippets = result[thread_id]["snippets"] if result.get(thread_id) else []
@@ -581,7 +574,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {"query": query, "snippetLimit": thread_limit}
-        j = self._post("/ajax/mercury/search_snippets.php?dpr=1", data, as_json=True)
+        j = self._post("/ajax/mercury/search_snippets.php?dpr=1", data)
         result = j["payload"]["search_snippets"][query]
 
         if not result:
@@ -599,7 +592,7 @@ class Client(object):
 
     def _fetchInfo(self, *ids):
         data = {"ids[{}]".format(i): _id for i, _id in enumerate(ids)}
-        j = self._post("/chat/user_info/", data, as_json=True)
+        j = self._post("/chat/user_info/", data)
 
         if j.get("payload") is None or j["payload"].get("profiles") is None:
             raise FBchatException("No users/pages returned: {}".format(j))
@@ -869,7 +862,7 @@ class Client(object):
             "last_action_timestamp": now() - 60 * 1000
             # 'last_action_timestamp': 0
         }
-        j = self._post("/ajax/mercury/unread_threads.php", form, as_json=True)
+        j = self._post("/ajax/mercury/unread_threads.php", form)
 
         payload = j["payload"]["unread_thread_fbids"][0]
         return payload["thread_fbids"] + payload["other_user_fbids"]
@@ -882,7 +875,7 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
-        j = self._post("/mercury/unseen_thread_ids/", None, as_json=True)
+        j = self._post("/mercury/unseen_thread_ids/", None)
 
         payload = j["payload"]["unseen_thread_fbids"][0]
         return payload["thread_fbids"] + payload["other_user_fbids"]
@@ -898,7 +891,7 @@ class Client(object):
         """
         image_id = str(image_id)
         data = {"photo_id": str(image_id)}
-        j = self._post("/mercury/attachments/photo/", data, as_json=True)
+        j = self._post("/mercury/attachments/photo/", data)
 
         url = get_jsmods_require(j, 3)
         if url is None:
@@ -928,7 +921,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {"question_id": poll_id}
-        j = self._post("/ajax/mercury/get_poll_options", data, as_json=True)
+        j = self._post("/ajax/mercury/get_poll_options", data)
         return [PollOption._from_graphql(m) for m in j["payload"]]
 
     def fetchPlanInfo(self, plan_id):
@@ -941,7 +934,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {"event_reminder_id": plan_id}
-        j = self._post("/ajax/eventreminder", data, as_json=True)
+        j = self._post("/ajax/eventreminder", data)
         return Plan._from_fetch(j["payload"])
 
     def _getPrivateData(self):
@@ -1066,7 +1059,7 @@ class Client(object):
 
     def _doSendRequest(self, data, get_thread_id=False):
         """Sends the data to `SendURL`, and returns the message ID or None on failure"""
-        j = self._post("/messaging/send/", data, as_json=True)
+        j = self._post("/messaging/send/", data)
 
         # update JS token if received in response
         fb_dtsg = get_jsmods_require(j, 2)
@@ -1201,7 +1194,7 @@ class Client(object):
         :param mid: :ref:`Message ID <intro_message_ids>` of the message to unsend
         """
         data = {"message_id": mid}
-        j = self._post("/messaging/unsend_message/?dpr=1", data, as_json=True)
+        j = self._post("/messaging/unsend_message/?dpr=1", data)
 
     def _sendLocation(
         self, location, current=True, message=None, thread_id=None, thread_type=None
@@ -1279,7 +1272,6 @@ class Client(object):
             "https://upload.facebook.com/ajax/mercury/upload.php",
             files=file_dict,
             query=data,
-            as_json=True,
         )
 
         if len(j["payload"]["metadata"]) != len(files):
@@ -1458,7 +1450,7 @@ class Client(object):
             "attachment_id": attachment_id,
             "recipient_map[{}]".format(generateOfflineThreadingID()): thread_id,
         }
-        j = self._post("/mercury/attachments/forward/", data, as_json=True)
+        j = self._post("/mercury/attachments/forward/", data)
 
     def createGroup(self, message, user_ids):
         """
@@ -1524,7 +1516,7 @@ class Client(object):
         thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {"uid": user_id, "tid": thread_id}
-        j = self._post("/chat/remove_participants/", data, as_json=True)
+        j = self._post("/chat/remove_participants/", data)
 
     def _adminStatus(self, admin_ids, admin, thread_id=None):
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -1536,7 +1528,7 @@ class Client(object):
         for i, admin_id in enumerate(admin_ids):
             data["admin_ids[{}]".format(i)] = str(admin_id)
 
-        j = self._post("/messaging/save_admins/?dpr=1", data, as_json=True)
+        j = self._post("/messaging/save_admins/?dpr=1", data)
 
     def addGroupAdmins(self, admin_ids, thread_id=None):
         """
@@ -1569,7 +1561,7 @@ class Client(object):
         thread_id, thread_type = self._getThread(thread_id, None)
 
         data = {"set_mode": int(require_admin_approval), "thread_fbid": thread_id}
-        j = self._post("/messaging/set_approval_mode/?dpr=1", data, as_json=True)
+        j = self._post("/messaging/set_approval_mode/?dpr=1", data)
 
     def _usersApproval(self, user_ids, approve, thread_id=None):
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -1620,7 +1612,7 @@ class Client(object):
 
         data = {"thread_image_id": image_id, "thread_id": thread_id}
 
-        j = self._post("/messaging/set_thread_image/?dpr=1", data, as_json=True)
+        j = self._post("/messaging/set_thread_image/?dpr=1", data)
         return image_id
 
     def changeGroupImageRemote(self, image_url, thread_id=None):
@@ -1667,7 +1659,7 @@ class Client(object):
             )
 
         data = {"thread_name": title, "thread_id": thread_id}
-        j = self._post("/messaging/set_thread_name/?dpr=1", data, as_json=True)
+        j = self._post("/messaging/set_thread_name/?dpr=1", data)
 
     def changeNickname(
         self, nickname, user_id, thread_id=None, thread_type=ThreadType.USER
@@ -1690,9 +1682,7 @@ class Client(object):
             "thread_or_other_fbid": thread_id,
         }
         j = self._post(
-            "/messaging/save_thread_nickname/?source=thread_settings&dpr=1",
-            data,
-            as_json=True,
+            "/messaging/save_thread_nickname/?source=thread_settings&dpr=1", data
         )
 
     def changeThreadColor(self, color, thread_id=None):
@@ -1711,9 +1701,7 @@ class Client(object):
             "thread_or_other_fbid": thread_id,
         }
         j = self._post(
-            "/messaging/save_thread_color/?source=thread_settings&dpr=1",
-            data,
-            as_json=True,
+            "/messaging/save_thread_color/?source=thread_settings&dpr=1", data
         )
 
     def changeThreadEmoji(self, emoji, thread_id=None):
@@ -1730,9 +1718,7 @@ class Client(object):
 
         data = {"emoji_choice": emoji, "thread_or_other_fbid": thread_id}
         j = self._post(
-            "/messaging/save_thread_emoji/?source=thread_settings&dpr=1",
-            data,
-            as_json=True,
+            "/messaging/save_thread_emoji/?source=thread_settings&dpr=1", data
         )
 
     def reactToMessage(self, message_id, reaction):
@@ -1752,7 +1738,7 @@ class Client(object):
             "reaction": reaction.value if reaction else None,
         }
         data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
-        j = self._post("/webgraphql/mutation", data, as_json=True)
+        j = self._post("/webgraphql/mutation", data)
 
     def createPlan(self, plan, thread_id=None):
         """
@@ -1774,7 +1760,7 @@ class Client(object):
             "location_name": plan.location or "",
             "acontext": ACONTEXT,
         }
-        j = self._post("/ajax/eventreminder/create", data, as_json=True)
+        j = self._post("/ajax/eventreminder/create", data)
 
     def editPlan(self, plan, new_plan):
         """
@@ -1794,7 +1780,7 @@ class Client(object):
             "title": new_plan.title,
             "acontext": ACONTEXT,
         }
-        j = self._post("/ajax/eventreminder/submit", data, as_json=True)
+        j = self._post("/ajax/eventreminder/submit", data)
 
     def deletePlan(self, plan):
         """
@@ -1804,7 +1790,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {"event_reminder_id": plan.uid, "delete": "true", "acontext": ACONTEXT}
-        j = self._post("/ajax/eventreminder/submit", data, as_json=True)
+        j = self._post("/ajax/eventreminder/submit", data)
 
     def changePlanParticipation(self, plan, take_part=True):
         """
@@ -1819,7 +1805,7 @@ class Client(object):
             "guest_state": "GOING" if take_part else "DECLINED",
             "acontext": ACONTEXT,
         }
-        j = self._post("/ajax/eventreminder/rsvp", data, as_json=True)
+        j = self._post("/ajax/eventreminder/rsvp", data)
 
     def eventReminder(self, thread_id, time, title, location="", location_id=""):
         """
@@ -1849,9 +1835,7 @@ class Client(object):
             data["option_text_array[{}]".format(i)] = option.text
             data["option_is_selected_array[{}]".format(i)] = str(int(option.vote))
 
-        j = self._post(
-            "/messaging/group_polling/create_poll/?dpr=1", data, as_json=True
-        )
+        j = self._post("/messaging/group_polling/create_poll/?dpr=1", data)
 
     def updatePollVote(self, poll_id, option_ids=[], new_options=[]):
         """
@@ -1873,9 +1857,7 @@ class Client(object):
         for i, option_text in enumerate(new_options):
             data["new_options[{}]".format(i)] = option_text
 
-        j = self._post(
-            "/messaging/group_polling/update_vote/?dpr=1", data, as_json=True
-        )
+        j = self._post("/messaging/group_polling/update_vote/?dpr=1", data)
 
     def setTypingStatus(self, status, thread_id=None, thread_type=None):
         """
@@ -1896,7 +1878,7 @@ class Client(object):
             "to": thread_id if thread_type == ThreadType.USER else "",
             "source": "mercury-chat",
         }
-        j = self._post("/ajax/messaging/typ.php", data, as_json=True)
+        j = self._post("/ajax/messaging/typ.php", data)
 
     """
     END SEND METHODS
@@ -1916,7 +1898,7 @@ class Client(object):
             "thread_ids[%s][0]" % thread_id: message_id,
         }
 
-        j = self._post("/ajax/mercury/delivery_receipts.php", data, as_json=True)
+        j = self._post("/ajax/mercury/delivery_receipts.php", data)
         return True
 
     def _readStatus(self, read, thread_ids):
@@ -1927,7 +1909,7 @@ class Client(object):
         for thread_id in thread_ids:
             data["ids[{}]".format(thread_id)] = "true" if read else "false"
 
-        j = self._post("/ajax/mercury/change_read_status.php", data, as_json=True)
+        j = self._post("/ajax/mercury/change_read_status.php", data)
 
     def markAsRead(self, thread_ids=None):
         """
@@ -1954,9 +1936,7 @@ class Client(object):
         .. todo::
             Documenting this
         """
-        j = self._post(
-            "/ajax/mercury/mark_seen.php", {"seen_timestamp": now()}, as_json=True
-        )
+        j = self._post("/ajax/mercury/mark_seen.php", {"seen_timestamp": now()})
 
     def friendConnect(self, friend_id):
         """
@@ -1965,7 +1945,7 @@ class Client(object):
         """
         data = {"to_friend": friend_id, "action": "confirm"}
 
-        j = self._post("/ajax/add_friend/action.php?dpr=1", data, as_json=True)
+        j = self._post("/ajax/add_friend/action.php?dpr=1", data)
 
     def removeFriend(self, friend_id=None):
         """
@@ -1976,7 +1956,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {"uid": friend_id}
-        j = self._post("/ajax/profile/removefriendconfirm.php", data, as_json=True)
+        j = self._post("/ajax/profile/removefriendconfirm.php", data)
         return True
 
     def blockUser(self, user_id):
@@ -1988,7 +1968,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {"fbid": user_id}
-        j = self._post("/messaging/block_messages/?dpr=1", data, as_json=True)
+        j = self._post("/messaging/block_messages/?dpr=1", data)
         return True
 
     def unblockUser(self, user_id):
@@ -2000,7 +1980,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {"fbid": user_id}
-        j = self._post("/messaging/unblock_messages/?dpr=1", data, as_json=True)
+        j = self._post("/messaging/unblock_messages/?dpr=1", data)
         return True
 
     def moveThreads(self, location, thread_ids):
@@ -2024,18 +2004,16 @@ class Client(object):
                 data_archive["ids[{}]".format(thread_id)] = "true"
                 data_unpin["ids[{}]".format(thread_id)] = "false"
             j_archive = self._post(
-                "/ajax/mercury/change_archived_status.php?dpr=1",
-                data_archive,
-                as_json=True,
+                "/ajax/mercury/change_archived_status.php?dpr=1", data_archive
             )
             j_unpin = self._post(
-                "/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin, as_json=True
+                "/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin
             )
         else:
             data = dict()
             for i, thread_id in enumerate(thread_ids):
                 data["{}[{}]".format(location.name.lower(), i)] = thread_id
-            j = self._post("/ajax/mercury/move_thread.php", data, as_json=True)
+            j = self._post("/ajax/mercury/move_thread.php", data)
         return True
 
     def deleteThreads(self, thread_ids):
@@ -2053,12 +2031,8 @@ class Client(object):
         for i, thread_id in enumerate(thread_ids):
             data_unpin["ids[{}]".format(thread_id)] = "false"
             data_delete["ids[{}]".format(i)] = thread_id
-        j_unpin = self._post(
-            "/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin, as_json=True
-        )
-        j_delete = self._post(
-            "/ajax/mercury/delete_thread.php?dpr=1", data_delete, as_json=True
-        )
+        j_unpin = self._post("/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin)
+        j_delete = self._post("/ajax/mercury/delete_thread.php?dpr=1", data_delete)
         return True
 
     def markAsSpam(self, thread_id=None):
@@ -2070,9 +2044,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
-        j = self._post(
-            "/ajax/mercury/mark_spam.php?dpr=1", {"id": thread_id}, as_json=True
-        )
+        j = self._post("/ajax/mercury/mark_spam.php?dpr=1", {"id": thread_id})
         return True
 
     def deleteMessages(self, message_ids):
@@ -2087,7 +2059,7 @@ class Client(object):
         data = dict()
         for i, message_id in enumerate(message_ids):
             data["message_ids[{}]".format(i)] = message_id
-        j = self._post("/ajax/mercury/delete_messages.php?dpr=1", data, as_json=True)
+        j = self._post("/ajax/mercury/delete_messages.php?dpr=1", data)
         return True
 
     def muteThread(self, mute_time=-1, thread_id=None):
@@ -2099,7 +2071,7 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"mute_settings": str(mute_time), "thread_fbid": thread_id}
-        j = self._post("/ajax/mercury/change_mute_thread.php?dpr=1", data, as_json=True)
+        j = self._post("/ajax/mercury/change_mute_thread.php?dpr=1", data)
 
     def unmuteThread(self, thread_id=None):
         """
@@ -2118,9 +2090,7 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"reactions_mute_mode": int(mute), "thread_fbid": thread_id}
-        j = self._post(
-            "/ajax/mercury/change_reactions_mute_thread/?dpr=1", data, as_json=True
-        )
+        j = self._post("/ajax/mercury/change_reactions_mute_thread/?dpr=1", data)
 
     def unmuteThreadReactions(self, thread_id=None):
         """
@@ -2139,9 +2109,7 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"mentions_mute_mode": int(mute), "thread_fbid": thread_id}
-        j = self._post(
-            "/ajax/mercury/change_mentions_mute_thread/?dpr=1", data, as_json=True
-        )
+        j = self._post("/ajax/mercury/change_mentions_mute_thread/?dpr=1", data)
 
     def unmuteThreadMentions(self, thread_id=None):
         """
@@ -2171,7 +2139,6 @@ class Client(object):
         j = self._get(
             "https://{}-edge-chat.facebook.com/active_ping".format(self._pull_channel),
             data,
-            as_json=True,
         )
 
     def _pullMessage(self):
@@ -2185,9 +2152,7 @@ class Client(object):
             "state": "active" if self._markAlive else "offline",
         }
         return self._get(
-            "https://{}-edge-chat.facebook.com/pull".format(self._pull_channel),
-            data,
-            as_json=True,
+            "https://{}-edge-chat.facebook.com/pull".format(self._pull_channel), data
         )
 
     def _parseDelta(self, m):
