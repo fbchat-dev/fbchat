@@ -1251,8 +1251,9 @@ class Client(object):
         :param mid: :ref:`Message ID <intro_message_ids>` of the message to unsend
         """
         data = {"message_id": mid}
-        r = self._post("/messaging/unsend_message/?dpr=1", data)
-        r.raise_for_status()
+        j = self._post(
+            "/messaging/unsend_message/?dpr=1", data, fix_request=True, as_json=True
+        )
 
     def _sendLocation(
         self, location, current=True, message=None, thread_id=None, thread_type=None
@@ -1819,7 +1820,7 @@ class Client(object):
             "reaction": reaction.value if reaction else None,
         }
         data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
-        self._post("/webgraphql/mutation", data, fix_request=True, as_json=True)
+        j = self._post("/webgraphql/mutation", data, fix_request=True, as_json=True)
 
     def createPlan(self, plan, thread_id=None):
         """
@@ -1987,7 +1988,7 @@ class Client(object):
 
         :param thread_id: User/Group ID to which the message belongs. See :ref:`intro_threads`
         :param message_id: Message ID to set as delivered. See :ref:`intro_threads`
-        :return: Whether the request was successful
+        :return: True
         :raises: FBchatException if request failed
         """
         data = {
@@ -1995,8 +1996,10 @@ class Client(object):
             "thread_ids[%s][0]" % thread_id: message_id,
         }
 
-        r = self._post("/ajax/mercury/delivery_receipts.php", data)
-        return r.ok
+        j = self._post(
+            "/ajax/mercury/delivery_receipts.php", data, fix_request=True, as_json=True
+        )
+        return True
 
     def _readStatus(self, read, thread_ids):
         thread_ids = require_list(thread_ids)
@@ -2006,8 +2009,9 @@ class Client(object):
         for thread_id in thread_ids:
             data["ids[{}]".format(thread_id)] = "true" if read else "false"
 
-        r = self._post("/ajax/mercury/change_read_status.php", data)
-        return r.ok
+        j = self._post(
+            "/ajax/mercury/change_read_status.php", data, fix_request=True, as_json=True
+        )
 
     def markAsRead(self, thread_ids=None):
         """
@@ -2015,7 +2019,6 @@ class Client(object):
         All messages inside the threads will be marked as read
 
         :param thread_ids: User/Group IDs to set as read. See :ref:`intro_threads`
-        :return: Whether the request was successful
         :raises: FBchatException if request failed
         """
         self._readStatus(True, thread_ids)
@@ -2026,7 +2029,6 @@ class Client(object):
         All messages inside the threads will be marked as unread
 
         :param thread_ids: User/Group IDs to set as unread. See :ref:`intro_threads`
-        :return: Whether the request was successful
         :raises: FBchatException if request failed
         """
         self._readStatus(False, thread_ids)
@@ -2036,8 +2038,12 @@ class Client(object):
         .. todo::
             Documenting this
         """
-        r = self._post("/ajax/mercury/mark_seen.php", {"seen_timestamp": now()})
-        return r.ok
+        j = self._post(
+            "/ajax/mercury/mark_seen.php",
+            {"seen_timestamp": now()},
+            fix_request=True,
+            as_json=True,
+        )
 
     def friendConnect(self, friend_id):
         """
@@ -2046,8 +2052,9 @@ class Client(object):
         """
         data = {"to_friend": friend_id, "action": "confirm"}
 
-        r = self._post("/ajax/add_friend/action.php?dpr=1", data)
-        return r.ok
+        j = self._post(
+            "/ajax/add_friend/action.php?dpr=1", data, fix_request=True, as_json=True
+        )
 
     def removeFriend(self, friend_id=None):
         """
@@ -2071,12 +2078,14 @@ class Client(object):
         Blocks messages from a specifed user
 
         :param user_id: The ID of the user that you want to block
-        :return: Whether the request was successful
+        :return: True
         :raises: FBchatException if request failed
         """
         data = {"fbid": user_id}
-        r = self._post("/messaging/block_messages/?dpr=1", data)
-        return r.ok
+        j = self._post(
+            "/messaging/block_messages/?dpr=1", data, fix_request=True, as_json=True
+        )
+        return True
 
     def unblockUser(self, user_id):
         """
@@ -2087,8 +2096,10 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         data = {"fbid": user_id}
-        r = self._post("/messaging/unblock_messages/?dpr=1", data)
-        return r.ok
+        j = self._post(
+            "/messaging/unblock_messages/?dpr=1", data, fix_request=True, as_json=True
+        )
+        return True
 
     def moveThreads(self, location, thread_ids):
         """
@@ -2096,7 +2107,7 @@ class Client(object):
 
         :param location: models.ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
         :param thread_ids: Thread IDs to move. See :ref:`intro_threads`
-        :return: Whether the request was successful
+        :return: True
         :raises: FBchatException if request failed
         """
         thread_ids = require_list(thread_ids)
@@ -2110,26 +2121,33 @@ class Client(object):
             for thread_id in thread_ids:
                 data_archive["ids[{}]".format(thread_id)] = "true"
                 data_unpin["ids[{}]".format(thread_id)] = "false"
-            r_archive = self._post(
-                "/ajax/mercury/change_archived_status.php?dpr=1", data_archive
+            j_archive = self._post(
+                "/ajax/mercury/change_archived_status.php?dpr=1",
+                data_archive,
+                fix_request=True,
+                as_json=True,
             )
-            r_unpin = self._post(
-                "/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin
+            j_unpin = self._post(
+                "/ajax/mercury/change_pinned_status.php?dpr=1",
+                data_unpin,
+                fix_request=True,
+                as_json=True,
             )
-            return r_archive.ok and r_unpin.ok
         else:
             data = dict()
             for i, thread_id in enumerate(thread_ids):
                 data["{}[{}]".format(location.name.lower(), i)] = thread_id
-            r = self._post("/ajax/mercury/move_thread.php", data)
-            return r.ok
+            j = self._post(
+                "/ajax/mercury/move_thread.php", data, fix_request=True, as_json=True
+            )
+        return True
 
     def deleteThreads(self, thread_ids):
         """
         Deletes threads
 
         :param thread_ids: Thread IDs to delete. See :ref:`intro_threads`
-        :return: Whether the request was successful
+        :return: True
         :raises: FBchatException if request failed
         """
         thread_ids = require_list(thread_ids)
@@ -2139,36 +2157,56 @@ class Client(object):
         for i, thread_id in enumerate(thread_ids):
             data_unpin["ids[{}]".format(thread_id)] = "false"
             data_delete["ids[{}]".format(i)] = thread_id
-        r_unpin = self._post("/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin)
-        r_delete = self._post("/ajax/mercury/delete_thread.php?dpr=1", data_delete)
-        return r_unpin.ok and r_delete.ok
+        j_unpin = self._post(
+            "/ajax/mercury/change_pinned_status.php?dpr=1",
+            data_unpin,
+            fix_request=True,
+            as_json=True,
+        )
+        j_delete = self._post(
+            "/ajax/mercury/delete_thread.php?dpr=1",
+            data_delete,
+            fix_request=True,
+            as_json=True,
+        )
+        return True
 
     def markAsSpam(self, thread_id=None):
         """
         Mark a thread as spam and delete it
 
         :param thread_id: User/Group ID to mark as spam. See :ref:`intro_threads`
-        :return: Whether the request was successful
+        :return: True
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
-        r = self._post("/ajax/mercury/mark_spam.php?dpr=1", {"id": thread_id})
-        return r.ok
+        j = self._post(
+            "/ajax/mercury/mark_spam.php?dpr=1",
+            {"id": thread_id},
+            fix_request=True,
+            as_json=True,
+        )
+        return True
 
     def deleteMessages(self, message_ids):
         """
         Deletes specifed messages
 
         :param message_ids: Message IDs to delete
-        :return: Whether the request was successful
+        :return: True
         :raises: FBchatException if request failed
         """
         message_ids = require_list(message_ids)
         data = dict()
         for i, message_id in enumerate(message_ids):
             data["message_ids[{}]".format(i)] = message_id
-        r = self._post("/ajax/mercury/delete_messages.php?dpr=1", data)
-        return r.ok
+        j = self._post(
+            "/ajax/mercury/delete_messages.php?dpr=1",
+            data,
+            fix_request=True,
+            as_json=True,
+        )
+        return True
 
     def muteThread(self, mute_time=-1, thread_id=None):
         """
@@ -2179,8 +2217,11 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"mute_settings": str(mute_time), "thread_fbid": thread_id}
-        content = self._post(
-            "/ajax/mercury/change_mute_thread.php?dpr=1", data, fix_request=True
+        j = self._post(
+            "/ajax/mercury/change_mute_thread.php?dpr=1",
+            data,
+            fix_request=True,
+            as_json=True,
         )
 
     def unmuteThread(self, thread_id=None):
@@ -2200,8 +2241,11 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"reactions_mute_mode": int(mute), "thread_fbid": thread_id}
-        r = self._post(
-            "/ajax/mercury/change_reactions_mute_thread/?dpr=1", data, fix_request=True
+        j = self._post(
+            "/ajax/mercury/change_reactions_mute_thread/?dpr=1",
+            data,
+            fix_request=True,
+            as_json=True,
         )
 
     def unmuteThreadReactions(self, thread_id=None):
@@ -2221,8 +2265,11 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"mentions_mute_mode": int(mute), "thread_fbid": thread_id}
-        r = self._post(
-            "/ajax/mercury/change_mentions_mute_thread/?dpr=1", data, fix_request=True
+        j = self._post(
+            "/ajax/mercury/change_mentions_mute_thread/?dpr=1",
+            data,
+            fix_request=True,
+            as_json=True,
         )
 
     def unmuteThreadMentions(self, thread_id=None):
@@ -2250,11 +2297,11 @@ class Client(object):
             "viewer_uid": self._uid,
             "state": "active",
         }
-        self._get(
+        j = self._get(
             "https://{}-edge-chat.facebook.com/active_ping".format(self._pull_channel),
             data,
             fix_request=True,
-            as_json=False,
+            as_json=True,
         )
 
     def _pullMessage(self):
