@@ -436,7 +436,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         params = {"search": name, "limit": limit}
-        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_USER, params=params))
+        j = self.graphql_request(GraphQL(query=_graphql.SEARCH_USER, params=params))
 
         return [User._from_graphql(node) for node in j[name]["users"]["nodes"]]
 
@@ -450,7 +450,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         params = {"search": name, "limit": limit}
-        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_PAGE, params=params))
+        j = self.graphql_request(GraphQL(query=_graphql.SEARCH_PAGE, params=params))
 
         return [Page._from_graphql(node) for node in j[name]["pages"]["nodes"]]
 
@@ -465,7 +465,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         params = {"search": name, "limit": limit}
-        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_GROUP, params=params))
+        j = self.graphql_request(GraphQL(query=_graphql.SEARCH_GROUP, params=params))
 
         return [Group._from_graphql(node) for node in j["viewer"]["groups"]["nodes"]]
 
@@ -480,7 +480,7 @@ class Client(object):
         :raises: FBchatException if request failed
         """
         params = {"search": name, "limit": limit}
-        j = self.graphql_request(GraphQL(query=GraphQL.SEARCH_THREAD, params=params))
+        j = self.graphql_request(GraphQL(query=_graphql.SEARCH_THREAD, params=params))
 
         rtn = []
         for node in j[name]["threads"]["nodes"]:
