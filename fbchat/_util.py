@@ -107,36 +107,53 @@ def generateOfflineThreadingID():
     return str(int(msgs, 2))
 
 
-def check_json(j):
-    if hasattr(j.get("payload"), "get") and j["payload"].get("error"):
+def handle_error_in_payload(j):
+    payload = j.get("payload")
+    if isinstance(payload, dict) and payload.get("error"):
         raise FBchatFacebookError(
-            "Error when sending request: {}".format(j["payload"]["error"]),
+            "Error when sending request: {}".format(payload["error"]),
             fb_error_code=None,
-            fb_error_message=j["payload"]["error"],
+            fb_error_message=payload["error"],
         )
-    elif j.get("error"):
-        if "errorDescription" in j:
-            # 'errorDescription' is in the users own language!
-            raise FBchatFacebookError(
-                "Error #{} when sending request: {}".format(
-                    j["error"], j["errorDescription"]
-                ),
-                fb_error_code=j["error"],
-                fb_error_message=j["errorDescription"],
-            )
-        elif "debug_info" in j["error"] and "code" in j["error"]:
-            raise FBchatFacebookError(
-                "Error #{} when sending request: {}".format(
-                    j["error"]["code"], repr(j["error"]["debug_info"])
-                ),
-                fb_error_code=j["error"]["code"],
-                fb_error_message=j["error"]["debug_info"],
-            )
-        else:
-            raise FBchatFacebookError(
-                "Error {} when sending request".format(j["error"]),
-                fb_error_code=j["error"],
-            )
+
+
+def handle_payload_error(j):
+    # TODO: Check known error codes, and raise more relevant errors!
+    # TODO: Use j["errorSummary"]
+    if "error" in j and "errorDescription" in j:
+        # "errorDescription" is in the users own language!
+        raise FBchatFacebookError(
+            "Error #{} when sending request: {}".format(
+                j["error"], j["errorDescription"]
+            ),
+            fb_error_code=j["error"],
+            fb_error_message=j["errorDescription"],
+        )
+
+
+def handle_graphql_error(j):
+    if j.get("error") and "debug_info" in j["error"] and "code" in j["error"]:
+        raise FBchatFacebookError(
+            "Error #{} when sending request: {!r}".format(
+                j["error"]["code"], j["error"]["debug_info"]
+            ),
+            fb_error_code=j["error"]["code"],
+            fb_error_message=j["error"]["debug_info"],
+        )
+
+
+def handle_generic_error(j):
+    if j.get("error"):
+        raise FBchatFacebookError(
+            "Error {} when sending request".format(j["error"]), fb_error_code=j["error"]
+        )
+
+
+def check_json(j):
+    handle_error_in_payload(j)
+    handle_payload_error(j)
+    handle_graphql_error(j)
+    handle_generic_error(j)
 
 
 def check_request(r, as_json=True):
