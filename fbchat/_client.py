@@ -153,7 +153,6 @@ class Client(object):
 
     def _payload_post(self, url, data, files=None):
         j = self._post(url, data, files=files)
-        handle_error_in_payload(j)
         try:
             return j["payload"]
         except (KeyError, TypeError):
@@ -1447,6 +1446,11 @@ class Client(object):
             "recipient_map[{}]".format(generateOfflineThreadingID()): thread_id,
         }
         j = self._payload_post("/mercury/attachments/forward/", data)
+        if not j.get("success"):
+            raise FBchatFacebookError(
+                "Failed forwarding attachment: {}".format(j["error"]),
+                fb_error_message=j["error"],
+            )
 
     def createGroup(self, message, user_ids):
         """
@@ -1758,6 +1762,11 @@ class Client(object):
             "acontext": ACONTEXT,
         }
         j = self._payload_post("/ajax/eventreminder/create", data)
+        if "error" in j:
+            raise FBchatFacebookError(
+                "Failed creating plan: {}".format(j["error"]),
+                fb_error_message=j["error"],
+            )
 
     def editPlan(self, plan, new_plan):
         """
@@ -1833,6 +1842,11 @@ class Client(object):
             data["option_is_selected_array[{}]".format(i)] = str(int(option.vote))
 
         j = self._payload_post("/messaging/group_polling/create_poll/?dpr=1", data)
+        if j.get("status") != "success":
+            raise FBchatFacebookError(
+                "Failed creating poll: {}".format(j.get("errorTitle")),
+                fb_error_message=j.get("errorMessage"),
+            )
 
     def updatePollVote(self, poll_id, option_ids=[], new_options=[]):
         """
@@ -1855,6 +1869,11 @@ class Client(object):
             data["new_options[{}]".format(i)] = option_text
 
         j = self._payload_post("/messaging/group_polling/update_vote/?dpr=1", data)
+        if j.get("status") != "success":
+            raise FBchatFacebookError(
+                "Failed updating poll vote: {}".format(j.get("errorTitle")),
+                fb_error_message=j.get("errorMessage"),
+            )
 
     def setTypingStatus(self, status, thread_id=None, thread_type=None):
         """

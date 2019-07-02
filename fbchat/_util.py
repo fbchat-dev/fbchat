@@ -113,16 +113,6 @@ def generateOfflineThreadingID():
     return str(int(msgs, 2))
 
 
-def handle_error_in_payload(j):
-    payload = j.get("payload")
-    if isinstance(payload, dict) and payload.get("error"):
-        raise FBchatFacebookError(
-            "Error when sending request: {}".format(payload["error"]),
-            fb_error_code=None,
-            fb_error_message=payload["error"],
-        )
-
-
 def handle_payload_error(j):
     if "error" not in j:
         return
