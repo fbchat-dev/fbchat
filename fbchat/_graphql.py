@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import json
 import re
 from . import _util
-from ._exception import FBchatException, FBchatUserError
+from ._exception import FBchatException
 
 # Shameless copy from https://stackoverflow.com/a/8730674
 FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
@@ -33,7 +33,7 @@ def queries_to_json(*queries):
     """
     rtn = {}
     for i, query in enumerate(queries):
-        rtn["q{}".format(i)] = query.value
+        rtn["q{}".format(i)] = query
     return json.dumps(rtn)
 
 
@@ -62,16 +62,20 @@ def response_to_json(content):
     return rtn
 
 
-class GraphQL(object):
-    def __init__(self, query=None, doc_id=None, params=None):
-        if params is None:
-            params = {}
-        if query is not None:
-            self.value = {"priority": 0, "q": query, "query_params": params}
-        elif doc_id is not None:
-            self.value = {"doc_id": doc_id, "query_params": params}
-        else:
-            raise FBchatUserError("A query or doc_id must be specified")
+def from_query(query, params):
+    return {"priority": 0, "q": query, "query_params": params}
+
+
+def from_query_id(query_id, params):
+    return {"query_id": query_id, "query_params": params}
+
+
+def from_doc(doc, params):
+    return {"doc": doc, "query_params": params}
+
+
+def from_doc_id(doc_id, params):
+    return {"doc_id": doc_id, "query_params": params}
 
 
 FRAGMENT_USER = """
