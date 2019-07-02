@@ -156,11 +156,11 @@ def check_json(j):
     handle_generic_error(j)
 
 
-def check_request(r, as_json=True):
+def check_request(r):
     check_http_code(r.status_code)
     content = get_decoded_r(r)
     check_content(content)
-    return to_json(content) if as_json else content
+    return content
 
 
 def check_http_code(code):

@@ -122,7 +122,8 @@ class Client(object):
         payload = self._generatePayload(query)
         r = self._state._session.get(prefix_url(url), params=payload)
         try:
-            return check_request(r)
+            content = check_request(r)
+            return to_json(content)
         except FBchatFacebookError as e:
             if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._get(url, query=query, error_retries=error_retries - 1)
@@ -132,11 +133,11 @@ class Client(object):
         payload = self._generatePayload(query)
         r = self._state._session.post(prefix_url(url), data=payload, files=files)
         try:
+            content = check_request(r)
             if as_graphql:
-                content = check_request(r, as_json=False)
                 return graphql_response_to_json(content)
             else:
-                return check_request(r)
+                return to_json(content)
         except FBchatFacebookError as e:
             if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
                 return self._post(
