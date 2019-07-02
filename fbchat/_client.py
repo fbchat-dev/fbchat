@@ -106,39 +106,42 @@ class Client(object):
         query.update(self._state.get_params())
         return query
 
-    def _fix_fb_errors(self, error_code):
-        """
-        This fixes "Please try closing and re-opening your browser window" errors (1357004)
-        This error usually happens after 1-2 days of inactivity
-        It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
-        """
-        if error_code == "1357004":
-            log.warning("Got error #1357004. Refreshing state and resending request")
-            self._state = State.from_session(session=self._state._session)
-            return True
-        return False
+    def _do_refresh(self):
+        # TODO: Raise the error instead, and make the user do the refresh manually
+        # It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
+        log.warning("Refreshing state and resending request")
+        self._state = State.from_session(session=self._state._session)
 
     def _get(self, url, query=None, error_retries=3):
         payload = self._generatePayload(query)
         r = self._state._session.get(prefix_url(url), params=payload)
+        content = check_request(r)
+        j = to_json(content)
         try:
-            return check_request(r)
-        except FBchatFacebookError as e:
-            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
+            handle_payload_error(j)
+        except FBchatPleaseRefresh:
+            if error_retries > 0:
+                self._do_refresh()
                 return self._get(url, query=query, error_retries=error_retries - 1)
-            raise e
+            raise
+        return j
 
     def _post(self, url, query=None, files=None, as_graphql=False, error_retries=3):
         payload = self._generatePayload(query)
         r = self._state._session.post(prefix_url(url), data=payload, files=files)
+        content = check_request(r)
         try:
             if as_graphql:
-                content = check_request(r, as_json=False)
                 return graphql_response_to_json(content)
             else:
-                return check_request(r)
-        except FBchatFacebookError as e:
-            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
+                j = to_json(content)
+                # TODO: Remove this, and move it to _payload_post instead
+                # We can't yet, since errors raised in here need to be caught below
+                handle_payload_error(j)
+                return j
+        except FBchatPleaseRefresh:
+            if error_retries > 0:
+                self._do_refresh()
                 return self._post(
                     url,
                     query=query,
@@ -146,7 +149,7 @@ class Client(object):
                     as_graphql=as_graphql,
                     error_retries=error_retries - 1,
                 )
-            raise e
+            raise
 
     def _payload_post(self, url, data, files=None):
         j = self._post(url, data, files=files)
@@ -1443,6 +1446,11 @@ class Client(object):
             "recipient_map[{}]".format(generateOfflineThreadingID()): thread_id,
         }
         j = self._payload_post("/mercury/attachments/forward/", data)
+        if not j.get("success"):
+            raise FBchatFacebookError(
+                "Failed forwarding attachment: {}".format(j["error"]),
+                fb_error_message=j["error"],
+            )
 
     def createGroup(self, message, user_ids):
         """
@@ -1731,6 +1739,7 @@ class Client(object):
         }
         data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
         j = self._payload_post("/webgraphql/mutation", data)
+        handle_graphql_errors(j)
 
     def createPlan(self, plan, thread_id=None):
         """
@@ -1753,6 +1762,11 @@ class Client(object):
             "acontext": ACONTEXT,
         }
         j = self._payload_post("/ajax/eventreminder/create", data)
+        if "error" in j:
+            raise FBchatFacebookError(
+                "Failed creating plan: {}".format(j["error"]),
+                fb_error_message=j["error"],
+            )
 
     def editPlan(self, plan, new_plan):
         """
@@ -1828,6 +1842,11 @@ class Client(object):
             data["option_is_selected_array[{}]".format(i)] = str(int(option.vote))
 
         j = self._payload_post("/messaging/group_polling/create_poll/?dpr=1", data)
+        if j.get("status") != "success":
+            raise FBchatFacebookError(
+                "Failed creating poll: {}".format(j.get("errorTitle")),
+                fb_error_message=j.get("errorMessage"),
+            )
 
     def updatePollVote(self, poll_id, option_ids=[], new_options=[]):
         """
@@ -1850,6 +1869,11 @@ class Client(object):
             data["new_options[{}]".format(i)] = option_text
 
         j = self._payload_post("/messaging/group_polling/update_vote/?dpr=1", data)
+        if j.get("status") != "success":
+            raise FBchatFacebookError(
+                "Failed updating poll vote: {}".format(j.get("errorTitle")),
+                fb_error_message=j.get("errorMessage"),
+            )
 
     def setTypingStatus(self, status, thread_id=None, thread_type=None):
         """

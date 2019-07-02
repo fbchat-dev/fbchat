@@ -11,7 +11,13 @@ from os.path import basename
 import warnings
 import logging
 import requests
-from ._exception import FBchatException, FBchatFacebookError
+from ._exception import (
+    FBchatException,
+    FBchatFacebookError,
+    FBchatInvalidParameters,
+    FBchatNotLoggedIn,
+    FBchatPleaseRefresh,
+)
 
 try:
     from urllib.parse import urlencode, parse_qs, urlparse
@@ -107,51 +113,62 @@ def generateOfflineThreadingID():
     return str(int(msgs, 2))
 
 
-def check_json(j):
-    if hasattr(j.get("payload"), "get") and j["payload"].get("error"):
+def handle_payload_error(j):
+    if "error" not in j:
+        return
+    error = j["error"]
+    if j["error"] == 1357001:
+        error_cls = FBchatNotLoggedIn
+    elif j["error"] == 1357004:
+        error_cls = FBchatPleaseRefresh
+    elif j["error"] in (1357031, 1545010, 1545003):
+        error_cls = FBchatInvalidParameters
+    else:
+        error_cls = FBchatFacebookError
+    # TODO: Use j["errorSummary"]
+    # "errorDescription" is in the users own language!
+    raise error_cls(
+        "Error #{} when sending request: {}".format(error, j["errorDescription"]),
+        fb_error_code=error,
+        fb_error_message=j["errorDescription"],
+    )
+
+
+def handle_graphql_errors(j):
+    errors = []
+    if "error" in j:
+        errors = [j["error"]]
+    if "errors" in j:
+        errors = j["errors"]
+    if errors:
+        error = errors[0]  # TODO: Handle multiple errors
+        # TODO: Use `summary`, `severity` and `description`
         raise FBchatFacebookError(
-            "Error when sending request: {}".format(j["payload"]["error"]),
-            fb_error_code=None,
-            fb_error_message=j["payload"]["error"],
+            "GraphQL error #{}: {} / {!r}".format(
+                error.get("code"), error.get("message"), error.get("debug_info")
+            ),
+            fb_error_code=error.get("code"),
+            fb_error_message=error.get("message"),
         )
-    elif j.get("error"):
-        if "errorDescription" in j:
-            # 'errorDescription' is in the users own language!
-            raise FBchatFacebookError(
-                "Error #{} when sending request: {}".format(
-                    j["error"], j["errorDescription"]
-                ),
-                fb_error_code=j["error"],
-                fb_error_message=j["errorDescription"],
-            )
-        elif "debug_info" in j["error"] and "code" in j["error"]:
-            raise FBchatFacebookError(
-                "Error #{} when sending request: {}".format(
-                    j["error"]["code"], repr(j["error"]["debug_info"])
-                ),
-                fb_error_code=j["error"]["code"],
-                fb_error_message=j["error"]["debug_info"],
-            )
-        else:
-            raise FBchatFacebookError(
-                "Error {} when sending request".format(j["error"]),
-                fb_error_code=j["error"],
-            )
 
 
-def check_request(r, as_json=True):
+def check_request(r):
     check_http_code(r.status_code)
     content = get_decoded_r(r)
     check_content(content)
-    return to_json(content) if as_json else content
+    return content
 
 
 def check_http_code(code):
-    if 400 <= code < 600:
+    msg = "Error when sending request: Got {} response.".format(code)
+    if code == 404:
         raise FBchatFacebookError(
-            "Error when sending request: Got {} response".format(code),
+            msg + " This is either because you specified an invalid URL, or because"
+            " you provided an invalid id (Facebook usually requires integer ids).",
             request_status_code=code,
         )
+    if 400 <= code < 600:
+        raise FBchatFacebookError(msg, request_status_code=code)
 
 
 def check_content(content, as_json=True):
@@ -162,7 +179,6 @@ def check_content(content, as_json=True):
 def to_json(content):
     content = strip_json_cruft(content)
     j = parse_json(content)
-    check_json(j)
     log.debug(j)
     return j
 

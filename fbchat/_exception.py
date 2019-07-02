@@ -28,5 +28,30 @@ class FBchatFacebookError(FBchatException):
         self.request_status_code = request_status_code
 
 
+class FBchatInvalidParameters(FBchatFacebookError):
+    """Raised by Facebook if:
+
+    - Some function supplied invalid parameters.
+    - Some content is not found.
+    - Some content is no longer available.
+    """
+
+
+class FBchatNotLoggedIn(FBchatFacebookError):
+    """Raised by Facebook if the client has been logged out."""
+
+    fb_error_code = "1357001"
+
+
+class FBchatPleaseRefresh(FBchatFacebookError):
+    """Raised by Facebook if the client has been inactive for too long.
+
+    This error usually happens after 1-2 days of inactivity.
+    """
+
+    fb_error_code = "1357004"
+    fb_error_message = "Please try closing and re-opening your browser window."
+
+
 class FBchatUserError(FBchatException):
     """Thrown by fbchat when wrong values are entered"""
