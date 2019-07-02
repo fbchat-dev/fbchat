@@ -106,17 +106,11 @@ class Client(object):
         query.update(self._state.get_params())
         return query
 
-    def _fix_fb_errors(self, error_code):
-        """
-        This fixes "Please try closing and re-opening your browser window" errors (1357004)
-        This error usually happens after 1-2 days of inactivity
-        It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
-        """
-        if error_code == "1357004":
-            log.warning("Got error #1357004. Refreshing state and resending request")
-            self._state = State.from_session(session=self._state._session)
-            return True
-        return False
+    def _do_refresh(self):
+        # TODO: Raise the error instead, and make the user do the refresh manually
+        # It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
+        log.warning("Refreshing state and resending request")
+        self._state = State.from_session(session=self._state._session)
 
     def _get(self, url, query=None, error_retries=3):
         payload = self._generatePayload(query)
@@ -124,10 +118,11 @@ class Client(object):
         try:
             content = check_request(r)
             return to_json(content)
-        except FBchatFacebookError as e:
-            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
+        except FBchatPleaseRefresh:
+            if error_retries > 0:
+                self._do_refresh()
                 return self._get(url, query=query, error_retries=error_retries - 1)
-            raise e
+            raise
 
     def _post(self, url, query=None, files=None, as_graphql=False, error_retries=3):
         payload = self._generatePayload(query)
@@ -138,8 +133,9 @@ class Client(object):
                 return graphql_response_to_json(content)
             else:
                 return to_json(content)
-        except FBchatFacebookError as e:
-            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
+        except FBchatPleaseRefresh:
+            if error_retries > 0:
+                self._do_refresh()
                 return self._post(
                     url,
                     query=query,
@@ -147,7 +143,7 @@ class Client(object):
                     as_graphql=as_graphql,
                     error_retries=error_retries - 1,
                 )
-            raise e
+            raise
 
     def _payload_post(self, url, data, files=None):
         j = self._post(url, data, files=files)
