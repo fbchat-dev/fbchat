@@ -148,6 +148,13 @@ class Client(object):
                 )
             raise e
 
+    def _payload_post(self, url, data, files=None):
+        j = self._post(url, data, files=files)
+        try:
+            return j["payload"]
+        except (KeyError, TypeError):
+            raise FBchatException("Missing payload: {}".format(j))
+
     def graphql_requests(self, *queries):
         """
         :param queries: Zero or more GraphQL objects
