@@ -27,7 +27,7 @@ class ConcatJSONDecoder(json.JSONDecoder):
 # End shameless copy
 
 
-def graphql_queries_to_json(*queries):
+def queries_to_json(*queries):
     """
     Queries should be a list of GraphQL objects
     """
@@ -37,7 +37,7 @@ def graphql_queries_to_json(*queries):
     return json.dumps(rtn)
 
 
-def graphql_response_to_json(content):
+def response_to_json(content):
     content = _util.strip_json_cruft(content)  # Usually only needed in some error cases
     try:
         j = json.loads(content, cls=ConcatJSONDecoder)

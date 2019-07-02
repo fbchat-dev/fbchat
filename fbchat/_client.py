@@ -10,7 +10,8 @@ from mimetypes import guess_type
 from collections import OrderedDict
 from ._util import *
 from .models import *
-from ._graphql import graphql_queries_to_json, graphql_response_to_json, GraphQL
+from . import _graphql
+from ._graphql import GraphQL
 from ._state import State
 import time
 import json
@@ -134,7 +135,7 @@ class Client(object):
         try:
             if as_graphql:
                 content = check_request(r, as_json=False)
-                return graphql_response_to_json(content)
+                return _graphql.response_to_json(content)
             else:
                 return check_request(r)
         except FBchatFacebookError as e:
@@ -167,7 +168,7 @@ class Client(object):
         data = {
             "method": "GET",
             "response_format": "json",
-            "queries": graphql_queries_to_json(*queries),
+            "queries": _graphql.queries_to_json(*queries),
         }
         return tuple(self._post("/api/graphqlbatch/", data, as_graphql=True))
 
