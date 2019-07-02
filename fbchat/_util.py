@@ -11,7 +11,13 @@ from os.path import basename
 import warnings
 import logging
 import requests
-from ._exception import FBchatException, FBchatFacebookError
+from ._exception import (
+    FBchatException,
+    FBchatFacebookError,
+    FBchatInvalidParameters,
+    FBchatNotLoggedIn,
+    FBchatPleaseRefresh,
+)
 
 try:
     from urllib.parse import urlencode, parse_qs, urlparse
@@ -118,17 +124,24 @@ def handle_error_in_payload(j):
 
 
 def handle_payload_error(j):
-    # TODO: Check known error codes, and raise more relevant errors!
+    if "error" not in j:
+        return
+    error = j["error"]
+    if j["error"] == 1357001:
+        error_cls = FBchatNotLoggedIn
+    elif j["error"] == 1357004:
+        error_cls = FBchatPleaseRefresh
+    elif j["error"] in (1357031, 1545010, 1545003):
+        error_cls = FBchatInvalidParameters
+    else:
+        error_cls = FBchatFacebookError
     # TODO: Use j["errorSummary"]
-    if "error" in j and "errorDescription" in j:
-        # "errorDescription" is in the users own language!
-        raise FBchatFacebookError(
-            "Error #{} when sending request: {}".format(
-                j["error"], j["errorDescription"]
-            ),
-            fb_error_code=j["error"],
-            fb_error_message=j["errorDescription"],
-        )
+    # "errorDescription" is in the users own language!
+    raise error_cls(
+        "Error #{} when sending request: {}".format(error, j["errorDescription"]),
+        fb_error_code=error,
+        fb_error_message=j["errorDescription"],
+    )
 
 
 def handle_graphql_error(j):
