@@ -51,7 +51,7 @@ def graphql_response_to_json(content):
             continue
         _util.handle_payload_error(x)
         [(key, value)] = x.items()
-        _util.handle_graphql_error(value)
+        _util.handle_graphql_errors(value)
         if "response" in value:
             rtn[int(key[1:])] = value["response"]
         else:

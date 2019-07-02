@@ -1735,6 +1735,7 @@ class Client(object):
         }
         data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
         j = self._payload_post("/webgraphql/mutation", data)
+        handle_graphql_errors(j)
 
     def createPlan(self, plan, thread_id=None):
         """

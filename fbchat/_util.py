@@ -144,14 +144,21 @@ def handle_payload_error(j):
     )
 
 
-def handle_graphql_error(j):
-    if j.get("error") and "debug_info" in j["error"] and "code" in j["error"]:
+def handle_graphql_errors(j):
+    errors = []
+    if "error" in j:
+        errors = [j["error"]]
+    if "errors" in j:
+        errors = j["errors"]
+    if errors:
+        error = errors[0]  # TODO: Handle multiple errors
+        # TODO: Use `summary`, `severity` and `description`
         raise FBchatFacebookError(
-            "Error #{} when sending request: {!r}".format(
-                j["error"]["code"], j["error"]["debug_info"]
+            "GraphQL error #{}: {} / {!r}".format(
+                error.get("code"), error.get("message"), error.get("debug_info")
             ),
-            fb_error_code=j["error"]["code"],
-            fb_error_message=j["error"]["debug_info"],
+            fb_error_code=error.get("code"),
+            fb_error_message=error.get("message"),
         )
 
 
