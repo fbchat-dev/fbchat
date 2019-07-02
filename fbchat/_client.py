@@ -128,9 +128,9 @@ class Client(object):
                 return self._get(url, query=query, error_retries=error_retries - 1)
             raise e
 
-    def _post(self, url, query=None, as_graphql=False, error_retries=3):
+    def _post(self, url, query=None, files=None, as_graphql=False, error_retries=3):
         payload = self._generatePayload(query)
-        r = self._state._session.post(prefix_url(url), data=payload)
+        r = self._state._session.post(prefix_url(url), data=payload, files=files)
         try:
             if as_graphql:
                 content = check_request(r, as_json=False)
@@ -142,20 +142,9 @@ class Client(object):
                 return self._post(
                     url,
                     query=query,
+                    files=files,
                     as_graphql=as_graphql,
                     error_retries=error_retries - 1,
-                )
-            raise e
-
-    def _postFile(self, url, files=None, query=None, error_retries=3):
-        payload = self._generatePayload(query)
-        r = self._state._session.post(prefix_url(url), data=payload, files=files)
-        try:
-            return check_request(r)
-        except FBchatFacebookError as e:
-            if error_retries > 0 and self._fix_fb_errors(e.fb_error_code):
-                return self._postFile(
-                    url, files=files, query=query, error_retries=error_retries - 1
                 )
             raise e
 
@@ -1268,10 +1257,8 @@ class Client(object):
 
         data = {"voice_clip": voice_clip}
 
-        j = self._postFile(
-            "https://upload.facebook.com/ajax/mercury/upload.php",
-            files=file_dict,
-            query=data,
+        j = self._post(
+            "https://upload.facebook.com/ajax/mercury/upload.php", data, files=file_dict
         )
 
         if len(j["payload"]["metadata"]) != len(files):
