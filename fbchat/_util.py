@@ -140,25 +140,31 @@ def check_json(j):
 
 
 def check_request(r, as_json=True):
-    if not r.ok:
+    check_http_code(r.status_code)
+    content = get_decoded_r(r)
+    check_content(content)
+    return to_json(content) if as_json else content
+
+
+def check_http_code(code):
+    if 400 <= code < 600:
         raise FBchatFacebookError(
-            "Error when sending request: Got {} response".format(r.status_code),
-            request_status_code=r.status_code,
+            "Error when sending request: Got {} response".format(code),
+            request_status_code=code,
         )
 
-    content = get_decoded_r(r)
 
+def check_content(content, as_json=True):
     if content is None or len(content) == 0:
         raise FBchatFacebookError("Error when sending request: Got empty response")
 
-    if as_json:
-        content = strip_json_cruft(content)
-        j = parse_json(content)
-        check_json(j)
-        log.debug(j)
-        return j
-    else:
-        return content
+
+def to_json(content):
+    content = strip_json_cruft(content)
+    j = parse_json(content)
+    check_json(j)
+    log.debug(j)
+    return j
 
 
 def get_jsmods_require(j, index):
