@@ -115,24 +115,30 @@ class Client(object):
     def _get(self, url, query=None, error_retries=3):
         payload = self._generatePayload(query)
         r = self._state._session.get(prefix_url(url), params=payload)
+        content = check_request(r)
+        j = to_json(content)
         try:
-            content = check_request(r)
-            return to_json(content)
+            handle_payload_error(j)
         except FBchatPleaseRefresh:
             if error_retries > 0:
                 self._do_refresh()
                 return self._get(url, query=query, error_retries=error_retries - 1)
             raise
+        return j
 
     def _post(self, url, query=None, files=None, as_graphql=False, error_retries=3):
         payload = self._generatePayload(query)
         r = self._state._session.post(prefix_url(url), data=payload, files=files)
+        content = check_request(r)
         try:
-            content = check_request(r)
             if as_graphql:
                 return graphql_response_to_json(content)
             else:
-                return to_json(content)
+                j = to_json(content)
+                # TODO: Remove this, and move it to _payload_post instead
+                # We can't yet, since errors raised in here need to be caught below
+                handle_payload_error(j)
+                return j
         except FBchatPleaseRefresh:
             if error_retries > 0:
                 self._do_refresh()
@@ -147,6 +153,7 @@ class Client(object):
 
     def _payload_post(self, url, data, files=None):
         j = self._post(url, data, files=files)
+        handle_error_in_payload(j)
         try:
             return j["payload"]
         except (KeyError, TypeError):

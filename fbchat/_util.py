@@ -155,20 +155,6 @@ def handle_graphql_error(j):
         )
 
 
-def handle_generic_error(j):
-    if j.get("error"):
-        raise FBchatFacebookError(
-            "Error {} when sending request".format(j["error"]), fb_error_code=j["error"]
-        )
-
-
-def check_json(j):
-    handle_error_in_payload(j)
-    handle_payload_error(j)
-    handle_graphql_error(j)
-    handle_generic_error(j)
-
-
 def check_request(r):
     check_http_code(r.status_code)
     content = get_decoded_r(r)
@@ -196,7 +182,6 @@ def check_content(content, as_json=True):
 def to_json(content):
     content = strip_json_cruft(content)
     j = parse_json(content)
-    check_json(j)
     log.debug(j)
     return j
 
