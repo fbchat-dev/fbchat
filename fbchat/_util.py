@@ -164,11 +164,15 @@ def check_request(r):
 
 
 def check_http_code(code):
-    if 400 <= code < 600:
+    msg = "Error when sending request: Got {} response.".format(code)
+    if code == 404:
         raise FBchatFacebookError(
-            "Error when sending request: Got {} response".format(code),
+            msg + " This is either because you specified an invalid URL, or because"
+            " you provided an invalid id (Facebook usually requires integer ids).",
             request_status_code=code,
         )
+    if 400 <= code < 600:
+        raise FBchatFacebookError(msg, request_status_code=code)
 
 
 def check_content(content, as_json=True):
