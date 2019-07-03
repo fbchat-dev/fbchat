@@ -11,7 +11,13 @@ from os.path import basename
 import warnings
 import logging
 import requests
-from ._exception import FBchatException, FBchatFacebookError
+from ._exception import (
+    FBchatException,
+    FBchatFacebookError,
+    FBchatInvalidParameters,
+    FBchatNotLoggedIn,
+    FBchatPleaseRefresh,
+)
 
 try:
     from urllib.parse import urlencode, parse_qs, urlparse
@@ -47,6 +53,7 @@ USER_AGENTS = [
 ]
 
 
+<<<<<<< HEAD
 class ReqUrl(object):
     """A class containing all urls used by `fbchat`"""
 
@@ -133,11 +140,14 @@ class ReqUrl(object):
 facebookEncoding = "UTF-8"
 
 
+=======
+>>>>>>> 281a20f56a79ace5e8bfcc44dfae8c04bb9b349b
 def now():
     return int(time() * 1000)
 
 
-def strip_to_json(text):
+def strip_json_cruft(text):
+    """Removes `for(;;);` (and other cruft) that preceeds JSON responses."""
     try:
         return text[text.index("{") :]
     except ValueError:
@@ -149,15 +159,14 @@ def get_decoded_r(r):
 
 
 def get_decoded(content):
-    return content.decode(facebookEncoding)
+    return content.decode("utf-8")
 
 
 def parse_json(content):
-    return json.loads(content)
-
-
-def get_json(r):
-    return json.loads(strip_to_json(get_decoded_r(r)))
+    try:
+        return json.loads(content)
+    except ValueError:
+        raise FBchatFacebookError("Error while parsing JSON: {!r}".format(content))
 
 
 def digitToChar(digit):
@@ -193,61 +202,74 @@ def generateOfflineThreadingID():
     return str(int(msgs, 2))
 
 
-def check_json(j):
-    if hasattr(j.get("payload"), "get") and j["payload"].get("error"):
+def handle_payload_error(j):
+    if "error" not in j:
+        return
+    error = j["error"]
+    if j["error"] == 1357001:
+        error_cls = FBchatNotLoggedIn
+    elif j["error"] == 1357004:
+        error_cls = FBchatPleaseRefresh
+    elif j["error"] in (1357031, 1545010, 1545003):
+        error_cls = FBchatInvalidParameters
+    else:
+        error_cls = FBchatFacebookError
+    # TODO: Use j["errorSummary"]
+    # "errorDescription" is in the users own language!
+    raise error_cls(
+        "Error #{} when sending request: {}".format(error, j["errorDescription"]),
+        fb_error_code=error,
+        fb_error_message=j["errorDescription"],
+    )
+
+
+def handle_graphql_errors(j):
+    errors = []
+    if "error" in j:
+        errors = [j["error"]]
+    if "errors" in j:
+        errors = j["errors"]
+    if errors:
+        error = errors[0]  # TODO: Handle multiple errors
+        # TODO: Use `summary`, `severity` and `description`
         raise FBchatFacebookError(
-            "Error when sending request: {}".format(j["payload"]["error"]),
-            fb_error_code=None,
-            fb_error_message=j["payload"]["error"],
-        )
-    elif j.get("error"):
-        if "errorDescription" in j:
-            # 'errorDescription' is in the users own language!
-            raise FBchatFacebookError(
-                "Error #{} when sending request: {}".format(
-                    j["error"], j["errorDescription"]
-                ),
-                fb_error_code=j["error"],
-                fb_error_message=j["errorDescription"],
-            )
-        elif "debug_info" in j["error"] and "code" in j["error"]:
-            raise FBchatFacebookError(
-                "Error #{} when sending request: {}".format(
-                    j["error"]["code"], repr(j["error"]["debug_info"])
-                ),
-                fb_error_code=j["error"]["code"],
-                fb_error_message=j["error"]["debug_info"],
-            )
-        else:
-            raise FBchatFacebookError(
-                "Error {} when sending request".format(j["error"]),
-                fb_error_code=j["error"],
-            )
-
-
-def check_request(r, as_json=True):
-    if not r.ok:
-        raise FBchatFacebookError(
-            "Error when sending request: Got {} response".format(r.status_code),
-            request_status_code=r.status_code,
+            "GraphQL error #{}: {} / {!r}".format(
+                error.get("code"), error.get("message"), error.get("debug_info")
+            ),
+            fb_error_code=error.get("code"),
+            fb_error_message=error.get("message"),
         )
 
+
+def check_request(r):
+    check_http_code(r.status_code)
     content = get_decoded_r(r)
+    check_content(content)
+    return content
 
+
+def check_http_code(code):
+    msg = "Error when sending request: Got {} response.".format(code)
+    if code == 404:
+        raise FBchatFacebookError(
+            msg + " This is either because you specified an invalid URL, or because"
+            " you provided an invalid id (Facebook usually requires integer ids).",
+            request_status_code=code,
+        )
+    if 400 <= code < 600:
+        raise FBchatFacebookError(msg, request_status_code=code)
+
+
+def check_content(content, as_json=True):
     if content is None or len(content) == 0:
         raise FBchatFacebookError("Error when sending request: Got empty response")
 
-    if as_json:
-        content = strip_to_json(content)
-        try:
-            j = json.loads(content)
-        except ValueError:
-            raise FBchatFacebookError("Error while parsing JSON: {!r}".format(content))
-        check_json(j)
-        log.debug(j)
-        return j
-    else:
-        return content
+
+def to_json(content):
+    content = strip_json_cruft(content)
+    j = parse_json(content)
+    log.debug(j)
+    return j
 
 
 def get_jsmods_require(j, index):
@@ -256,9 +278,8 @@ def get_jsmods_require(j, index):
             return j["jsmods"]["require"][0][index][0]
         except (KeyError, IndexError) as e:
             log.warning(
-                "Error when getting jsmods_require: {}. Facebook might have changed protocol".format(
-                    j
-                )
+                "Error when getting jsmods_require: "
+                "{}. Facebook might have changed protocol".format(j)
             )
     return None
 
@@ -316,3 +337,9 @@ def get_url_parameters(url, *args):
 
 def get_url_parameter(url, param):
     return get_url_parameters(url, param)[0]
+
+
+def prefix_url(url):
+    if url.startswith("/"):
+        return "https://www.facebook.com" + url
+    return url
