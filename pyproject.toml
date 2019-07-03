@@ -1,14 +1,5 @@
 [tool.black]
 line-length = 88
-exclude = '''
-/(
-    \.git
-  | \.pytest_cache
-  | build
-  | dist
-  | venv
-)/
-'''
 
 [build-system]
 requires = ["flit"]
@@ -22,10 +13,10 @@ maintainer = "Mads Marquart"
 maintainer-email = "madsmtm@gmail.com"
 home-page = "https://github.com/carpedm20/fbchat/"
 requires = [
-    "aenum",
-    "attrs~=18.2.0",
-    "requests",
-    "beautifulsoup4",
+    "aenum~=2.0",
+    "attrs>=18.2",
+    "requests~=2.19",
+    "beautifulsoup4~=4.0",
 ]
 description-file = "README.rst"
 classifiers = [
@@ -61,5 +52,8 @@ Repository = "https://github.com/carpedm20/fbchat/"
 [tool.flit.metadata.requires-extra]
 test = [
     "pytest~=4.0",
-    "six",
+    "six~=1.0",
+]
+lint = [
+    "black",
 ]
