@@ -54,6 +54,11 @@ master_doc = "index"
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# The reST default role (used for this markup: `text`) to use for all
+# documents.
+#
+default_role = "any"
+
 # If true, '()' will be appended to :func: etc. cross-reference text.
 #
 add_function_parentheses = False

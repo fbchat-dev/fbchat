@@ -31,7 +31,7 @@ ACONTEXT = {
 class Client(object):
     """A client for the Facebook Chat (Messenger).
 
-    This is the main class of `fbchat`, which contains all the methods you use to
+    This is the main class of ``fbchat``, which contains all the methods you use to
     interact with Facebook. You can extend this class, and overwrite the ``on`` methods,
     to provide custom event handling (mainly useful while listening).
     """
@@ -53,7 +53,7 @@ class Client(object):
     def uid(self):
         """The ID of the client.
 
-        Can be used as `thread_id`. See :ref:`intro_threads` for more info.
+        Can be used as ``thread_id``. See :ref:`intro_threads` for more info.
         """
         return self._uid
 
@@ -68,12 +68,12 @@ class Client(object):
     ):
         """Initialize and log in the client.
 
-        :param email: Facebook `email`, `id` or `phone number`
+        :param email: Facebook ``email``, ``id`` or ``phone number``
         :param password: Facebook account password
         :param user_agent: Custom user agent to use when sending requests. If `None`, user agent will be chosen from a premade list
         :param max_tries: Maximum number of times to try logging in
         :param session_cookies: Cookies from a previous session (Will default to login if these are invalid)
-        :param logging_level: Configures the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. Defaults to `INFO`
+        :param logging_level: Configures the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. Defaults to ``logging.INFO``
         :type max_tries: int
         :type session_cookies: dict
         :type logging_level: int
@@ -178,7 +178,7 @@ class Client(object):
 
     def graphql_request(self, query):
         """
-        Shorthand for `graphql_requests(query)[0]`
+        Shorthand for ``graphql_requests(query)[0]``
 
         :raises: FBchatException if request failed
         """
@@ -214,7 +214,7 @@ class Client(object):
 
         :param session_cookies: A dictionay containing session cookies
         :type session_cookies: dict
-        :return: False if `session_cookies` does not contain proper cookies
+        :return: False if ``session_cookies`` does not contain proper cookies
         :rtype: bool
         """
         try:
@@ -233,9 +233,9 @@ class Client(object):
 
     def login(self, email, password, max_tries=5, user_agent=None):
         """
-        Uses `email` and `password` to login the user (If the user is already logged in, this will do a re-login)
+        Uses ``email`` and ``password`` to login the user (If the user is already logged in, this will do a re-login)
 
-        :param email: Facebook `email` or `id` or `phone number`
+        :param email: Facebook ``email`` or ``id`` or ``phone number``
         :param password: Facebook account password
         :param max_tries: Maximum number of times to try logging in
         :type max_tries: int
@@ -965,7 +965,7 @@ class Client(object):
     def getUserActiveStatus(self, user_id):
         """
         Gets friend active status as an :class:`models.ActiveStatus` object.
-        Returns `None` if status isn't known.
+        Returns ``None`` if status isn't known.
 
         .. warning::
             Only works when listening.
@@ -2845,8 +2845,8 @@ class Client(object):
         This method is useful if you want to control fbchat from an external event loop
 
         .. warning::
-            `markAlive` parameter is deprecated now, use :func:`fbchat.Client.setActiveStatus`
-            or `markAlive` parameter in :func:`fbchat.Client.listen` instead.
+            ``markAlive`` parameter is deprecated, use :func:`Client.setActiveStatus`
+            or ``markAlive`` parameter in :func:`Client.listen` instead.
 
         :return: Whether the loop should keep running
         :rtype: bool
@@ -2970,7 +2970,7 @@ class Client(object):
 
         :param mid: The message ID
         :param author_id: The ID of the author
-        :param message: (deprecated. Use `message_object.text` instead)
+        :param message: (deprecated. Use ``message_object.text`` instead)
         :param message_object: The message (As a `Message` object)
         :param thread_id: Thread ID that the message was sent to. See :ref:`intro_threads`
         :param thread_type: Type of thread that the message was sent to. See :ref:`intro_threads`

@@ -23,7 +23,7 @@ Where you replace ``<X>`` with the version you want to use
 Will you be supporting creating posts/events/pages and so on?
 -------------------------------------------------------------
 
-We won't be focusing on anything else than chat-related things. This API is called `fbCHAT`, after all ;)
+We won't be focusing on anything else than chat-related things. This API is called ``fbCHAT``, after all ;)
 
 
 Submitting Issues

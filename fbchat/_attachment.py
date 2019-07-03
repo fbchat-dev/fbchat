@@ -36,7 +36,7 @@ class ShareAttachment(Attachment):
     source = attr.ib(None)
     #: URL of the attachment image
     image_url = attr.ib(None)
-    #: URL of the original image if Facebook uses `safe_image`
+    #: URL of the original image if Facebook uses ``safe_image``
     original_image_url = attr.ib(None)
     #: Width of the image
     image_width = attr.ib(None)
