@@ -12,6 +12,10 @@ from . import _util, _exception
 FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
 
 
+def find_input_fields(html):
+    return bs4.BeautifulSoup(html, "html.parser", parse_only=bs4.SoupStrainer("input"))
+
+
 def session_factory(user_agent=None):
     session = requests.session()
     session.headers["Referer"] = "https://www.facebook.com"
@@ -21,7 +25,7 @@ def session_factory(user_agent=None):
 
 
 def _2fa_helper(session, code, r):
-    soup = bs4.BeautifulSoup(r.text, "html.parser")
+    soup = find_input_fields(r.text)
     data = dict()
 
     url = "https://m.facebook.com/login/checkpoint/"
@@ -106,12 +110,10 @@ class State(object):
     def login(cls, email, password, user_agent=None):
         session = session_factory(user_agent=user_agent)
 
-        soup = bs4.BeautifulSoup(
-            session.get("https://m.facebook.com/").text, "html.parser"
-        )
+        soup = find_input_fields(session.get("https://m.facebook.com/").text)
         data = dict(
             (elem["name"], elem["value"])
-            for elem in soup.findAll("input")
+            for elem in soup
             if elem.has_attr("value") and elem.has_attr("name")
         )
         data["email"] = email
@@ -157,7 +159,7 @@ class State(object):
     def from_session(cls, session):
         r = session.get(_util.prefix_url("/"))
 
-        soup = bs4.BeautifulSoup(r.text, "html.parser")
+        soup = find_input_fields(r.text)
 
         fb_dtsg_element = soup.find("input", {"name": "fb_dtsg"})
         if fb_dtsg_element:

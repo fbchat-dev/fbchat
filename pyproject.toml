@@ -16,7 +16,7 @@ requires = [
     "aenum",
     "attrs~=18.2.0",
     "requests",
-    "beautifulsoup4",
+    "beautifulsoup4~=4.0",
 ]
 description-file = "README.rst"
 classifiers = [
