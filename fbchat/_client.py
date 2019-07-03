@@ -31,7 +31,9 @@ ACONTEXT = {
 class Client(object):
     """A client for the Facebook Chat (Messenger).
 
-    See https://fbchat.readthedocs.io for complete documentation of the API.
+    This is the main class of `fbchat`, which contains all the methods you use to
+    interact with Facebook. You can extend this class, and overwrite the ``on`` methods,
+    to provide custom event handling (mainly useful while listening).
     """
 
     listening = False
@@ -64,7 +66,7 @@ class Client(object):
         session_cookies=None,
         logging_level=logging.INFO,
     ):
-        """Initializes and logs in the client
+        """Initialize and log in the client.
 
         :param email: Facebook `email`, `id` or `phone number`
         :param password: Facebook account password

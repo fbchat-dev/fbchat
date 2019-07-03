@@ -155,6 +155,8 @@ epub_exclude_files = ["search.html"]
 # -- Options for autodoc extension ---------------------------------------
 
 autoclass_content = "both"
+autodoc_member_order = "bysource"
+autodoc_default_options = {"members": True}
 
 # -- Options for intersphinx extension ---------------------------------------
 
