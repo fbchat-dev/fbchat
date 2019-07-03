@@ -1,5 +1,4 @@
 .. highlight:: sh
-.. currentmodule:: fbchat
 .. _testing:
 
 Testing

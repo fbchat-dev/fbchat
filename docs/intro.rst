@@ -1,5 +1,3 @@
-.. highlight:: python
-.. currentmodule:: fbchat
 .. _intro:
 
 Introduction

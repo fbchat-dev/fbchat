@@ -54,6 +54,13 @@ master_doc = "index"
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+rst_prolog = """
+.. highlight:: python
+.. currentmodule:: {}
+""".format(
+    project
+)
+
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
 #

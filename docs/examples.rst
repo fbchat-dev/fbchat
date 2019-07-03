@@ -1,4 +1,3 @@
-.. highlight:: python
 .. _examples:
 
 Examples
