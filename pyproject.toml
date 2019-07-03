@@ -14,8 +14,8 @@ maintainer-email = "madsmtm@gmail.com"
 home-page = "https://github.com/carpedm20/fbchat/"
 requires = [
     "aenum~=2.0",
-    "attrs~=18.2.0",
-    "requests~=2.19.0",
+    "attrs>=18.2",
+    "requests~=2.19",
     "beautifulsoup4~=4.0",
 ]
 description-file = "README.rst"
