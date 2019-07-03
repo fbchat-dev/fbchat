@@ -66,6 +66,10 @@ rst_prolog = """
 #
 default_role = "any"
 
+# Make the reference parsing more strict
+#
+nitpicky = True
+
 # If true, '()' will be appended to :func: etc. cross-reference text.
 #
 add_function_parentheses = False

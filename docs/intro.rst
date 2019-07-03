@@ -46,7 +46,7 @@ Threads
 
 A thread can refer to two things: A Messenger group chat or a single Facebook user
 
-:class:`models.ThreadType` is an enumerator with two values: ``USER`` and ``GROUP``.
+:class:`ThreadType` is an enumerator with two values: ``USER`` and ``GROUP``.
 These will specify whether the thread is a single user chat or a group chat.
 This is required for many of ``fbchat``'s functions, since Facebook differentiates between these two internally
 
