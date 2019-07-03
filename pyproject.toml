@@ -54,6 +54,9 @@ test = [
     "pytest~=4.0",
     "six~=1.0",
 ]
+docs = [
+    "sphinx~=2.0",
+]
 lint = [
     "black",
 ]

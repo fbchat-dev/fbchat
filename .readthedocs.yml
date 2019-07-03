@@ -1,0 +1,18 @@
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+version: 2
+
+formats:
+  - pdf
+  - htmlzip
+
+python:
+  version: 3.6
+  install:
+    - path: .
+      extra_requirements:
+        - docs
+
+# Build documentation in the docs/ directory with Sphinx
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: true

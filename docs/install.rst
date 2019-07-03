@@ -1,4 +1,3 @@
-.. highlight:: sh
 .. _install:
 
 Installation
@@ -7,7 +6,9 @@ Installation
 Pip Install fbchat
 ------------------
 
-To install fbchat, run this command::
+To install fbchat, run this command:
+
+.. code-block:: sh
 
     $ pip install fbchat
 
@@ -21,16 +22,22 @@ Get the Source Code
 fbchat is developed on GitHub, where the code is
 `always available <https://github.com/carpedm20/fbchat>`_.
 
-You can either clone the public repository::
+You can either clone the public repository:
+
+.. code-block:: sh
 
     $ git clone git://github.com/carpedm20/fbchat.git
 
-Or, download a `tarball <https://github.com/carpedm20/fbchat/tarball/master>`_::
+Or, download a `tarball <https://github.com/carpedm20/fbchat/tarball/master>`_:
+
+.. code-block:: sh
 
     $ curl -OL https://github.com/carpedm20/fbchat/tarball/master
-      # optionally, zipball is also available (for Windows users).
+    # optionally, zipball is also available (for Windows users).
 
 Once you have a copy of the source, you can embed it in your own Python
-package, or install it into your site-packages easily::
+package, or install it into your site-packages easily:
+
+.. code-block:: sh
 
     $ python setup.py install

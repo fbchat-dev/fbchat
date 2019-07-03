@@ -35,14 +35,12 @@ Installation:
 
     $ pip install fbchat
 
-You can also install from source, by using `flit`:
+You can also install from source if you have ``pip>=19.0``:
 
 .. code-block::
 
-    $ pip install flit
     $ git clone https://github.com/carpedm20/fbchat.git
-    $ cd fbchat
-    $ flit install
+    $ pip install fbchat
 
 
 Maintainer

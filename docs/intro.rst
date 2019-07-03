@@ -1,11 +1,9 @@
-.. highlight:: python
-.. module:: fbchat
 .. _intro:
 
 Introduction
 ============
 
-`fbchat` uses your email and password to communicate with the Facebook server.
+``fbchat`` uses your email and password to communicate with the Facebook server.
 That means that you should always store your password in a separate file, in case e.g. someone looks over your shoulder while you're writing code.
 You should also make sure that the file's access control is appropriately restrictive
 
@@ -28,7 +26,7 @@ Replace ``<email>`` and ``<password>`` with your email and password respectively
     For ease of use then most of the code snippets in this document will assume you've already completed the login process
     Though the second line, ``from fbchat.models import *``, is not strictly neccesary here, later code snippets will assume you've done this
 
-If you want to change how verbose `fbchat` is, change the logging level (in :class:`Client`)
+If you want to change how verbose ``fbchat`` is, change the logging level (in :class:`Client`)
 
 Throughout your code, if you want to check whether you are still logged in, use :func:`Client.isLoggedIn`.
 An example would be to login again if you've been logged out, using :func:`Client.login`::
@@ -48,9 +46,9 @@ Threads
 
 A thread can refer to two things: A Messenger group chat or a single Facebook user
 
-:class:`models.ThreadType` is an enumerator with two values: ``USER`` and ``GROUP``.
+:class:`ThreadType` is an enumerator with two values: ``USER`` and ``GROUP``.
 These will specify whether the thread is a single user chat or a group chat.
-This is required for many of `fbchat`'s functions, since Facebook differentiates between these two internally
+This is required for many of ``fbchat``'s functions, since Facebook differentiates between these two internally
 
 Searching for group chats and finding their ID can be done via. :func:`Client.searchForGroups`,
 and searching for users is possible via. :func:`Client.searchForUsers`. See :ref:`intro_fetching`
@@ -87,7 +85,7 @@ Message IDs
 Every message you send on Facebook has a unique ID, and every action you do in a thread,
 like changing a nickname or adding a person, has a unique ID too.
 
-Some of `fbchat`'s functions require these ID's, like :func:`Client.reactToMessage`,
+Some of ``fbchat``'s functions require these ID's, like :func:`Client.reactToMessage`,
 and some of then provide this ID, like :func:`Client.sendMessage`.
 This snippet shows how to send a message, and then use the returned ID to react to that message with a 😍 emoji::
 
@@ -100,17 +98,17 @@ This snippet shows how to send a message, and then use the returned ID to react 
 Interacting with Threads
 ------------------------
 
-`fbchat` provides multiple functions for interacting with threads
+``fbchat`` provides multiple functions for interacting with threads
 
 Most functionality works on all threads, though some things,
 like adding users to and removing users from a group chat, logically only works on group chats
 
-The simplest way of using `fbchat` is to send a message.
-The following snippet will, as you've probably already figured out, send the message `test message` to your account::
+The simplest way of using ``fbchat`` is to send a message.
+The following snippet will, as you've probably already figured out, send the message ``test message`` to your account::
 
     message_id = client.send(Message(text='test message'), thread_id=client.uid, thread_type=ThreadType.USER)
 
-You can see a full example showing all the possible thread interactions with `fbchat` by going to :ref:`examples`
+You can see a full example showing all the possible thread interactions with ``fbchat`` by going to :ref:`examples`
 
 
 .. _intro_fetching:
@@ -118,7 +116,7 @@ You can see a full example showing all the possible thread interactions with `fb
 Fetching Information
 --------------------
 
-You can use `fbchat` to fetch basic information like user names, profile pictures, thread names and user IDs
+You can use ``fbchat`` to fetch basic information like user names, profile pictures, thread names and user IDs
 
 You can retrieve a user's ID with :func:`Client.searchForUsers`.
 The following snippet will search for users by their name, take the first (and most likely) user, and then get their user ID from the result::
@@ -132,7 +130,7 @@ The following snippet will search for users by their name, take the first (and m
 
 Since this uses Facebook's search functions, you don't have to specify the whole name, first names will usually be enough
 
-You can see a full example showing all the possible ways to fetch information with `fbchat` by going to :ref:`examples`
+You can see a full example showing all the possible ways to fetch information with ``fbchat`` by going to :ref:`examples`
 
 
 .. _intro_sessions:
@@ -140,7 +138,7 @@ You can see a full example showing all the possible ways to fetch information wi
 Sessions
 --------
 
-`fbchat` provides functions to retrieve and set the session cookies.
+``fbchat`` provides functions to retrieve and set the session cookies.
 This will enable you to store the session cookies in a separate file, so that you don't have to login each time you start your script.
 Use :func:`Client.getSession` to retrieve the cookies::
 
@@ -164,13 +162,13 @@ Or you can set the ``session_cookies`` on your initial login.
 Listening & Events
 ------------------
 
-To use the listening functions `fbchat` offers (like :func:`Client.listen`),
+To use the listening functions ``fbchat`` offers (like :func:`Client.listen`),
 you have to define what should be executed when certain events happen.
 By default, (most) events will just be a `logging.info` statement,
 meaning it will simply print information to the console when an event happens
 
 .. note::
-    You can identify the event methods by their `on` prefix, e.g. `onMessage`
+    You can identify the event methods by their ``on`` prefix, e.g. `onMessage`
 
 The event actions can be changed by subclassing the :class:`Client`, and then overwriting the event methods::
 
