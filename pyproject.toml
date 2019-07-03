@@ -60,3 +60,7 @@ docs = [
 lint = [
     "black",
 ]
+tools = [
+    # Fork of bumpversion, see https://github.com/c4urself/bump2version
+    "bump2version~=0.5.0",
+]
