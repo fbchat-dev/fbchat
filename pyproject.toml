@@ -1,14 +1,5 @@
 [tool.black]
 line-length = 88
-exclude = '''
-/(
-    \.git
-  | \.pytest_cache
-  | build
-  | dist
-  | venv
-)/
-'''
 
 [build-system]
 requires = ["flit"]
@@ -62,4 +53,7 @@ Repository = "https://github.com/carpedm20/fbchat/"
 test = [
     "pytest~=4.0",
     "six",
+]
+lint = [
+    "black",
 ]
