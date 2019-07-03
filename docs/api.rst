@@ -1,4 +1,4 @@
-.. module:: fbchat
+.. currentmodule:: fbchat
 .. highlight:: python
 .. _api:
 

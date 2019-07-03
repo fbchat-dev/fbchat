@@ -1,5 +1,5 @@
 .. highlight:: python
-.. module:: fbchat
+.. currentmodule:: fbchat
 .. _faq:
 
 FAQ

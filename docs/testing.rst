@@ -1,5 +1,5 @@
 .. highlight:: sh
-.. module:: fbchat
+.. currentmodule:: fbchat
 .. _testing:
 
 Testing
@@ -23,7 +23,3 @@ If you only want to execute specific tests, pass the function names in the comma
 
     Do not execute the full set of tests in too quick succession. This can get your account temporarily blocked for spam!
     (You should execute the script at max about 10 times a day)
-
-.. automodule:: tests
-    :members: TestFbchat
-    :undoc-members: TestFbchat
