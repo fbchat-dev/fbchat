@@ -13,9 +13,9 @@ maintainer = "Mads Marquart"
 maintainer-email = "madsmtm@gmail.com"
 home-page = "https://github.com/carpedm20/fbchat/"
 requires = [
-    "aenum",
+    "aenum~=2.0",
     "attrs~=18.2.0",
-    "requests",
+    "requests~=2.19.0",
     "beautifulsoup4~=4.0",
 ]
 description-file = "README.rst"
@@ -52,7 +52,7 @@ Repository = "https://github.com/carpedm20/fbchat/"
 [tool.flit.metadata.requires-extra]
 test = [
     "pytest~=4.0",
-    "six",
+    "six~=1.0",
 ]
 lint = [
     "black",
