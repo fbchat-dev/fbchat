@@ -2925,10 +2925,6 @@ class Client(object):
         """
         log.info("Logging in {}...".format(email))
 
-    def on2FACode(self):
-        """Called when a 2FA code is needed to progress"""
-        return input("Please enter your 2FA code --> ")
-
     def onLoggedIn(self, email=None):
         """
         Called when the client is successfully logged in
