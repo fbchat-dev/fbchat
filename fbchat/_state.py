@@ -81,6 +81,11 @@ def _2fa_helper(session, code, r):
     return r
 
 
+def on_2fa_callback():
+    """Called when a 2FA code is needed to progress"""
+    return input("Please enter your 2FA code --> ")
+
+
 @attr.s(slots=True)  # TODO i Python 3: Add kw_only=True
 class State(object):
     """Stores and manages state required for most Facebook requests."""
