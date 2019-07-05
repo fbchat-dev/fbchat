@@ -35,6 +35,7 @@ class EmojiSize(Enum):
 class MessageReaction(Enum):
     """Used to specify a message reaction"""
 
+    HEART = "❤"
     LOVE = "😍"
     SMILE = "😆"
     WOW = "😮"
