@@ -225,7 +225,7 @@ def handle_payload_error(j):
 
 def handle_graphql_errors(j):
     errors = []
-    if "error" in j:
+    if j.get("error"):
         errors = [j["error"]]
     if "errors" in j:
         errors = j["errors"]

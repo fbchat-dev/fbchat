@@ -9,7 +9,7 @@ fbchat: Facebook Chat (Messenger) for Python
     :target: https://pypi.python.org/pypi/fbchat
     :alt: Supported python versions: 2.7, 3.4, 3.5, 3.6, 3.7 and pypy
 
-.. image:: https://readthedocs.org/projects/fbchat/badge/?version=master
+.. image:: https://readthedocs.org/projects/fbchat/badge/?version=latest
     :target: https://fbchat.readthedocs.io
     :alt: Documentation
 
@@ -35,14 +35,12 @@ Installation:
 
     $ pip install fbchat
 
-You can also install from source, by using `flit`:
+You can also install from source if you have ``pip>=19.0``:
 
 .. code-block::
 
-    $ pip install flit
     $ git clone https://github.com/carpedm20/fbchat.git
-    $ cd fbchat
-    $ flit install
+    $ pip install fbchat
 
 
 Maintainer
