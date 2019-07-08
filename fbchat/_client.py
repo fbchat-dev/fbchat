@@ -1010,7 +1010,7 @@ class Client(object):
             elif i["node"].get("__typename") == "MessageVideo":
                 yield VideoAttachment._from_list(i)
             else:
-                return None  # TODO: return legacyAttachment
+                yield Attachment(uid=i["node"]["uid"])
 
     """
     END FETCH METHODS
