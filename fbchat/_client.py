@@ -976,49 +976,41 @@ class Client(object):
         """
         return self._buddylist.get(str(user_id))
 
-    def _fetchImages(self, thread_id=None, after=None):
-        if after is None:
-            data = urllib.parse.quote(
-                str(
-                    {
-                        "id": thread_id,  # ID of an thread
-                        "first": 12,  # Default is 12, facebook will do more, but im kinda scared
-                    }
-                )
-            )
-        else:
-            data = urllib.parse.quote(
-                str(
-                    {
-                        "id": thread_id,
-                        "after": after,  # id of an image from which you want to start the query
-                        "first": 12,  # passed as "token", 154 characters
-                    }
-                )
-            )
-        j = self._post(self._req_url.WEBGRAPHQL.format(data))
-        if j.status_code == 200:
-            return json.loads(j.text[9:])
-        else:
-            raise (FBchatUserError("Passed something thread_id"))
+    def _fetchImages(self, thread_id):
+        data = {"id": thread_id, "first": 12}
+        j = self.graphql_request(_graphql.from_query_id("515216185516880", data))
+        to_continue = True
+        while to_continue:
+            page_info = j[thread_id]["message_shared_media"]["page_info"]
+            end_cursor = page_info.get("end_cursor")
+            try:
+                yield j[thread_id]["message_shared_media"]["edges"][0]
+                del j[thread_id]["message_shared_media"]["edges"][0]
+            except IndexError:
+                if page_info.get("has_next_page"):
+                    data["after"] = end_cursor
+                    j = self.graphql_request(
+                        _graphql.from_query_id("515216185516880", data)
+                    )
+                else:
+                    to_continue = False
 
-    def fetchThreadImages(self, thread_id=None, after=None):
+    def fetchThreadImages(self, thread_id=None):
         """
-        Gets list of images sent in given thread.
+        Creates generator object for fetching images posted in thread.
         :param thread_id: ID of the thread
-        :param after: So called Cursor
-        :return: List of images in thread with corresponding Cursor values.
-        :rtype: list
+        :return: :class:`ImageAttachment` or :class:`VideoAttachment`.
+        :rtype: iterable
         """
         thread_id, thread_type = self._getThread(thread_id, None)
-        reply = self._fetchImages(thread_id=thread_id, after=after)
-        try:
-            return [
-                [i["cursor"], i["node"]["image"]["uri"]]
-                for i in reply["payload"][thread_id]["message_shared_media"]["edges"]
-            ]
-        except TypeError:
-            return []
+        j = self._fetchImages(thread_id)
+        for i in j:
+            if i["node"].get("__typename") == "MessageImage":
+                yield ImageAttachment._from_list(i)
+            elif i["node"].get("__typename") == "MessageVideo":
+                yield VideoAttachment._from_list(i)
+            else:
+                return None  # TODO: return legacyAttachment
 
     """
     END FETCH METHODS

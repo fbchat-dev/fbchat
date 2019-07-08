@@ -53,7 +53,6 @@ USER_AGENTS = [
 ]
 
 
-<<<<<<< HEAD
 class ReqUrl(object):
     """A class containing all urls used by `fbchat`"""
 
@@ -122,7 +121,6 @@ class ReqUrl(object):
     MARK_SPAM = "https://www.facebook.com/ajax/mercury/mark_spam.php?dpr=1"
     UNSEND = "https://www.facebook.com/messaging/unsend_message/?dpr=1"
     FORWARD_ATTACHMENT = "https://www.facebook.com/mercury/attachments/forward/"
-    WEBGRAPHQL = "https://www.facebook.com/webgraphql/query/?query_id=515216185516880&variables={}"
 
     pull_channel = 0
 
@@ -140,8 +138,6 @@ class ReqUrl(object):
 facebookEncoding = "UTF-8"
 
 
-=======
->>>>>>> 281a20f56a79ace5e8bfcc44dfae8c04bb9b349b
 def now():
     return int(time() * 1000)
 
