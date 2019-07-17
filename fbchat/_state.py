@@ -131,7 +131,7 @@ class State(object):
         if "save-device" in r.url:
             r = session.get("https://m.facebook.com/login/save-device/cancel/")
 
-        if "home" in r.url:
+        if "home" in r.url or True:
             return cls.from_session(session=session)
         else:
             raise _exception.FBchatUserError(
