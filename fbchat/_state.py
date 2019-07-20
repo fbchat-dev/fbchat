@@ -24,6 +24,12 @@ def session_factory(user_agent=None):
     return session
 
 
+def is_home(url):
+    parts = _util.urlparse(url)
+    # Check the urls `/home.php` and `/`
+    return "home" in parts.path or "/" == parts.path
+
+
 def _2fa_helper(session, code, r):
     soup = find_input_fields(r.text)
     data = dict()
@@ -39,7 +45,7 @@ def _2fa_helper(session, code, r):
 
     r = session.post(url, data=data)
 
-    if "home" in r.url:
+    if is_home(r.url):
         return r
 
     del data["approvals_code"]
@@ -52,7 +58,7 @@ def _2fa_helper(session, code, r):
     # At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
     r = session.post(url, data=data)
 
-    if "home" in r.url:
+    if is_home(r.url):
         return r
 
     del data["name_action_selected"]
@@ -60,7 +66,7 @@ def _2fa_helper(session, code, r):
     # At this stage, we have dtsg, nh, submit[Continue]
     r = session.post(url, data=data)
 
-    if "home" in r.url:
+    if is_home(r.url):
         return r
 
     del data["submit[Continue]"]
@@ -69,7 +75,7 @@ def _2fa_helper(session, code, r):
     # At this stage, we have dtsg, nh, submit[This was me]
     r = session.post(url, data=data)
 
-    if "home" in r.url:
+    if is_home(r.url):
         return r
 
     del data["submit[This was me]"]
@@ -131,7 +137,7 @@ class State(object):
         if "save-device" in r.url:
             r = session.get("https://m.facebook.com/login/save-device/cancel/")
 
-        if "home" in r.url:
+        if is_home(r.url):
             return cls.from_session(session=session)
         else:
             raise _exception.FBchatUserError(
@@ -143,7 +149,7 @@ class State(object):
         # Send a request to the login url, to see if we're directed to the home page
         url = "https://m.facebook.com/login.php?login_attempt=1"
         r = self._session.get(url, allow_redirects=False)
-        return "Location" in r.headers and "home" in r.headers["Location"]
+        return "Location" in r.headers and is_home(r.headers["Location"])
 
     def logout(self):
         logout_h = self._logout_h
