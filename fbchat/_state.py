@@ -107,7 +107,7 @@ class State(object):
         }
 
     @classmethod
-    def login(cls, email, password, user_agent=None):
+    def login(cls, email, password, on_2fa_callback, user_agent=None):
         session = session_factory(user_agent=user_agent)
 
         soup = find_input_fields(session.get("https://m.facebook.com/").text)

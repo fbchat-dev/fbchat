@@ -251,7 +251,12 @@ class Client(object):
 
         for i in range(1, max_tries + 1):
             try:
-                state = State.login(email, password, user_agent=user_agent)
+                state = State.login(
+                    email,
+                    password,
+                    on_2fa_callback=self.on2FACode,
+                    user_agent=user_agent,
+                )
                 uid = state.get_user_id()
                 if uid is None:
                     raise FBchatException("Could not find user id")
