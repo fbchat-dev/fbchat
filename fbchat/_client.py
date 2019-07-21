@@ -37,11 +37,17 @@ class Client(object):
     """
 
     listening = False
-    """Whether the client is listening. Used when creating an external event loop to determine when to stop listening"""
+    """Whether the client is listening.
+
+    Used when creating an external event loop to determine when to stop listening.
+    """
 
     @property
     def ssl_verify(self):
-        """Verify ssl certificate, set to False to allow debugging with a proxy."""
+        """Verify ssl certificate.
+
+        Set to False to allow debugging with a proxy.
+        """
         # TODO: Deprecate this
         return self._state._session.verify
 
@@ -161,7 +167,8 @@ class Client(object):
             raise FBchatException("Missing payload: {}".format(j))
 
     def graphql_requests(self, *queries):
-        """
+        """Execute graphql queries.
+
         :param queries: Zero or more dictionaries
         :type queries: dict
 
@@ -177,8 +184,7 @@ class Client(object):
         return tuple(self._post("/api/graphqlbatch/", data, as_graphql=True))
 
     def graphql_request(self, query):
-        """
-        Shorthand for ``graphql_requests(query)[0]``
+        """Shorthand for ``graphql_requests(query)[0]``.
 
         :raises: FBchatException if request failed
         """
@@ -193,8 +199,7 @@ class Client(object):
     """
 
     def isLoggedIn(self):
-        """
-        Sends a request to Facebook to check the login status
+        """Send a request to Facebook to check the login status.
 
         :return: True if the client is still logged in
         :rtype: bool
@@ -202,7 +207,7 @@ class Client(object):
         return self._state.is_logged_in()
 
     def getSession(self):
-        """Retrieves session cookies
+        """Retrieve session cookies.
 
         :return: A dictionay containing session cookies
         :rtype: dict
@@ -210,7 +215,7 @@ class Client(object):
         return self._state.get_cookies()
 
     def setSession(self, session_cookies, user_agent=None):
-        """Loads session cookies
+        """Load session cookies.
 
         :param session_cookies: A dictionay containing session cookies
         :type session_cookies: dict
@@ -232,8 +237,9 @@ class Client(object):
         return True
 
     def login(self, email, password, max_tries=5, user_agent=None):
-        """
-        Uses ``email`` and ``password`` to login the user (If the user is already logged in, this will do a re-login)
+        """Login the user, using ``email`` and ``password``.
+
+        If the user is already logged in, this will do a re-login.
 
         :param email: Facebook ``email`` or ``id`` or ``phone number``
         :param password: Facebook account password
@@ -272,8 +278,7 @@ class Client(object):
                 break
 
     def logout(self):
-        """
-        Safely logs out the client
+        """Safely log out the client.
 
         :return: True if the action was successful
         :rtype: bool
@@ -293,8 +298,7 @@ class Client(object):
     """
 
     def _getThread(self, given_thread_id=None, given_thread_type=None):
-        """
-        Checks if thread ID is given, checks if default is set and returns correct values
+        """Check if thread ID is given and if default is set, and return correct values.
 
         :raises ValueError: If thread ID is not given and there is no default
         :return: Thread ID and thread type
@@ -309,8 +313,7 @@ class Client(object):
             return given_thread_id, given_thread_type
 
     def setDefaultThread(self, thread_id, thread_type):
-        """
-        Sets default thread to send messages to
+        """Set default thread to send messages to.
 
         :param thread_id: User/Group ID to default to. See :ref:`intro_threads`
         :param thread_type: See :ref:`intro_threads`
@@ -320,7 +323,7 @@ class Client(object):
         self._default_thread_type = thread_type
 
     def resetDefaultThread(self):
-        """Resets default thread"""
+        """Reset default thread."""
         self.setDefaultThread(None, None)
 
     """
@@ -336,8 +339,8 @@ class Client(object):
         return self.graphql_request(_graphql.from_doc_id("1768656253222505", params))
 
     def fetchThreads(self, thread_location, before=None, after=None, limit=None):
-        """
-        Get all threads in thread_location.
+        """Fetch all threads in ``thread_location``.
+
         Threads will be sorted from newest to oldest.
 
         :param thread_location: ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
@@ -389,8 +392,7 @@ class Client(object):
         return threads
 
     def fetchAllUsersFromThreads(self, threads):
-        """
-        Get all users involved in threads.
+        """Fetch all users involved in given threads.
 
         :param threads: Thread: List of threads to check for users
         :return: :class:`User` objects
@@ -415,8 +417,7 @@ class Client(object):
         return users
 
     def fetchAllUsers(self):
-        """
-        Gets all users the client is currently chatting with
+        """Fetch all users the client is currently chatting with.
 
         :return: :class:`User` objects
         :rtype: list
@@ -435,8 +436,7 @@ class Client(object):
         return users
 
     def searchForUsers(self, name, limit=10):
-        """
-        Find and get user by his/her name
+        """Find and get users by their name.
 
         :param name: Name of the user
         :param limit: The max. amount of users to fetch
@@ -450,8 +450,7 @@ class Client(object):
         return [User._from_graphql(node) for node in j[name]["users"]["nodes"]]
 
     def searchForPages(self, name, limit=10):
-        """
-        Find and get page by its name
+        """Find and get pages by their name.
 
         :param name: Name of the page
         :return: :class:`Page` objects, ordered by relevance
@@ -464,8 +463,7 @@ class Client(object):
         return [Page._from_graphql(node) for node in j[name]["pages"]["nodes"]]
 
     def searchForGroups(self, name, limit=10):
-        """
-        Find and get group thread by its name
+        """Find and get group threads by their name.
 
         :param name: Name of the group thread
         :param limit: The max. amount of groups to fetch
@@ -479,8 +477,7 @@ class Client(object):
         return [Group._from_graphql(node) for node in j["viewer"]["groups"]["nodes"]]
 
     def searchForThreads(self, name, limit=10):
-        """
-        Find and get a thread by its name
+        """Find and get threads by their name.
 
         :param name: Name of the thread
         :param limit: The max. amount of groups to fetch
@@ -511,8 +508,7 @@ class Client(object):
         return rtn
 
     def searchForMessageIDs(self, query, offset=0, limit=5, thread_id=None):
-        """
-        Find and get message IDs by query
+        """Find and get message IDs by query.
 
         :param query: Text to search for
         :param offset: Number of messages to skip
@@ -541,8 +537,7 @@ class Client(object):
             yield snippet["message_id"]
 
     def searchForMessages(self, query, offset=0, limit=5, thread_id=None):
-        """
-        Find and get :class:`Message` objects by query
+        """Find and get `Message` objects by query.
 
         .. warning::
             This method sends request for every found message ID.
@@ -564,8 +559,7 @@ class Client(object):
             yield self.fetchMessageInfo(mid, thread_id)
 
     def search(self, query, fetch_messages=False, thread_limit=5, message_limit=5):
-        """
-        Searches for messages in all threads
+        """Search for messages in all threads.
 
         :param query: Text to search for
         :param fetch_messages: Whether to fetch :class:`Message` objects or IDs only
@@ -632,8 +626,7 @@ class Client(object):
         return entries
 
     def fetchUserInfo(self, *user_ids):
-        """
-        Get users' info from IDs, unordered
+        """Fetch users' info from IDs, unordered.
 
         .. warning::
             Sends two requests, to fetch all available info!
@@ -654,8 +647,7 @@ class Client(object):
         return users
 
     def fetchPageInfo(self, *page_ids):
-        """
-        Get pages' info from IDs, unordered
+        """Fetch pages' info from IDs, unordered.
 
         .. warning::
             Sends two requests, to fetch all available info!
@@ -676,8 +668,7 @@ class Client(object):
         return pages
 
     def fetchGroupInfo(self, *group_ids):
-        """
-        Get groups' info from IDs, unordered
+        """Fetch groups' info from IDs, unordered.
 
         :param group_ids: One or more group ID(s) to query
         :return: :class:`Group` objects, labeled by their ID
@@ -695,8 +686,7 @@ class Client(object):
         return groups
 
     def fetchThreadInfo(self, *thread_ids):
-        """
-        Get threads' info from IDs, unordered
+        """Fetch threads' info from IDs, unordered.
 
         .. warning::
             Sends two requests if users or pages are present, to fetch all available info!
@@ -759,8 +749,7 @@ class Client(object):
         return rtn
 
     def fetchThreadMessages(self, thread_id=None, limit=20, before=None):
-        """
-        Get the last messages in a thread
+        """Fetch messages in a thread, ordered by most recent.
 
         :param thread_id: User/Group ID to get messages from. See :ref:`intro_threads`
         :param limit: Max. number of messages to retrieve
@@ -803,7 +792,7 @@ class Client(object):
     def fetchThreadList(
         self, offset=None, limit=20, thread_location=ThreadLocation.INBOX, before=None
     ):
-        """Get thread list of your facebook account
+        """Fetch the client's thread list.
 
         :param offset: Deprecated. Do not use!
         :param limit: Max. number of threads to retrieve. Capped at 20
@@ -853,8 +842,7 @@ class Client(object):
         return rtn
 
     def fetchUnread(self):
-        """
-        Get the unread thread list
+        """Fetch unread threads.
 
         :return: List of unread thread ids
         :rtype: list
@@ -872,8 +860,7 @@ class Client(object):
         return result["thread_fbids"] + result["other_user_fbids"]
 
     def fetchUnseen(self):
-        """
-        Get the unseen (new) thread list
+        """Fetch unseen / new threads.
 
         :return: List of unseen thread ids
         :rtype: list
@@ -885,7 +872,7 @@ class Client(object):
         return result["thread_fbids"] + result["other_user_fbids"]
 
     def fetchImageUrl(self, image_id):
-        """Fetches the url to the original image from an image attachment ID
+        """Fetch url to download the original image from an image attachment ID.
 
         :param image_id: The image you want to fethc
         :type image_id: str
@@ -903,8 +890,7 @@ class Client(object):
         return url
 
     def fetchMessageInfo(self, mid, thread_id=None):
-        """
-        Fetches :class:`Message` object from the message id
+        """Fetch `Message` object from the given message id.
 
         :param mid: Message ID to fetch from
         :param thread_id: User/Group ID to get message info from. See :ref:`intro_threads`
@@ -917,8 +903,7 @@ class Client(object):
         return Message._from_graphql(message_info)
 
     def fetchPollOptions(self, poll_id):
-        """
-        Fetches list of :class:`PollOption` objects from the poll id
+        """Fetch list of `PollOption` objects from the poll id.
 
         :param poll_id: Poll ID to fetch from
         :rtype: list
@@ -929,8 +914,7 @@ class Client(object):
         return [PollOption._from_graphql(m) for m in j]
 
     def fetchPlanInfo(self, plan_id):
-        """
-        Fetches a :class:`Plan` object from the plan id
+        """Fetch `Plan` object from the plan id.
 
         :param plan_id: Plan ID to fetch from
         :return: :class:`Plan` object
@@ -946,8 +930,7 @@ class Client(object):
         return j["viewer"]
 
     def getPhoneNumbers(self):
-        """
-        Fetches a list of user phone numbers.
+        """Fetch list of user's phone numbers.
 
         :return: List of phone numbers
         :rtype: list
@@ -958,8 +941,7 @@ class Client(object):
         ]
 
     def getEmails(self):
-        """
-        Fetches a list of user emails.
+        """Fetch list of user's emails.
 
         :return: List of emails
         :rtype: list
@@ -968,9 +950,9 @@ class Client(object):
         return [j["display_email"] for j in data["all_emails"]]
 
     def getUserActiveStatus(self, user_id):
-        """
-        Gets friend active status as an :class:`ActiveStatus` object.
-        Returns ``None`` if status isn't known.
+        """Fetch friend active status as an `ActiveStatus` object.
+
+        Return ``None`` if status isn't known.
 
         .. warning::
             Only works when listening.
@@ -982,8 +964,8 @@ class Client(object):
         return self._buddylist.get(str(user_id))
 
     def fetchThreadImages(self, thread_id=None):
-        """
-        Creates generator object for fetching images posted in thread.
+        """Fetch images posted in thread.
+
         :param thread_id: ID of the thread
         :return: :class:`ImageAttachment` or :class:`VideoAttachment`.
         :rtype: iterable
@@ -1029,7 +1011,7 @@ class Client(object):
         return message if isinstance(message, Message) else Message(text=message)
 
     def _getSendData(self, message=None, thread_id=None, thread_type=ThreadType.USER):
-        """Returns the data needed to send a request to `SendURL`"""
+        """Return the data needed to send a request to `SendURL`."""
         messageAndOTID = generateOfflineThreadingID()
         timestamp = now()
         data = {
@@ -1098,7 +1080,7 @@ class Client(object):
         return data
 
     def _doSendRequest(self, data, get_thread_id=False):
-        """Sends the data to `SendURL`, and returns the message ID or None on failure"""
+        """Send the data to `SendURL`, and returns the message ID or None on failure."""
         j = self._post("/messaging/send/", data)
 
         # update JS token if received in response
@@ -1125,8 +1107,7 @@ class Client(object):
             )
 
     def send(self, message, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Sends a message to a thread
+        """Send message to a thread.
 
         :param message: Message to send
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
@@ -1143,9 +1124,7 @@ class Client(object):
         return self._doSendRequest(data)
 
     def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Deprecated. Use :func:`fbchat.Client.send` instead
-        """
+        """Deprecated. Use :func:`fbchat.Client.send` instead."""
         return self.send(
             Message(text=message), thread_id=thread_id, thread_type=thread_type
         )
@@ -1157,9 +1136,7 @@ class Client(object):
         thread_id=None,
         thread_type=ThreadType.USER,
     ):
-        """
-        Deprecated. Use :func:`fbchat.Client.send` instead
-        """
+        """Deprecated. Use :func:`fbchat.Client.send` instead."""
         return self.send(
             Message(text=emoji, emoji_size=size),
             thread_id=thread_id,
@@ -1167,8 +1144,7 @@ class Client(object):
         )
 
     def wave(self, wave_first=True, thread_id=None, thread_type=None):
-        """
-        Says hello with a wave to a thread!
+        """Wave hello to a thread.
 
         :param wave_first: Whether to wave first or wave back
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
@@ -1189,8 +1165,7 @@ class Client(object):
         return self._doSendRequest(data)
 
     def quickReply(self, quick_reply, payload=None, thread_id=None, thread_type=None):
-        """
-        Replies to a chosen quick reply
+        """Reply to chosen quick reply.
 
         :param quick_reply: Quick reply to reply to
         :param payload: Optional answer to the quick reply
@@ -1228,8 +1203,7 @@ class Client(object):
             return self.send(Message(text=payload, quick_replies=[quick_reply]))
 
     def unsend(self, mid):
-        """
-        Unsends a message (removes for everyone)
+        """Unsend message by it's ID (removes it for everyone).
 
         :param mid: :ref:`Message ID <intro_message_ids>` of the message to unsend
         """
@@ -1250,8 +1224,7 @@ class Client(object):
         return self._doSendRequest(data)
 
     def sendLocation(self, location, message=None, thread_id=None, thread_type=None):
-        """
-        Sends a given location to a thread as the user's current location
+        """Send a given location to a thread as the user's current location.
 
         :param location: Location to send
         :param message: Additional message
@@ -1274,8 +1247,7 @@ class Client(object):
     def sendPinnedLocation(
         self, location, message=None, thread_id=None, thread_type=None
     ):
-        """
-        Sends a given location to a thread as a pinned location
+        """Send a given location to a thread as a pinned location.
 
         :param location: Location to send
         :param message: Additional message
@@ -1296,13 +1268,12 @@ class Client(object):
         )
 
     def _upload(self, files, voice_clip=False):
-        """
-        Uploads files to Facebook
+        """Upload files to Facebook.
 
-        `files` should be a list of files that requests can upload, see:
-        http://docs.python-requests.org/en/master/api/#requests.request
+        `files` should be a list of files that requests can upload, see
+        `requests.request <https://docs.python-requests.org/en/master/api/#requests.request>`_.
 
-        Returns a list of tuples with a file's ID and mimetype
+        Return a list of tuples with a file's ID and mimetype.
         """
         file_dict = {"upload_{}".format(i): f for i, f in enumerate(files)}
 
@@ -1325,10 +1296,9 @@ class Client(object):
     def _sendFiles(
         self, files, message=None, thread_id=None, thread_type=ThreadType.USER
     ):
-        """
-        Sends files from file IDs to a thread
+        """Send files from file IDs to a thread.
 
-        `files` should be a list of tuples, with a file's ID and mimetype
+        `files` should be a list of tuples, with a file's ID and mimetype.
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(
@@ -1348,8 +1318,7 @@ class Client(object):
     def sendRemoteFiles(
         self, file_urls, message=None, thread_id=None, thread_type=ThreadType.USER
     ):
-        """
-        Sends files from URLs to a thread
+        """Send files from URLs to a thread.
 
         :param file_urls: URLs of files to upload and send
         :param message: Additional message
@@ -1368,8 +1337,7 @@ class Client(object):
     def sendLocalFiles(
         self, file_paths, message=None, thread_id=None, thread_type=ThreadType.USER
     ):
-        """
-        Sends local files to a thread
+        """Send local files to a thread.
 
         :param file_paths: Paths of files to upload and send
         :param message: Additional message
@@ -1389,8 +1357,7 @@ class Client(object):
     def sendRemoteVoiceClips(
         self, clip_urls, message=None, thread_id=None, thread_type=ThreadType.USER
     ):
-        """
-        Sends voice clips from URLs to a thread
+        """Send voice clips from URLs to a thread.
 
         :param clip_urls: URLs of clips to upload and send
         :param message: Additional message
@@ -1409,8 +1376,7 @@ class Client(object):
     def sendLocalVoiceClips(
         self, clip_paths, message=None, thread_id=None, thread_type=ThreadType.USER
     ):
-        """
-        Sends local voice clips to a thread
+        """Send local voice clips to a thread.
 
         :param clip_paths: Paths of clips to upload and send
         :param message: Additional message
@@ -1450,9 +1416,7 @@ class Client(object):
     def sendRemoteImage(
         self, image_url, message=None, thread_id=None, thread_type=ThreadType.USER
     ):
-        """
-        Deprecated. Use :func:`fbchat.Client.sendRemoteFiles` instead
-        """
+        """Deprecated. Use :func:`fbchat.Client.sendRemoteFiles` instead."""
         return self.sendRemoteFiles(
             file_urls=[image_url],
             message=message,
@@ -1463,9 +1427,7 @@ class Client(object):
     def sendLocalImage(
         self, image_path, message=None, thread_id=None, thread_type=ThreadType.USER
     ):
-        """
-        Deprecated. Use :func:`fbchat.Client.sendLocalFiles` instead
-        """
+        """Deprecated. Use :func:`fbchat.Client.sendLocalFiles` instead."""
         return self.sendLocalFiles(
             file_paths=[image_path],
             message=message,
@@ -1474,8 +1436,7 @@ class Client(object):
         )
 
     def forwardAttachment(self, attachment_id, thread_id=None):
-        """
-        Forwards an attachment
+        """Forward an attachment.
 
         :param attachment_id: Attachment ID to forward
         :param thread_id: User/Group ID to send to. See :ref:`intro_threads`
@@ -1494,8 +1455,7 @@ class Client(object):
             )
 
     def createGroup(self, message, user_ids):
-        """
-        Creates a group with the given ids
+        """Create a group with the given user ids.
 
         :param message: The initial message
         :param user_ids: A list of users to create the group with.
@@ -1518,8 +1478,7 @@ class Client(object):
         return thread_id
 
     def addUsersToGroup(self, user_ids, thread_id=None):
-        """
-        Adds users to a group.
+        """Add users to a group.
 
         :param user_ids: One or more user IDs to add
         :param thread_id: Group ID to add people to. See :ref:`intro_threads`
@@ -1547,8 +1506,7 @@ class Client(object):
         return self._doSendRequest(data)
 
     def removeUserFromGroup(self, user_id, thread_id=None):
-        """
-        Removes users from a group.
+        """Remove user from a group.
 
         :param user_id: User ID to remove
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
@@ -1572,8 +1530,7 @@ class Client(object):
         j = self._payload_post("/messaging/save_admins/?dpr=1", data)
 
     def addGroupAdmins(self, admin_ids, thread_id=None):
-        """
-        Sets specifed users as group admins.
+        """Set specifed users as group admins.
 
         :param admin_ids: One or more user IDs to set admin
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
@@ -1582,8 +1539,7 @@ class Client(object):
         self._adminStatus(admin_ids, True, thread_id)
 
     def removeGroupAdmins(self, admin_ids, thread_id=None):
-        """
-        Removes admin status from specifed users.
+        """Remove admin status from specifed users.
 
         :param admin_ids: One or more user IDs to remove admin
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
@@ -1592,8 +1548,7 @@ class Client(object):
         self._adminStatus(admin_ids, False, thread_id)
 
     def changeGroupApprovalMode(self, require_admin_approval, thread_id=None):
-        """
-        Changes group's approval mode
+        """Change group's approval mode.
 
         :param require_admin_approval: True or False
         :param thread_id: Group ID to remove people from. See :ref:`intro_threads`
@@ -1622,8 +1577,7 @@ class Client(object):
         )
 
     def acceptUsersToGroup(self, user_ids, thread_id=None):
-        """
-        Accepts users to the group from the group's approval
+        """Accept users to the group from the group's approval.
 
         :param user_ids: One or more user IDs to accept
         :param thread_id: Group ID to accept users to. See :ref:`intro_threads`
@@ -1632,8 +1586,7 @@ class Client(object):
         self._usersApproval(user_ids, True, thread_id)
 
     def denyUsersFromGroup(self, user_ids, thread_id=None):
-        """
-        Denies users from the group's approval
+        """Deny users from joining the group.
 
         :param user_ids: One or more user IDs to deny
         :param thread_id: Group ID to deny users from. See :ref:`intro_threads`
@@ -1642,8 +1595,7 @@ class Client(object):
         self._usersApproval(user_ids, False, thread_id)
 
     def _changeGroupImage(self, image_id, thread_id=None):
-        """
-        Changes a thread image from an image id
+        """Change a thread image from an image id.
 
         :param image_id: ID of uploaded image
         :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
@@ -1657,8 +1609,7 @@ class Client(object):
         return image_id
 
     def changeGroupImageRemote(self, image_url, thread_id=None):
-        """
-        Changes a thread image from a URL
+        """Change a thread image from a URL.
 
         :param image_url: URL of an image to upload and change
         :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
@@ -1668,8 +1619,7 @@ class Client(object):
         return self._changeGroupImage(image_id, thread_id)
 
     def changeGroupImageLocal(self, image_path, thread_id=None):
-        """
-        Changes a thread image from a local path
+        """Change a thread image from a local path.
 
         :param image_path: Path of an image to upload and change
         :param thread_id: User/Group ID to change image. See :ref:`intro_threads`
@@ -1681,9 +1631,10 @@ class Client(object):
         return self._changeGroupImage(image_id, thread_id)
 
     def changeThreadTitle(self, title, thread_id=None, thread_type=ThreadType.USER):
-        """
-        Changes title of a thread.
-        If this is executed on a user thread, this will change the nickname of that user, effectively changing the title
+        """Change title of a thread.
+
+        If this is executed on a user thread, this will change the nickname of that
+        user, effectively changing the title.
 
         :param title: New group thread title
         :param thread_id: Group ID to change title of. See :ref:`intro_threads`
@@ -1705,8 +1656,7 @@ class Client(object):
     def changeNickname(
         self, nickname, user_id, thread_id=None, thread_type=ThreadType.USER
     ):
-        """
-        Changes the nickname of a user in a thread
+        """Change the nickname of a user in a thread.
 
         :param nickname: New nickname
         :param user_id: User that will have their nickname changed
@@ -1727,8 +1677,7 @@ class Client(object):
         )
 
     def changeThreadColor(self, color, thread_id=None):
-        """
-        Changes thread color
+        """Change thread color.
 
         :param color: New thread color
         :param thread_id: User/Group ID to change color of. See :ref:`intro_threads`
@@ -1746,10 +1695,11 @@ class Client(object):
         )
 
     def changeThreadEmoji(self, emoji, thread_id=None):
-        """
-        Changes thread color
+        """Change thread color.
 
-        Trivia: While changing the emoji, the Facebook web client actually sends multiple different requests, though only this one is required to make the change
+        .. note::
+            While changing the emoji, the Facebook web client actually sends multiple
+            different requests, though only this one is required to make the change.
 
         :param color: New thread emoji
         :param thread_id: User/Group ID to change emoji of. See :ref:`intro_threads`
@@ -1763,8 +1713,7 @@ class Client(object):
         )
 
     def reactToMessage(self, message_id, reaction):
-        """
-        Reacts to a message, or removes reaction
+        """React to a message, or removes reaction.
 
         :param message_id: :ref:`Message ID <intro_message_ids>` to react to
         :param reaction: Reaction emoji to use, if None removes reaction
@@ -1783,8 +1732,7 @@ class Client(object):
         handle_graphql_errors(j)
 
     def createPlan(self, plan, thread_id=None):
-        """
-        Sets a plan
+        """Set a plan.
 
         :param plan: Plan to set
         :param thread_id: User/Group ID to send plan to. See :ref:`intro_threads`
@@ -1810,8 +1758,7 @@ class Client(object):
             )
 
     def editPlan(self, plan, new_plan):
-        """
-        Edits a plan
+        """Edit a plan.
 
         :param plan: Plan to edit
         :param new_plan: New plan
@@ -1830,8 +1777,7 @@ class Client(object):
         j = self._payload_post("/ajax/eventreminder/submit", data)
 
     def deletePlan(self, plan):
-        """
-        Deletes a plan
+        """Delete a plan.
 
         :param plan: Plan to delete
         :raises: FBchatException if request failed
@@ -1840,8 +1786,7 @@ class Client(object):
         j = self._payload_post("/ajax/eventreminder/submit", data)
 
     def changePlanParticipation(self, plan, take_part=True):
-        """
-        Changes participation in a plan
+        """Change participation in a plan.
 
         :param plan: Plan to take part in or not
         :param take_part: Whether to take part in the plan
@@ -1855,15 +1800,12 @@ class Client(object):
         j = self._payload_post("/ajax/eventreminder/rsvp", data)
 
     def eventReminder(self, thread_id, time, title, location="", location_id=""):
-        """
-        Deprecated. Use :func:`fbchat.Client.createPlan` instead
-        """
+        """Deprecated. Use :func:`fbchat.Client.createPlan` instead."""
         plan = Plan(time=time, title=title, location=location, location_id=location_id)
         self.createPlan(plan=plan, thread_id=thread_id)
 
     def createPoll(self, poll, thread_id=None):
-        """
-        Creates poll in a group thread
+        """Create poll in a group thread.
 
         :param poll: Poll to create
         :param thread_id: User/Group ID to create poll in. See :ref:`intro_threads`
@@ -1890,8 +1832,7 @@ class Client(object):
             )
 
     def updatePollVote(self, poll_id, option_ids=[], new_options=[]):
-        """
-        Updates a poll vote
+        """Update a poll vote.
 
         :param poll_id: ID of the poll to update vote
         :param option_ids: List of the option IDs to vote
@@ -1917,8 +1858,7 @@ class Client(object):
             )
 
     def setTypingStatus(self, status, thread_id=None, thread_type=None):
-        """
-        Sets users typing status in a thread
+        """Set users typing status in a thread.
 
         :param status: Specify the typing status
         :param thread_id: User/Group ID to change status in. See :ref:`intro_threads`
@@ -1942,8 +1882,7 @@ class Client(object):
     """
 
     def markAsDelivered(self, thread_id, message_id):
-        """
-        Mark a message as delivered
+        """Mark a message as delivered.
 
         :param thread_id: User/Group ID to which the message belongs. See :ref:`intro_threads`
         :param message_id: Message ID to set as delivered. See :ref:`intro_threads`
@@ -1969,9 +1908,9 @@ class Client(object):
         j = self._payload_post("/ajax/mercury/change_read_status.php", data)
 
     def markAsRead(self, thread_ids=None):
-        """
-        Mark threads as read
-        All messages inside the threads will be marked as read
+        """Mark threads as read.
+
+        All messages inside the specified threads will be marked as read.
 
         :param thread_ids: User/Group IDs to set as read. See :ref:`intro_threads`
         :raises: FBchatException if request failed
@@ -1979,9 +1918,9 @@ class Client(object):
         self._readStatus(True, thread_ids)
 
     def markAsUnread(self, thread_ids=None):
-        """
-        Mark threads as unread
-        All messages inside the threads will be marked as unread
+        """Mark threads as unread.
+
+        All messages inside the specified threads will be marked as unread.
 
         :param thread_ids: User/Group IDs to set as unread. See :ref:`intro_threads`
         :raises: FBchatException if request failed
@@ -2005,8 +1944,7 @@ class Client(object):
         j = self._payload_post("/ajax/add_friend/action.php?dpr=1", data)
 
     def removeFriend(self, friend_id=None):
-        """
-        Removes a specifed friend from your friend list
+        """Remove a specifed friend from the client's friend list.
 
         :param friend_id: The ID of the friend that you want to remove
         :return: True
@@ -2017,8 +1955,7 @@ class Client(object):
         return True
 
     def blockUser(self, user_id):
-        """
-        Blocks messages from a specifed user
+        """Block messages from a specifed user.
 
         :param user_id: The ID of the user that you want to block
         :return: True
@@ -2029,8 +1966,7 @@ class Client(object):
         return True
 
     def unblockUser(self, user_id):
-        """
-        Unblocks messages from a blocked user
+        """Unblock a previously blocked user.
 
         :param user_id: The ID of the user that you want to unblock
         :return: Whether the request was successful
@@ -2041,8 +1977,7 @@ class Client(object):
         return True
 
     def moveThreads(self, location, thread_ids):
-        """
-        Moves threads to specifed location
+        """Move threads to specifed location.
 
         :param location: ThreadLocation: INBOX, PENDING, ARCHIVED or OTHER
         :param thread_ids: Thread IDs to move. See :ref:`intro_threads`
@@ -2074,8 +2009,7 @@ class Client(object):
         return True
 
     def deleteThreads(self, thread_ids):
-        """
-        Deletes threads
+        """Delete threads.
 
         :param thread_ids: Thread IDs to delete. See :ref:`intro_threads`
         :return: True
@@ -2097,8 +2031,7 @@ class Client(object):
         return True
 
     def markAsSpam(self, thread_id=None):
-        """
-        Mark a thread as spam and delete it
+        """Mark a thread as spam, and delete it.
 
         :param thread_id: User/Group ID to mark as spam. See :ref:`intro_threads`
         :return: True
@@ -2109,8 +2042,7 @@ class Client(object):
         return True
 
     def deleteMessages(self, message_ids):
-        """
-        Deletes specifed messages
+        """Delete specifed messages.
 
         :param message_ids: Message IDs to delete
         :return: True
@@ -2124,8 +2056,7 @@ class Client(object):
         return True
 
     def muteThread(self, mute_time=-1, thread_id=None):
-        """
-        Mutes thread
+        """Mute thread.
 
         :param mute_time: Mute time in seconds, leave blank to mute forever
         :param thread_id: User/Group ID to mute. See :ref:`intro_threads`
@@ -2135,16 +2066,14 @@ class Client(object):
         j = self._payload_post("/ajax/mercury/change_mute_thread.php?dpr=1", data)
 
     def unmuteThread(self, thread_id=None):
-        """
-        Unmutes thread
+        """Unmute thread.
 
         :param thread_id: User/Group ID to unmute. See :ref:`intro_threads`
         """
         return self.muteThread(0, thread_id)
 
     def muteThreadReactions(self, mute=True, thread_id=None):
-        """
-        Mutes thread reactions
+        """Mute thread reactions.
 
         :param mute: Boolean. True to mute, False to unmute
         :param thread_id: User/Group ID to mute. See :ref:`intro_threads`
@@ -2156,16 +2085,14 @@ class Client(object):
         )
 
     def unmuteThreadReactions(self, thread_id=None):
-        """
-        Unmutes thread reactions
+        """Unmute thread reactions.
 
         :param thread_id: User/Group ID to unmute. See :ref:`intro_threads`
         """
         return self.muteThreadReactions(False, thread_id)
 
     def muteThreadMentions(self, mute=True, thread_id=None):
-        """
-        Mutes thread mentions
+        """Mute thread mentions.
 
         :param mute: Boolean. True to mute, False to unmute
         :param thread_id: User/Group ID to mute. See :ref:`intro_threads`
@@ -2175,8 +2102,7 @@ class Client(object):
         j = self._payload_post("/ajax/mercury/change_mentions_mute_thread/?dpr=1", data)
 
     def unmuteThreadMentions(self, thread_id=None):
-        """
-        Unmutes thread mentions
+        """Unmute thread mentions.
 
         :param thread_id: User/Group ID to unmute. See :ref:`intro_threads`
         """
@@ -2205,7 +2131,7 @@ class Client(object):
         )
 
     def _pullMessage(self):
-        """Call pull api with seq value to get message data."""
+        """Call pull api to fetch message data."""
         data = {
             "seq": self._seq,
             "msgs_recv": 0,
@@ -2220,7 +2146,7 @@ class Client(object):
 
     def _parseDelta(self, m):
         def getThreadIdAndThreadType(msg_metadata):
-            """Returns a tuple consisting of thread ID and thread type"""
+            """Return a tuple consisting of thread ID and thread type."""
             id_thread = None
             type_thread = None
             if "threadFbId" in msg_metadata["threadKey"]:
@@ -2769,7 +2695,10 @@ class Client(object):
             self.onUnknownMesssageType(msg=m)
 
     def _parseMessage(self, content):
-        """Get message and author name from content. May contain multiple messages in the content."""
+        """Get message and author name from content.
+
+        May contain multiple messages in the content.
+        """
         self._seq = content.get("seq", "0")
 
         if "lb_info" in content:
@@ -2871,17 +2800,16 @@ class Client(object):
                 self.onMessageError(exception=e, msg=m)
 
     def startListening(self):
-        """
-        Start listening from an external event loop
+        """Start listening from an external event loop.
 
         :raises: FBchatException if request failed
         """
         self.listening = True
 
     def doOneListen(self, markAlive=None):
-        """
-        Does one cycle of the listening loop.
-        This method is useful if you want to control fbchat from an external event loop
+        """Do one cycle of the listening loop.
+
+        This method is useful if you want to control fbchat from an external event loop.
 
         .. warning::
             ``markAlive`` parameter is deprecated, use :func:`Client.setActiveStatus`
@@ -2919,13 +2847,12 @@ class Client(object):
         return True
 
     def stopListening(self):
-        """Cleans up the variables from startListening"""
+        """Clean up the variables from `Client.startListening`."""
         self.listening = False
         self._sticky, self._pool = (None, None)
 
     def listen(self, markAlive=None):
-        """
-        Initializes and runs the listening loop continually
+        """Initialize and runs the listening loop continually.
 
         :param markAlive: Whether this should ping the Facebook server each time the loop runs
         :type markAlive: bool
@@ -2942,8 +2869,7 @@ class Client(object):
         self.stopListening()
 
     def setActiveStatus(self, markAlive):
-        """
-        Changes client active status while listening
+        """Change active status while listening.
 
         :param markAlive: Whether to show if client is active
         :type markAlive: bool
@@ -2959,32 +2885,29 @@ class Client(object):
     """
 
     def onLoggingIn(self, email=None):
-        """
-        Called when the client is logging in
+        """Called when the client is logging in.
 
         :param email: The email of the client
         """
         log.info("Logging in {}...".format(email))
 
     def on2FACode(self):
-        """Called when a 2FA code is needed to progress"""
+        """Called when a 2FA code is needed to progress."""
         return input("Please enter your 2FA code --> ")
 
     def onLoggedIn(self, email=None):
-        """
-        Called when the client is successfully logged in
+        """Called when the client is successfully logged in.
 
         :param email: The email of the client
         """
         log.info("Login of {} successful.".format(email))
 
     def onListening(self):
-        """Called when the client is listening"""
+        """Called when the client is listening."""
         log.info("Listening...")
 
     def onListenError(self, exception=None):
-        """
-        Called when an error was encountered while listening
+        """Called when an error was encountered while listening.
 
         :param exception: The exception that was encountered
         :return: Whether the loop should keep running
@@ -3004,8 +2927,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody sends a message
+        """Called when the client is listening, and somebody sends a message.
 
         :param mid: The message ID
         :param author_id: The ID of the author
@@ -3032,8 +2954,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody changes a thread's color
+        """Called when the client is listening, and somebody changes a thread's color.
 
         :param mid: The action ID
         :param author_id: The ID of the person who changed the color
@@ -3063,8 +2984,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody changes a thread's emoji
+        """Called when the client is listening, and somebody changes a thread's emoji.
 
         :param mid: The action ID
         :param author_id: The ID of the person who changed the emoji
@@ -3093,8 +3013,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody changes the title of a thread
+        """Called when the client is listening, and somebody changes a thread's title.
 
         :param mid: The action ID
         :param author_id: The ID of the person who changed the title
@@ -3122,8 +3041,7 @@ class Client(object):
         ts=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody changes the image of a thread
+        """Called when the client is listening, and somebody changes a thread's image.
 
         :param mid: The action ID
         :param author_id: The ID of the person who changed the image
@@ -3148,8 +3066,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody changes the nickname of a person
+        """Called when the client is listening, and somebody changes a nickname.
 
         :param mid: The action ID
         :param author_id: The ID of the person who changed the nickname
@@ -3178,8 +3095,7 @@ class Client(object):
         ts=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody adds an admin to a group thread
+        """Called when the client is listening, and somebody adds an admin to a group.
 
         :param mid: The action ID
         :param added_id: The ID of the admin who got added
@@ -3200,8 +3116,7 @@ class Client(object):
         ts=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody removes an admin from a group thread
+        """Called when the client is listening, and somebody is removed as an admin in a group.
 
         :param mid: The action ID
         :param removed_id: The ID of the admin who got removed
@@ -3222,8 +3137,7 @@ class Client(object):
         ts=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody changes approval mode in a group thread
+        """Called when the client is listening, and somebody changes approval mode in a group.
 
         :param mid: The action ID
         :param approval_mode: True if approval mode is activated
@@ -3247,8 +3161,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody marks a message as seen
+        """Called when the client is listening, and somebody marks a message as seen.
 
         :param seen_by: The ID of the person who marked the message as seen
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
@@ -3275,8 +3188,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody marks messages as delivered
+        """Called when the client is listening, and somebody marks messages as delivered.
 
         :param msg_ids: The messages that are marked as delivered
         :param delivered_for: The person that marked the messages as delivered
@@ -3296,8 +3208,7 @@ class Client(object):
     def onMarkedSeen(
         self, threads=None, seen_ts=None, ts=None, metadata=None, msg=None
     ):
-        """
-        Called when the client is listening, and the client has successfully marked threads as seen
+        """Called when the client is listening, and the client has successfully marked threads as seen.
 
         :param threads: The threads that were marked
         :param author_id: The ID of the person who changed the emoji
@@ -3322,8 +3233,7 @@ class Client(object):
         ts=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and someone unsends (deletes for everyone) a message
+        """Called when the client is listening, and someone unsends (deletes for everyone) a message.
 
         :param mid: ID of the unsent message
         :param author_id: The ID of the person who unsent the message
@@ -3348,8 +3258,7 @@ class Client(object):
         ts=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody adds people to a group thread
+        """Called when the client is listening, and somebody adds people to a group thread.
 
         :param mid: The action ID
         :param added_ids: The IDs of the people who got added
@@ -3371,8 +3280,7 @@ class Client(object):
         ts=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody removes a person from a group thread
+        """Called when the client is listening, and somebody removes a person from a group thread.
 
         :param mid: The action ID
         :param removed_id: The ID of the person who got removed
@@ -3384,8 +3292,7 @@ class Client(object):
         log.info("{} removed: {} in {}".format(author_id, removed_id, thread_id))
 
     def onFriendRequest(self, from_id=None, msg=None):
-        """
-        Called when the client is listening, and somebody sends a friend request
+        """Called when the client is listening, and somebody sends a friend request.
 
         :param from_id: The ID of the person that sent the request
         :param msg: A full set of the data recieved
@@ -3407,8 +3314,7 @@ class Client(object):
     def onTyping(
         self, author_id=None, status=None, thread_id=None, thread_type=None, msg=None
     ):
-        """
-        Called when the client is listening, and somebody starts or stops typing into a chat
+        """Called when the client is listening, and somebody starts or stops typing into a chat.
 
         :param author_id: The ID of the person who sent the action
         :param status: The typing status
@@ -3434,8 +3340,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody plays a game
+        """Called when the client is listening, and somebody plays a game.
 
         :param mid: The action ID
         :param author_id: The ID of the person who played the game
@@ -3466,8 +3371,7 @@ class Client(object):
         ts=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody reacts to a message
+        """Called when the client is listening, and somebody reacts to a message.
 
         :param mid: Message ID, that user reacted to
         :param reaction: Reaction
@@ -3495,8 +3399,7 @@ class Client(object):
         ts=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody removes reaction from a message
+        """Called when the client is listening, and somebody removes reaction from a message.
 
         :param mid: Message ID, that user reacted to
         :param author_id: The ID of the person who removed reaction
@@ -3515,8 +3418,7 @@ class Client(object):
     def onBlock(
         self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None
     ):
-        """
-        Called when the client is listening, and somebody blocks client
+        """Called when the client is listening, and somebody blocks client.
 
         :param author_id: The ID of the person who blocked
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
@@ -3532,8 +3434,7 @@ class Client(object):
     def onUnblock(
         self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None
     ):
-        """
-        Called when the client is listening, and somebody blocks client
+        """Called when the client is listening, and somebody blocks client.
 
         :param author_id: The ID of the person who unblocked
         :param thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
@@ -3556,8 +3457,7 @@ class Client(object):
         ts=None,
         msg=None,
     ):
-        """
-        Called when the client is listening and somebody sends live location info
+        """Called when the client is listening and somebody sends live location info.
 
         :param mid: The action ID
         :param location: Sent location info
@@ -3586,11 +3486,10 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        .. todo::
-            Make this work with private calls
+        """Called when the client is listening, and somebody starts a call in a group.
 
-        Called when the client is listening, and somebody starts a call in a group
+        .. todo::
+            Make this work with private calls.
 
         :param mid: The action ID
         :param caller_id: The ID of the person who started the call
@@ -3618,11 +3517,10 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        .. todo::
-            Make this work with private calls
+        """Called when the client is listening, and somebody ends a call in a group.
 
-        Called when the client is listening, and somebody ends a call in a group
+        .. todo::
+            Make this work with private calls.
 
         :param mid: The action ID
         :param caller_id: The ID of the person who ended the call
@@ -3650,8 +3548,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody joins a group call
+        """Called when the client is listening, and somebody joins a group call.
 
         :param mid: The action ID
         :param joined_id: The ID of the person who joined the call
@@ -3678,8 +3575,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody creates a group poll
+        """Called when the client is listening, and somebody creates a group poll.
 
         :param mid: The action ID
         :param poll: Created poll
@@ -3711,8 +3607,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody votes in a group poll
+        """Called when the client is listening, and somebody votes in a group poll.
 
         :param mid: The action ID
         :param poll: Poll, that user voted in
@@ -3742,8 +3637,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody creates a plan
+        """Called when the client is listening, and somebody creates a plan.
 
         :param mid: The action ID
         :param plan: Created plan
@@ -3772,8 +3666,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and a plan ends
+        """Called when the client is listening, and a plan ends.
 
         :param mid: The action ID
         :param plan: Ended plan
@@ -3800,8 +3693,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody edits a plan
+        """Called when the client is listening, and somebody edits a plan.
 
         :param mid: The action ID
         :param plan: Edited plan
@@ -3831,8 +3723,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody deletes a plan
+        """Called when the client is listening, and somebody deletes a plan.
 
         :param mid: The action ID
         :param plan: Deleted plan
@@ -3863,8 +3754,7 @@ class Client(object):
         metadata=None,
         msg=None,
     ):
-        """
-        Called when the client is listening, and somebody takes part in a plan or not
+        """Called when the client is listening, and somebody takes part in a plan or not.
 
         :param mid: The action ID
         :param plan: Plan
@@ -3893,8 +3783,7 @@ class Client(object):
             )
 
     def onQprimer(self, ts=None, msg=None):
-        """
-        Called when the client just started listening
+        """Called when the client just started listening.
 
         :param ts: A timestamp of the action
         :param msg: A full set of the data recieved
@@ -3902,8 +3791,7 @@ class Client(object):
         pass
 
     def onChatTimestamp(self, buddylist=None, msg=None):
-        """
-        Called when the client receives chat online presence update
+        """Called when the client receives chat online presence update.
 
         :param buddylist: A list of dicts with friend id and last seen timestamp
         :param msg: A full set of the data recieved
@@ -3911,8 +3799,7 @@ class Client(object):
         log.debug("Chat Timestamps received: {}".format(buddylist))
 
     def onBuddylistOverlay(self, statuses=None, msg=None):
-        """
-        Called when the client is listening and client receives information about friend active status
+        """Called when the client is listening and client receives information about friend active status.
 
         :param statuses: Dictionary with user IDs as keys and :class:`ActiveStatus` as values
         :param msg: A full set of the data recieved
@@ -3921,16 +3808,14 @@ class Client(object):
         log.debug("Buddylist overlay received: {}".format(statuses))
 
     def onUnknownMesssageType(self, msg=None):
-        """
-        Called when the client is listening, and some unknown data was recieved
+        """Called when the client is listening, and some unknown data was recieved.
 
         :param msg: A full set of the data recieved
         """
         log.debug("Unknown message received: {}".format(msg))
 
     def onMessageError(self, exception=None, msg=None):
-        """
-        Called when an error was encountered while parsing recieved data
+        """Called when an error was encountered while parsing recieved data.
 
         :param exception: The exception that was encountered
         :param msg: A full set of the data recieved

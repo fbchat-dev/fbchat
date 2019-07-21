@@ -8,7 +8,7 @@ from ._thread import ThreadType, Thread
 
 @attr.s(cmp=False, init=False)
 class Group(Thread):
-    """Represents a Facebook group. Inherits `Thread`"""
+    """Represents a Facebook group. Inherits `Thread`."""
 
     #: Unique list (set) of the group thread's participant user IDs
     participants = attr.ib(factory=set, converter=lambda x: set() if x is None else x)
@@ -107,7 +107,7 @@ class Group(Thread):
 
 @attr.s(cmp=False, init=False)
 class Room(Group):
-    """Deprecated. Use :class:`Group` instead"""
+    """Deprecated. Use `Group` instead."""
 
     # True is room is not discoverable
     privacy_mode = attr.ib(None)

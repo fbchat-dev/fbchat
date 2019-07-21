@@ -9,7 +9,7 @@ from ._core import Enum
 
 
 class EmojiSize(Enum):
-    """Used to specify the size of a sent emoji"""
+    """Used to specify the size of a sent emoji."""
 
     LARGE = "369239383222810"
     MEDIUM = "369239343222814"
@@ -33,7 +33,7 @@ class EmojiSize(Enum):
 
 
 class MessageReaction(Enum):
-    """Used to specify a message reaction"""
+    """Used to specify a message reaction."""
 
     HEART = "❤"
     LOVE = "😍"
@@ -47,7 +47,7 @@ class MessageReaction(Enum):
 
 @attr.s(cmp=False)
 class Mention(object):
-    """Represents a @mention"""
+    """Represents a ``@mention``."""
 
     #: The thread ID the mention is pointing at
     thread_id = attr.ib()
@@ -59,7 +59,7 @@ class Mention(object):
 
 @attr.s(cmp=False)
 class Message(object):
-    """Represents a Facebook message"""
+    """Represents a Facebook message."""
 
     #: The actual message
     text = attr.ib(None)
@@ -98,7 +98,7 @@ class Message(object):
     def formatMentions(cls, text, *args, **kwargs):
         """Like `str.format`, but takes tuples with a thread id and text instead.
 
-        Returns a `Message` object, with the formatted string and relevant mentions.
+        Return a `Message` object, with the formatted string and relevant mentions.
 
         >>> Message.formatMentions("Hey {!r}! My name is {}", ("1234", "Peter"), ("4321", "Michael"))
         <Message (None): "Hey 'Peter'! My name is Michael", mentions=[<Mention 1234: offset=4 length=7>, <Mention 4321: offset=24 length=7>] emoji_size=None attachments=[]>

@@ -8,7 +8,7 @@ from ._thread import ThreadType, Thread
 
 @attr.s(cmp=False, init=False)
 class Page(Thread):
-    """Represents a Facebook page. Inherits `Thread`"""
+    """Represents a Facebook page. Inherits `Thread`."""
 
     #: The page's custom url
     url = attr.ib(None)

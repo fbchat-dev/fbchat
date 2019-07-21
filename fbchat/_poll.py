@@ -6,7 +6,7 @@ import attr
 
 @attr.s(cmp=False)
 class Poll(object):
-    """Represents a poll"""
+    """Represents a poll."""
 
     #: Title of the poll
     title = attr.ib()
@@ -29,7 +29,7 @@ class Poll(object):
 
 @attr.s(cmp=False)
 class PollOption(object):
-    """Represents a poll option"""
+    """Represents a poll option."""
 
     #: Text of the poll option
     text = attr.ib()

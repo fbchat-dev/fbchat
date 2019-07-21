@@ -3,7 +3,10 @@ from __future__ import unicode_literals
 
 
 class FBchatException(Exception):
-    """Custom exception thrown by fbchat. All exceptions in the fbchat module inherits this"""
+    """Custom exception thrown by fbchat.
+
+    All exceptions in the fbchat module inherits this.
+    """
 
 
 class FBchatFacebookError(FBchatException):
@@ -54,4 +57,4 @@ class FBchatPleaseRefresh(FBchatFacebookError):
 
 
 class FBchatUserError(FBchatException):
-    """Thrown by fbchat when wrong values are entered"""
+    """Thrown by fbchat when wrong values are entered."""

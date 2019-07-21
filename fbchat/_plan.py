@@ -14,7 +14,7 @@ class GuestStatus(Enum):
 
 @attr.s(cmp=False)
 class Plan(object):
-    """Represents a plan"""
+    """Represents a plan."""
 
     #: ID of the plan
     uid = attr.ib(None, init=False)

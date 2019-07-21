@@ -7,7 +7,7 @@ from ._attachment import Attachment
 
 @attr.s(cmp=False)
 class FileAttachment(Attachment):
-    """Represents a file that has been sent as a Facebook attachment"""
+    """Represents a file that has been sent as a Facebook attachment."""
 
     #: Url where you can download the file
     url = attr.ib(None)
@@ -33,7 +33,7 @@ class FileAttachment(Attachment):
 
 @attr.s(cmp=False)
 class AudioAttachment(Attachment):
-    """Represents an audio file that has been sent as a Facebook attachment"""
+    """Represents an audio file that has been sent as a Facebook attachment."""
 
     #: Name of the file
     filename = attr.ib(None)
@@ -59,10 +59,10 @@ class AudioAttachment(Attachment):
 
 @attr.s(cmp=False, init=False)
 class ImageAttachment(Attachment):
-    """Represents an image that has been sent as a Facebook attachment
+    """Represents an image that has been sent as a Facebook attachment.
 
-    To retrieve the full image url, use: :func:`fbchat.Client.fetchImageUrl`, and pass
-    it the uid of the image attachment
+    To retrieve the full image url, use: `Client.fetchImageUrl`, and pass it the id of
+    the image attachment.
     """
 
     #: The extension of the original image (eg. 'png')
@@ -170,7 +170,7 @@ class ImageAttachment(Attachment):
 
 @attr.s(cmp=False, init=False)
 class VideoAttachment(Attachment):
-    """Represents a video that has been sent as a Facebook attachment"""
+    """Represents a video that has been sent as a Facebook attachment."""
 
     #: Size of the original video in bytes
     size = attr.ib(None)

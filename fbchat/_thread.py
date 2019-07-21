@@ -6,7 +6,10 @@ from ._core import Enum
 
 
 class ThreadType(Enum):
-    """Used to specify what type of Facebook thread is being used. See :ref:`intro_threads` for more info"""
+    """Used to specify what type of Facebook thread is being used.
+
+    See :ref:`intro_threads` for more info.
+    """
 
     USER = 1
     GROUP = 2
@@ -24,7 +27,7 @@ class ThreadLocation(Enum):
 
 
 class ThreadColor(Enum):
-    """Used to specify a thread colors"""
+    """Used to specify a thread colors."""
 
     MESSENGER_BLUE = "#0084ff"
     VIKING = "#44bec7"
@@ -60,7 +63,7 @@ class ThreadColor(Enum):
 
 @attr.s(cmp=False, init=False)
 class Thread(object):
-    """Represents a Facebook thread"""
+    """Represents a Facebook thread."""
 
     #: The unique identifier of the thread. Can be used a ``thread_id``. See :ref:`intro_threads` for more info
     uid = attr.ib(converter=str)

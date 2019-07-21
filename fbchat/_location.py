@@ -8,9 +8,9 @@ from . import _util
 
 @attr.s(cmp=False)
 class LocationAttachment(Attachment):
-    """Represents a user location
+    """Represents a user location.
 
-    Latitude and longitude OR address is provided by Facebook
+    Latitude and longitude OR address is provided by Facebook.
     """
 
     #: Latitude of the location
@@ -58,7 +58,7 @@ class LocationAttachment(Attachment):
 
 @attr.s(cmp=False, init=False)
 class LiveLocationAttachment(LocationAttachment):
-    """Represents a live user location"""
+    """Represents a live user location."""
 
     #: Name of the location
     name = attr.ib(None)

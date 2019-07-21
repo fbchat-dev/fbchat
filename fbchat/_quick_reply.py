@@ -7,7 +7,7 @@ from ._attachment import Attachment
 
 @attr.s(cmp=False)
 class QuickReply(object):
-    """Represents a quick reply"""
+    """Represents a quick reply."""
 
     #: Payload of the quick reply
     payload = attr.ib(None)
@@ -21,7 +21,7 @@ class QuickReply(object):
 
 @attr.s(cmp=False, init=False)
 class QuickReplyText(QuickReply):
-    """Represents a text quick reply"""
+    """Represents a text quick reply."""
 
     #: Title of the quick reply
     title = attr.ib(None)
@@ -38,7 +38,7 @@ class QuickReplyText(QuickReply):
 
 @attr.s(cmp=False, init=False)
 class QuickReplyLocation(QuickReply):
-    """Represents a location quick reply (Doesn't work on mobile)"""
+    """Represents a location quick reply (Doesn't work on mobile)."""
 
     #: Type of the quick reply
     _type = "location"
@@ -50,7 +50,7 @@ class QuickReplyLocation(QuickReply):
 
 @attr.s(cmp=False, init=False)
 class QuickReplyPhoneNumber(QuickReply):
-    """Represents a phone number quick reply (Doesn't work on mobile)"""
+    """Represents a phone number quick reply (Doesn't work on mobile)."""
 
     #: URL of the quick reply image (optional)
     image_url = attr.ib(None)
@@ -64,7 +64,7 @@ class QuickReplyPhoneNumber(QuickReply):
 
 @attr.s(cmp=False, init=False)
 class QuickReplyEmail(QuickReply):
-    """Represents an email quick reply (Doesn't work on mobile)"""
+    """Represents an email quick reply (Doesn't work on mobile)."""
 
     #: URL of the quick reply image (optional)
     image_url = attr.ib(None)

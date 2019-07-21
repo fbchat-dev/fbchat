@@ -7,7 +7,7 @@ from ._attachment import Attachment
 
 @attr.s(cmp=False, init=False)
 class Sticker(Attachment):
-    """Represents a Facebook sticker that has been sent to a thread as an attachment"""
+    """Represents a Facebook sticker that has been sent to a thread as an attachment."""
 
     #: The sticker-pack's ID
     pack = attr.ib(None)

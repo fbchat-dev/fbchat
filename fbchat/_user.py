@@ -38,7 +38,7 @@ GENDERS = {
 
 
 class TypingStatus(Enum):
-    """Used to specify whether the user is typing or has stopped typing"""
+    """Used to specify whether the user is typing or has stopped typing."""
 
     STOPPED = 0
     TYPING = 1
@@ -46,7 +46,7 @@ class TypingStatus(Enum):
 
 @attr.s(cmp=False, init=False)
 class User(Thread):
-    """Represents a Facebook user. Inherits `Thread`"""
+    """Represents a Facebook user. Inherits `Thread`."""
 
     #: The profile url
     url = attr.ib(None)
