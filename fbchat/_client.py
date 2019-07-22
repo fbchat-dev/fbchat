@@ -976,7 +976,6 @@ class Client(object):
         """
         return self._buddylist.get(str(user_id))
 
-
     def fetchThreadImages(self, thread_id=None):
         """
         Creates generator object for fetching images posted in thread.
@@ -991,9 +990,15 @@ class Client(object):
             try:
                 i = j[thread_id]["message_shared_media"]["edges"][0]
             except IndexError:
-                if j[thread_id]["message_shared_media"]["page_info"].get("has_next_page"):
-                    data["after"] = j[thread_id]["message_shared_media"]["page_info"].get("end_cursor")
-                    j = self.graphql_request(_graphql.from_query_id("515216185516880", data))
+                if j[thread_id]["message_shared_media"]["page_info"].get(
+                    "has_next_page"
+                ):
+                    data["after"] = j[thread_id]["message_shared_media"][
+                        "page_info"
+                    ].get("end_cursor")
+                    j = self.graphql_request(
+                        _graphql.from_query_id("515216185516880", data)
+                    )
                     continue
                 else:
                     break
