@@ -976,24 +976,6 @@ class Client(object):
         """
         return self._buddylist.get(str(user_id))
 
-    def _fetchImages(self, thread_id):
-        data = {"id": thread_id, "first": 12}
-        j = self.graphql_request(_graphql.from_query_id("515216185516880", data))
-        to_continue = True
-        while to_continue:
-            page_info = j[thread_id]["message_shared_media"]["page_info"]
-            end_cursor = page_info.get("end_cursor")
-            try:
-                yield j[thread_id]["message_shared_media"]["edges"][0]
-                del j[thread_id]["message_shared_media"]["edges"][0]
-            except IndexError:
-                if page_info.get("has_next_page"):
-                    data["after"] = end_cursor
-                    j = self.graphql_request(
-                        _graphql.from_query_id("515216185516880", data)
-                    )
-                else:
-                    to_continue = False
 
     def fetchThreadImages(self, thread_id=None):
         """
@@ -1003,14 +985,26 @@ class Client(object):
         :rtype: iterable
         """
         thread_id, thread_type = self._getThread(thread_id, None)
-        j = self._fetchImages(thread_id)
-        for i in j:
+        data = {"id": thread_id, "first": 48}
+        j = self.graphql_request(_graphql.from_query_id("515216185516880", data))
+        while True:
+            try:
+                i = j[thread_id]["message_shared_media"]["edges"][0]
+            except IndexError:
+                if j[thread_id]["message_shared_media"]["page_info"].get("has_next_page"):
+                    data["after"] = j[thread_id]["message_shared_media"]["page_info"].get("end_cursor")
+                    j = self.graphql_request(_graphql.from_query_id("515216185516880", data))
+                    continue
+                else:
+                    break
+
             if i["node"].get("__typename") == "MessageImage":
                 yield ImageAttachment._from_list(i)
             elif i["node"].get("__typename") == "MessageVideo":
                 yield VideoAttachment._from_list(i)
             else:
                 yield Attachment(uid=i["node"]["uid"])
+            del j[thread_id]["message_shared_media"]["edges"][0]
 
     """
     END FETCH METHODS
