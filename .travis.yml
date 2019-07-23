@@ -30,7 +30,7 @@ jobs:
     script: black --check --verbose .
 
   - stage: deploy
-    name: Github Releases
+    name: GitHub Releases
     if: tag IS present
     install: skip
     script: flit build

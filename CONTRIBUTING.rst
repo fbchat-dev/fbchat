@@ -1,5 +1,5 @@
-Contributing to fbchat
-======================
+Contributing to ``fbchat``
+==========================
 
 Thanks for reading this, all contributions are very much welcome!
 
