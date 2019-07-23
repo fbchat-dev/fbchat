@@ -81,7 +81,9 @@ class Client(object):
             max_tries (int): Maximum number of times to try logging in
             session_cookies (dict): Cookies from a previous session (Will default to login if these are invalid)
             logging_level (int): Configures the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. Defaults to ``logging.INFO``
-        :raises: FBchatException on failed login
+
+        Raises:
+            FBchatException: On failed login
         """
         self._sticky, self._pool = (None, None)
         self._seq = "0"
@@ -169,10 +171,11 @@ class Client(object):
 
         Args:
             queries (dict): Zero or more dictionaries
-
-        :raises: FBchatException if request failed
         :return: A tuple containing json graphql queries
         :rtype: tuple
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {
             "method": "GET",
@@ -184,7 +187,8 @@ class Client(object):
     def graphql_request(self, query):
         """Shorthand for ``graphql_requests(query)[0]``.
 
-        :raises: FBchatException if request failed
+        Raises:
+            FBchatException: If request failed
         """
         return self.graphql_requests(query)[0]
 
@@ -243,7 +247,9 @@ class Client(object):
             email: Facebook ``email`` or ``id`` or ``phone number``
             password: Facebook account password
             max_tries (int): Maximum number of times to try logging in
-        :raises: FBchatException on failed login
+
+        Raises:
+            FBchatException: On failed login
         """
         self.onLoggingIn(email=email)
 
@@ -298,9 +304,11 @@ class Client(object):
     def _getThread(self, given_thread_id=None, given_thread_type=None):
         """Check if thread ID is given and if default is set, and return correct values.
 
-        :raises ValueError: If thread ID is not given and there is no default
         :return: Thread ID and thread type
         :rtype: tuple
+
+        Raises:
+            ValueError: If thread ID is not given and there is no default
         """
         if given_thread_id is None:
             if self._default_thread_id is not None:
@@ -348,7 +356,9 @@ class Client(object):
             limit: The max. amount of threads to fetch (default all threads)
         :return: :class:`Thread` objects
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         threads = []
 
@@ -397,7 +407,9 @@ class Client(object):
             threads: Thread: List of threads to check for users
         :return: :class:`User` objects
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         users = []
         users_to_fetch = []  # It's more efficient to fetch all users in one request
@@ -421,7 +433,9 @@ class Client(object):
 
         :return: :class:`User` objects
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {"viewer": self._uid}
         j = self._payload_post("/chat/user_info_all", data)
@@ -443,7 +457,9 @@ class Client(object):
             limit: The max. amount of users to fetch
         :return: :class:`User` objects, ordered by relevance
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
         j = self.graphql_request(_graphql.from_query(_graphql.SEARCH_USER, params))
@@ -457,7 +473,9 @@ class Client(object):
             name: Name of the page
         :return: :class:`Page` objects, ordered by relevance
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
         j = self.graphql_request(_graphql.from_query(_graphql.SEARCH_PAGE, params))
@@ -472,7 +490,9 @@ class Client(object):
             limit: The max. amount of groups to fetch
         :return: :class:`Group` objects, ordered by relevance
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
         j = self.graphql_request(_graphql.from_query(_graphql.SEARCH_GROUP, params))
@@ -487,7 +507,9 @@ class Client(object):
             limit: The max. amount of groups to fetch
         :return: :class:`User`, :class:`Group` and :class:`Page` objects, ordered by relevance
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
         j = self.graphql_request(_graphql.from_query(_graphql.SEARCH_THREAD, params))
@@ -521,7 +543,9 @@ class Client(object):
             thread_id: User/Group ID to search in. See :ref:`intro_threads`
         :return: Found Message IDs
         :rtype: typing.Iterable
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
@@ -552,7 +576,9 @@ class Client(object):
             thread_id: User/Group ID to search in. See :ref:`intro_threads`
         :return: Found :class:`Message` objects
         :rtype: typing.Iterable
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         message_ids = self.searchForMessageIDs(
             query, offset=offset, limit=limit, thread_id=thread_id
@@ -570,7 +596,9 @@ class Client(object):
             message_limit (int): Max. number of messages to retrieve
         :return: Dictionary with thread IDs as keys and iterables to get messages as values
         :rtype: typing.Dict[str, typing.Iterable]
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {"query": query, "snippetLimit": thread_limit}
         j = self._payload_post("/ajax/mercury/search_snippets.php?dpr=1", data)
@@ -636,7 +664,9 @@ class Client(object):
             user_ids: One or more user ID(s) to query
         :return: :class:`User` objects, labeled by their ID
         :rtype: dict
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         threads = self.fetchThreadInfo(*user_ids)
         users = {}
@@ -658,7 +688,9 @@ class Client(object):
             page_ids: One or more page ID(s) to query
         :return: :class:`Page` objects, labeled by their ID
         :rtype: dict
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         threads = self.fetchThreadInfo(*page_ids)
         pages = {}
@@ -677,7 +709,9 @@ class Client(object):
             group_ids: One or more group ID(s) to query
         :return: :class:`Group` objects, labeled by their ID
         :rtype: dict
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         threads = self.fetchThreadInfo(*group_ids)
         groups = {}
@@ -699,7 +733,9 @@ class Client(object):
             thread_ids: One or more thread ID(s) to query
         :return: :class:`Thread` objects, labeled by their ID
         :rtype: dict
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         queries = []
         for thread_id in thread_ids:
@@ -762,7 +798,9 @@ class Client(object):
             before (int): A timestamp, indicating from which point to retrieve messages
         :return: :class:`Message` objects
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
@@ -805,7 +843,9 @@ class Client(object):
             before (int): A timestamp (in milliseconds), indicating from which point to retrieve threads
         :return: :class:`Thread` objects
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         if offset is not None:
             log.warning(
@@ -849,7 +889,9 @@ class Client(object):
 
         :return: List of unread thread ids
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         form = {
             "folders[0]": "inbox",
@@ -867,7 +909,9 @@ class Client(object):
 
         :return: List of unseen thread ids
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         j = self._payload_post("/mercury/unseen_thread_ids/", None)
 
@@ -881,7 +925,9 @@ class Client(object):
             image_id (str): The image you want to fethc
         :return: An url where you can download the original image
         :rtype: str
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         image_id = str(image_id)
         data = {"photo_id": str(image_id)}
@@ -900,7 +946,9 @@ class Client(object):
             thread_id: User/Group ID to get message info from. See :ref:`intro_threads`
         :return: :class:`Message` object
         :rtype: Message
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         message_info = self._forcedFetch(thread_id, mid).get("message")
@@ -912,7 +960,9 @@ class Client(object):
         Args:
             poll_id: Poll ID to fetch from
         :rtype: list
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {"question_id": poll_id}
         j = self._payload_post("/ajax/mercury/get_poll_options", data)
@@ -925,7 +975,9 @@ class Client(object):
             plan_id: Plan ID to fetch from
         :return: :class:`Plan` object
         :rtype: Plan
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {"event_reminder_id": plan_id}
         j = self._payload_post("/ajax/eventreminder", data)
@@ -1122,7 +1174,9 @@ class Client(object):
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(
@@ -1158,7 +1212,9 @@ class Client(object):
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
         data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
@@ -1180,7 +1236,9 @@ class Client(object):
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         quick_reply.is_response = True
         if isinstance(quick_reply, QuickReplyText):
@@ -1239,7 +1297,9 @@ class Client(object):
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         self._sendLocation(
             location=location,
@@ -1260,7 +1320,9 @@ class Client(object):
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         self._sendLocation(
             location=location,
@@ -1329,7 +1391,9 @@ class Client(object):
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent files
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         file_urls = require_list(file_urls)
         files = self._upload(get_files_from_urls(file_urls))
@@ -1348,7 +1412,9 @@ class Client(object):
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent files
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         file_paths = require_list(file_paths)
         with get_files_from_paths(file_paths) as x:
@@ -1368,7 +1434,9 @@ class Client(object):
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent files
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         clip_urls = require_list(clip_urls)
         files = self._upload(get_files_from_urls(clip_urls), voice_clip=True)
@@ -1387,7 +1455,9 @@ class Client(object):
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent files
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         clip_paths = require_list(clip_paths)
         with get_files_from_paths(clip_paths) as x:
@@ -1444,7 +1514,9 @@ class Client(object):
         Args:
             attachment_id: Attachment ID to forward
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {
@@ -1465,7 +1537,9 @@ class Client(object):
             message: The initial message
             user_ids: A list of users to create the group with.
         :return: ID of the new group
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = self._getSendData(message=self._oldMessage(message))
 
@@ -1488,7 +1562,9 @@ class Client(object):
         Args:
             user_ids (list): One or more user IDs to add
             thread_id: Group ID to add people to. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
@@ -1516,7 +1592,9 @@ class Client(object):
         Args:
             user_id: User ID to remove
             thread_id: Group ID to remove people from. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
@@ -1541,7 +1619,9 @@ class Client(object):
         Args:
             admin_ids: One or more user IDs to set admin
             thread_id: Group ID to remove people from. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         self._adminStatus(admin_ids, True, thread_id)
 
@@ -1551,7 +1631,9 @@ class Client(object):
         Args:
             admin_ids: One or more user IDs to remove admin
             thread_id: Group ID to remove people from. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         self._adminStatus(admin_ids, False, thread_id)
 
@@ -1561,7 +1643,9 @@ class Client(object):
         Args:
             require_admin_approval: True or False
             thread_id: Group ID to remove people from. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
@@ -1591,7 +1675,9 @@ class Client(object):
         Args:
             user_ids: One or more user IDs to accept
             thread_id: Group ID to accept users to. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         self._usersApproval(user_ids, True, thread_id)
 
@@ -1601,7 +1687,9 @@ class Client(object):
         Args:
             user_ids: One or more user IDs to deny
             thread_id: Group ID to deny users from. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         self._usersApproval(user_ids, False, thread_id)
 
@@ -1611,7 +1699,9 @@ class Client(object):
         Args:
             image_id: ID of uploaded image
             thread_id: User/Group ID to change image. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
@@ -1626,7 +1716,9 @@ class Client(object):
         Args:
             image_url: URL of an image to upload and change
             thread_id: User/Group ID to change image. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         (image_id, mimetype), = self._upload(get_files_from_urls([image_url]))
         return self._changeGroupImage(image_id, thread_id)
@@ -1637,7 +1729,9 @@ class Client(object):
         Args:
             image_path: Path of an image to upload and change
             thread_id: User/Group ID to change image. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         with get_files_from_paths([image_path]) as files:
             (image_id, mimetype), = self._upload(files)
@@ -1654,7 +1748,9 @@ class Client(object):
             title: New group thread title
             thread_id: Group ID to change title of. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
 
@@ -1677,7 +1773,9 @@ class Client(object):
             user_id: User that will have their nickname changed
             thread_id: User/Group ID to change color of. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
 
@@ -1696,7 +1794,9 @@ class Client(object):
         Args:
             color (ThreadColor): New thread color
             thread_id: User/Group ID to change color of. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
@@ -1718,7 +1818,9 @@ class Client(object):
         Args:
             color: New thread emoji
             thread_id: User/Group ID to change emoji of. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
@@ -1733,7 +1835,9 @@ class Client(object):
         Args:
             message_id: :ref:`Message ID <intro_message_ids>` to react to
             reaction (MessageReaction): Reaction emoji to use, if None removes reaction
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {
             "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
@@ -1752,7 +1856,9 @@ class Client(object):
         Args:
             plan (Plan): Plan to set
             thread_id: User/Group ID to send plan to. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
@@ -1778,7 +1884,9 @@ class Client(object):
         Args:
             plan (Plan): Plan to edit
             new_plan: New plan
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {
             "event_reminder_id": plan.uid,
@@ -1796,7 +1904,9 @@ class Client(object):
 
         Args:
             plan: Plan to delete
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {"event_reminder_id": plan.uid, "delete": "true", "acontext": ACONTEXT}
         j = self._payload_post("/ajax/eventreminder/submit", data)
@@ -1807,7 +1917,9 @@ class Client(object):
         Args:
             plan: Plan to take part in or not
             take_part: Whether to take part in the plan
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {
             "event_reminder_id": plan.uid,
@@ -1827,7 +1939,9 @@ class Client(object):
         Args:
             poll (Poll): Poll to create
             thread_id: User/Group ID to create poll in. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
@@ -1857,7 +1971,9 @@ class Client(object):
             new_options: List of the new option names
             thread_id: User/Group ID to change status in. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {"question_id": poll_id}
 
@@ -1881,7 +1997,9 @@ class Client(object):
             status (TypingStatus): Specify the typing status
             thread_id: User/Group ID to change status in. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
 
@@ -1904,7 +2022,9 @@ class Client(object):
             thread_id: User/Group ID to which the message belongs. See :ref:`intro_threads`
             message_id: Message ID to set as delivered. See :ref:`intro_threads`
         :return: True
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {
             "message_ids[0]": message_id,
@@ -1931,7 +2051,9 @@ class Client(object):
 
         Args:
             thread_ids: User/Group IDs to set as read. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         self._readStatus(True, thread_ids)
 
@@ -1942,7 +2064,9 @@ class Client(object):
 
         Args:
             thread_ids: User/Group IDs to set as unread. See :ref:`intro_threads`
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         self._readStatus(False, thread_ids)
 
@@ -1968,7 +2092,9 @@ class Client(object):
         Args:
             friend_id: The ID of the friend that you want to remove
         :return: True
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {"uid": friend_id}
         j = self._payload_post("/ajax/profile/removefriendconfirm.php", data)
@@ -1980,7 +2106,9 @@ class Client(object):
         Args:
             user_id: The ID of the user that you want to block
         :return: True
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {"fbid": user_id}
         j = self._payload_post("/messaging/block_messages/?dpr=1", data)
@@ -1992,7 +2120,9 @@ class Client(object):
         Args:
             user_id: The ID of the user that you want to unblock
         :return: Whether the request was successful
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         data = {"fbid": user_id}
         j = self._payload_post("/messaging/unblock_messages/?dpr=1", data)
@@ -2005,7 +2135,9 @@ class Client(object):
             location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
             thread_ids: Thread IDs to move. See :ref:`intro_threads`
         :return: True
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_ids = require_list(thread_ids)
 
@@ -2037,7 +2169,9 @@ class Client(object):
         Args:
             thread_ids: Thread IDs to delete. See :ref:`intro_threads`
         :return: True
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_ids = require_list(thread_ids)
 
@@ -2060,7 +2194,9 @@ class Client(object):
         Args:
             thread_id: User/Group ID to mark as spam. See :ref:`intro_threads`
         :return: True
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         j = self._payload_post("/ajax/mercury/mark_spam.php?dpr=1", {"id": thread_id})
@@ -2072,7 +2208,9 @@ class Client(object):
         Args:
             message_ids: Message IDs to delete
         :return: True
-        :raises: FBchatException if request failed
+
+        Raises:
+            FBchatException: If request failed
         """
         message_ids = require_list(message_ids)
         data = dict()
@@ -2834,7 +2972,8 @@ class Client(object):
     def startListening(self):
         """Start listening from an external event loop.
 
-        :raises: FBchatException if request failed
+        Raises:
+            FBchatException: If request failed
         """
         self.listening = True
 
