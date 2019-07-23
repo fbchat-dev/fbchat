@@ -953,7 +953,7 @@ class Client(object):
 
         url = get_jsmods_require(j, 3)
         if url is None:
-            raise FBchatException("Could not fetch image url from: {}".format(j))
+            raise FBchatException("Could not fetch image URL from: {}".format(j))
         return url
 
     def fetchMessageInfo(self, mid, thread_id=None):

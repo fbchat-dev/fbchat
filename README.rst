@@ -1,5 +1,5 @@
-fbchat: Facebook Chat (Messenger) for Python
-============================================
+``fbchat``: Facebook Chat (Messenger) for Python
+================================================
 
 .. image:: https://img.shields.io/badge/license-BSD-blue.svg
     :target: https://github.com/carpedm20/fbchat/tree/master/LICENSE
