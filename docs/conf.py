@@ -95,8 +95,6 @@ html_theme_options = {
     "show_related": False,
 }
 
-html_extra_path = ["robots.txt"]
-
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
 #
