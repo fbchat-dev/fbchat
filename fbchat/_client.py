@@ -171,8 +171,9 @@ class Client(object):
 
         Args:
             queries (dict): Zero or more dictionaries
-        :return: A tuple containing json graphql queries
-        :rtype: tuple
+
+        Returns:
+            tuple: A tuple containing json graphql queries
 
         Raises:
             FBchatException: If request failed
@@ -203,16 +204,16 @@ class Client(object):
     def isLoggedIn(self):
         """Send a request to Facebook to check the login status.
 
-        :return: True if the client is still logged in
-        :rtype: bool
+        Returns:
+            bool: True if the client is still logged in
         """
         return self._state.is_logged_in()
 
     def getSession(self):
         """Retrieve session cookies.
 
-        :return: A dictionay containing session cookies
-        :rtype: dict
+        Returns:
+            dict: A dictionay containing session cookies
         """
         return self._state.get_cookies()
 
@@ -221,8 +222,9 @@ class Client(object):
 
         Args:
             session_cookies (dict): A dictionay containing session cookies
-        :return: False if ``session_cookies`` does not contain proper cookies
-        :rtype: bool
+
+        Returns:
+            bool: False if ``session_cookies`` does not contain proper cookies
         """
         try:
             # Load cookies into current session
@@ -284,8 +286,8 @@ class Client(object):
     def logout(self):
         """Safely log out the client.
 
-        :return: True if the action was successful
-        :rtype: bool
+        Returns:
+            bool: True if the action was successful
         """
         if self._state.logout():
             self._state = None
@@ -304,8 +306,8 @@ class Client(object):
     def _getThread(self, given_thread_id=None, given_thread_type=None):
         """Check if thread ID is given and if default is set, and return correct values.
 
-        :return: Thread ID and thread type
-        :rtype: tuple
+        Returns:
+            tuple: Thread ID and thread type
 
         Raises:
             ValueError: If thread ID is not given and there is no default
@@ -354,8 +356,9 @@ class Client(object):
             before: Fetch only thread before this epoch (in ms) (default all threads)
             after: Fetch only thread after this epoch (in ms) (default all threads)
             limit: The max. amount of threads to fetch (default all threads)
-        :return: :class:`Thread` objects
-        :rtype: list
+
+        Returns:
+            list: :class:`Thread` objects
 
         Raises:
             FBchatException: If request failed
@@ -405,8 +408,9 @@ class Client(object):
 
         Args:
             threads: Thread: List of threads to check for users
-        :return: :class:`User` objects
-        :rtype: list
+
+        Returns:
+            list: :class:`User` objects
 
         Raises:
             FBchatException: If request failed
@@ -431,8 +435,8 @@ class Client(object):
     def fetchAllUsers(self):
         """Fetch all users the client is currently chatting with.
 
-        :return: :class:`User` objects
-        :rtype: list
+        Returns:
+            list: :class:`User` objects
 
         Raises:
             FBchatException: If request failed
@@ -455,8 +459,9 @@ class Client(object):
         Args:
             name: Name of the user
             limit: The max. amount of users to fetch
-        :return: :class:`User` objects, ordered by relevance
-        :rtype: list
+
+        Returns:
+            list: :class:`User` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -471,8 +476,9 @@ class Client(object):
 
         Args:
             name: Name of the page
-        :return: :class:`Page` objects, ordered by relevance
-        :rtype: list
+
+        Returns:
+            list: :class:`Page` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -488,8 +494,9 @@ class Client(object):
         Args:
             name: Name of the group thread
             limit: The max. amount of groups to fetch
-        :return: :class:`Group` objects, ordered by relevance
-        :rtype: list
+
+        Returns:
+            list: :class:`Group` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -505,8 +512,9 @@ class Client(object):
         Args:
             name: Name of the thread
             limit: The max. amount of groups to fetch
-        :return: :class:`User`, :class:`Group` and :class:`Page` objects, ordered by relevance
-        :rtype: list
+
+        Returns:
+            list: :class:`User`, :class:`Group` and :class:`Page` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -541,8 +549,9 @@ class Client(object):
             offset (int): Number of messages to skip
             limit (int): Max. number of messages to retrieve
             thread_id: User/Group ID to search in. See :ref:`intro_threads`
-        :return: Found Message IDs
-        :rtype: typing.Iterable
+
+        Returns:
+            typing.Iterable: Found Message IDs
 
         Raises:
             FBchatException: If request failed
@@ -574,8 +583,9 @@ class Client(object):
             offset (int): Number of messages to skip
             limit (int): Max. number of messages to retrieve
             thread_id: User/Group ID to search in. See :ref:`intro_threads`
-        :return: Found :class:`Message` objects
-        :rtype: typing.Iterable
+
+        Returns:
+            typing.Iterable: Found :class:`Message` objects
 
         Raises:
             FBchatException: If request failed
@@ -594,8 +604,9 @@ class Client(object):
             fetch_messages: Whether to fetch :class:`Message` objects or IDs only
             thread_limit (int): Max. number of threads to retrieve
             message_limit (int): Max. number of messages to retrieve
-        :return: Dictionary with thread IDs as keys and iterables to get messages as values
-        :rtype: typing.Dict[str, typing.Iterable]
+
+        Returns:
+            typing.Dict[str, typing.Iterable]: Dictionary with thread IDs as keys and iterables to get messages as values
 
         Raises:
             FBchatException: If request failed
@@ -662,8 +673,9 @@ class Client(object):
 
         Args:
             user_ids: One or more user ID(s) to query
-        :return: :class:`User` objects, labeled by their ID
-        :rtype: dict
+
+        Returns:
+            dict: :class:`User` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -686,8 +698,9 @@ class Client(object):
 
         Args:
             page_ids: One or more page ID(s) to query
-        :return: :class:`Page` objects, labeled by their ID
-        :rtype: dict
+
+        Returns:
+            dict: :class:`Page` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -707,8 +720,9 @@ class Client(object):
 
         Args:
             group_ids: One or more group ID(s) to query
-        :return: :class:`Group` objects, labeled by their ID
-        :rtype: dict
+
+        Returns:
+            dict: :class:`Group` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -731,8 +745,9 @@ class Client(object):
 
         Args:
             thread_ids: One or more thread ID(s) to query
-        :return: :class:`Thread` objects, labeled by their ID
-        :rtype: dict
+
+        Returns:
+            dict: :class:`Thread` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -796,8 +811,9 @@ class Client(object):
             thread_id: User/Group ID to get messages from. See :ref:`intro_threads`
             limit (int): Max. number of messages to retrieve
             before (int): A timestamp, indicating from which point to retrieve messages
-        :return: :class:`Message` objects
-        :rtype: list
+
+        Returns:
+            list: :class:`Message` objects
 
         Raises:
             FBchatException: If request failed
@@ -841,8 +857,9 @@ class Client(object):
             limit (int): Max. number of threads to retrieve. Capped at 20
             thread_location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
             before (int): A timestamp (in milliseconds), indicating from which point to retrieve threads
-        :return: :class:`Thread` objects
-        :rtype: list
+
+        Returns:
+            list: :class:`Thread` objects
 
         Raises:
             FBchatException: If request failed
@@ -887,8 +904,8 @@ class Client(object):
     def fetchUnread(self):
         """Fetch unread threads.
 
-        :return: List of unread thread ids
-        :rtype: list
+        Returns:
+            list: List of unread thread ids
 
         Raises:
             FBchatException: If request failed
@@ -907,8 +924,8 @@ class Client(object):
     def fetchUnseen(self):
         """Fetch unseen / new threads.
 
-        :return: List of unseen thread ids
-        :rtype: list
+        Returns:
+            list: List of unseen thread ids
 
         Raises:
             FBchatException: If request failed
@@ -923,8 +940,9 @@ class Client(object):
 
         Args:
             image_id (str): The image you want to fethc
-        :return: An url where you can download the original image
-        :rtype: str
+
+        Returns:
+            str: An url where you can download the original image
 
         Raises:
             FBchatException: If request failed
@@ -944,8 +962,9 @@ class Client(object):
         Args:
             mid: Message ID to fetch from
             thread_id: User/Group ID to get message info from. See :ref:`intro_threads`
-        :return: :class:`Message` object
-        :rtype: Message
+
+        Returns:
+            Message: :class:`Message` object
 
         Raises:
             FBchatException: If request failed
@@ -959,7 +978,9 @@ class Client(object):
 
         Args:
             poll_id: Poll ID to fetch from
-        :rtype: list
+
+        Returns:
+            list
 
         Raises:
             FBchatException: If request failed
@@ -973,8 +994,9 @@ class Client(object):
 
         Args:
             plan_id: Plan ID to fetch from
-        :return: :class:`Plan` object
-        :rtype: Plan
+
+        Returns:
+            Plan: :class:`Plan` object
 
         Raises:
             FBchatException: If request failed
@@ -990,8 +1012,8 @@ class Client(object):
     def getPhoneNumbers(self):
         """Fetch list of user's phone numbers.
 
-        :return: List of phone numbers
-        :rtype: list
+        Returns:
+            list: List of phone numbers
         """
         data = self._getPrivateData()
         return [
@@ -1001,8 +1023,8 @@ class Client(object):
     def getEmails(self):
         """Fetch list of user's emails.
 
-        :return: List of emails
-        :rtype: list
+        Returns:
+            list: List of emails
         """
         data = self._getPrivateData()
         return [j["display_email"] for j in data["all_emails"]]
@@ -1017,8 +1039,9 @@ class Client(object):
 
         Args:
             user_id: ID of the user
-        :return: Given user active status
-        :rtype: ActiveStatus
+
+        Returns:
+            ActiveStatus: Given user active status
         """
         return self._buddylist.get(str(user_id))
 
@@ -1027,8 +1050,9 @@ class Client(object):
 
         Args:
             thread_id: ID of the thread
-        :return: :class:`ImageAttachment` or :class:`VideoAttachment`.
-        :rtype: iterable
+
+        Returns:
+            typing.Iterable: :class:`ImageAttachment` or :class:`VideoAttachment`
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"id": thread_id, "first": 48}
@@ -1173,7 +1197,9 @@ class Client(object):
             message (Message): Message to send
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+
+        Returns:
+            :ref:`Message ID <intro_message_ids>` of the sent message
 
         Raises:
             FBchatException: If request failed
@@ -1211,7 +1237,9 @@ class Client(object):
             wave_first: Whether to wave first or wave back
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+
+        Returns:
+            :ref:`Message ID <intro_message_ids>` of the sent message
 
         Raises:
             FBchatException: If request failed
@@ -1235,7 +1263,9 @@ class Client(object):
             payload: Optional answer to the quick reply
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+
+        Returns:
+            :ref:`Message ID <intro_message_ids>` of the sent message
 
         Raises:
             FBchatException: If request failed
@@ -1296,7 +1326,9 @@ class Client(object):
             message (Message): Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+
+        Returns:
+            :ref:`Message ID <intro_message_ids>` of the sent message
 
         Raises:
             FBchatException: If request failed
@@ -1319,7 +1351,9 @@ class Client(object):
             message (Message): Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :return: :ref:`Message ID <intro_message_ids>` of the sent message
+
+        Returns:
+            :ref:`Message ID <intro_message_ids>` of the sent message
 
         Raises:
             FBchatException: If request failed
@@ -1390,7 +1424,9 @@ class Client(object):
             message: Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :return: :ref:`Message ID <intro_message_ids>` of the sent files
+
+        Returns:
+            :ref:`Message ID <intro_message_ids>` of the sent files
 
         Raises:
             FBchatException: If request failed
@@ -1411,7 +1447,9 @@ class Client(object):
             message: Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :return: :ref:`Message ID <intro_message_ids>` of the sent files
+
+        Returns:
+            :ref:`Message ID <intro_message_ids>` of the sent files
 
         Raises:
             FBchatException: If request failed
@@ -1433,7 +1471,9 @@ class Client(object):
             message: Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :return: :ref:`Message ID <intro_message_ids>` of the sent files
+
+        Returns:
+            :ref:`Message ID <intro_message_ids>` of the sent files
 
         Raises:
             FBchatException: If request failed
@@ -1454,7 +1494,9 @@ class Client(object):
             message: Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
             thread_type (ThreadType): See :ref:`intro_threads`
-        :return: :ref:`Message ID <intro_message_ids>` of the sent files
+
+        Returns:
+            :ref:`Message ID <intro_message_ids>` of the sent files
 
         Raises:
             FBchatException: If request failed
@@ -1536,7 +1578,9 @@ class Client(object):
         Args:
             message: The initial message
             user_ids: A list of users to create the group with.
-        :return: ID of the new group
+
+        Returns:
+            ID of the new group
 
         Raises:
             FBchatException: If request failed
@@ -2021,7 +2065,9 @@ class Client(object):
         Args:
             thread_id: User/Group ID to which the message belongs. See :ref:`intro_threads`
             message_id: Message ID to set as delivered. See :ref:`intro_threads`
-        :return: True
+
+        Returns:
+            True
 
         Raises:
             FBchatException: If request failed
@@ -2091,7 +2137,9 @@ class Client(object):
 
         Args:
             friend_id: The ID of the friend that you want to remove
-        :return: True
+
+        Returns:
+            True
 
         Raises:
             FBchatException: If request failed
@@ -2105,7 +2153,9 @@ class Client(object):
 
         Args:
             user_id: The ID of the user that you want to block
-        :return: True
+
+        Returns:
+            True
 
         Raises:
             FBchatException: If request failed
@@ -2119,7 +2169,9 @@ class Client(object):
 
         Args:
             user_id: The ID of the user that you want to unblock
-        :return: Whether the request was successful
+
+        Returns:
+            Whether the request was successful
 
         Raises:
             FBchatException: If request failed
@@ -2134,7 +2186,9 @@ class Client(object):
         Args:
             location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
             thread_ids: Thread IDs to move. See :ref:`intro_threads`
-        :return: True
+
+        Returns:
+            True
 
         Raises:
             FBchatException: If request failed
@@ -2168,7 +2222,9 @@ class Client(object):
 
         Args:
             thread_ids: Thread IDs to delete. See :ref:`intro_threads`
-        :return: True
+
+        Returns:
+            True
 
         Raises:
             FBchatException: If request failed
@@ -2193,7 +2249,9 @@ class Client(object):
 
         Args:
             thread_id: User/Group ID to mark as spam. See :ref:`intro_threads`
-        :return: True
+
+        Returns:
+            True
 
         Raises:
             FBchatException: If request failed
@@ -2207,7 +2265,9 @@ class Client(object):
 
         Args:
             message_ids: Message IDs to delete
-        :return: True
+
+        Returns:
+            True
 
         Raises:
             FBchatException: If request failed
@@ -2986,8 +3046,8 @@ class Client(object):
             ``markAlive`` parameter is deprecated, use :func:`Client.setActiveStatus`
             or ``markAlive`` parameter in :func:`Client.listen` instead.
 
-        :return: Whether the loop should keep running
-        :rtype: bool
+        Returns:
+            bool: Whether the loop should keep running
         """
         if markAlive is not None:
             self._markAlive = markAlive
@@ -3084,7 +3144,9 @@ class Client(object):
 
         Args:
             exception: The exception that was encountered
-        :return: Whether the loop should keep running
+
+        Returns:
+            Whether the loop should keep running
         """
         log.exception("Got exception while listening")
         return True
