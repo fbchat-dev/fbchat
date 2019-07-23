@@ -9,7 +9,7 @@ from ._attachment import Attachment
 class FileAttachment(Attachment):
     """Represents a file that has been sent as a Facebook attachment."""
 
-    #: Url where you can download the file
+    #: URL where you can download the file
     url = attr.ib(None)
     #: Size of the file in bytes
     size = attr.ib(None)
@@ -37,9 +37,9 @@ class AudioAttachment(Attachment):
 
     #: Name of the file
     filename = attr.ib(None)
-    #: Url of the audio file
+    #: URL of the audio file
     url = attr.ib(None)
-    #: Duration of the audioclip in milliseconds
+    #: Duration of the audio clip in milliseconds
     duration = attr.ib(None)
     #: Audio type
     audio_type = attr.ib(None)
@@ -61,11 +61,11 @@ class AudioAttachment(Attachment):
 class ImageAttachment(Attachment):
     """Represents an image that has been sent as a Facebook attachment.
 
-    To retrieve the full image url, use: `Client.fetchImageUrl`, and pass it the id of
+    To retrieve the full image URL, use: `Client.fetchImageUrl`, and pass it the id of
     the image attachment.
     """
 
-    #: The extension of the original image (eg. 'png')
+    #: The extension of the original image (e.g. ``png``)
     original_extension = attr.ib(None)
     #: Width of original image
     width = attr.ib(None, converter=lambda x: None if x is None else int(x))
@@ -92,7 +92,7 @@ class ImageAttachment(Attachment):
     #: Height of the large preview image
     large_preview_height = attr.ib(None)
 
-    #: URL to an animated preview of the image (eg. for gifs)
+    #: URL to an animated preview of the image (e.g. for GIFs)
     animated_preview_url = attr.ib(None)
     #: Width of the animated preview image
     animated_preview_width = attr.ib(None)

@@ -3,10 +3,10 @@
 Installation
 ============
 
-Pip Install fbchat
-------------------
+Install using pip
+-----------------
 
-To install fbchat, run this command:
+To install ``fbchat``, run this command:
 
 .. code-block:: sh
 
@@ -19,7 +19,7 @@ can guide you through the process.
 Get the Source Code
 -------------------
 
-fbchat is developed on GitHub, where the code is
+``fbchat`` is developed on GitHub, where the code is
 `always available <https://github.com/carpedm20/fbchat>`_.
 
 You can either clone the public repository:

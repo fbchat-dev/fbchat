@@ -21,7 +21,7 @@ class Sticker(Attachment):
     large_sprite_image = attr.ib(None)
     #: The amount of frames present in the spritemap pr. row
     frames_per_row = attr.ib(None)
-    #: The amount of frames present in the spritemap pr. coloumn
+    #: The amount of frames present in the spritemap pr. column
     frames_per_col = attr.ib(None)
     #: The frame rate the spritemap is intended to be played in
     frame_rate = attr.ib(None)

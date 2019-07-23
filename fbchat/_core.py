@@ -8,7 +8,7 @@ log = logging.getLogger("client")
 
 
 class Enum(aenum.Enum):
-    """Used internally by fbchat to support enumerations"""
+    """Used internally by ``fbchat`` to support enumerations"""
 
     def __repr__(self):
         # For documentation:

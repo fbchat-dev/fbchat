@@ -20,7 +20,7 @@ class UnsentMessage(Attachment):
 
 @attr.s(cmp=False)
 class ShareAttachment(Attachment):
-    """Represents a shared item (eg. URL) attachment."""
+    """Represents a shared item (e.g. URL) attachment."""
 
     #: ID of the author of the shared post
     author = attr.ib(None)

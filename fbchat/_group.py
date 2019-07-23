@@ -12,7 +12,7 @@ class Group(Thread):
 
     #: Unique list (set) of the group thread's participant user IDs
     participants = attr.ib(factory=set, converter=lambda x: set() if x is None else x)
-    #: A dict, containing user nicknames mapped to their IDs
+    #: A dictionary, containing user nicknames mapped to their IDs
     nicknames = attr.ib(factory=dict, converter=lambda x: {} if x is None else x)
     #: A :class:`ThreadColor`. The groups's message color
     color = attr.ib(None)
