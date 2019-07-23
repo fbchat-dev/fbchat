@@ -78,12 +78,9 @@ class Client(object):
             email: Facebook ``email``, ``id`` or ``phone number``
             password: Facebook account password
             user_agent: Custom user agent to use when sending requests. If `None`, user agent will be chosen from a premade list
-            max_tries: Maximum number of times to try logging in
-            session_cookies: Cookies from a previous session (Will default to login if these are invalid)
-            logging_level: Configures the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. Defaults to ``logging.INFO``
-        :type max_tries: int
-        :type session_cookies: dict
-        :type logging_level: int
+            max_tries (int): Maximum number of times to try logging in
+            session_cookies (dict): Cookies from a previous session (Will default to login if these are invalid)
+            logging_level (int): Configures the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. Defaults to ``logging.INFO``
         :raises: FBchatException on failed login
         """
         self._sticky, self._pool = (None, None)
@@ -171,8 +168,7 @@ class Client(object):
         """Execute graphql queries.
 
         Args:
-            queries: Zero or more dictionaries
-        :type queries: dict
+            queries (dict): Zero or more dictionaries
 
         :raises: FBchatException if request failed
         :return: A tuple containing json graphql queries
@@ -220,8 +216,7 @@ class Client(object):
         """Load session cookies.
 
         Args:
-            session_cookies: A dictionay containing session cookies
-        :type session_cookies: dict
+            session_cookies (dict): A dictionay containing session cookies
         :return: False if ``session_cookies`` does not contain proper cookies
         :rtype: bool
         """
@@ -247,8 +242,7 @@ class Client(object):
         Args:
             email: Facebook ``email`` or ``id`` or ``phone number``
             password: Facebook account password
-            max_tries: Maximum number of times to try logging in
-        :type max_tries: int
+            max_tries (int): Maximum number of times to try logging in
         :raises: FBchatException on failed login
         """
         self.onLoggingIn(email=email)
@@ -321,8 +315,7 @@ class Client(object):
 
         Args:
             thread_id: User/Group ID to default to. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         """
         self._default_thread_id = thread_id
         self._default_thread_type = thread_type
@@ -523,11 +516,9 @@ class Client(object):
 
         Args:
             query: Text to search for
-            offset: Number of messages to skip
-            limit: Max. number of messages to retrieve
+            offset (int): Number of messages to skip
+            limit (int): Max. number of messages to retrieve
             thread_id: User/Group ID to search in. See :ref:`intro_threads`
-        :type offset: int
-        :type limit: int
         :return: Found Message IDs
         :rtype: typing.Iterable
         :raises: FBchatException if request failed
@@ -556,11 +547,9 @@ class Client(object):
 
         Args:
             query: Text to search for
-            offset: Number of messages to skip
-            limit: Max. number of messages to retrieve
+            offset (int): Number of messages to skip
+            limit (int): Max. number of messages to retrieve
             thread_id: User/Group ID to search in. See :ref:`intro_threads`
-        :type offset: int
-        :type limit: int
         :return: Found :class:`Message` objects
         :rtype: typing.Iterable
         :raises: FBchatException if request failed
@@ -577,10 +566,8 @@ class Client(object):
         Args:
             query: Text to search for
             fetch_messages: Whether to fetch :class:`Message` objects or IDs only
-            thread_limit: Max. number of threads to retrieve
-            message_limit: Max. number of messages to retrieve
-        :type thread_limit: int
-        :type message_limit: int
+            thread_limit (int): Max. number of threads to retrieve
+            message_limit (int): Max. number of messages to retrieve
         :return: Dictionary with thread IDs as keys and iterables to get messages as values
         :rtype: typing.Dict[str, typing.Iterable]
         :raises: FBchatException if request failed
@@ -771,10 +758,8 @@ class Client(object):
 
         Args:
             thread_id: User/Group ID to get messages from. See :ref:`intro_threads`
-            limit: Max. number of messages to retrieve
-            before: A timestamp, indicating from which point to retrieve messages
-        :type limit: int
-        :type before: int
+            limit (int): Max. number of messages to retrieve
+            before (int): A timestamp, indicating from which point to retrieve messages
         :return: :class:`Message` objects
         :rtype: list
         :raises: FBchatException if request failed
@@ -815,11 +800,9 @@ class Client(object):
 
         Args:
             offset: Deprecated. Do not use!
-            limit: Max. number of threads to retrieve. Capped at 20
+            limit (int): Max. number of threads to retrieve. Capped at 20
             thread_location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
-            before: A timestamp (in milliseconds), indicating from which point to retrieve threads
-        :type limit: int
-        :type before: int
+            before (int): A timestamp (in milliseconds), indicating from which point to retrieve threads
         :return: :class:`Thread` objects
         :rtype: list
         :raises: FBchatException if request failed
@@ -895,8 +878,7 @@ class Client(object):
         """Fetch url to download the original image from an image attachment ID.
 
         Args:
-            image_id: The image you want to fethc
-        :type image_id: str
+            image_id (str): The image you want to fethc
         :return: An url where you can download the original image
         :rtype: str
         :raises: FBchatException if request failed
@@ -1136,11 +1118,9 @@ class Client(object):
         """Send message to a thread.
 
         Args:
-            message: Message to send
+            message (Message): Message to send
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type message: Message
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
         :raises: FBchatException if request failed
         """
@@ -1176,8 +1156,7 @@ class Client(object):
         Args:
             wave_first: Whether to wave first or wave back
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
         :raises: FBchatException if request failed
         """
@@ -1196,12 +1175,10 @@ class Client(object):
         """Reply to chosen quick reply.
 
         Args:
-            quick_reply: Quick reply to reply to
+            quick_reply (QuickReply): Quick reply to reply to
             payload: Optional answer to the quick reply
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type quick_reply: QuickReply
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
         :raises: FBchatException if request failed
         """
@@ -1257,13 +1234,10 @@ class Client(object):
         """Send a given location to a thread as the user's current location.
 
         Args:
-            location: Location to send
-            message: Additional message
+            location (LocationAttachment): Location to send
+            message (Message): Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type location: LocationAttachment
-        :type message: Message
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
         :raises: FBchatException if request failed
         """
@@ -1281,13 +1255,10 @@ class Client(object):
         """Send a given location to a thread as a pinned location.
 
         Args:
-            location: Location to send
-            message: Additional message
+            location (LocationAttachment): Location to send
+            message (Message): Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type location: LocationAttachment
-        :type message: Message
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent message
         :raises: FBchatException if request failed
         """
@@ -1356,8 +1327,7 @@ class Client(object):
             file_urls: URLs of files to upload and send
             message: Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent files
         :raises: FBchatException if request failed
         """
@@ -1376,8 +1346,7 @@ class Client(object):
             file_paths: Paths of files to upload and send
             message: Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent files
         :raises: FBchatException if request failed
         """
@@ -1397,8 +1366,7 @@ class Client(object):
             clip_urls: URLs of clips to upload and send
             message: Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent files
         :raises: FBchatException if request failed
         """
@@ -1417,8 +1385,7 @@ class Client(object):
             clip_paths: Paths of clips to upload and send
             message: Additional message
             thread_id: User/Group ID to send to. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :return: :ref:`Message ID <intro_message_ids>` of the sent files
         :raises: FBchatException if request failed
         """
@@ -1519,9 +1486,8 @@ class Client(object):
         """Add users to a group.
 
         Args:
-            user_ids: One or more user IDs to add
+            user_ids (list): One or more user IDs to add
             thread_id: Group ID to add people to. See :ref:`intro_threads`
-        :type user_ids: list
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -1687,8 +1653,7 @@ class Client(object):
         Args:
             title: New group thread title
             thread_id: Group ID to change title of. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
@@ -1711,8 +1676,7 @@ class Client(object):
             nickname: New nickname
             user_id: User that will have their nickname changed
             thread_id: User/Group ID to change color of. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
@@ -1730,9 +1694,8 @@ class Client(object):
         """Change thread color.
 
         Args:
-            color: New thread color
+            color (ThreadColor): New thread color
             thread_id: User/Group ID to change color of. See :ref:`intro_threads`
-        :type color: ThreadColor
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -1769,8 +1732,7 @@ class Client(object):
 
         Args:
             message_id: :ref:`Message ID <intro_message_ids>` to react to
-            reaction: Reaction emoji to use, if None removes reaction
-        :type reaction: MessageReaction or None
+            reaction (MessageReaction): Reaction emoji to use, if None removes reaction
         :raises: FBchatException if request failed
         """
         data = {
@@ -1788,9 +1750,8 @@ class Client(object):
         """Set a plan.
 
         Args:
-            plan: Plan to set
+            plan (Plan): Plan to set
             thread_id: User/Group ID to send plan to. See :ref:`intro_threads`
-        :type plan: Plan
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -1815,9 +1776,8 @@ class Client(object):
         """Edit a plan.
 
         Args:
-            plan: Plan to edit
+            plan (Plan): Plan to edit
             new_plan: New plan
-        :type plan: Plan
         :raises: FBchatException if request failed
         """
         data = {
@@ -1865,9 +1825,8 @@ class Client(object):
         """Create poll in a group thread.
 
         Args:
-            poll: Poll to create
+            poll (Poll): Poll to create
             thread_id: User/Group ID to create poll in. See :ref:`intro_threads`
-        :type poll: Poll
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
@@ -1897,8 +1856,7 @@ class Client(object):
             option_ids: List of the option IDs to vote
             new_options: List of the new option names
             thread_id: User/Group ID to change status in. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
         data = {"question_id": poll_id}
@@ -1920,11 +1878,9 @@ class Client(object):
         """Set users typing status in a thread.
 
         Args:
-            status: Specify the typing status
+            status (TypingStatus): Specify the typing status
             thread_id: User/Group ID to change status in. See :ref:`intro_threads`
-            thread_type: See :ref:`intro_threads`
-        :type status: TypingStatus
-        :type thread_type: ThreadType
+            thread_type (ThreadType): See :ref:`intro_threads`
         :raises: FBchatException if request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
@@ -2931,8 +2887,7 @@ class Client(object):
         """Initialize and runs the listening loop continually.
 
         Args:
-            markAlive: Whether this should ping the Facebook server each time the loop runs
-        :type markAlive: bool
+            markAlive (bool): Whether this should ping the Facebook server each time the loop runs
         """
         if markAlive is not None:
             self.setActiveStatus(markAlive)
@@ -2949,8 +2904,7 @@ class Client(object):
         """Change active status while listening.
 
         Args:
-            markAlive: Whether to show if client is active
-        :type markAlive: bool
+            markAlive (bool): Whether to show if client is active
         """
         self._markAlive = markAlive
 
@@ -3014,14 +2968,12 @@ class Client(object):
             mid: The message ID
             author_id: The ID of the author
             message: (deprecated. Use ``message_object.text`` instead)
-            message_object: The message (As a `Message` object)
+            message_object (Message): The message (As a `Message` object)
             thread_id: Thread ID that the message was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the message was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the message was sent to. See :ref:`intro_threads`
             ts: The timestamp of the message
             metadata: Extra metadata about the message
             msg: A full set of the data recieved
-        :type message_object: Message
-        :type thread_type: ThreadType
         """
         log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
 
@@ -3041,14 +2993,12 @@ class Client(object):
         Args:
             mid: The action ID
             author_id: The ID of the person who changed the color
-            new_color: The new color
+            new_color (ThreadColor): The new color
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type new_color: ThreadColor
-        :type thread_type: ThreadType
         """
         log.info(
             "Color change from {} in {} ({}): {}".format(
@@ -3074,11 +3024,10 @@ class Client(object):
             author_id: The ID of the person who changed the emoji
             new_emoji: The new emoji
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "Emoji change from {} in {} ({}): {}".format(
@@ -3104,11 +3053,10 @@ class Client(object):
             author_id: The ID of the person who changed the title
             new_title: The new title
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "Title change from {} in {} ({}): {}".format(
@@ -3133,10 +3081,9 @@ class Client(object):
             author_id: The ID of the person who changed the image
             new_image: The ID of the new image
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info("{} changed thread image in {}".format(author_id, thread_id))
 
@@ -3160,11 +3107,10 @@ class Client(object):
             changed_for: The ID of the person whom got their nickname changed
             new_nickname: The new nickname
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "Nickname change from {} in {} ({}) for {}: {}".format(
@@ -3256,12 +3202,11 @@ class Client(object):
         Args:
             seen_by: The ID of the person who marked the message as seen
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             seen_ts: A timestamp of when the person saw the message
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "Messages seen by {} in {} ({}) at {}s".format(
@@ -3285,11 +3230,10 @@ class Client(object):
             msg_ids: The messages that are marked as delivered
             delivered_for: The person that marked the messages as delivered
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "Messages {} delivered to {} in {} ({}) at {}s".format(
@@ -3309,7 +3253,6 @@ class Client(object):
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "Marked messages as seen in threads {} at {}s".format(
@@ -3332,10 +3275,9 @@ class Client(object):
             mid: ID of the unsent message
             author_id: The ID of the person who unsent the message
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "{} unsent the message {} in {} ({}) at {}s".format(
@@ -3416,12 +3358,10 @@ class Client(object):
 
         Args:
             author_id: The ID of the person who sent the action
-            status: The typing status
+            status (TypingStatus): The typing status
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             msg: A full set of the data recieved
-        :type typing_status: TypingStatus
-        :type thread_type: ThreadType
         """
         pass
 
@@ -3449,11 +3389,10 @@ class Client(object):
             score: Score obtained in the game
             leaderboard: Actual leaderboard of the game in the thread
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             '{} played "{}" in {} ({})'.format(
@@ -3475,15 +3414,13 @@ class Client(object):
 
         Args:
             mid: Message ID, that user reacted to
-            reaction: Reaction
+            reaction (MessageReaction): Reaction
             add_reaction: Whether user added or removed reaction
             author_id: The ID of the person who reacted to the message
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             msg: A full set of the data recieved
-        :type reaction: MessageReaction
-        :type thread_type: ThreadType
         """
         log.info(
             "{} reacted to message {} with {} in {} ({})".format(
@@ -3506,10 +3443,9 @@ class Client(object):
             mid: Message ID, that user reacted to
             author_id: The ID of the person who removed reaction
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "{} removed reaction from {} message in {} ({})".format(
@@ -3525,10 +3461,9 @@ class Client(object):
         Args:
             author_id: The ID of the person who blocked
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "{} blocked {} ({}) thread".format(author_id, thread_id, thread_type.name)
@@ -3542,10 +3477,9 @@ class Client(object):
         Args:
             author_id: The ID of the person who unblocked
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "{} unblocked {} ({}) thread".format(author_id, thread_id, thread_type.name)
@@ -3565,14 +3499,12 @@ class Client(object):
 
         Args:
             mid: The action ID
-            location: Sent location info
+            location (LiveLocationAttachment): Sent location info
             author_id: The ID of the person who sent location info
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             msg: A full set of the data recieved
-        :type location: LiveLocationAttachment
-        :type thread_type: ThreadType
         """
         log.info(
             "{} sent live location info in {} ({}) with latitude {} and longitude {}".format(
@@ -3601,11 +3533,10 @@ class Client(object):
             caller_id: The ID of the person who started the call
             is_video_call: True if it's video call
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "{} started call in {} ({})".format(caller_id, thread_id, thread_type.name)
@@ -3634,11 +3565,10 @@ class Client(object):
             is_video_call: True if it was video call
             call_duration: Call duration in seconds
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "{} ended call in {} ({})".format(caller_id, thread_id, thread_type.name)
@@ -3662,11 +3592,10 @@ class Client(object):
             joined_id: The ID of the person who joined the call
             is_video_call: True if it's video call
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type thread_type: ThreadType
         """
         log.info(
             "{} joined call in {} ({})".format(joined_id, thread_id, thread_type.name)
@@ -3687,15 +3616,13 @@ class Client(object):
 
         Args:
             mid: The action ID
-            poll: Created poll
+            poll (Poll): Created poll
             author_id: The ID of the person who created the poll
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type poll: Poll
-        :type thread_type: ThreadType
         """
         log.info(
             "{} created poll {} in {} ({})".format(
@@ -3720,15 +3647,13 @@ class Client(object):
 
         Args:
             mid: The action ID
-            poll: Poll, that user voted in
+            poll (Poll): Poll, that user voted in
             author_id: The ID of the person who voted in the poll
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type poll: Poll
-        :type thread_type: ThreadType
         """
         log.info(
             "{} voted in poll {} in {} ({})".format(
@@ -3751,15 +3676,13 @@ class Client(object):
 
         Args:
             mid: The action ID
-            plan: Created plan
+            plan (Plan): Created plan
             author_id: The ID of the person who created the plan
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type plan: Plan
-        :type thread_type: ThreadType
         """
         log.info(
             "{} created plan {} in {} ({})".format(
@@ -3781,14 +3704,12 @@ class Client(object):
 
         Args:
             mid: The action ID
-            plan: Ended plan
+            plan (Plan): Ended plan
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type plan: Plan
-        :type thread_type: ThreadType
         """
         log.info(
             "Plan {} has ended in {} ({})".format(plan, thread_id, thread_type.name)
@@ -3809,15 +3730,13 @@ class Client(object):
 
         Args:
             mid: The action ID
-            plan: Edited plan
+            plan (Plan): Edited plan
             author_id: The ID of the person who edited the plan
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type plan: Plan
-        :type thread_type: ThreadType
         """
         log.info(
             "{} edited plan {} in {} ({})".format(
@@ -3840,15 +3759,13 @@ class Client(object):
 
         Args:
             mid: The action ID
-            plan: Deleted plan
+            plan (Plan): Deleted plan
             author_id: The ID of the person who deleted the plan
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type plan: Plan
-        :type thread_type: ThreadType
         """
         log.info(
             "{} deleted plan {} in {} ({})".format(
@@ -3872,17 +3789,14 @@ class Client(object):
 
         Args:
             mid: The action ID
-            plan: Plan
-            take_part: Whether the person takes part in the plan or not
+            plan (Plan): Plan
+            take_part (bool): Whether the person takes part in the plan or not
             author_id: The ID of the person who will participate in the plan or not
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type: Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data recieved
-        :type plan: Plan
-        :type take_part: bool
-        :type thread_type: ThreadType
         """
         if take_part:
             log.info(
@@ -3919,9 +3833,8 @@ class Client(object):
         """Called when the client is listening and client receives information about friend active status.
 
         Args:
-            statuses: Dictionary with user IDs as keys and :class:`ActiveStatus` as values
+            statuses (dict): Dictionary with user IDs as keys and :class:`ActiveStatus` as values
             msg: A full set of the data recieved
-        :type statuses: dict
         """
         log.debug("Buddylist overlay received: {}".format(statuses))
 
