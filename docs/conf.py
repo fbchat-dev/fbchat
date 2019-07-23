@@ -42,6 +42,7 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
+    "sphinxcontrib.spelling",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -195,3 +196,15 @@ napoleon_numpy_docstring = False
 # napoleon_use_admonition_for_examples = False
 # napoleon_use_admonition_for_notes = False
 # napoleon_use_admonition_for_references = False
+
+# -- Options for spelling extension ----------------------------------------------
+
+spelling_word_list_filename = [
+    "spelling/names.txt",
+    "spelling/technical.txt",
+    "spelling/fixes.txt",
+]
+spelling_ignore_wiki_words = False
+# spelling_ignore_acronyms = False
+spelling_ignore_python_builtins = False
+spelling_ignore_importable_modules = False
