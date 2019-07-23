@@ -575,7 +575,7 @@ class Client(object):
     def searchForMessages(self, query, offset=0, limit=5, thread_id=None):
         """Find and get `Message` objects by query.
 
-        .. warning::
+        Warning:
             This method sends request for every found message ID.
 
         Args:
@@ -668,7 +668,7 @@ class Client(object):
     def fetchUserInfo(self, *user_ids):
         """Fetch users' info from IDs, unordered.
 
-        .. warning::
+        Warning:
             Sends two requests, to fetch all available info!
 
         Args:
@@ -693,7 +693,7 @@ class Client(object):
     def fetchPageInfo(self, *page_ids):
         """Fetch pages' info from IDs, unordered.
 
-        .. warning::
+        Warning:
             Sends two requests, to fetch all available info!
 
         Args:
@@ -740,7 +740,7 @@ class Client(object):
     def fetchThreadInfo(self, *thread_ids):
         """Fetch threads' info from IDs, unordered.
 
-        .. warning::
+        Warning:
             Sends two requests if users or pages are present, to fetch all available info!
 
         Args:
@@ -1034,7 +1034,7 @@ class Client(object):
 
         Return ``None`` if status isn't known.
 
-        .. warning::
+        Warning:
             Only works when listening.
 
         Args:
@@ -1855,7 +1855,7 @@ class Client(object):
     def changeThreadEmoji(self, emoji, thread_id=None):
         """Change thread color.
 
-        .. note::
+        Note:
             While changing the emoji, the Facebook web client actually sends multiple
             different requests, though only this one is required to make the change.
 
@@ -2118,14 +2118,14 @@ class Client(object):
 
     def markAsSeen(self):
         """
-        .. todo::
+        Todo:
             Documenting this
         """
         j = self._payload_post("/ajax/mercury/mark_seen.php", {"seen_timestamp": now()})
 
     def friendConnect(self, friend_id):
         """
-        .. todo::
+        Todo:
             Documenting this
         """
         data = {"to_friend": friend_id, "action": "confirm"}
@@ -3042,7 +3042,7 @@ class Client(object):
 
         This method is useful if you want to control fbchat from an external event loop.
 
-        .. warning::
+        Warning:
             ``markAlive`` parameter is deprecated, use :func:`Client.setActiveStatus`
             or ``markAlive`` parameter in :func:`Client.listen` instead.
 
@@ -3541,7 +3541,7 @@ class Client(object):
 
     def onInbox(self, unseen=None, unread=None, recent_unread=None, msg=None):
         """
-        .. todo::
+        Todo:
             Documenting this
 
         Args:
@@ -3726,7 +3726,7 @@ class Client(object):
     ):
         """Called when the client is listening, and somebody starts a call in a group.
 
-        .. todo::
+        Todo:
             Make this work with private calls.
 
         Args:
@@ -3757,7 +3757,7 @@ class Client(object):
     ):
         """Called when the client is listening, and somebody ends a call in a group.
 
-        .. todo::
+        Todo:
             Make this work with private calls.
 
         Args:
