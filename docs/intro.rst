@@ -24,7 +24,7 @@ Replace ``<email>`` and ``<password>`` with your email and password respectively
 
 .. note::
     For ease of use then most of the code snippets in this document will assume you've already completed the login process
-    Though the second line, ``from fbchat.models import *``, is not strictly neccesary here, later code snippets will assume you've done this
+    Though the second line, ``from fbchat.models import *``, is not strictly necessary here, later code snippets will assume you've done this
 
 If you want to change how verbose ``fbchat`` is, change the logging level (in :class:`Client`)
 
@@ -125,8 +125,8 @@ The following snippet will search for users by their name, take the first (and m
     user = users[0]
     print("User's ID: {}".format(user.uid))
     print("User's name: {}".format(user.name))
-    print("User's profile picture url: {}".format(user.photo))
-    print("User's main url: {}".format(user.url))
+    print("User's profile picture URL: {}".format(user.photo))
+    print("User's main URL: {}".format(user.url))
 
 Since this uses Facebook's search functions, you don't have to specify the whole name, first names will usually be enough
 
@@ -154,7 +154,7 @@ Or you can set the ``session_cookies`` on your initial login.
     client = Client('<email>', '<password>', session_cookies=session_cookies)
 
 .. warning::
-    You session cookies can be just as valueable as you password, so store them with equal care
+    You session cookies can be just as valuable as you password, so store them with equal care
 
 
 .. _intro_events:
@@ -192,7 +192,7 @@ The change was in the parameters that our `onMessage` method took: ``message_obj
 and ``mid``, ``ts``, ``metadata`` and ``msg`` got removed, but the function still works, since we included ``**kwargs``
 
 .. note::
-    Therefore, for both backwards and forwards compatability,
+    Therefore, for both backwards and forwards compatibility,
     the API actually requires that you include ``**kwargs`` as your final argument.
 
 View the :ref:`examples` to see some more examples illustrating the event system

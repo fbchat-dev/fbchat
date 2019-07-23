@@ -30,8 +30,8 @@ This will show the different ways of fetching information about users and thread
 .. literalinclude:: ../examples/fetch.py
 
 
-Echobot
--------
+``Echobot``
+-----------
 
 This will reply to any message with the same message
 

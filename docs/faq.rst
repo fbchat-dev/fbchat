@@ -9,7 +9,7 @@ Version X broke my installation
 We try to provide backwards compatibility where possible, but since we're not part of Facebook,
 most of the things may be broken at any point in time
 
-Downgrade to an earlier version of fbchat, run this command
+Downgrade to an earlier version of ``fbchat``, run this command
 
 .. code-block:: sh
 
@@ -28,7 +28,7 @@ Submitting Issues
 -----------------
 
 If you're having trouble with some of the snippets, or you think some of the functionality is broken,
-please feel free to submit an issue on `Github <https://github.com/carpedm20/fbchat>`_.
+please feel free to submit an issue on `GitHub <https://github.com/carpedm20/fbchat>`_.
 You should first login with ``logging_level`` set to ``logging.DEBUG``::
 
     from fbchat import Client

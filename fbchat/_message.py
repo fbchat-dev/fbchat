@@ -75,9 +75,9 @@ class Message(object):
     timestamp = attr.ib(None, init=False)
     #: Whether the message is read
     is_read = attr.ib(None, init=False)
-    #: A list of pepole IDs who read the message, works only with :func:`fbchat.Client.fetchThreadMessages`
+    #: A list of people IDs who read the message, works only with :func:`fbchat.Client.fetchThreadMessages`
     read_by = attr.ib(factory=list, init=False)
-    #: A dict with user's IDs as keys, and their :class:`MessageReaction` as values
+    #: A dictionary with user's IDs as keys, and their :class:`MessageReaction` as values
     reactions = attr.ib(factory=dict, init=False)
     #: A :class:`Sticker`
     sticker = attr.ib(None)

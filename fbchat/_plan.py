@@ -18,7 +18,7 @@ class Plan(object):
 
     #: ID of the plan
     uid = attr.ib(None, init=False)
-    #: Plan time (unix time stamp), only precise down to the minute
+    #: Plan time (timestamp), only precise down to the minute
     time = attr.ib(converter=int)
     #: Plan title
     title = attr.ib()
@@ -28,7 +28,7 @@ class Plan(object):
     location_id = attr.ib(None, converter=lambda x: x or "")
     #: ID of the plan creator
     author_id = attr.ib(None, init=False)
-    #: Dict of `User` IDs mapped to their `GuestStatus`
+    #: Dictionary of `User` IDs mapped to their `GuestStatus`
     guests = attr.ib(None, init=False)
 
     @property
