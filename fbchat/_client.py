@@ -358,7 +358,7 @@ class Client(object):
             limit: The max. amount of threads to fetch (default all threads)
 
         Returns:
-            list: :class:`Thread` objects
+            list: `Thread` objects
 
         Raises:
             FBchatException: If request failed
@@ -410,7 +410,7 @@ class Client(object):
             threads: Thread: List of threads to check for users
 
         Returns:
-            list: :class:`User` objects
+            list: `User` objects
 
         Raises:
             FBchatException: If request failed
@@ -436,7 +436,7 @@ class Client(object):
         """Fetch all users the client is currently chatting with.
 
         Returns:
-            list: :class:`User` objects
+            list: `User` objects
 
         Raises:
             FBchatException: If request failed
@@ -461,7 +461,7 @@ class Client(object):
             limit: The max. amount of users to fetch
 
         Returns:
-            list: :class:`User` objects, ordered by relevance
+            list: `User` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -478,7 +478,7 @@ class Client(object):
             name: Name of the page
 
         Returns:
-            list: :class:`Page` objects, ordered by relevance
+            list: `Page` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -496,7 +496,7 @@ class Client(object):
             limit: The max. amount of groups to fetch
 
         Returns:
-            list: :class:`Group` objects, ordered by relevance
+            list: `Group` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -514,7 +514,7 @@ class Client(object):
             limit: The max. amount of groups to fetch
 
         Returns:
-            list: :class:`User`, :class:`Group` and :class:`Page` objects, ordered by relevance
+            list: `User`, `Group` and `Page` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -585,7 +585,7 @@ class Client(object):
             thread_id: User/Group ID to search in. See :ref:`intro_threads`
 
         Returns:
-            typing.Iterable: Found :class:`Message` objects
+            typing.Iterable: Found `Message` objects
 
         Raises:
             FBchatException: If request failed
@@ -601,7 +601,7 @@ class Client(object):
 
         Args:
             query: Text to search for
-            fetch_messages: Whether to fetch :class:`Message` objects or IDs only
+            fetch_messages: Whether to fetch `Message` objects or IDs only
             thread_limit (int): Max. number of threads to retrieve
             message_limit (int): Max. number of messages to retrieve
 
@@ -675,7 +675,7 @@ class Client(object):
             user_ids: One or more user ID(s) to query
 
         Returns:
-            dict: :class:`User` objects, labeled by their ID
+            dict: `User` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -700,7 +700,7 @@ class Client(object):
             page_ids: One or more page ID(s) to query
 
         Returns:
-            dict: :class:`Page` objects, labeled by their ID
+            dict: `Page` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -722,7 +722,7 @@ class Client(object):
             group_ids: One or more group ID(s) to query
 
         Returns:
-            dict: :class:`Group` objects, labeled by their ID
+            dict: `Group` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -747,7 +747,7 @@ class Client(object):
             thread_ids: One or more thread ID(s) to query
 
         Returns:
-            dict: :class:`Thread` objects, labeled by their ID
+            dict: `Thread` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -813,7 +813,7 @@ class Client(object):
             before (int): A timestamp, indicating from which point to retrieve messages
 
         Returns:
-            list: :class:`Message` objects
+            list: `Message` objects
 
         Raises:
             FBchatException: If request failed
@@ -859,7 +859,7 @@ class Client(object):
             before (int): A timestamp (in milliseconds), indicating from which point to retrieve threads
 
         Returns:
-            list: :class:`Thread` objects
+            list: `Thread` objects
 
         Raises:
             FBchatException: If request failed
@@ -964,7 +964,7 @@ class Client(object):
             thread_id: User/Group ID to get message info from. See :ref:`intro_threads`
 
         Returns:
-            Message: :class:`Message` object
+            Message: `Message` object
 
         Raises:
             FBchatException: If request failed
@@ -996,7 +996,7 @@ class Client(object):
             plan_id: Plan ID to fetch from
 
         Returns:
-            Plan: :class:`Plan` object
+            Plan: `Plan` object
 
         Raises:
             FBchatException: If request failed
@@ -1052,7 +1052,7 @@ class Client(object):
             thread_id: ID of the thread
 
         Returns:
-            typing.Iterable: :class:`ImageAttachment` or :class:`VideoAttachment`
+            typing.Iterable: `ImageAttachment` or `VideoAttachment`
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"id": thread_id, "first": 48}
@@ -1211,7 +1211,7 @@ class Client(object):
         return self._doSendRequest(data)
 
     def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
-        """Deprecated. Use :func:`fbchat.Client.send` instead."""
+        """Deprecated. Use `Client.send` instead."""
         return self.send(
             Message(text=message), thread_id=thread_id, thread_type=thread_type
         )
@@ -1223,7 +1223,7 @@ class Client(object):
         thread_id=None,
         thread_type=ThreadType.USER,
     ):
-        """Deprecated. Use :func:`fbchat.Client.send` instead."""
+        """Deprecated. Use `Client.send` instead."""
         return self.send(
             Message(text=emoji, emoji_size=size),
             thread_id=thread_id,
@@ -1531,7 +1531,7 @@ class Client(object):
     def sendRemoteImage(
         self, image_url, message=None, thread_id=None, thread_type=ThreadType.USER
     ):
-        """Deprecated. Use :func:`fbchat.Client.sendRemoteFiles` instead."""
+        """Deprecated. Use `Client.sendRemoteFiles` instead."""
         return self.sendRemoteFiles(
             file_urls=[image_url],
             message=message,
@@ -1542,7 +1542,7 @@ class Client(object):
     def sendLocalImage(
         self, image_path, message=None, thread_id=None, thread_type=ThreadType.USER
     ):
-        """Deprecated. Use :func:`fbchat.Client.sendLocalFiles` instead."""
+        """Deprecated. Use `Client.sendLocalFiles` instead."""
         return self.sendLocalFiles(
             file_paths=[image_path],
             message=message,
@@ -1973,7 +1973,7 @@ class Client(object):
         j = self._payload_post("/ajax/eventreminder/rsvp", data)
 
     def eventReminder(self, thread_id, time, title, location="", location_id=""):
-        """Deprecated. Use :func:`fbchat.Client.createPlan` instead."""
+        """Deprecated. Use `Client.createPlan` instead."""
         plan = Plan(time=time, title=title, location=location, location_id=location_id)
         self.createPlan(plan=plan, thread_id=thread_id)
 
@@ -3043,8 +3043,8 @@ class Client(object):
         This method is useful if you want to control fbchat from an external event loop.
 
         Warning:
-            ``markAlive`` parameter is deprecated, use :func:`Client.setActiveStatus`
-            or ``markAlive`` parameter in :func:`Client.listen` instead.
+            ``markAlive`` parameter is deprecated, use `Client.setActiveStatus`
+            or ``markAlive`` parameter in `Client.listen` instead.
 
         Returns:
             bool: Whether the loop should keep running
@@ -4034,7 +4034,7 @@ class Client(object):
         """Called when the client is listening and client receives information about friend active status.
 
         Args:
-            statuses (dict): Dictionary with user IDs as keys and :class:`ActiveStatus` as values
+            statuses (dict): Dictionary with user IDs as keys and `ActiveStatus` as values
             msg: A full set of the data recieved
         """
         log.debug("Buddylist overlay received: {}".format(statuses))
