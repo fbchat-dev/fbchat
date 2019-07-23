@@ -41,6 +41,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
+    "sphinx.ext.napoleon",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -184,3 +185,13 @@ intersphinx_mapping = {"https://docs.python.org/": None}
 todo_include_todos = True
 
 todo_link_only = True
+
+# -- Options for napoleon extension ----------------------------------------------
+
+# Use Google style docstrings
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
+
+# napoleon_use_admonition_for_examples = False
+# napoleon_use_admonition_for_notes = False
+# napoleon_use_admonition_for_references = False
