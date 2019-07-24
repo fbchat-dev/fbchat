@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 
+from itertools import islice
 from fbchat import Client
 from fbchat.models import *
 
@@ -62,3 +63,9 @@ print("thread's type: {}".format(thread.type))
 
 
 # Here should be an example of `getUnread`
+
+
+# Print image url for 20 last images from thread.
+images = client.fetchThreadImages("<thread id>")
+for image in islice(image, 20):
+    print(image.large_preview_url)

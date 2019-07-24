@@ -981,6 +981,42 @@ class Client(object):
         """
         return self._buddylist.get(str(user_id))
 
+    def fetchThreadImages(self, thread_id=None):
+        """
+        Creates generator object for fetching images posted in thread.
+        :param thread_id: ID of the thread
+        :return: :class:`ImageAttachment` or :class:`VideoAttachment`.
+        :rtype: iterable
+        """
+        thread_id, thread_type = self._getThread(thread_id, None)
+        data = {"id": thread_id, "first": 48}
+        thread_id = str(thread_id)
+        j = self.graphql_request(_graphql.from_query_id("515216185516880", data))
+        while True:
+            try:
+                i = j[thread_id]["message_shared_media"]["edges"][0]
+            except IndexError:
+                if j[thread_id]["message_shared_media"]["page_info"].get(
+                    "has_next_page"
+                ):
+                    data["after"] = j[thread_id]["message_shared_media"][
+                        "page_info"
+                    ].get("end_cursor")
+                    j = self.graphql_request(
+                        _graphql.from_query_id("515216185516880", data)
+                    )
+                    continue
+                else:
+                    break
+
+            if i["node"].get("__typename") == "MessageImage":
+                yield ImageAttachment._from_list(i)
+            elif i["node"].get("__typename") == "MessageVideo":
+                yield VideoAttachment._from_list(i)
+            else:
+                yield Attachment(uid=i["node"].get("legacy_attachment_id"))
+            del j[thread_id]["message_shared_media"]["edges"][0]
+
     """
     END FETCH METHODS
     """

@@ -155,6 +155,18 @@ class ImageAttachment(Attachment):
             uid=data.get("legacy_attachment_id"),
         )
 
+    @classmethod
+    def _from_list(cls, data):
+        data = data["node"]
+        return cls(
+            width=data["original_dimensions"].get("x"),
+            height=data["original_dimensions"].get("y"),
+            thumbnail_url=data["image"].get("uri"),
+            large_preview=data["image2"],
+            preview=data["image1"],
+            uid=data["legacy_attachment_id"],
+        )
+
 
 @attr.s(cmp=False, init=False)
 class VideoAttachment(Attachment):
@@ -250,6 +262,18 @@ class VideoAttachment(Attachment):
             preview_url=media.get("playable_url"),
             medium_image=media.get("image"),
             uid=data["target"].get("video_id"),
+        )
+
+    @classmethod
+    def _from_list(cls, data):
+        data = data["node"]
+        return cls(
+            width=data["original_dimensions"].get("x"),
+            height=data["original_dimensions"].get("y"),
+            small_image=data["image"],
+            medium_image=data["image1"],
+            large_image=data["image2"],
+            uid=data["legacy_attachment_id"],
         )
 
 
