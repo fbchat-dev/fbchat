@@ -985,6 +985,7 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"id": thread_id, "first": 48}
+        thread_id = str(thread_id)
         j = self.graphql_request(_graphql.from_query_id("515216185516880", data))
         while True:
             try:
