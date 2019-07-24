@@ -1008,7 +1008,7 @@ class Client(object):
             elif i["node"].get("__typename") == "MessageVideo":
                 yield VideoAttachment._from_list(i)
             else:
-                yield Attachment(uid=i["node"]["uid"])
+                yield Attachment(uid=i["node"].get("legacy_attachment_id"))
             del j[thread_id]["message_shared_media"]["edges"][0]
 
     """

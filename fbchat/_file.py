@@ -164,7 +164,7 @@ class ImageAttachment(Attachment):
             thumbnail_url=data["image"].get("uri"),
             large_preview=data["image2"],
             preview=data["image1"],
-            uid=data["id"],
+            uid=data["legacy_attachment_id"],
         )
 
 
@@ -273,7 +273,7 @@ class VideoAttachment(Attachment):
             small_image=data["image"],
             medium_image=data["image1"],
             large_image=data["image2"],
-            uid=data["id"],
+            uid=data["legacy_attachment_id"],
         )
 
 
