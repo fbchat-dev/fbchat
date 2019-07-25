@@ -151,6 +151,55 @@ class Message(object):
             return False
         return any(map(lambda tag: "forward" in tag or "copy" in tag, tags))
 
+    def _to_send_data(self):
+        data = {}
+
+        if self.text or self.sticker or self.emoji_size:
+            data["action_type"] = "ma-type:user-generated-message"
+
+        if self.text:
+            data["body"] = self.text
+
+        for i, mention in enumerate(self.mentions):
+            data["profile_xmd[{}][id]".format(i)] = mention.thread_id
+            data["profile_xmd[{}][offset]".format(i)] = mention.offset
+            data["profile_xmd[{}][length]".format(i)] = mention.length
+            data["profile_xmd[{}][type]".format(i)] = "p"
+
+        if self.emoji_size:
+            if self.text:
+                data["tags[0]"] = "hot_emoji_size:" + self.emoji_size.name.lower()
+            else:
+                data["sticker_id"] = self.emoji_size.value
+
+        if self.sticker:
+            data["sticker_id"] = self.sticker.uid
+
+        if self.quick_replies:
+            xmd = {"quick_replies": []}
+            for quick_reply in self.quick_replies:
+                # TODO: Move this to `_quick_reply.py`
+                q = dict()
+                q["content_type"] = quick_reply._type
+                q["payload"] = quick_reply.payload
+                q["external_payload"] = quick_reply.external_payload
+                q["data"] = quick_reply.data
+                if quick_reply.is_response:
+                    q["ignore_for_webhook"] = False
+                if isinstance(quick_reply, _quick_reply.QuickReplyText):
+                    q["title"] = quick_reply.title
+                if not isinstance(quick_reply, _quick_reply.QuickReplyLocation):
+                    q["image_url"] = quick_reply.image_url
+                xmd["quick_replies"].append(q)
+            if len(self.quick_replies) == 1 and self.quick_replies[0].is_response:
+                xmd["quick_replies"] = xmd["quick_replies"][0]
+            data["platform_xmd"] = json.dumps(xmd)
+
+        if self.reply_to_id:
+            data["replied_to_message_id"] = self.reply_to_id
+
+        return data
+
     @classmethod
     def _from_graphql(cls, data):
         if data.get("message_sender") is None:
