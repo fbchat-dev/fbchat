@@ -174,16 +174,11 @@ class Client(object):
         """
         try:
             # Load cookies into current session
-            state = State.from_cookies(session_cookies, user_agent=user_agent)
+            self._state = State.from_cookies(session_cookies, user_agent=user_agent)
+            self._uid = self._state.user_id
         except Exception as e:
             log.exception("Failed loading session")
             return False
-        uid = state.get_user_id()
-        if uid is None:
-            log.warning("Could not find c_user cookie")
-            return False
-        self._state = state
-        self._uid = uid
         return True
 
     def login(self, email, password, max_tries=5, user_agent=None):
@@ -209,23 +204,19 @@ class Client(object):
 
         for i in range(1, max_tries + 1):
             try:
-                state = State.login(
+                self._state = State.login(
                     email,
                     password,
                     on_2fa_callback=self.on2FACode,
                     user_agent=user_agent,
                 )
-                uid = state.get_user_id()
-                if uid is None:
-                    raise FBchatException("Could not find user id")
+                self._uid = self._state.user_id
             except Exception:
                 if i >= max_tries:
                     raise
                 log.exception("Attempt #{} failed, retrying".format(i))
                 time.sleep(1)
             else:
-                self._state = state
-                self._uid = uid
                 self.onLoggedIn(email=email)
                 break
 

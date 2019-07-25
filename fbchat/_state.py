@@ -12,6 +12,14 @@ from . import _graphql, _util, _exception
 FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
 
 
+def get_user_id(session):
+    # TODO: Optimize this `.get_dict()` call!
+    rtn = session.cookies.get_dict().get("c_user")
+    if rtn is None:
+        raise _exception.FBchatException("Could not find user id")
+    return str(rtn)
+
+
 def find_input_fields(html):
     return bs4.BeautifulSoup(html, "html.parser", parse_only=bs4.SoupStrainer("input"))
 
@@ -91,17 +99,12 @@ def _2fa_helper(session, code, r):
 class State(object):
     """Stores and manages state required for most Facebook requests."""
 
+    user_id = attr.ib()
     fb_dtsg = attr.ib()
     _revision = attr.ib()
     _session = attr.ib(factory=session_factory)
     _counter = attr.ib(0)
     _logout_h = attr.ib(None)
-
-    def get_user_id(self):
-        rtn = self.get_cookies().get("c_user")
-        if rtn is None:
-            return None
-        return str(rtn)
 
     def get_params(self):
         self._counter += 1  # TODO: Make this operation atomic / thread-safe
@@ -163,6 +166,9 @@ class State(object):
 
     @classmethod
     def from_session(cls, session):
+        # TODO: Automatically set user_id when the cookie changes in the session
+        user_id = get_user_id(session)
+
         r = session.get(_util.prefix_url("/"))
 
         soup = find_input_fields(r.text)
@@ -180,7 +186,11 @@ class State(object):
         logout_h = logout_h_element["value"] if logout_h_element else None
 
         return cls(
-            fb_dtsg=fb_dtsg, revision=revision, session=session, logout_h=logout_h
+            user_id=user_id,
+            fb_dtsg=fb_dtsg,
+            revision=revision,
+            session=session,
+            logout_h=logout_h,
         )
 
     def get_cookies(self):
@@ -197,6 +207,7 @@ class State(object):
         # It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
         _util.log.warning("Refreshing state and resending request")
         new = State.from_session(session=self._session)
+        self.user_id = new.user_id
         self.fb_dtsg = new.fb_dtsg
         self._revision = new._revision
         self._counter = new._counter
