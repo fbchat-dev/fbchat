@@ -1031,7 +1031,7 @@ class Client(object):
     def _oldMessage(self, message):
         return message if isinstance(message, Message) else Message(text=message)
 
-    def _getSendData(self, message=None, thread_id=None, thread_type=ThreadType.USER):
+    def _getSendData(self, thread_id=None, thread_type=ThreadType.USER):
         """Return the data needed to send a request to `SendURL`."""
         messageAndOTID = generateOfflineThreadingID()
         timestamp = now()
@@ -1051,52 +1051,6 @@ class Client(object):
             data["other_user_fbid"] = thread_id
         elif thread_type == ThreadType.GROUP:
             data["thread_fbid"] = thread_id
-
-        if message is None:
-            message = Message()
-
-        if message.text or message.sticker or message.emoji_size:
-            data["action_type"] = "ma-type:user-generated-message"
-
-        if message.text:
-            data["body"] = message.text
-
-        for i, mention in enumerate(message.mentions):
-            data["profile_xmd[{}][id]".format(i)] = mention.thread_id
-            data["profile_xmd[{}][offset]".format(i)] = mention.offset
-            data["profile_xmd[{}][length]".format(i)] = mention.length
-            data["profile_xmd[{}][type]".format(i)] = "p"
-
-        if message.emoji_size:
-            if message.text:
-                data["tags[0]"] = "hot_emoji_size:" + message.emoji_size.name.lower()
-            else:
-                data["sticker_id"] = message.emoji_size.value
-
-        if message.sticker:
-            data["sticker_id"] = message.sticker.uid
-
-        if message.quick_replies:
-            xmd = {"quick_replies": []}
-            for quick_reply in message.quick_replies:
-                q = dict()
-                q["content_type"] = quick_reply._type
-                q["payload"] = quick_reply.payload
-                q["external_payload"] = quick_reply.external_payload
-                q["data"] = quick_reply.data
-                if quick_reply.is_response:
-                    q["ignore_for_webhook"] = False
-                if isinstance(quick_reply, QuickReplyText):
-                    q["title"] = quick_reply.title
-                if not isinstance(quick_reply, QuickReplyLocation):
-                    q["image_url"] = quick_reply.image_url
-                xmd["quick_replies"].append(q)
-            if len(message.quick_replies) == 1 and message.quick_replies[0].is_response:
-                xmd["quick_replies"] = xmd["quick_replies"][0]
-            data["platform_xmd"] = json.dumps(xmd)
-
-        if message.reply_to_id:
-            data["replied_to_message_id"] = message.reply_to_id
 
         return data
 
@@ -1142,9 +1096,8 @@ class Client(object):
             FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(
-            message=message, thread_id=thread_id, thread_type=thread_type
-        )
+        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        data.update(message._to_send_data())
         return self._doSendRequest(data)
 
     def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
@@ -1246,9 +1199,9 @@ class Client(object):
         self, location, current=True, message=None, thread_id=None, thread_type=None
     ):
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(
-            message=message, thread_id=thread_id, thread_type=thread_type
-        )
+        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        if message is not None:
+            data.update(message._to_send_data())
         data["action_type"] = "ma-type:user-generated-message"
         data["location_attachment[coordinates][latitude]"] = location.latitude
         data["location_attachment[coordinates][longitude]"] = location.longitude
@@ -1314,12 +1267,8 @@ class Client(object):
         `files` should be a list of tuples, with a file's ID and mimetype.
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(
-            message=self._oldMessage(message),
-            thread_id=thread_id,
-            thread_type=thread_type,
-        )
-
+        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        data.update(self._oldMessage(message)._to_send_data())
         data["action_type"] = "ma-type:user-generated-message"
         data["has_attachment"] = True
 
@@ -1499,7 +1448,8 @@ class Client(object):
         Raises:
             FBchatException: If request failed
         """
-        data = self._getSendData(message=self._oldMessage(message))
+        data = self._getSendData()
+        data.update(self._oldMessage(message)._to_send_data())
 
         if len(user_ids) < 2:
             raise FBchatUserError("Error when creating group: Not enough participants")
