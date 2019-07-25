@@ -201,3 +201,17 @@ class State(object):
         self._revision = new._revision
         self._counter = new._counter
         self._logout_h = new._logout_h or self._logout_h
+
+    def _get(self, url, params, error_retries=3):
+        params.update(self.get_params())
+        r = self._session.get(_util.prefix_url(url), params=params)
+        content = _util.check_request(r)
+        j = _util.to_json(content)
+        try:
+            _util.handle_payload_error(j)
+        except _exception.FBchatPleaseRefresh:
+            if error_retries > 0:
+                self._do_refresh()
+                return self._get(url, params, error_retries=error_retries - 1)
+            raise
+        return j
