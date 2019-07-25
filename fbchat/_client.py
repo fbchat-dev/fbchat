@@ -108,21 +108,15 @@ class Client(object):
     INTERNAL REQUEST METHODS
     """
 
-    def _generatePayload(self, query):
-        if not query:
-            query = {}
-        query.update(self._state.get_params())
-        return query
-
     def _do_refresh(self):
         # TODO: Raise the error instead, and make the user do the refresh manually
         # It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
         log.warning("Refreshing state and resending request")
         self._state = State.from_session(session=self._state._session)
 
-    def _get(self, url, query=None, error_retries=3):
-        payload = self._generatePayload(query)
-        r = self._state._session.get(prefix_url(url), params=payload)
+    def _get(self, url, params, error_retries=3):
+        params.update(self._state.get_params())
+        r = self._state._session.get(prefix_url(url), params=params)
         content = check_request(r)
         j = to_json(content)
         try:
@@ -130,13 +124,13 @@ class Client(object):
         except FBchatPleaseRefresh:
             if error_retries > 0:
                 self._do_refresh()
-                return self._get(url, query=query, error_retries=error_retries - 1)
+                return self._get(url, params, error_retries=error_retries - 1)
             raise
         return j
 
-    def _post(self, url, query=None, files=None, as_graphql=False, error_retries=3):
-        payload = self._generatePayload(query)
-        r = self._state._session.post(prefix_url(url), data=payload, files=files)
+    def _post(self, url, data, files=None, as_graphql=False, error_retries=3):
+        data.update(self._state.get_params())
+        r = self._state._session.post(prefix_url(url), data=data, files=files)
         content = check_request(r)
         try:
             if as_graphql:
@@ -152,7 +146,7 @@ class Client(object):
                 self._do_refresh()
                 return self._post(
                     url,
-                    query=query,
+                    data,
                     files=files,
                     as_graphql=as_graphql,
                     error_retries=error_retries - 1,
@@ -930,7 +924,7 @@ class Client(object):
         Raises:
             FBchatException: If request failed
         """
-        j = self._payload_post("/mercury/unseen_thread_ids/", None)
+        j = self._payload_post("/mercury/unseen_thread_ids/", {})
 
         result = j["unseen_thread_fbids"][0]
         return result["thread_fbids"] + result["other_user_fbids"]
