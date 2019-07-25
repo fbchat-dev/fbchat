@@ -111,30 +111,8 @@ class Client(object):
     def _get(self, url, params):
         return self._state._get(url, params)
 
-    def _post(self, url, data, files=None, as_graphql=False, error_retries=3):
-        data.update(self._state.get_params())
-        r = self._state._session.post(prefix_url(url), data=data, files=files)
-        content = check_request(r)
-        try:
-            if as_graphql:
-                return _graphql.response_to_json(content)
-            else:
-                j = to_json(content)
-                # TODO: Remove this, and move it to _payload_post instead
-                # We can't yet, since errors raised in here need to be caught below
-                handle_payload_error(j)
-                return j
-        except FBchatPleaseRefresh:
-            if error_retries > 0:
-                self._state._do_refresh()
-                return self._post(
-                    url,
-                    data,
-                    files=files,
-                    as_graphql=as_graphql,
-                    error_retries=error_retries - 1,
-                )
-            raise
+    def _post(self, url, params, files=None, as_graphql=False):
+        return self._state._post(url, params, files=files, as_graphql=as_graphql)
 
     def _payload_post(self, url, data, files=None):
         j = self._post(url, data, files=files)

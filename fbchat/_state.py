@@ -7,7 +7,7 @@ import re
 import requests
 import random
 
-from . import _util, _exception
+from . import _graphql, _util, _exception
 
 FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
 
@@ -215,3 +215,28 @@ class State(object):
                 return self._get(url, params, error_retries=error_retries - 1)
             raise
         return j
+
+    def _post(self, url, data, files=None, as_graphql=False, error_retries=3):
+        data.update(self.get_params())
+        r = self._session.post(_util.prefix_url(url), data=data, files=files)
+        content = _util.check_request(r)
+        try:
+            if as_graphql:
+                return _graphql.response_to_json(content)
+            else:
+                j = _util.to_json(content)
+                # TODO: Remove this, and move it to _payload_post instead
+                # We can't yet, since errors raised in here need to be caught below
+                _util.handle_payload_error(j)
+                return j
+        except _exception.FBchatPleaseRefresh:
+            if error_retries > 0:
+                self._do_refresh()
+                return self._post(
+                    url,
+                    data,
+                    files=files,
+                    as_graphql=as_graphql,
+                    error_retries=error_retries - 1,
+                )
+            raise
