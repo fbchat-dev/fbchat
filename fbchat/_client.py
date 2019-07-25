@@ -111,8 +111,8 @@ class Client(object):
     def _get(self, url, params):
         return self._state._get(url, params)
 
-    def _post(self, url, params, files=None, as_graphql=False):
-        return self._state._post(url, params, files=files, as_graphql=as_graphql)
+    def _post(self, url, params, files=None):
+        return self._state._post(url, params, files=files)
 
     def _payload_post(self, url, data, files=None):
         return self._state._payload_post(url, data, files=files)
@@ -129,12 +129,7 @@ class Client(object):
         Raises:
             FBchatException: If request failed
         """
-        data = {
-            "method": "GET",
-            "response_format": "json",
-            "queries": _graphql.queries_to_json(*queries),
-        }
-        return tuple(self._post("/api/graphqlbatch/", data, as_graphql=True))
+        return tuple(self._state._graphql_requests(*queries))
 
     def graphql_request(self, query):
         """Shorthand for ``graphql_requests(query)[0]``.
