@@ -247,3 +247,11 @@ class State(object):
             return j["payload"]
         except (KeyError, TypeError):
             raise _exception.FBchatException("Missing payload: {}".format(j))
+
+    def _graphql_requests(self, *queries):
+        data = {
+            "method": "GET",
+            "response_format": "json",
+            "queries": _graphql.queries_to_json(*queries),
+        }
+        return self._post("/api/graphqlbatch/", data, as_graphql=True)
