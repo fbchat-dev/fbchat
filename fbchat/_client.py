@@ -44,7 +44,7 @@ class Client(object):
 
     @property
     def ssl_verify(self):
-        """Verify ssl certificate.
+        """Verify SSL certificate.
 
         Set to False to allow debugging with a proxy.
         """
@@ -167,13 +167,13 @@ class Client(object):
             raise FBchatException("Missing payload: {}".format(j))
 
     def graphql_requests(self, *queries):
-        """Execute graphql queries.
+        """Execute GraphQL queries.
 
         Args:
             queries (dict): Zero or more dictionaries
 
         Returns:
-            tuple: A tuple containing json graphql queries
+            tuple: A tuple containing JSON GraphQL queries
 
         Raises:
             FBchatException: If request failed
@@ -213,7 +213,7 @@ class Client(object):
         """Retrieve session cookies.
 
         Returns:
-            dict: A dictionay containing session cookies
+            dict: A dictionary containing session cookies
         """
         return self._state.get_cookies()
 
@@ -221,7 +221,7 @@ class Client(object):
         """Load session cookies.
 
         Args:
-            session_cookies (dict): A dictionay containing session cookies
+            session_cookies (dict): A dictionary containing session cookies
 
         Returns:
             bool: False if ``session_cookies`` does not contain proper cookies
@@ -936,13 +936,13 @@ class Client(object):
         return result["thread_fbids"] + result["other_user_fbids"]
 
     def fetchImageUrl(self, image_id):
-        """Fetch url to download the original image from an image attachment ID.
+        """Fetch URL to download the original image from an image attachment ID.
 
         Args:
-            image_id (str): The image you want to fethc
+            image_id (str): The image you want to fetch
 
         Returns:
-            str: An url where you can download the original image
+            str: An URL where you can download the original image
 
         Raises:
             FBchatException: If request failed
@@ -953,7 +953,7 @@ class Client(object):
 
         url = get_jsmods_require(j, 3)
         if url is None:
-            raise FBchatException("Could not fetch image url from: {}".format(j))
+            raise FBchatException("Could not fetch image URL from: {}".format(j))
         return url
 
     def fetchMessageInfo(self, mid, thread_id=None):
@@ -1658,7 +1658,7 @@ class Client(object):
         j = self._payload_post("/messaging/save_admins/?dpr=1", data)
 
     def addGroupAdmins(self, admin_ids, thread_id=None):
-        """Set specifed users as group admins.
+        """Set specified users as group admins.
 
         Args:
             admin_ids: One or more user IDs to set admin
@@ -1670,7 +1670,7 @@ class Client(object):
         self._adminStatus(admin_ids, True, thread_id)
 
     def removeGroupAdmins(self, admin_ids, thread_id=None):
-        """Remove admin status from specifed users.
+        """Remove admin status from specified users.
 
         Args:
             admin_ids: One or more user IDs to remove admin
@@ -1989,10 +1989,10 @@ class Client(object):
         """
         thread_id, thread_type = self._getThread(thread_id, None)
 
-        # We're using ordered dicts, because the Facebook endpoint that parses the POST
-        # parameters is badly implemented, and deals with ordering the options wrongly.
-        # If you can find a way to fix this for the endpoint, or if you find another
-        # endpoint, please do suggest it ;)
+        # We're using ordered dictionaries, because the Facebook endpoint that parses
+        # the POST parameters is badly implemented, and deals with ordering the options
+        # wrongly. If you can find a way to fix this for the endpoint, or if you find
+        # another endpoint, please do suggest it ;)
         data = OrderedDict([("question_text", poll.title), ("target_id", thread_id)])
 
         for i, option in enumerate(poll.options):
@@ -2133,7 +2133,7 @@ class Client(object):
         j = self._payload_post("/ajax/add_friend/action.php?dpr=1", data)
 
     def removeFriend(self, friend_id=None):
-        """Remove a specifed friend from the client's friend list.
+        """Remove a specified friend from the client's friend list.
 
         Args:
             friend_id: The ID of the friend that you want to remove
@@ -2149,7 +2149,7 @@ class Client(object):
         return True
 
     def blockUser(self, user_id):
-        """Block messages from a specifed user.
+        """Block messages from a specified user.
 
         Args:
             user_id: The ID of the user that you want to block
@@ -2181,7 +2181,7 @@ class Client(object):
         return True
 
     def moveThreads(self, location, thread_ids):
-        """Move threads to specifed location.
+        """Move threads to specified location.
 
         Args:
             location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
@@ -2261,7 +2261,7 @@ class Client(object):
         return True
 
     def deleteMessages(self, message_ids):
-        """Delete specifed messages.
+        """Delete specified messages.
 
         Args:
             message_ids: Message IDs to delete
@@ -3040,7 +3040,8 @@ class Client(object):
     def doOneListen(self, markAlive=None):
         """Do one cycle of the listening loop.
 
-        This method is useful if you want to control fbchat from an external event loop.
+        This method is useful if you want to control the client from an external event
+        loop.
 
         Warning:
             ``markAlive`` parameter is deprecated, use :func:`Client.setActiveStatus`
@@ -3174,7 +3175,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the message was sent to. See :ref:`intro_threads`
             ts: The timestamp of the message
             metadata: Extra metadata about the message
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
 
@@ -3199,7 +3200,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "Color change from {} in {} ({}): {}".format(
@@ -3228,7 +3229,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "Emoji change from {} in {} ({}): {}".format(
@@ -3257,7 +3258,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "Title change from {} in {} ({}): {}".format(
@@ -3284,7 +3285,7 @@ class Client(object):
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info("{} changed thread image in {}".format(author_id, thread_id))
 
@@ -3311,7 +3312,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "Nickname change from {} in {} ({}) for {}: {}".format(
@@ -3337,7 +3338,7 @@ class Client(object):
             author_id: The ID of the person who added the admins
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info("{} added admin: {} in {}".format(author_id, added_id, thread_id))
 
@@ -3359,7 +3360,7 @@ class Client(object):
             author_id: The ID of the person who removed the admins
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info("{} removed admin: {} in {}".format(author_id, removed_id, thread_id))
 
@@ -3381,7 +3382,7 @@ class Client(object):
             author_id: The ID of the person who changed approval mode
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         if approval_mode:
             log.info("{} activated approval mode in {}".format(author_id, thread_id))
@@ -3407,7 +3408,7 @@ class Client(object):
             seen_ts: A timestamp of when the person saw the message
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "Messages seen by {} in {} ({}) at {}s".format(
@@ -3434,7 +3435,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "Messages {} delivered to {} in {} ({}) at {}s".format(
@@ -3453,7 +3454,7 @@ class Client(object):
             seen_ts: A timestamp of when the threads were seen
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "Marked messages as seen in threads {} at {}s".format(
@@ -3478,7 +3479,7 @@ class Client(object):
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} unsent the message {} in {} ({}) at {}s".format(
@@ -3503,7 +3504,7 @@ class Client(object):
             author_id: The ID of the person who added the people
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} added: {} in {}".format(author_id, ", ".join(added_ids), thread_id)
@@ -3526,7 +3527,7 @@ class Client(object):
             author_id: The ID of the person who removed the person
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info("{} removed: {} in {}".format(author_id, removed_id, thread_id))
 
@@ -3535,7 +3536,7 @@ class Client(object):
 
         Args:
             from_id: The ID of the person that sent the request
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info("Friend request from {}".format(from_id))
 
@@ -3548,7 +3549,7 @@ class Client(object):
             unseen: --
             unread: --
             recent_unread: --
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info("Inbox event: {}, {}, {}".format(unseen, unread, recent_unread))
 
@@ -3562,7 +3563,7 @@ class Client(object):
             status (TypingStatus): The typing status
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         pass
 
@@ -3588,12 +3589,12 @@ class Client(object):
             game_id: The ID of the game
             game_name: Name of the game
             score: Score obtained in the game
-            leaderboard: Actual leaderboard of the game in the thread
+            leaderboard: Actual leader board of the game in the thread
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             '{} played "{}" in {} ({})'.format(
@@ -3621,7 +3622,7 @@ class Client(object):
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} reacted to message {} with {} in {} ({})".format(
@@ -3646,7 +3647,7 @@ class Client(object):
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} removed reaction from {} message in {} ({})".format(
@@ -3664,7 +3665,7 @@ class Client(object):
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} blocked {} ({}) thread".format(author_id, thread_id, thread_type.name)
@@ -3680,7 +3681,7 @@ class Client(object):
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} unblocked {} ({}) thread".format(author_id, thread_id, thread_type.name)
@@ -3705,7 +3706,7 @@ class Client(object):
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} sent live location info in {} ({}) with latitude {} and longitude {}".format(
@@ -3737,7 +3738,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} started call in {} ({})".format(caller_id, thread_id, thread_type.name)
@@ -3769,7 +3770,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} ended call in {} ({})".format(caller_id, thread_id, thread_type.name)
@@ -3796,7 +3797,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} joined call in {} ({})".format(joined_id, thread_id, thread_type.name)
@@ -3823,7 +3824,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} created poll {} in {} ({})".format(
@@ -3854,7 +3855,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} voted in poll {} in {} ({})".format(
@@ -3883,7 +3884,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} created plan {} in {} ({})".format(
@@ -3910,7 +3911,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "Plan {} has ended in {} ({})".format(plan, thread_id, thread_type.name)
@@ -3937,7 +3938,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} edited plan {} in {} ({})".format(
@@ -3966,7 +3967,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.info(
             "{} deleted plan {} in {} ({})".format(
@@ -3997,7 +3998,7 @@ class Client(object):
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
             metadata: Extra metadata about the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         if take_part:
             log.info(
@@ -4017,7 +4018,7 @@ class Client(object):
 
         Args:
             ts: A timestamp of the action
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         pass
 
@@ -4025,8 +4026,8 @@ class Client(object):
         """Called when the client receives chat online presence update.
 
         Args:
-            buddylist: A list of dicts with friend id and last seen timestamp
-            msg: A full set of the data recieved
+            buddylist: A list of dictionaries with friend id and last seen timestamp
+            msg: A full set of the data received
         """
         log.debug("Chat Timestamps received: {}".format(buddylist))
 
@@ -4035,24 +4036,24 @@ class Client(object):
 
         Args:
             statuses (dict): Dictionary with user IDs as keys and :class:`ActiveStatus` as values
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.debug("Buddylist overlay received: {}".format(statuses))
 
     def onUnknownMesssageType(self, msg=None):
-        """Called when the client is listening, and some unknown data was recieved.
+        """Called when the client is listening, and some unknown data was received.
 
         Args:
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.debug("Unknown message received: {}".format(msg))
 
     def onMessageError(self, exception=None, msg=None):
-        """Called when an error was encountered while parsing recieved data.
+        """Called when an error was encountered while parsing received data.
 
         Args:
             exception: The exception that was encountered
-            msg: A full set of the data recieved
+            msg: A full set of the data received
         """
         log.exception("Exception in parsing of {}".format(msg))
 

@@ -6,8 +6,8 @@
 .. This documentation's layout is heavily inspired by requests' layout: https://requests.readthedocs.io
    Some documentation is also partially copied from facebook-chat-api: https://github.com/Schmavery/facebook-chat-api
 
-fbchat: Facebook Chat (Messenger) for Python
-============================================
+``fbchat``: Facebook Chat (Messenger) for Python
+================================================
 
 Release v\ |version|. (:ref:`install`)
 
@@ -35,7 +35,7 @@ This means doing the exact same GET/POST requests and tricking Facebook into thi
 Therefore, this API requires the credentials of a Facebook account.
 
 .. note::
-    If you're having problems, please check the :ref:`faq`, before asking questions on Github
+    If you're having problems, please check the :ref:`faq`, before asking questions on GitHub
 
 .. warning::
     We are not responsible if your account gets banned for spammy activities,
@@ -44,7 +44,7 @@ Therefore, this API requires the credentials of a Facebook account.
 
 .. note::
     Facebook now has an `official API <https://developers.facebook.com/docs/messenger-platform>`_ for chat bots,
-    so if you're familiar with node.js, this might be what you're looking for.
+    so if you're familiar with ``Node.js``, this might be what you're looking for.
 
 If you're already familiar with the basics of how Facebook works internally, go to :ref:`examples` to see example usage of ``fbchat``
 

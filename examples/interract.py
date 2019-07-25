@@ -47,7 +47,7 @@ client.sendLocalImage(
     thread_type=thread_type,
 )
 
-# Will download the image at the url `<image url>`, and then send it
+# Will download the image at the URL `<image url>`, and then send it
 client.sendRemoteImage(
     "<image url>",
     message=Message(text="This is a remote image"),

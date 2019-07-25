@@ -10,7 +10,7 @@ from ._thread import ThreadType, Thread
 class Page(Thread):
     """Represents a Facebook page. Inherits `Thread`."""
 
-    #: The page's custom url
+    #: The page's custom URL
     url = attr.ib(None)
     #: The name of the page's location city
     city = attr.ib(None)

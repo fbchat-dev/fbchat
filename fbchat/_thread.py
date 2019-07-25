@@ -69,7 +69,7 @@ class Thread(object):
     uid = attr.ib(converter=str)
     #: Specifies the type of thread. Can be used a ``thread_type``. See :ref:`intro_threads` for more info
     type = attr.ib()
-    #: A url to the thread's picture
+    #: A URL to the thread's picture
     photo = attr.ib(None)
     #: The name of the thread
     name = attr.ib(None)

@@ -48,7 +48,7 @@ class TypingStatus(Enum):
 class User(Thread):
     """Represents a Facebook user. Inherits `Thread`."""
 
-    #: The profile url
+    #: The profile URL
     url = attr.ib(None)
     #: The users first name
     first_name = attr.ib(None)
