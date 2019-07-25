@@ -338,7 +338,8 @@ class Client(object):
 
     def _forcedFetch(self, thread_id, mid):
         params = {"thread_and_message_id": {"thread_id": thread_id, "message_id": mid}}
-        return self.graphql_request(_graphql.from_doc_id("1768656253222505", params))
+        j, = self.graphql_requests(_graphql.from_doc_id("1768656253222505", params))
+        return j
 
     def fetchThreads(self, thread_location, before=None, after=None, limit=None):
         """Fetch all threads in ``thread_location``.
@@ -461,7 +462,7 @@ class Client(object):
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        j = self.graphql_request(_graphql.from_query(_graphql.SEARCH_USER, params))
+        j, = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_USER, params))
 
         return [User._from_graphql(node) for node in j[name]["users"]["nodes"]]
 
@@ -478,7 +479,7 @@ class Client(object):
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        j = self.graphql_request(_graphql.from_query(_graphql.SEARCH_PAGE, params))
+        j, = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_PAGE, params))
 
         return [Page._from_graphql(node) for node in j[name]["pages"]["nodes"]]
 
@@ -496,7 +497,7 @@ class Client(object):
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        j = self.graphql_request(_graphql.from_query(_graphql.SEARCH_GROUP, params))
+        j, = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_GROUP, params))
 
         return [Group._from_graphql(node) for node in j["viewer"]["groups"]["nodes"]]
 
@@ -514,7 +515,7 @@ class Client(object):
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        j = self.graphql_request(_graphql.from_query(_graphql.SEARCH_THREAD, params))
+        j, = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_THREAD, params))
 
         rtn = []
         for node in j[name]["threads"]["nodes"]:
@@ -821,7 +822,7 @@ class Client(object):
             "load_read_receipts": True,
             "before": before,
         }
-        j = self.graphql_request(_graphql.from_doc_id("1860982147341344", params))
+        j, = self.graphql_requests(_graphql.from_doc_id("1860982147341344", params))
 
         if j.get("message_thread") is None:
             raise FBchatException("Could not fetch thread {}: {}".format(thread_id, j))
@@ -880,7 +881,7 @@ class Client(object):
             "includeDeliveryReceipts": True,
             "includeSeqID": False,
         }
-        j = self.graphql_request(_graphql.from_doc_id("1349387578499440", params))
+        j, = self.graphql_requests(_graphql.from_doc_id("1349387578499440", params))
 
         rtn = []
         for node in j["viewer"]["message_threads"]["nodes"]:
@@ -1000,7 +1001,7 @@ class Client(object):
         return Plan._from_fetch(j)
 
     def _getPrivateData(self):
-        j = self.graphql_request(_graphql.from_doc_id("1868889766468115", {}))
+        j, = self.graphql_requests(_graphql.from_doc_id("1868889766468115", {}))
         return j["viewer"]
 
     def getPhoneNumbers(self):
@@ -1051,7 +1052,7 @@ class Client(object):
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {"id": thread_id, "first": 48}
         thread_id = str(thread_id)
-        j = self.graphql_request(_graphql.from_query_id("515216185516880", data))
+        j, = self.graphql_requests(_graphql.from_query_id("515216185516880", data))
         while True:
             try:
                 i = j[thread_id]["message_shared_media"]["edges"][0]
@@ -1062,7 +1063,7 @@ class Client(object):
                     data["after"] = j[thread_id]["message_shared_media"][
                         "page_info"
                     ].get("end_cursor")
-                    j = self.graphql_request(
+                    j, = self.graphql_requests(
                         _graphql.from_query_id("515216185516880", data)
                     )
                     continue
@@ -1703,7 +1704,7 @@ class Client(object):
             "response": "ACCEPT" if approve else "DENY",
             "surface": "ADMIN_MODEL_APPROVAL_CENTER",
         }
-        j = self.graphql_request(
+        j, = self.graphql_requests(
             _graphql.from_doc_id("1574519202665847", {"data": data})
         )
 
