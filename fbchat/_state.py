@@ -191,3 +191,13 @@ class State(object):
         session = session_factory(user_agent=user_agent)
         session.cookies = requests.cookies.merge_cookies(session.cookies, cookies)
         return cls.from_session(session=session)
+
+    def _do_refresh(self):
+        # TODO: Raise the error instead, and make the user do the refresh manually
+        # It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
+        _util.log.warning("Refreshing state and resending request")
+        new = State.from_session(session=self._session)
+        self.fb_dtsg = new.fb_dtsg
+        self._revision = new._revision
+        self._counter = new._counter
+        self._logout_h = new._logout_h or self._logout_h

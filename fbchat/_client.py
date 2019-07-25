@@ -108,12 +108,6 @@ class Client(object):
     INTERNAL REQUEST METHODS
     """
 
-    def _do_refresh(self):
-        # TODO: Raise the error instead, and make the user do the refresh manually
-        # It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
-        log.warning("Refreshing state and resending request")
-        self._state = State.from_session(session=self._state._session)
-
     def _get(self, url, params, error_retries=3):
         params.update(self._state.get_params())
         r = self._state._session.get(prefix_url(url), params=params)
@@ -123,7 +117,7 @@ class Client(object):
             handle_payload_error(j)
         except FBchatPleaseRefresh:
             if error_retries > 0:
-                self._do_refresh()
+                self._state._do_refresh()
                 return self._get(url, params, error_retries=error_retries - 1)
             raise
         return j
@@ -143,7 +137,7 @@ class Client(object):
                 return j
         except FBchatPleaseRefresh:
             if error_retries > 0:
-                self._do_refresh()
+                self._state._do_refresh()
                 return self._post(
                     url,
                     data,
