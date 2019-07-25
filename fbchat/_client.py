@@ -108,19 +108,8 @@ class Client(object):
     INTERNAL REQUEST METHODS
     """
 
-    def _get(self, url, params, error_retries=3):
-        params.update(self._state.get_params())
-        r = self._state._session.get(prefix_url(url), params=params)
-        content = check_request(r)
-        j = to_json(content)
-        try:
-            handle_payload_error(j)
-        except FBchatPleaseRefresh:
-            if error_retries > 0:
-                self._state._do_refresh()
-                return self._get(url, params, error_retries=error_retries - 1)
-            raise
-        return j
+    def _get(self, url, params):
+        return self._state._get(url, params)
 
     def _post(self, url, data, files=None, as_graphql=False, error_retries=3):
         data.update(self._state.get_params())
