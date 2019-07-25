@@ -240,3 +240,10 @@ class State(object):
                     error_retries=error_retries - 1,
                 )
             raise
+
+    def _payload_post(self, url, data, files=None):
+        j = self._post(url, data, files=files)
+        try:
+            return j["payload"]
+        except (KeyError, TypeError):
+            raise _exception.FBchatException("Missing payload: {}".format(j))

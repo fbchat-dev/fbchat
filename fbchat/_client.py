@@ -115,11 +115,7 @@ class Client(object):
         return self._state._post(url, params, files=files, as_graphql=as_graphql)
 
     def _payload_post(self, url, data, files=None):
-        j = self._post(url, data, files=files)
-        try:
-            return j["payload"]
-        except (KeyError, TypeError):
-            raise FBchatException("Missing payload: {}".format(j))
+        return self._state._payload_post(url, data, files=files)
 
     def graphql_requests(self, *queries):
         """Execute GraphQL queries.
