@@ -87,7 +87,6 @@ class Client(object):
         """
         self._sticky, self._pool = (None, None)
         self._seq = "0"
-        self._client_id = hex(int(random() * 2 ** 31))[2:]
         self._default_thread_id = None
         self._default_thread_type = None
         self._pull_channel = 0
@@ -1043,7 +1042,7 @@ class Client(object):
             "source": "source:chat:web",
             "offline_threading_id": messageAndOTID,
             "message_id": messageAndOTID,
-            "threading_id": generateMessageID(self._client_id),
+            "threading_id": generateMessageID(self._state._client_id),
             "ephemeral_ttl_mode:": "0",
         }
 
@@ -2261,7 +2260,7 @@ class Client(object):
         data = {
             "seq": self._seq,
             "channel": "p_" + self._uid,
-            "clientid": self._client_id,
+            "clientid": self._state._client_id,
             "partition": -2,
             "cap": 0,
             "uid": self._uid,
@@ -2282,7 +2281,7 @@ class Client(object):
             "msgs_recv": 0,
             "sticky_token": self._sticky,
             "sticky_pool": self._pool,
-            "clientid": self._client_id,
+            "clientid": self._state._client_id,
             "state": "active" if self._markAlive else "offline",
         }
         return self._get(
