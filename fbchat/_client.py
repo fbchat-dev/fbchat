@@ -1056,30 +1056,11 @@ class Client(object):
 
     def _doSendRequest(self, data, get_thread_id=False):
         """Send the data to `SendURL`, and returns the message ID or None on failure."""
-        j = self._post("/messaging/send/", data)
-
-        # update JS token if received in response
-        fb_dtsg = get_jsmods_require(j, 2)
-        if fb_dtsg is not None:
-            self._state.fb_dtsg = fb_dtsg
-
-        try:
-            message_ids = [
-                (action["message_id"], action["thread_fbid"])
-                for action in j["payload"]["actions"]
-                if "message_id" in action
-            ]
-            if len(message_ids) != 1:
-                log.warning("Got multiple message ids' back: {}".format(message_ids))
-            if get_thread_id:
-                return message_ids[0]
-            else:
-                return message_ids[0][0]
-        except (KeyError, IndexError, TypeError) as e:
-            raise FBchatException(
-                "Error when sending message: "
-                "No message IDs could be found: {}".format(j)
-            )
+        mid, thread_id = self._state._do_send_request(data)
+        if get_thread_id:
+            return mid, thread_id
+        else:
+            return mid
 
     def send(self, message, thread_id=None, thread_type=ThreadType.USER):
         """Send message to a thread.

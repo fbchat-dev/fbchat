@@ -297,3 +297,26 @@ class State(object):
             (data[_util.mimetype_to_key(data["filetype"])], data["filetype"])
             for data in j["metadata"]
         ]
+
+    def _do_send_request(self, data):
+        j = self._post("/messaging/send/", data)
+
+        # update JS token if received in response
+        fb_dtsg = _util.get_jsmods_require(j, 2)
+        if fb_dtsg is not None:
+            self.fb_dtsg = fb_dtsg
+
+        try:
+            message_ids = [
+                (action["message_id"], action["thread_fbid"])
+                for action in j["payload"]["actions"]
+                if "message_id" in action
+            ]
+            if len(message_ids) != 1:
+                log.warning("Got multiple message ids' back: {}".format(message_ids))
+            return message_ids[0]
+        except (KeyError, IndexError, TypeError) as e:
+            raise _exception.FBchatException(
+                "Error when sending message: "
+                "No message IDs could be found: {}".format(j)
+            )
