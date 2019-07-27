@@ -32,6 +32,10 @@ def session_factory(user_agent=None):
     return session
 
 
+def client_id_factory():
+    return hex(int(random.random() * 2 ** 31))[2:]
+
+
 def is_home(url):
     parts = _util.urlparse(url)
     # Check the urls `/home.php` and `/`
@@ -104,6 +108,7 @@ class State(object):
     _revision = attr.ib()
     _session = attr.ib(factory=session_factory)
     _counter = attr.ib(0)
+    _client_id = attr.ib(factory=client_id_factory)
     _logout_h = attr.ib(None)
 
     def get_params(self):
