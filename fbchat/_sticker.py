@@ -51,6 +51,7 @@ class Sticker(Attachment):
             self.large_sprite_image = data["sprite_image_2x"].get("uri")
             self.frames_per_row = data.get("frames_per_row")
             self.frames_per_col = data.get("frames_per_column")
+            self.frame_count = data.get("frame_count")
             self.frame_rate = data.get("frame_rate")
         self.url = data.get("url")
         self.width = data.get("width")
