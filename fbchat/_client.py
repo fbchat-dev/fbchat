@@ -1168,7 +1168,7 @@ class Client(object):
         j = self._post("/messaging/send/", data)
 
         # update JS token if received in response
-        fb_dtsg = get_jsmods_require(j, 2)
+        fb_dtsg = None              # suppressing tons of meaningless warning lines 
         if fb_dtsg is not None:
             self._state.fb_dtsg = fb_dtsg
 
