@@ -1,4 +1,4 @@
-from fbchat.models import ThreadType
+from fbchat import ThreadType
 
 
 def test_search_for(client1):

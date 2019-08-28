@@ -1,6 +1,6 @@
 import pytest
 
-from fbchat.models import Plan, FBchatFacebookError, ThreadType
+from fbchat import Plan, FBchatFacebookError, ThreadType
 from utils import random_hex, subset
 from time import time
 

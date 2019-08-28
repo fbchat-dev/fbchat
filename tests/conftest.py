@@ -3,7 +3,7 @@ import json
 
 from utils import *
 from contextlib import contextmanager
-from fbchat.models import ThreadType, Message, Mention
+from fbchat import ThreadType, Message, Mention
 
 
 @pytest.fixture(scope="session")

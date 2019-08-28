@@ -3,8 +3,7 @@ import py_compile
 
 from glob import glob
 from os import path, environ
-from fbchat import Client
-from fbchat.models import FBchatUserError, Message
+from fbchat import FBchatUserError, Message, Client
 
 
 @pytest.mark.offline

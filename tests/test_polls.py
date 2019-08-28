@@ -1,6 +1,6 @@
 import pytest
 
-from fbchat.models import Poll, PollOption, ThreadType
+from fbchat import Poll, PollOption, ThreadType
 from utils import random_hex, subset
 
 

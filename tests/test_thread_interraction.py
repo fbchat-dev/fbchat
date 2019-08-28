@@ -1,12 +1,6 @@
 import pytest
 
-from fbchat.models import (
-    Message,
-    ThreadType,
-    FBchatFacebookError,
-    TypingStatus,
-    ThreadColor,
-)
+from fbchat import Message, ThreadType, FBchatFacebookError, TypingStatus, ThreadColor
 from utils import random_hex, subset
 from os import path
 

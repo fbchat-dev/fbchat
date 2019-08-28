@@ -1,6 +1,6 @@
 import pytest
 
-from fbchat.models import Message, MessageReaction
+from fbchat import Message, MessageReaction
 from utils import subset
 
 

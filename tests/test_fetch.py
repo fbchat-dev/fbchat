@@ -1,7 +1,7 @@
 import pytest
 
 from os import path
-from fbchat.models import ThreadType, Message, Mention, EmojiSize, Sticker
+from fbchat import ThreadType, Message, Mention, EmojiSize, Sticker
 from utils import subset, STICKER_LIST, EMOJI_LIST
 
 

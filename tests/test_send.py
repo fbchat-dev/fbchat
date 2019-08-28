@@ -1,7 +1,7 @@
 import pytest
 
 from os import path
-from fbchat.models import FBchatFacebookError, Message, Mention
+from fbchat import FBchatFacebookError, Message, Mention
 from utils import subset, STICKER_LIST, EMOJI_LIST, TEXT_LIST
 
 
