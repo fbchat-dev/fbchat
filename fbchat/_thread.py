@@ -16,6 +16,17 @@ class ThreadType(Enum):
     ROOM = 2
     PAGE = 3
 
+    def _to_class(self):
+        """Convert this enum value to the corresponding class."""
+        from . import _user, _group, _page
+
+        return {
+            ThreadType.USER: _user.User,
+            ThreadType.GROUP: _group.Group,
+            ThreadType.ROOM: _group.Room,
+            ThreadType.PAGE: _page.Page,
+        }[self]
+
 
 class ThreadLocation(Enum):
     """Used to specify where a thread is located (inbox, pending, archived, other)."""
