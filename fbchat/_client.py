@@ -1031,17 +1031,6 @@ class Client(object):
     def _oldMessage(self, message):
         return message if isinstance(message, Message) else Message(text=message)
 
-    def _getSendData(self, thread_id=None, thread_type=ThreadType.USER):
-        data = {}
-
-        # Set recipient
-        if thread_type in [ThreadType.USER, ThreadType.PAGE]:
-            data["other_user_fbid"] = thread_id
-        elif thread_type == ThreadType.GROUP:
-            data["thread_fbid"] = thread_id
-
-        return data
-
     def _doSendRequest(self, data, get_thread_id=False):
         """Send the data to `SendURL`, and returns the message ID or None on failure."""
         mid, thread_id = self._state._do_send_request(data)
@@ -1065,7 +1054,8 @@ class Client(object):
             FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        thread = thread_type._to_class()(thread_id)
+        data = thread._to_send_data()
         data.update(message._to_send_data())
         return self._doSendRequest(data)
 
@@ -1104,7 +1094,8 @@ class Client(object):
             FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        thread = thread_type._to_class()(thread_id)
+        data = thread._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
         data["lightweight_action_attachment[lwa_state]"] = (
             "INITIATED" if wave_first else "RECIPROCATED"
@@ -1168,7 +1159,8 @@ class Client(object):
         self, location, current=True, message=None, thread_id=None, thread_type=None
     ):
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        thread = thread_type._to_class()(thread_id)
+        data = thread._to_send_data()
         if message is not None:
             data.update(message._to_send_data())
         data["action_type"] = "ma-type:user-generated-message"
@@ -1236,7 +1228,8 @@ class Client(object):
         `files` should be a list of tuples, with a file's ID and mimetype.
         """
         thread_id, thread_type = self._getThread(thread_id, thread_type)
-        data = self._getSendData(thread_id=thread_id, thread_type=thread_type)
+        thread = thread_type._to_class()(thread_id)
+        data = thread._to_send_data()
         data.update(self._oldMessage(message)._to_send_data())
         data["action_type"] = "ma-type:user-generated-message"
         data["has_attachment"] = True
@@ -1417,8 +1410,7 @@ class Client(object):
         Raises:
             FBchatException: If request failed
         """
-        data = self._getSendData()
-        data.update(self._oldMessage(message)._to_send_data())
+        data = self._oldMessage(message)._to_send_data()
 
         if len(user_ids) < 2:
             raise FBchatUserError("Error when creating group: Not enough participants")
@@ -1444,7 +1436,7 @@ class Client(object):
             FBchatException: If request failed
         """
         thread_id, thread_type = self._getThread(thread_id, None)
-        data = self._getSendData(thread_id=thread_id, thread_type=ThreadType.GROUP)
+        data = Group(thread_id)._to_send_data()
 
         data["action_type"] = "ma-type:log-message"
         data["log_message_type"] = "log:subscribe"

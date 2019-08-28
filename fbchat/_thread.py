@@ -141,3 +141,7 @@ class Thread(object):
                 else:
                     rtn["own_nickname"] = pc[1].get("nickname")
         return rtn
+
+    def _to_send_data(self):
+        # TODO: Only implement this in subclasses
+        return {"other_user_fbid": self.uid}
