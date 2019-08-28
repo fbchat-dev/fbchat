@@ -2,7 +2,7 @@ import attr
 
 
 @attr.s(cmp=False)
-class Poll(object):
+class Poll:
     """Represents a poll."""
 
     #: Title of the poll
@@ -25,7 +25,7 @@ class Poll(object):
 
 
 @attr.s(cmp=False)
-class PollOption(object):
+class PollOption:
     """Represents a poll option."""
 
     #: Text of the poll option

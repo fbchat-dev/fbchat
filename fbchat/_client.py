@@ -20,7 +20,7 @@ ACONTEXT = {
 }
 
 
-class Client(object):
+class Client:
     """A client for the Facebook Chat (Messenger).
 
     This is the main class of ``fbchat``, which contains all the methods you use to

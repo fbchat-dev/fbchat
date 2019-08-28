@@ -10,7 +10,7 @@ class GuestStatus(Enum):
 
 
 @attr.s(cmp=False)
-class Plan(object):
+class Plan:
     """Represents a plan."""
 
     #: ID of the plan

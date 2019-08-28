@@ -180,7 +180,7 @@ class User(Thread):
 
 
 @attr.s(cmp=False)
-class ActiveStatus(object):
+class ActiveStatus:
     #: Whether the user is active now
     active = attr.ib(None)
     #: Timestamp when the user was last active

@@ -97,7 +97,7 @@ def _2fa_helper(session, code, r):
 
 
 @attr.s(slots=True)  # TODO i Python 3: Add kw_only=True
-class State(object):
+class State:
     """Stores and manages state required for most Facebook requests."""
 
     user_id = attr.ib()

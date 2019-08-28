@@ -3,7 +3,7 @@ from ._attachment import Attachment
 
 
 @attr.s(cmp=False)
-class QuickReply(object):
+class QuickReply:
     """Represents a quick reply."""
 
     #: Payload of the quick reply

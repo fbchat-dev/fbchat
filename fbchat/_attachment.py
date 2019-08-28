@@ -3,7 +3,7 @@ from . import _util
 
 
 @attr.s(cmp=False)
-class Attachment(object):
+class Attachment:
     """Represents a Facebook attachment."""
 
     #: The attachment ID
