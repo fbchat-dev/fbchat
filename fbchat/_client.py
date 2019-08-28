@@ -1032,19 +1032,7 @@ class Client(object):
         return message if isinstance(message, Message) else Message(text=message)
 
     def _getSendData(self, thread_id=None, thread_type=ThreadType.USER):
-        """Return the data needed to send a request to `SendURL`."""
-        messageAndOTID = generateOfflineThreadingID()
-        timestamp = now()
-        data = {
-            "client": "mercury",
-            "author": "fbid:{}".format(self._uid),
-            "timestamp": timestamp,
-            "source": "source:chat:web",
-            "offline_threading_id": messageAndOTID,
-            "message_id": messageAndOTID,
-            "threading_id": generateMessageID(self._state._client_id),
-            "ephemeral_ttl_mode:": "0",
-        }
+        data = {}
 
         # Set recipient
         if thread_type in [ThreadType.USER, ThreadType.PAGE]:

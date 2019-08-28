@@ -299,6 +299,15 @@ class State(object):
         ]
 
     def _do_send_request(self, data):
+        offline_threading_id = _util.generateOfflineThreadingID()
+        data["client"] = "mercury"
+        data["author"] = "fbid:{}".format(self.user_id)
+        data["timestamp"] = _util.now()
+        data["source"] = "source:chat:web"
+        data["offline_threading_id"] = offline_threading_id
+        data["message_id"] = offline_threading_id
+        data["threading_id"] = _util.generateMessageID(self._client_id)
+        data["ephemeral_ttl_mode:"] = "0"
         j = self._post("/messaging/send/", data)
 
         # update JS token if received in response
