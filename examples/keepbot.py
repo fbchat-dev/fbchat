@@ -1,5 +1,3 @@
-# -*- coding: UTF-8 -*-
-
 from fbchat import log, Client
 from fbchat.models import *
 

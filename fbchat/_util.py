@@ -1,6 +1,3 @@
-# -*- coding: UTF-8 -*-
-
-from __future__ import unicode_literals
 import re
 import json
 from time import time

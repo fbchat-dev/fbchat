@@ -1,7 +1,3 @@
-# -*- coding: UTF-8 -*-
-from __future__ import unicode_literals
-
-
 class FBchatException(Exception):
     """Custom exception thrown by ``fbchat``.
 

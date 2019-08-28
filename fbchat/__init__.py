@@ -1,10 +1,8 @@
-# -*- coding: UTF-8 -*-
 """Facebook Chat (Messenger) for Python
 
 :copyright: (c) 2015 - 2019 by Taehoon Kim
 :license: BSD 3-Clause, see LICENSE for more details.
 """
-from __future__ import unicode_literals
 
 # These imports are far too general, but they're needed for backwards compatbility.
 from .models import *

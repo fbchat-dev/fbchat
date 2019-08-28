@@ -1,6 +1,3 @@
-# -*- coding: UTF-8 -*-
-from __future__ import unicode_literals
-
 import attr
 import json
 from ._core import Enum
