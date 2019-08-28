@@ -29,7 +29,14 @@ This project was inspired by `facebook-chat-api <https://github.com/Schmavery/fa
 Go to `Read the Docs <https://fbchat.readthedocs.io>`__ to see the full documentation,
 or jump right into the code by viewing the `examples <https://github.com/carpedm20/fbchat/tree/master/examples>`__
 
+Version warning:
+----------------
+``v2`` is currently being developed at the ``master`` branch and it's highly unstable. If you want to view the old ``v1``, go `here <https://github.com/carpedm20/fbchat/tree/v1>`__.
+
+Additionally, you can view the project's progress `here <https://github.com/carpedm20/fbchat/projects/2>`__.
+
 Installation:
+-------------
 
 .. code-block::
 
