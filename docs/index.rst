@@ -11,18 +11,6 @@
 
 Release v\ |version|. (:ref:`install`)
 
-.. generated with: https://img.shields.io/badge/license-BSD-blue.svg
-
-.. image:: /_static/license.svg
-    :target: https://github.com/carpedm20/fbchat/blob/master/LICENSE.txt
-    :alt: License: BSD
-
-.. generated with: https://img.shields.io/badge/python-2.7%2C%203.4%2C%203.5%2C%203.6-blue.svg
-
-.. image:: /_static/python-versions.svg
-    :target: https://pypi.python.org/pypi/fbchat
-    :alt: Supported python versions: 2.7, 3.4, 3.5 and 3.6
-
 Facebook Chat (`Messenger <https://www.facebook.com/messages/>`_) for Python.
 This project was inspired by `facebook-chat-api <https://github.com/Schmavery/facebook-chat-api>`_.
 
