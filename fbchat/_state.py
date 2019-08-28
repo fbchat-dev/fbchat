@@ -3,6 +3,7 @@ import bs4
 import re
 import requests
 import random
+import urllib.parse
 
 from ._core import log
 from . import _graphql, _util, _exception
@@ -35,7 +36,7 @@ def client_id_factory():
 
 
 def is_home(url):
-    parts = _util.urlparse(url)
+    parts = urllib.parse.urlparse(url)
     # Check the urls `/home.php` and `/`
     return "home" in parts.path or "/" == parts.path
 

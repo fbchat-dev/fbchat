@@ -1,8 +1,7 @@
 import json
 import re
 from ._core import log
-from . import _util
-from ._exception import FBchatException
+from . import _util, _exception
 
 # Shameless copy from https://stackoverflow.com/a/8730674
 FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
@@ -40,7 +39,9 @@ def response_to_json(content):
     try:
         j = json.loads(content, cls=ConcatJSONDecoder)
     except Exception:
-        raise FBchatException("Error while parsing JSON: {}".format(repr(content)))
+        raise _exception.FBchatException(
+            "Error while parsing JSON: {!r}".format(content)
+        )
 
     rtn = [None] * (len(j))
     for x in j:
