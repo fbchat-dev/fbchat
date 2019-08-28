@@ -1,13 +1,12 @@
-import re
 import json
-from time import time
-from random import random
-from contextlib import contextmanager
-from mimetypes import guess_type
-from os.path import basename
-from urllib.parse import parse_qs, urlparse
-import warnings
+import time
+import random
+import contextlib
+import mimetypes
+import urllib.parse
 import requests
+from os import path
+
 from ._core import log
 from ._exception import (
     FBchatException,
@@ -29,7 +28,7 @@ USER_AGENTS = [
 
 
 def now():
-    return int(time() * 1000)
+    return int(time.time() * 1000)
 
 
 def strip_json_cruft(text):
@@ -72,17 +71,17 @@ def str_base(number, base):
 
 def generateMessageID(client_id=None):
     k = now()
-    l = int(random() * 4294967295)
+    l = int(random.random() * 4294967295)
     return "<{}:{}-{}@mail.projektitan.com>".format(k, l, client_id)
 
 
 def getSignatureID():
-    return hex(int(random() * 2147483648))
+    return hex(int(random.random() * 2147483648))
 
 
 def generateOfflineThreadingID():
     ret = now()
-    value = int(random() * 4294967295)
+    value = int(random.random() * 4294967295)
     string = ("0000000000000000000000" + format(value, "b"))[-22:]
     msgs = format(ret, "b") + string
     return str(int(msgs, 2))
@@ -196,20 +195,24 @@ def get_files_from_urls(file_urls):
         # https://stackoverflow.com/a/37060758
         files.append(
             (
-                basename(file_url).split("?")[0].split("#")[0],
+                path.basename(file_url).split("?")[0].split("#")[0],
                 r.content,
-                r.headers.get("Content-Type") or guess_type(file_url)[0],
+                r.headers.get("Content-Type") or mimetypes.guess_type(file_url)[0],
             )
         )
     return files
 
 
-@contextmanager
+@contextlib.contextmanager
 def get_files_from_paths(filenames):
     files = []
     for filename in filenames:
         files.append(
-            (basename(filename), open(filename, "rb"), guess_type(filename)[0])
+            (
+                path.basename(filename),
+                open(filename, "rb"),
+                mimetypes.guess_type(filename)[0],
+            )
         )
     yield files
     for fn, fp, ft in files:
@@ -217,7 +220,7 @@ def get_files_from_paths(filenames):
 
 
 def get_url_parameters(url, *args):
-    params = parse_qs(urlparse(url).query)
+    params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
     return [params[arg][0] for arg in args if params.get(arg)]
 
 

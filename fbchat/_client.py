@@ -1,16 +1,11 @@
-import requests
-import urllib
-from uuid import uuid1
-from random import choice
-from bs4 import BeautifulSoup as bs
-from mimetypes import guess_type
-from collections import OrderedDict
-from ._util import *
-from .models import *
-from . import _graphql
-from ._state import State
 import time
 import json
+import requests
+from collections import OrderedDict
+
+from ._core import log
+from . import _util, _graphql, _state
+from .models import *
 
 
 ACONTEXT = {
@@ -156,7 +151,9 @@ class Client:
         """
         try:
             # Load cookies into current session
-            self._state = State.from_cookies(session_cookies, user_agent=user_agent)
+            self._state = _state.State.from_cookies(
+                session_cookies, user_agent=user_agent
+            )
             self._uid = self._state.user_id
         except Exception as e:
             log.exception("Failed loading session")
@@ -186,7 +183,7 @@ class Client:
 
         for i in range(1, max_tries + 1):
             try:
-                self._state = State.login(
+                self._state = _state.State.login(
                     email,
                     password,
                     on_2fa_callback=self.on2FACode,
@@ -871,7 +868,7 @@ class Client:
         data = {"photo_id": str(image_id)}
         j = self._post("/mercury/attachments/photo/", data)
 
-        url = get_jsmods_require(j, 3)
+        url = _util.get_jsmods_require(j, 3)
         if url is None:
             raise FBchatException("Could not fetch image URL from: {}".format(j))
         return url
@@ -1218,7 +1215,7 @@ class Client:
         data["has_attachment"] = True
 
         for i, (file_id, mimetype) in enumerate(files):
-            data["{}s[{}]".format(mimetype_to_key(mimetype), i)] = file_id
+            data["{}s[{}]".format(_util.mimetype_to_key(mimetype), i)] = file_id
 
         return self._doSendRequest(data)
 
@@ -1239,8 +1236,8 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        file_urls = require_list(file_urls)
-        files = self._upload(get_files_from_urls(file_urls))
+        file_urls = _util.require_list(file_urls)
+        files = self._upload(_util.get_files_from_urls(file_urls))
         return self._sendFiles(
             files=files, message=message, thread_id=thread_id, thread_type=thread_type
         )
@@ -1262,8 +1259,8 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        file_paths = require_list(file_paths)
-        with get_files_from_paths(file_paths) as x:
+        file_paths = _util.require_list(file_paths)
+        with _util.get_files_from_paths(file_paths) as x:
             files = self._upload(x)
         return self._sendFiles(
             files=files, message=message, thread_id=thread_id, thread_type=thread_type
@@ -1286,8 +1283,8 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        clip_urls = require_list(clip_urls)
-        files = self._upload(get_files_from_urls(clip_urls), voice_clip=True)
+        clip_urls = _util.require_list(clip_urls)
+        files = self._upload(_util.get_files_from_urls(clip_urls), voice_clip=True)
         return self._sendFiles(
             files=files, message=message, thread_id=thread_id, thread_type=thread_type
         )
@@ -1309,8 +1306,8 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        clip_paths = require_list(clip_paths)
-        with get_files_from_paths(clip_paths) as x:
+        clip_paths = _util.require_list(clip_paths)
+        with _util.get_files_from_paths(clip_paths) as x:
             files = self._upload(x, voice_clip=True)
         return self._sendFiles(
             files=files, message=message, thread_id=thread_id, thread_type=thread_type
@@ -1371,7 +1368,7 @@ class Client:
         thread_id, thread_type = self._getThread(thread_id, None)
         data = {
             "attachment_id": attachment_id,
-            "recipient_map[{}]".format(generateOfflineThreadingID()): thread_id,
+            "recipient_map[{}]".format(_util.generateOfflineThreadingID()): thread_id,
         }
         j = self._payload_post("/mercury/attachments/forward/", data)
         if not j.get("success"):
@@ -1424,7 +1421,7 @@ class Client:
         data["action_type"] = "ma-type:log-message"
         data["log_message_type"] = "log:subscribe"
 
-        user_ids = require_list(user_ids)
+        user_ids = _util.require_list(user_ids)
 
         for i, user_id in enumerate(user_ids):
             if user_id == self._uid:
@@ -1458,7 +1455,7 @@ class Client:
 
         data = {"add": admin, "thread_fbid": thread_id}
 
-        admin_ids = require_list(admin_ids)
+        admin_ids = _util.require_list(admin_ids)
 
         for i, admin_id in enumerate(admin_ids):
             data["admin_ids[{}]".format(i)] = str(admin_id)
@@ -1507,7 +1504,7 @@ class Client:
     def _usersApproval(self, user_ids, approve, thread_id=None):
         thread_id, thread_type = self._getThread(thread_id, None)
 
-        user_ids = list(require_list(user_ids))
+        user_ids = _util.require_list(user_ids)
 
         data = {
             "client_mutation_id": "0",
@@ -1572,7 +1569,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        (image_id, mimetype), = self._upload(get_files_from_urls([image_url]))
+        (image_id, mimetype), = self._upload(_util.get_files_from_urls([image_url]))
         return self._changeGroupImage(image_id, thread_id)
 
     def changeGroupImageLocal(self, image_path, thread_id=None):
@@ -1585,7 +1582,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        with get_files_from_paths([image_path]) as files:
+        with _util.get_files_from_paths([image_path]) as files:
             (image_id, mimetype), = self._upload(files)
 
         return self._changeGroupImage(image_id, thread_id)
@@ -1700,7 +1697,7 @@ class Client:
         }
         data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
         j = self._payload_post("/webgraphql/mutation", data)
-        handle_graphql_errors(j)
+        _util.handle_graphql_errors(j)
 
     def createPlan(self, plan, thread_id=None):
         """Set a plan.
@@ -1889,7 +1886,7 @@ class Client:
         return True
 
     def _readStatus(self, read, thread_ids):
-        thread_ids = require_list(thread_ids)
+        thread_ids = _util.require_list(thread_ids)
 
         data = {"watermarkTimestamp": now(), "shouldSendReadReceipt": "true"}
 
@@ -2001,7 +1998,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_ids = require_list(thread_ids)
+        thread_ids = _util.require_list(thread_ids)
 
         if location == ThreadLocation.PENDING:
             location = ThreadLocation.OTHER
@@ -2037,7 +2034,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_ids = require_list(thread_ids)
+        thread_ids = _util.require_list(thread_ids)
 
         data_unpin = dict()
         data_delete = dict()
@@ -2080,7 +2077,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        message_ids = require_list(message_ids)
+        message_ids = _util.require_list(message_ids)
         data = dict()
         for i, message_id in enumerate(message_ids):
             data["message_ids[{}]".format(i)] = message_id

@@ -3,6 +3,7 @@
 :copyright: (c) 2015 - 2019 by Taehoon Kim
 :license: BSD 3-Clause, see LICENSE for more details.
 """
+
 import logging as _logging
 
 # Set default logging handler to avoid "No handler found" warnings.
@@ -12,7 +13,6 @@ _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 from .models import *
 
 from ._client import Client
-from ._util import log  # TODO: Remove this (from examples too)
 
 __title__ = "fbchat"
 __version__ = "1.8.1"
