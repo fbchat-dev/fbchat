@@ -3,6 +3,10 @@
 :copyright: (c) 2015 - 2019 by Taehoon Kim
 :license: BSD 3-Clause, see LICENSE for more details.
 """
+import logging as _logging
+
+# Set default logging handler to avoid "No handler found" warnings.
+_logging.getLogger(__name__).addHandler(_logging.NullHandler())
 
 # These imports are far too general, but they're needed for backwards compatbility.
 from .models import *

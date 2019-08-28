@@ -1,7 +1,7 @@
 import logging
 import aenum
 
-log = logging.getLogger("client")
+log = logging.getLogger("fbchat")
 
 
 class Enum(aenum.Enum):

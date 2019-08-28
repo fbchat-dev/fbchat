@@ -7,8 +7,8 @@ from mimetypes import guess_type
 from os.path import basename
 from urllib.parse import parse_qs, urlparse
 import warnings
-import logging
 import requests
+from ._core import log
 from ._exception import (
     FBchatException,
     FBchatFacebookError,
@@ -16,13 +16,6 @@ from ._exception import (
     FBchatNotLoggedIn,
     FBchatPleaseRefresh,
 )
-
-# Log settings
-log = logging.getLogger("client")
-log.setLevel(logging.DEBUG)
-# Creates the console handler
-handler = logging.StreamHandler()
-log.addHandler(handler)
 
 #: Default list of user agents
 USER_AGENTS = [

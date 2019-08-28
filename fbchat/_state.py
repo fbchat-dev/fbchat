@@ -4,6 +4,7 @@ import re
 import requests
 import random
 
+from ._core import log
 from . import _graphql, _util, _exception
 
 FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
@@ -50,7 +51,7 @@ def _2fa_helper(session, code, r):
     data["nh"] = soup.find("input", {"name": "nh"})["value"]
     data["submit[Submit Code]"] = "Submit Code"
     data["codes_submitted"] = 0
-    _util.log.info("Submitting 2FA code.")
+    log.info("Submitting 2FA code.")
 
     r = session.post(url, data=data)
 
@@ -63,7 +64,7 @@ def _2fa_helper(session, code, r):
 
     data["name_action_selected"] = "save_device"
     data["submit[Continue]"] = "Continue"
-    _util.log.info("Saving browser.")
+    log.info("Saving browser.")
     # At this stage, we have dtsg, nh, name_action_selected, submit[Continue]
     r = session.post(url, data=data)
 
@@ -71,7 +72,7 @@ def _2fa_helper(session, code, r):
         return r
 
     del data["name_action_selected"]
-    _util.log.info("Starting Facebook checkup flow.")
+    log.info("Starting Facebook checkup flow.")
     # At this stage, we have dtsg, nh, submit[Continue]
     r = session.post(url, data=data)
 
@@ -80,7 +81,7 @@ def _2fa_helper(session, code, r):
 
     del data["submit[Continue]"]
     data["submit[This was me]"] = "This Was Me"
-    _util.log.info("Verifying login attempt.")
+    log.info("Verifying login attempt.")
     # At this stage, we have dtsg, nh, submit[This was me]
     r = session.post(url, data=data)
 
@@ -90,7 +91,7 @@ def _2fa_helper(session, code, r):
     del data["submit[This was me]"]
     data["submit[Continue]"] = "Continue"
     data["name_action_selected"] = "save_device"
-    _util.log.info("Saving device again.")
+    log.info("Saving device again.")
     # At this stage, we have dtsg, nh, submit[Continue], name_action_selected
     r = session.post(url, data=data)
     return r
@@ -207,7 +208,7 @@ class State:
     def _do_refresh(self):
         # TODO: Raise the error instead, and make the user do the refresh manually
         # It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
-        _util.log.warning("Refreshing state and resending request")
+        log.warning("Refreshing state and resending request")
         new = State.from_session(session=self._session)
         self.user_id = new.user_id
         self._fb_dtsg = new._fb_dtsg

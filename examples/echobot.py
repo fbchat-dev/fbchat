@@ -1,4 +1,4 @@
-from fbchat import log, Client
+from fbchat import Client
 
 # Subclass fbchat.Client and override required methods
 class EchoBot(Client):
@@ -6,7 +6,7 @@ class EchoBot(Client):
         self.markAsDelivered(thread_id, message_object.uid)
         self.markAsRead(thread_id)
 
-        log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
+        print("{} from {} in {}".format(message_object, thread_id, thread_type.name))
 
         # If you're not the author, echo
         if author_id != self.uid:

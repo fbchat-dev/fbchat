@@ -56,13 +56,7 @@ class Client:
         return self._uid
 
     def __init__(
-        self,
-        email,
-        password,
-        user_agent=None,
-        max_tries=5,
-        session_cookies=None,
-        logging_level=logging.INFO,
+        self, email, password, user_agent=None, max_tries=5, session_cookies=None
     ):
         """Initialize and log in the client.
 
@@ -72,7 +66,6 @@ class Client:
             user_agent: Custom user agent to use when sending requests. If `None`, user agent will be chosen from a premade list
             max_tries (int): Maximum number of times to try logging in
             session_cookies (dict): Cookies from a previous session (Will default to login if these are invalid)
-            logging_level (int): Configures the `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. Defaults to ``logging.INFO``
 
         Raises:
             FBchatException: On failed login
@@ -84,8 +77,6 @@ class Client:
         self._pull_channel = 0
         self._markAlive = True
         self._buddylist = dict()
-
-        handler.setLevel(logging_level)
 
         # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
         if (

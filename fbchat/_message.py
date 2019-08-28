@@ -1,8 +1,8 @@
 import attr
 import json
 from string import Formatter
+from ._core import log, Enum
 from . import _util, _attachment, _location, _file, _quick_reply, _sticker
-from ._core import Enum
 
 
 class EmojiSize(Enum):
@@ -324,7 +324,7 @@ class Message:
                     for mention in _util.parse_json(data["data"]["prng"])
                 ]
             except Exception:
-                _util.log.exception("An exception occured while reading attachments")
+                log.exception("An exception occured while reading attachments")
 
         if data.get("attachments"):
             try:
@@ -361,7 +361,7 @@ class Message:
                             rtn.attachments.append(attachment)
 
             except Exception:
-                _util.log.exception(
+                log.exception(
                     "An exception occured while reading attachments: {}".format(
                         data["attachments"]
                     )
