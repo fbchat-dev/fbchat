@@ -104,7 +104,7 @@ class State(object):
     """Stores and manages state required for most Facebook requests."""
 
     user_id = attr.ib()
-    fb_dtsg = attr.ib()
+    _fb_dtsg = attr.ib()
     _revision = attr.ib()
     _session = attr.ib(factory=session_factory)
     _counter = attr.ib(0)
@@ -117,7 +117,7 @@ class State(object):
             "__a": 1,
             "__req": _util.str_base(self._counter, 36),
             "__rev": self._revision,
-            "fb_dtsg": self.fb_dtsg,
+            "fb_dtsg": self._fb_dtsg,
         }
 
     @classmethod
@@ -213,7 +213,7 @@ class State(object):
         _util.log.warning("Refreshing state and resending request")
         new = State.from_session(session=self._session)
         self.user_id = new.user_id
-        self.fb_dtsg = new.fb_dtsg
+        self._fb_dtsg = new._fb_dtsg
         self._revision = new._revision
         self._counter = new._counter
         self._logout_h = new._logout_h or self._logout_h
@@ -304,7 +304,7 @@ class State(object):
         # update JS token if received in response
         fb_dtsg = _util.get_jsmods_require(j, 2)
         if fb_dtsg is not None:
-            self.fb_dtsg = fb_dtsg
+            self._fb_dtsg = fb_dtsg
 
         try:
             message_ids = [
