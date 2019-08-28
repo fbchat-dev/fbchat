@@ -1,5 +1,3 @@
-# -*- coding: UTF-8 -*-
-
 from itertools import islice
 from fbchat import Client
 from fbchat.models import *

@@ -1,12 +1,9 @@
-# -*- coding: UTF-8 -*-
-from __future__ import unicode_literals
-
 import attr
 from . import _util
 
 
 @attr.s(cmp=False)
-class Attachment(object):
+class Attachment:
     """Represents a Facebook attachment."""
 
     #: The attachment ID

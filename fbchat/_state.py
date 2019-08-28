@@ -1,6 +1,3 @@
-# -*- coding: UTF-8 -*-
-from __future__ import unicode_literals
-
 import attr
 import bs4
 import re
@@ -100,7 +97,7 @@ def _2fa_helper(session, code, r):
 
 
 @attr.s(slots=True)  # TODO i Python 3: Add kw_only=True
-class State(object):
+class State:
     """Stores and manages state required for most Facebook requests."""
 
     user_id = attr.ib()

@@ -1,16 +1,10 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import unicode_literals
-
 import threading
 import logging
-import six
 import pytest
 
 from os import environ
 from random import randrange
 from contextlib import contextmanager
-from six import viewitems
 from fbchat import Client
 from fbchat.models import ThreadType, EmojiSize, FBchatFacebookError, Sticker
 
@@ -63,13 +57,7 @@ class ClientThread(threading.Thread):
         self.client.stopListening()
 
 
-if six.PY2:
-    event_class = threading._Event
-else:
-    event_class = threading.Event
-
-
-class CaughtValue(event_class):
+class CaughtValue(threading.Event):
     def set(self, res):
         self.res = res
         super(CaughtValue, self).set()
@@ -85,7 +73,7 @@ def random_hex(length=20):
 def subset(a, **b):
     print(a)
     print(b)
-    return viewitems(b) <= viewitems(a)
+    return b.items() <= a.items()
 
 
 def load_variable(name, cache):

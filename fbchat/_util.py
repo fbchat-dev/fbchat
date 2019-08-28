@@ -1,6 +1,3 @@
-# -*- coding: UTF-8 -*-
-
-from __future__ import unicode_literals
 import re
 import json
 from time import time
@@ -8,6 +5,7 @@ from random import random
 from contextlib import contextmanager
 from mimetypes import guess_type
 from os.path import basename
+from urllib.parse import parse_qs, urlparse
 import warnings
 import logging
 import requests
@@ -18,22 +16,6 @@ from ._exception import (
     FBchatNotLoggedIn,
     FBchatPleaseRefresh,
 )
-
-try:
-    from urllib.parse import urlencode, parse_qs, urlparse
-
-    basestring = (str, bytes)
-except ImportError:
-    from urllib import urlencode
-    from urlparse import parse_qs, urlparse
-
-    basestring = basestring
-
-# Python 2's `input` executes the input, whereas `raw_input` just returns the input
-try:
-    input = raw_input
-except NameError:
-    pass
 
 # Log settings
 log = logging.getLogger("client")

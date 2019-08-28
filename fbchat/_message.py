@@ -1,6 +1,3 @@
-# -*- coding: UTF-8 -*-
-from __future__ import unicode_literals
-
 import attr
 import json
 from string import Formatter
@@ -46,7 +43,7 @@ class MessageReaction(Enum):
 
 
 @attr.s(cmp=False)
-class Mention(object):
+class Mention:
     """Represents a ``@mention``."""
 
     #: The thread ID the mention is pointing at
@@ -58,7 +55,7 @@ class Mention(object):
 
 
 @attr.s(cmp=False)
-class Message(object):
+class Message:
     """Represents a Facebook message."""
 
     #: The actual message

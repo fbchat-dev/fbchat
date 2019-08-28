@@ -1,6 +1,3 @@
-# -*- coding: UTF-8 -*-
-from __future__ import unicode_literals
-
 import requests
 import urllib
 from uuid import uuid1
@@ -15,11 +12,6 @@ from ._state import State
 import time
 import json
 
-try:
-    from urllib.parse import urlparse, parse_qs
-except ImportError:
-    from urlparse import urlparse, parse_qs
-
 
 ACONTEXT = {
     "action_history": [
@@ -28,7 +20,7 @@ ACONTEXT = {
 }
 
 
-class Client(object):
+class Client:
     """A client for the Facebook Chat (Messenger).
 
     This is the main class of ``fbchat``, which contains all the methods you use to

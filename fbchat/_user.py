@@ -1,6 +1,3 @@
-# -*- coding: UTF-8 -*-
-from __future__ import unicode_literals
-
 import attr
 from ._core import Enum
 from . import _plan
@@ -183,7 +180,7 @@ class User(Thread):
 
 
 @attr.s(cmp=False)
-class ActiveStatus(object):
+class ActiveStatus:
     #: Whether the user is active now
     active = attr.ib(None)
     #: Timestamp when the user was last active

@@ -1,6 +1,3 @@
-# -*- coding: UTF-8 -*-
-from __future__ import unicode_literals
-
 import attr
 import json
 from ._core import Enum
@@ -13,7 +10,7 @@ class GuestStatus(Enum):
 
 
 @attr.s(cmp=False)
-class Plan(object):
+class Plan:
     """Represents a plan."""
 
     #: ID of the plan

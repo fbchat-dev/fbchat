@@ -1,12 +1,9 @@
-# -*- coding: UTF-8 -*-
-from __future__ import unicode_literals
-
 import attr
 from ._attachment import Attachment
 
 
 @attr.s(cmp=False)
-class QuickReply(object):
+class QuickReply:
     """Represents a quick reply."""
 
     #: Payload of the quick reply

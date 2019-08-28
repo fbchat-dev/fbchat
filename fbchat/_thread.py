@@ -1,6 +1,3 @@
-# -*- coding: UTF-8 -*-
-from __future__ import unicode_literals
-
 import attr
 from ._core import Enum
 
@@ -73,7 +70,7 @@ class ThreadColor(Enum):
 
 
 @attr.s(cmp=False, init=False)
-class Thread(object):
+class Thread:
     """Represents a Facebook thread."""
 
     #: The unique identifier of the thread. Can be used a ``thread_id``. See :ref:`intro_threads` for more info
