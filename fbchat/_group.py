@@ -104,6 +104,9 @@ class Group(Thread):
             plan=plan,
         )
 
+    def _to_send_data(self):
+        return {"thread_fbid": self.uid}
+
 
 @attr.s(cmp=False, init=False)
 class Room(Group):
