@@ -16,7 +16,7 @@ This project was inspired by `facebook-chat-api <https://github.com/Schmavery/fa
 
 **No XMPP or API key is needed**. Just use your email and password.
 
-Currently ``fbchat`` support Python 2.7, 3.4, 3.5 and 3.6:
+Currently ``fbchat`` support Python 3.5, 3.6, 3.7 and 3.8:
 
 ``fbchat`` works by emulating the browser.
 This means doing the exact same GET/POST requests and tricking Facebook into thinking it's accessing the website normally.
