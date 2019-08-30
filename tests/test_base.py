@@ -38,13 +38,3 @@ def test_sessions(client1):
     Client("no email needed", "no password needed", session_cookies=session)
     client1.setSession(session)
     assert client1.isLoggedIn()
-
-
-@pytest.mark.tryfirst
-def test_default_thread(client1, thread):
-    client1.setDefaultThread(thread["id"], thread["type"])
-    assert client1.send(Message(text="Sent to the specified thread"))
-
-    client1.resetDefaultThread()
-    with pytest.raises(ValueError):
-        client1.send(Message(text="Should not be sent"))
