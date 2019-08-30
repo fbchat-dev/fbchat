@@ -51,13 +51,12 @@ class Client:
         """
         return self._uid
 
-    def __init__(self, email, password, max_tries=5, session_cookies=None):
+    def __init__(self, email, password, session_cookies=None):
         """Initialize and log in the client.
 
         Args:
             email: Facebook ``email``, ``id`` or ``phone number``
             password: Facebook account password
-            max_tries (int): Maximum number of times to try logging in
             session_cookies (dict): Cookies from a previous session (Will default to login if these are invalid)
 
         Raises:
@@ -75,7 +74,7 @@ class Client:
             or not self.setSession(session_cookies)
             or not self.isLoggedIn()
         ):
-            self.login(email, password, max_tries)
+            self.login(email, password)
 
     """
     INTERNAL REQUEST METHODS
@@ -154,7 +153,7 @@ class Client:
             return False
         return True
 
-    def login(self, email, password, max_tries=5):
+    def login(self, email, password):
         """Login the user, using ``email`` and ``password``.
 
         If the user is already logged in, this will do a re-login.
@@ -162,33 +161,20 @@ class Client:
         Args:
             email: Facebook ``email`` or ``id`` or ``phone number``
             password: Facebook account password
-            max_tries (int): Maximum number of times to try logging in
 
         Raises:
             FBchatException: On failed login
         """
         self.onLoggingIn(email=email)
 
-        if max_tries < 1:
-            raise ValueError("Cannot login: max_tries should be at least one")
-
         if not (email and password):
             raise ValueError("Email and password not set")
 
-        for i in range(1, max_tries + 1):
-            try:
-                self._state = _state.State.login(
-                    email, password, on_2fa_callback=self.on2FACode
-                )
-                self._uid = self._state.user_id
-            except Exception:
-                if i >= max_tries:
-                    raise
-                log.exception("Attempt #{} failed, retrying".format(i))
-                time.sleep(1)
-            else:
-                self.onLoggedIn(email=email)
-                break
+        self._state = _state.State.login(
+            email, password, on_2fa_callback=self.on2FACode
+        )
+        self._uid = self._state.user_id
+        self.onLoggedIn(email=email)
 
     def logout(self):
         """Safely log out the client.
