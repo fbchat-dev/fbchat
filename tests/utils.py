@@ -93,7 +93,6 @@ def load_client(n, cache):
     client = Client(
         load_variable("client{}_email".format(n), cache),
         load_variable("client{}_password".format(n), cache),
-        user_agent="Mozilla/5.0 (Windows NT 6.3; WOW64; ; NCT50_AAP285C84A1328) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36",
         session_cookies=cache.get("client{}_session".format(n), None),
         max_tries=1,
     )

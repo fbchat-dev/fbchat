@@ -23,11 +23,11 @@ def find_input_fields(html):
     return bs4.BeautifulSoup(html, "html.parser", parse_only=bs4.SoupStrainer("input"))
 
 
-def session_factory(user_agent=None):
+def session_factory():
     session = requests.session()
     session.headers["Referer"] = "https://www.facebook.com"
     # TODO: Deprecate setting the user agent manually
-    session.headers["User-Agent"] = user_agent or random.choice(_util.USER_AGENTS)
+    session.headers["User-Agent"] = random.choice(_util.USER_AGENTS)
     return session
 
 
@@ -120,8 +120,8 @@ class State:
         }
 
     @classmethod
-    def login(cls, email, password, on_2fa_callback, user_agent=None):
-        session = session_factory(user_agent=user_agent)
+    def login(cls, email, password, on_2fa_callback):
+        session = session_factory()
 
         soup = find_input_fields(session.get("https://m.facebook.com/").text)
         data = dict(
@@ -201,8 +201,8 @@ class State:
         return self._session.cookies.get_dict()
 
     @classmethod
-    def from_cookies(cls, cookies, user_agent=None):
-        session = session_factory(user_agent=user_agent)
+    def from_cookies(cls, cookies):
+        session = session_factory()
         session.cookies = requests.cookies.merge_cookies(session.cookies, cookies)
         return cls.from_session(session=session)
 

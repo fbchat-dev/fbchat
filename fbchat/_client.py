@@ -57,15 +57,12 @@ class Client:
         """
         return self._uid
 
-    def __init__(
-        self, email, password, user_agent=None, max_tries=5, session_cookies=None
-    ):
+    def __init__(self, email, password, max_tries=5, session_cookies=None):
         """Initialize and log in the client.
 
         Args:
             email: Facebook ``email``, ``id`` or ``phone number``
             password: Facebook account password
-            user_agent: Custom user agent to use when sending requests. If `None`, user agent will be chosen from a premade list
             max_tries (int): Maximum number of times to try logging in
             session_cookies (dict): Cookies from a previous session (Will default to login if these are invalid)
 
@@ -81,10 +78,10 @@ class Client:
         # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
         if (
             not session_cookies
-            or not self.setSession(session_cookies, user_agent=user_agent)
+            or not self.setSession(session_cookies)
             or not self.isLoggedIn()
         ):
-            self.login(email, password, max_tries, user_agent=user_agent)
+            self.login(email, password, max_tries)
 
     """
     INTERNAL REQUEST METHODS
@@ -145,7 +142,7 @@ class Client:
         """
         return self._state.get_cookies()
 
-    def setSession(self, session_cookies, user_agent=None):
+    def setSession(self, session_cookies):
         """Load session cookies.
 
         Args:
@@ -156,16 +153,14 @@ class Client:
         """
         try:
             # Load cookies into current session
-            self._state = _state.State.from_cookies(
-                session_cookies, user_agent=user_agent
-            )
+            self._state = _state.State.from_cookies(session_cookies)
             self._uid = self._state.user_id
         except Exception as e:
             log.exception("Failed loading session")
             return False
         return True
 
-    def login(self, email, password, max_tries=5, user_agent=None):
+    def login(self, email, password, max_tries=5):
         """Login the user, using ``email`` and ``password``.
 
         If the user is already logged in, this will do a re-login.
@@ -189,10 +184,7 @@ class Client:
         for i in range(1, max_tries + 1):
             try:
                 self._state = _state.State.login(
-                    email,
-                    password,
-                    on_2fa_callback=self.on2FACode,
-                    user_agent=user_agent,
+                    email, password, on_2fa_callback=self.on2FACode
                 )
                 self._uid = self._state.user_id
             except Exception:
