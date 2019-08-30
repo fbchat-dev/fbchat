@@ -50,19 +50,6 @@ class Client:
     """
 
     @property
-    def ssl_verify(self):
-        """Verify SSL certificate.
-
-        Set to False to allow debugging with a proxy.
-        """
-        # TODO: Deprecate this
-        return self._state._session.verify
-
-    @ssl_verify.setter
-    def ssl_verify(self, value):
-        self._state._session.verify = value
-
-    @property
     def uid(self):
         """The ID of the client.
 
