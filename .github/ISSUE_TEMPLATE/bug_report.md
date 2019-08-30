@@ -21,8 +21,8 @@ Traceback (most recent call last):
   File "[site-packages]/fbchat/client.py", line 78, in __init__
     self.login(email, password, max_tries)
   File "[site-packages]/fbchat/client.py", line 407, in login
-    raise FBchatUserError('Login failed. Check email/password. (Failed on URL: {})'.format(login_url))
-fbchat.models.FBchatUserError: Login failed. Check email/password. (Failed on URL: https://m.facebook.com/login.php?login_attempt=1)
+    raise FBchatException('Login failed. Check email/password. (Failed on URL: {})'.format(login_url))
+fbchat.FBchatException: Login failed. Check email/password. (Failed on URL: https://m.facebook.com/login.php?login_attempt=1)
 ```
 
 ## Environment information

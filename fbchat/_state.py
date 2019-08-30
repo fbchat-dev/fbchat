@@ -147,7 +147,7 @@ class State:
         if is_home(r.url):
             return cls.from_session(session=session)
         else:
-            raise _exception.FBchatUserError(
+            raise _exception.FBchatException(
                 "Login failed. Check email/password. "
                 "(Failed on url: {})".format(r.url)
             )

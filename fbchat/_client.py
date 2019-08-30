@@ -7,7 +7,7 @@ from collections import OrderedDict
 from ._core import log
 from . import _util, _graphql, _state
 
-from ._exception import FBchatException, FBchatFacebookError, FBchatUserError
+from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadType, ThreadLocation, ThreadColor
 from ._user import TypingStatus, User, ActiveStatus
 from ._group import Group
@@ -176,10 +176,10 @@ class Client:
         self.onLoggingIn(email=email)
 
         if max_tries < 1:
-            raise FBchatUserError("Cannot login: max_tries should be at least one")
+            raise ValueError("Cannot login: max_tries should be at least one")
 
         if not (email and password):
-            raise FBchatUserError("Email and password not set")
+            raise ValueError("Email and password not set")
 
         for i in range(1, max_tries + 1):
             try:
@@ -560,7 +560,7 @@ class Client:
             if thread.type == ThreadType.USER:
                 users[id_] = thread
             else:
-                raise FBchatUserError("Thread {} was not a user".format(thread))
+                raise ValueError("Thread {} was not a user".format(thread))
 
         return users
 
@@ -585,7 +585,7 @@ class Client:
             if thread.type == ThreadType.PAGE:
                 pages[id_] = thread
             else:
-                raise FBchatUserError("Thread {} was not a page".format(thread))
+                raise ValueError("Thread {} was not a page".format(thread))
 
         return pages
 
@@ -607,7 +607,7 @@ class Client:
             if thread.type == ThreadType.GROUP:
                 groups[id_] = thread
             else:
-                raise FBchatUserError("Thread {} was not a group".format(thread))
+                raise ValueError("Thread {} was not a group".format(thread))
 
         return groups
 
@@ -739,12 +739,12 @@ class Client:
             FBchatException: If request failed
         """
         if limit > 20 or limit < 1:
-            raise FBchatUserError("`limit` should be between 1 and 20")
+            raise ValueError("`limit` should be between 1 and 20")
 
         if thread_location in ThreadLocation:
             loc_str = thread_location.value
         else:
-            raise FBchatUserError('"thread_location" must be a value of ThreadLocation')
+            raise TypeError('"thread_location" must be a value of ThreadLocation')
 
         params = {
             "limit": limit,
@@ -1033,7 +1033,7 @@ class Client:
             )
         elif isinstance(quick_reply, QuickReplyLocation):
             if not isinstance(payload, LocationAttachment):
-                raise ValueError(
+                raise TypeError(
                     "Payload must be an instance of `fbchat.LocationAttachment`"
                 )
             return self.sendLocation(
@@ -1274,7 +1274,7 @@ class Client:
         data = self._oldMessage(message)._to_send_data()
 
         if len(user_ids) < 2:
-            raise FBchatUserError("Error when creating group: Not enough participants")
+            raise ValueError("Error when creating group: Not enough participants")
 
         for i, user_id in enumerate(user_ids + [self._uid]):
             data["specific_to_list[{}]".format(i)] = "fbid:{}".format(user_id)
@@ -1305,7 +1305,7 @@ class Client:
 
         for i, user_id in enumerate(user_ids):
             if user_id == self._uid:
-                raise FBchatUserError(
+                raise ValueError(
                     "Error when adding users: Cannot add self to group thread"
                 )
             else:
