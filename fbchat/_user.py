@@ -1,6 +1,6 @@
 import attr
 from ._core import Enum
-from . import _plan
+from . import _util, _plan
 from ._thread import ThreadType, Thread
 
 
@@ -131,11 +131,11 @@ class User(Thread):
         user = next(
             p for p in participants if p["id"] == data["thread_key"]["other_user_id"]
         )
-        last_message_timestamp = None
+        last_active = None
         if "last_message" in data:
-            last_message_timestamp = data["last_message"]["nodes"][0][
-                "timestamp_precise"
-            ]
+            last_active = _util.millis_to_datetime(
+                int(data["last_message"]["nodes"][0]["timestamp_precise"])
+            )
 
         first_name = user.get("short_name")
         if first_name is None:
@@ -162,7 +162,7 @@ class User(Thread):
             own_nickname=c_info.get("own_nickname"),
             photo=user["big_image_src"].get("uri"),
             message_count=data.get("messages_count"),
-            last_message_timestamp=last_message_timestamp,
+            last_active=last_active,
             plan=plan,
         )
 

@@ -319,9 +319,7 @@ class Client:
             else:  # End of threads
                 break
 
-            last_thread_dt = _util.millis_to_datetime(
-                threads[-1].last_message_timestamp
-            )
+            last_thread_dt = threads[-1].last_active
 
             # FB returns a sorted list of threads
             if (before is not None and last_thread_dt > before) or (
@@ -332,9 +330,8 @@ class Client:
         # Return only threads between before and after (if set)
         if before is not None or after is not None:
             for t in threads:
-                last_message_dt = _util.millis_to_datetime(t.last_message_timestamp)
-                if (before is not None and last_message_dt > before) or (
-                    after is not None and last_message_dt < after
+                if (before is not None and t.last_active > before) or (
+                    after is not None and t.last_active < after
                 ):
                     threads.remove(t)
 
