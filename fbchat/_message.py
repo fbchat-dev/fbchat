@@ -26,7 +26,7 @@ class EmojiSize(Enum):
             "s": cls.SMALL,
         }
         for tag in tags or ():
-            data = tag.split(":", maxsplit=1)
+            data = tag.split(":", 1)
             if len(data) > 1 and data[0] == "hot_emoji_size":
                 return string_to_emojisize.get(data[1])
         return None
