@@ -193,11 +193,12 @@ def get_files_from_urls(file_urls):
         r = requests.get(file_url)
         # We could possibly use r.headers.get('Content-Disposition'), see
         # https://stackoverflow.com/a/37060758
+        file_name = path.basename(file_url).split("?")[0].split("#")[0]
         files.append(
             (
-                path.basename(file_url).split("?")[0].split("#")[0],
+                file_name,
                 r.content,
-                r.headers.get("Content-Type") or mimetypes.guess_type(file_url)[0],
+                r.headers.get("Content-Type") or mimetypes.guess_type(file_name)[0],
             )
         )
     return files
