@@ -2410,14 +2410,14 @@ class Client:
         # Message seen
         elif delta_class == "ReadReceipt":
             seen_by = str(delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"])
-            seen_ts = int(delta["actionTimestampMs"])
+            seen_at = _util.millis_to_datetime(int(delta["actionTimestampMs"]))
             delivered_ts = int(delta["watermarkTimestampMs"])
             thread_id, thread_type = getThreadIdAndThreadType(delta)
             self.onMessageSeen(
                 seen_by=seen_by,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                seen_ts=seen_ts,
+                seen_at=seen_at,
                 ts=delivered_ts,
                 metadata=metadata,
                 msg=m,
@@ -2425,8 +2425,8 @@ class Client:
 
         # Messages marked as seen
         elif delta_class == "MarkRead":
-            seen_ts = int(
-                delta.get("actionTimestampMs") or delta.get("actionTimestamp")
+            seen_at = _util.millis_to_datetime(
+                int(delta.get("actionTimestampMs") or delta.get("actionTimestamp"))
             )
             delivered_ts = int(
                 delta.get("watermarkTimestampMs") or delta.get("watermarkTimestamp")
@@ -2441,7 +2441,7 @@ class Client:
 
             # thread_id, thread_type = getThreadIdAndThreadType(delta)
             self.onMarkedSeen(
-                threads=threads, seen_ts=seen_ts, ts=delivered_ts, metadata=delta, msg=m
+                threads=threads, seen_at=seen_at, ts=delivered_ts, metadata=delta, msg=m
             )
 
         # Game played
@@ -3231,7 +3231,7 @@ class Client:
         seen_by=None,
         thread_id=None,
         thread_type=ThreadType.USER,
-        seen_ts=None,
+        seen_at=None,
         ts=None,
         metadata=None,
         msg=None,
@@ -3242,14 +3242,14 @@ class Client:
             seen_by: The ID of the person who marked the message as seen
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            seen_ts: A timestamp of when the person saw the message
+            seen_at (datetime.datetime): When the person saw the message
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
         log.info(
-            "Messages seen by {} in {} ({}) at {}s".format(
-                seen_by, thread_id, thread_type.name, seen_ts / 1000
+            "Messages seen by {} in {} ({}) at {}".format(
+                seen_by, thread_id, thread_type.name, seen_at
             )
         )
 
@@ -3281,21 +3281,21 @@ class Client:
         )
 
     def onMarkedSeen(
-        self, threads=None, seen_ts=None, ts=None, metadata=None, msg=None
+        self, threads=None, seen_at=None, ts=None, metadata=None, msg=None
     ):
         """Called when the client is listening, and the client has successfully marked threads as seen.
 
         Args:
             threads: The threads that were marked
             author_id: The ID of the person who changed the emoji
-            seen_ts: A timestamp of when the threads were seen
+            seen_at (datetime.datetime): When the threads were seen
             ts: A timestamp of the action
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
         log.info(
-            "Marked messages as seen in threads {} at {}s".format(
-                [(x[0], x[1].name) for x in threads], seen_ts / 1000
+            "Marked messages as seen in threads {} at {}".format(
+                [(x[0], x[1].name) for x in threads], seen_at
             )
         )
 
