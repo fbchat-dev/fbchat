@@ -849,7 +849,7 @@ class Client:
         form = {
             "folders[0]": "inbox",
             "client": "mercury",
-            "last_action_timestamp": now() - 60 * 1000
+            "last_action_timestamp": _util.now() - 60 * 1000
             # 'last_action_timestamp': 0
         }
         j = self._payload_post("/ajax/mercury/unread_threads.php", form)
@@ -1907,7 +1907,7 @@ class Client:
     def _readStatus(self, read, thread_ids):
         thread_ids = _util.require_list(thread_ids)
 
-        data = {"watermarkTimestamp": now(), "shouldSendReadReceipt": "true"}
+        data = {"watermarkTimestamp": _util.now(), "shouldSendReadReceipt": "true"}
 
         for thread_id in thread_ids:
             data["ids[{}]".format(thread_id)] = "true" if read else "false"
@@ -1945,7 +1945,9 @@ class Client:
         Todo:
             Documenting this
         """
-        j = self._payload_post("/ajax/mercury/mark_seen.php", {"seen_timestamp": now()})
+        j = self._payload_post(
+            "/ajax/mercury/mark_seen.php", {"seen_timestamp": _util.now()}
+        )
 
     def friendConnect(self, friend_id):
         """
