@@ -39,21 +39,19 @@ TEXT_LIST = [
 
 
 class ClientThread(threading.Thread):
+    # TODO: Refactor this to work with the new listening setup
     def __init__(self, client, *args, **kwargs):
         self.client = client
         self.should_stop = threading.Event()
         super(ClientThread, self).__init__(*args, **kwargs)
 
     def start(self):
-        self.client.startListening()
-        self.client.doOneListen()  # QPrimer, Facebook now knows we're about to start pulling
+        self.client._doOneListen()  # QPrimer, Facebook now knows we're about to start pulling
         super(ClientThread, self).start()
 
     def run(self):
-        while not self.should_stop.is_set() and self.client.doOneListen():
+        while not self.should_stop.is_set() and self.client._doOneListen():
             pass
-
-        self.client.stopListening()
 
 
 class CaughtValue(threading.Event):

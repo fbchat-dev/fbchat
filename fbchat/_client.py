@@ -43,12 +43,6 @@ class Client:
     to provide custom event handling (mainly useful while listening).
     """
 
-    listening = False
-    """Whether the client is listening.
-
-    Used when creating an external event loop to determine when to stop listening.
-    """
-
     @property
     def uid(self):
         """The ID of the client.
@@ -2694,23 +2688,7 @@ class Client:
             except Exception as e:
                 self.onMessageError(exception=e, msg=m)
 
-    def startListening(self):
-        """Start listening from an external event loop.
-
-        Raises:
-            FBchatException: If request failed
-        """
-        self.listening = True
-
-    def doOneListen(self):
-        """Do one cycle of the listening loop.
-
-        This method is useful if you want to control the client from an external event
-        loop.
-
-        Returns:
-            bool: Whether the loop should keep running
-        """
+    def _doOneListen(self):
         try:
             if self._markAlive:
                 self._ping()
@@ -2729,18 +2707,12 @@ class Client:
             if e.request_status_code in [502, 503]:
                 # Bump pull channel, while contraining withing 0-4
                 self._pull_channel = (self._pull_channel + 1) % 5
-                self.startListening()
             else:
                 raise e
         except Exception as e:
             return self.onListenError(exception=e)
 
         return True
-
-    def stopListening(self):
-        """Clean up the variables from `Client.startListening`."""
-        self.listening = False
-        self._sticky, self._pool = (None, None)
 
     def listen(self, markAlive=None):
         """Initialize and runs the listening loop continually.
@@ -2751,13 +2723,12 @@ class Client:
         if markAlive is not None:
             self.setActiveStatus(markAlive)
 
-        self.startListening()
         self.onListening()
 
-        while self.listening and self.doOneListen():
+        while self._doOneListen():
             pass
 
-        self.stopListening()
+        self._sticky, self._pool = (None, None)
 
     def setActiveStatus(self, markAlive):
         """Change active status while listening.
