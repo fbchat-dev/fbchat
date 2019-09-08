@@ -10,7 +10,6 @@ class ThreadType(Enum):
 
     USER = 1
     GROUP = 2
-    ROOM = 2
     PAGE = 3
 
     def _to_class(self):
@@ -20,7 +19,6 @@ class ThreadType(Enum):
         return {
             ThreadType.USER: _user.User,
             ThreadType.GROUP: _group.Group,
-            ThreadType.ROOM: _group.Room,
             ThreadType.PAGE: _page.Page,
         }[self]
 

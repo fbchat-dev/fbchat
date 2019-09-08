@@ -789,12 +789,11 @@ class Client:
         return messages
 
     def fetchThreadList(
-        self, offset=None, limit=20, thread_location=ThreadLocation.INBOX, before=None
+        self, limit=20, thread_location=ThreadLocation.INBOX, before=None
     ):
         """Fetch the client's thread list.
 
         Args:
-            offset: Deprecated. Do not use!
             limit (int): Max. number of threads to retrieve. Capped at 20
             thread_location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
             before (datetime.datetime): The point from which to retrieve threads
@@ -805,13 +804,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        if offset is not None:
-            log.warning(
-                "Using `offset` in `fetchThreadList` is no longer supported, "
-                "since Facebook migrated to the use of GraphQL in this request. "
-                "Use `before` instead."
-            )
-
         if limit > 20 or limit < 1:
             raise FBchatUserError("`limit` should be between 1 and 20")
 
@@ -1062,26 +1054,6 @@ class Client:
         data = thread._to_send_data()
         data.update(message._to_send_data())
         return self._doSendRequest(data)
-
-    def sendMessage(self, message, thread_id=None, thread_type=ThreadType.USER):
-        """Deprecated. Use :func:`fbchat.Client.send` instead."""
-        return self.send(
-            Message(text=message), thread_id=thread_id, thread_type=thread_type
-        )
-
-    def sendEmoji(
-        self,
-        emoji=None,
-        size=EmojiSize.SMALL,
-        thread_id=None,
-        thread_type=ThreadType.USER,
-    ):
-        """Deprecated. Use :func:`fbchat.Client.send` instead."""
-        return self.send(
-            Message(text=emoji, emoji_size=size),
-            thread_id=thread_id,
-            thread_type=thread_type,
-        )
 
     def wave(self, wave_first=True, thread_id=None, thread_type=None):
         """Wave hello to a thread.
@@ -1335,48 +1307,6 @@ class Client:
             files = self._upload(x, voice_clip=True)
         return self._sendFiles(
             files=files, message=message, thread_id=thread_id, thread_type=thread_type
-        )
-
-    def sendImage(
-        self,
-        image_id,
-        message=None,
-        thread_id=None,
-        thread_type=ThreadType.USER,
-        is_gif=False,
-    ):
-        """Deprecated."""
-        if is_gif:
-            mimetype = "image/gif"
-        else:
-            mimetype = "image/png"
-        return self._sendFiles(
-            files=[(image_id, mimetype)],
-            message=message,
-            thread_id=thread_id,
-            thread_type=thread_type,
-        )
-
-    def sendRemoteImage(
-        self, image_url, message=None, thread_id=None, thread_type=ThreadType.USER
-    ):
-        """Deprecated. Use :func:`fbchat.Client.sendRemoteFiles` instead."""
-        return self.sendRemoteFiles(
-            file_urls=[image_url],
-            message=message,
-            thread_id=thread_id,
-            thread_type=thread_type,
-        )
-
-    def sendLocalImage(
-        self, image_path, message=None, thread_id=None, thread_type=ThreadType.USER
-    ):
-        """Deprecated. Use :func:`fbchat.Client.sendLocalFiles` instead."""
-        return self.sendLocalFiles(
-            file_paths=[image_path],
-            message=message,
-            thread_id=thread_id,
-            thread_type=thread_type,
         )
 
     def forwardAttachment(self, attachment_id, thread_id=None):
@@ -1800,11 +1730,6 @@ class Client:
             "acontext": ACONTEXT,
         }
         j = self._payload_post("/ajax/eventreminder/rsvp", data)
-
-    def eventReminder(self, thread_id, time, title, location="", location_id=""):
-        """Deprecated. Use :func:`fbchat.Client.createPlan` instead."""
-        plan = Plan(time=time, title=title, location=location, location_id=location_id)
-        self.createPlan(plan=plan, thread_id=thread_id)
 
     def createPoll(self, poll, thread_id=None):
         """Create poll in a group thread.
@@ -2728,7 +2653,6 @@ class Client:
                     self.onMessage(
                         mid=message.uid,
                         author_id=message.author,
-                        message=message.text,
                         message_object=message,
                         thread_id=thread_id,
                         thread_type=thread_type,
@@ -2743,7 +2667,6 @@ class Client:
             self.onMessage(
                 mid=mid,
                 author_id=author_id,
-                message=delta.get("body", ""),
                 message_object=Message._from_pull(
                     delta,
                     mid=mid,
@@ -2877,21 +2800,15 @@ class Client:
         """
         self.listening = True
 
-    def doOneListen(self, markAlive=None):
+    def doOneListen(self):
         """Do one cycle of the listening loop.
 
         This method is useful if you want to control the client from an external event
         loop.
 
-        Warning:
-            ``markAlive`` parameter is deprecated, use :func:`Client.setActiveStatus`
-            or ``markAlive`` parameter in :func:`Client.listen` instead.
-
         Returns:
             bool: Whether the loop should keep running
         """
-        if markAlive is not None:
-            self._markAlive = markAlive
         try:
             if self._markAlive:
                 self._ping()
@@ -2996,7 +2913,6 @@ class Client:
         self,
         mid=None,
         author_id=None,
-        message=None,
         message_object=None,
         thread_id=None,
         thread_type=ThreadType.USER,
@@ -3009,7 +2925,6 @@ class Client:
         Args:
             mid: The message ID
             author_id: The ID of the author
-            message: (deprecated. Use ``message_object.text`` instead)
             message_object (Message): The message (As a `Message` object)
             thread_id: Thread ID that the message was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the message was sent to. See :ref:`intro_threads`

@@ -14,7 +14,7 @@ from . import _core, _util
 from ._exception import FBchatException, FBchatFacebookError, FBchatUserError
 from ._thread import ThreadType, ThreadLocation, ThreadColor, Thread
 from ._user import TypingStatus, User, ActiveStatus
-from ._group import Group, Room
+from ._group import Group
 from ._page import Page
 from ._message import EmojiSize, MessageReaction, Mention, Message
 from ._attachment import Attachment, UnsentMessage, ShareAttachment
