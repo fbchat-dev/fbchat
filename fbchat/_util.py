@@ -1,3 +1,4 @@
+import datetime
 import json
 import time
 import random
@@ -233,3 +234,57 @@ def prefix_url(url):
     if url.startswith("/"):
         return "https://www.facebook.com" + url
     return url
+
+
+def seconds_to_datetime(timestamp_in_seconds):
+    """Convert an UTC timestamp to a timezone-aware datetime object."""
+    # `.utcfromtimestamp` will return a "naive" datetime object, which is why we use the
+    # following:
+    return datetime.datetime.fromtimestamp(
+        timestamp_in_seconds, tz=datetime.timezone.utc
+    )
+
+
+def millis_to_datetime(timestamp_in_milliseconds):
+    """Convert an UTC timestamp, in milliseconds, to a timezone-aware datetime."""
+    return seconds_to_datetime(timestamp_in_milliseconds / 1000)
+
+
+def datetime_to_seconds(dt):
+    """Convert a datetime to an UTC timestamp.
+
+    Naive datetime objects are presumed to represent time in the system timezone.
+
+    The returned seconds will be rounded to the nearest whole number.
+    """
+    # We could've implemented some fancy "convert naive timezones to UTC" logic, but
+    # it's not really worth the effort.
+    return round(dt.timestamp())
+
+
+def datetime_to_millis(dt):
+    """Convert a datetime to an UTC timestamp, in milliseconds.
+
+    Naive datetime objects are presumed to represent time in the system timezone.
+
+    The returned milliseconds will be rounded to the nearest whole number.
+    """
+    return round(dt.timestamp() * 1000)
+
+
+def seconds_to_timedelta(seconds):
+    """Convert seconds to a timedelta."""
+    return datetime.timedelta(seconds=seconds)
+
+
+def millis_to_timedelta(milliseconds):
+    """Convert a duration (in milliseconds) to a timedelta object."""
+    return datetime.timedelta(milliseconds=milliseconds)
+
+
+def timedelta_to_seconds(td):
+    """Convert a timedelta to seconds.
+
+    The returned seconds will be rounded to the nearest whole number.
+    """
+    return round(td.total_seconds())

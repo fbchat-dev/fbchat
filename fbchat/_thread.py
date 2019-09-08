@@ -81,8 +81,8 @@ class Thread:
     photo = attr.ib(None)
     #: The name of the thread
     name = attr.ib(None)
-    #: Timestamp of last message
-    last_message_timestamp = attr.ib(None)
+    #: Datetime when the thread was last active / when the last message was sent
+    last_active = attr.ib(None)
     #: Number of messages in the thread
     message_count = attr.ib(None)
     #: Set :class:`Plan`
@@ -94,7 +94,7 @@ class Thread:
         uid,
         photo=None,
         name=None,
-        last_message_timestamp=None,
+        last_active=None,
         message_count=None,
         plan=None,
     ):
@@ -102,7 +102,7 @@ class Thread:
         self.type = _type
         self.photo = photo
         self.name = name
-        self.last_message_timestamp = last_message_timestamp
+        self.last_active = last_active
         self.message_count = message_count
         self.plan = plan
 

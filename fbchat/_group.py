@@ -1,5 +1,5 @@
 import attr
-from . import _plan
+from . import _util, _plan
 from ._thread import ThreadType, Thread
 
 
@@ -63,11 +63,11 @@ class Group(Thread):
         if data.get("image") is None:
             data["image"] = {}
         c_info = cls._parse_customization_info(data)
-        last_message_timestamp = None
+        last_active = None
         if "last_message" in data:
-            last_message_timestamp = data["last_message"]["nodes"][0][
-                "timestamp_precise"
-            ]
+            last_active = _util.millis_to_datetime(
+                int(data["last_message"]["nodes"][0]["timestamp_precise"])
+            )
         plan = None
         if data.get("event_reminders") and data["event_reminders"].get("nodes"):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
@@ -97,7 +97,7 @@ class Group(Thread):
             photo=data["image"].get("uri"),
             name=data.get("name"),
             message_count=data.get("messages_count"),
-            last_message_timestamp=last_message_timestamp,
+            last_active=last_active,
             plan=plan,
         )
 

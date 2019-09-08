@@ -68,8 +68,8 @@ class Message:
     uid = attr.ib(None, init=False)
     #: ID of the sender
     author = attr.ib(None, init=False)
-    #: Timestamp of when the message was sent
-    timestamp = attr.ib(None, init=False)
+    #: Datetime of when the message was sent
+    created_at = attr.ib(None, init=False)
     #: Whether the message is read
     is_read = attr.ib(None, init=False)
     #: A list of people IDs who read the message, works only with :func:`fbchat.Client.fetchThreadMessages`
@@ -220,7 +220,7 @@ class Message:
         rtn.forwarded = cls._get_forwarded_from_tags(tags)
         rtn.uid = str(data["message_id"])
         rtn.author = str(data["message_sender"]["id"])
-        rtn.timestamp = data.get("timestamp_precise")
+        rtn.created_at = _util.millis_to_datetime(int(data.get("timestamp_precise")))
         rtn.unsent = False
         if data.get("unread") is not None:
             rtn.is_read = not data["unread"]
@@ -271,7 +271,7 @@ class Message:
         rtn.forwarded = cls._get_forwarded_from_tags(tags)
         rtn.uid = metadata.get("messageId")
         rtn.author = str(metadata.get("actorFbId"))
-        rtn.timestamp = metadata.get("timestamp")
+        rtn.created_at = _util.millis_to_datetime(metadata.get("timestamp"))
         rtn.unsent = False
         if data.get("data", {}).get("platform_xmd"):
             quick_replies = json.loads(data["data"]["platform_xmd"]).get(
@@ -307,11 +307,11 @@ class Message:
         return rtn
 
     @classmethod
-    def _from_pull(cls, data, mid=None, tags=None, author=None, timestamp=None):
+    def _from_pull(cls, data, mid=None, tags=None, author=None, created_at=None):
         rtn = cls(text=data.get("body"))
         rtn.uid = mid
         rtn.author = author
-        rtn.timestamp = timestamp
+        rtn.created_at = created_at
 
         if data.get("data") and data["data"].get("prng"):
             try:
