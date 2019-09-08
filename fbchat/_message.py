@@ -72,7 +72,7 @@ class Message:
     created_at = attr.ib(None, init=False)
     #: Whether the message is read
     is_read = attr.ib(None, init=False)
-    #: A list of people IDs who read the message, works only with :func:`fbchat.Client.fetchThreadMessages`
+    #: A list of people IDs who read the message, works only with :func:`fbchat.Client.fetch_thread_messages`
     read_by = attr.ib(factory=list, init=False)
     #: A dictionary with user's IDs as keys, and their :class:`MessageReaction` as values
     reactions = attr.ib(factory=dict, init=False)
@@ -92,15 +92,15 @@ class Message:
     forwarded = attr.ib(False, init=False)
 
     @classmethod
-    def formatMentions(cls, text, *args, **kwargs):
+    def format_mentions(cls, text, *args, **kwargs):
         """Like `str.format`, but takes tuples with a thread id and text instead.
 
         Return a `Message` object, with the formatted string and relevant mentions.
 
-        >>> Message.formatMentions("Hey {!r}! My name is {}", ("1234", "Peter"), ("4321", "Michael"))
+        >>> Message.format_mentions("Hey {!r}! My name is {}", ("1234", "Peter"), ("4321", "Michael"))
         <Message (None): "Hey 'Peter'! My name is Michael", mentions=[<Mention 1234: offset=4 length=7>, <Mention 4321: offset=24 length=7>] emoji_size=None attachments=[]>
 
-        >>> Message.formatMentions("Hey {p}! My name is {}", ("1234", "Michael"), p=("4321", "Peter"))
+        >>> Message.format_mentions("Hey {p}! My name is {}", ("1234", "Michael"), p=("4321", "Peter"))
         <Message (None): 'Hey Peter! My name is Michael', mentions=[<Mention 4321: offset=4 length=5>, <Mention 1234: offset=22 length=7>] emoji_size=None attachments=[]>
         """
         result = ""

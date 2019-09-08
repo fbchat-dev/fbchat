@@ -2,9 +2,9 @@ from fbchat import Client
 
 # Subclass fbchat.Client and override required methods
 class EchoBot(Client):
-    def onMessage(self, author_id, message_object, thread_id, thread_type, **kwargs):
-        self.markAsDelivered(thread_id, message_object.uid)
-        self.markAsRead(thread_id)
+    def on_message(self, author_id, message_object, thread_id, thread_type, **kwargs):
+        self.mark_as_delivered(thread_id, message_object.uid)
+        self.mark_as_read(thread_id)
 
         print("{} from {} in {}".format(message_object, thread_id, thread_type.name))
 

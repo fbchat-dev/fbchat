@@ -59,7 +59,7 @@ class AudioAttachment(Attachment):
 class ImageAttachment(Attachment):
     """Represents an image that has been sent as a Facebook attachment.
 
-    To retrieve the full image URL, use: `Client.fetchImageUrl`, and pass it the id of
+    To retrieve the full image URL, use: `Client.fetch_image_url`, and pass it the id of
     the image attachment.
     """
 

@@ -17,27 +17,27 @@ old_nicknames = {
 
 
 class KeepBot(Client):
-    def onColorChange(self, author_id, new_color, thread_id, thread_type, **kwargs):
+    def on_color_change(self, author_id, new_color, thread_id, thread_type, **kwargs):
         if old_thread_id == thread_id and old_color != new_color:
             print(
                 "{} changed the thread color. It will be changed back".format(author_id)
             )
-            self.changeThreadColor(old_color, thread_id=thread_id)
+            self.change_thread_color(old_color, thread_id=thread_id)
 
-    def onEmojiChange(self, author_id, new_emoji, thread_id, thread_type, **kwargs):
+    def on_emoji_change(self, author_id, new_emoji, thread_id, thread_type, **kwargs):
         if old_thread_id == thread_id and new_emoji != old_emoji:
             print(
                 "{} changed the thread emoji. It will be changed back".format(author_id)
             )
-            self.changeThreadEmoji(old_emoji, thread_id=thread_id)
+            self.change_thread_emoji(old_emoji, thread_id=thread_id)
 
-    def onPeopleAdded(self, added_ids, author_id, thread_id, **kwargs):
+    def on_people_added(self, added_ids, author_id, thread_id, **kwargs):
         if old_thread_id == thread_id and author_id != self.uid:
             print("{} got added. They will be removed".format(added_ids))
             for added_id in added_ids:
-                self.removeUserFromGroup(added_id, thread_id=thread_id)
+                self.remove_user_from_group(added_id, thread_id=thread_id)
 
-    def onPersonRemoved(self, removed_id, author_id, thread_id, **kwargs):
+    def on_person_removed(self, removed_id, author_id, thread_id, **kwargs):
         # No point in trying to add ourself
         if (
             old_thread_id == thread_id
@@ -45,18 +45,18 @@ class KeepBot(Client):
             and author_id != self.uid
         ):
             print("{} got removed. They will be re-added".format(removed_id))
-            self.addUsersToGroup(removed_id, thread_id=thread_id)
+            self.add_users_to_group(removed_id, thread_id=thread_id)
 
-    def onTitleChange(self, author_id, new_title, thread_id, thread_type, **kwargs):
+    def on_title_change(self, author_id, new_title, thread_id, thread_type, **kwargs):
         if old_thread_id == thread_id and old_title != new_title:
             print(
                 "{} changed the thread title. It will be changed back".format(author_id)
             )
-            self.changeThreadTitle(
+            self.change_thread_title(
                 old_title, thread_id=thread_id, thread_type=thread_type
             )
 
-    def onNicknameChange(
+    def on_nickname_change(
         self, author_id, changed_for, new_nickname, thread_id, thread_type, **kwargs
     ):
         if (
@@ -69,7 +69,7 @@ class KeepBot(Client):
                     author_id, changed_for
                 )
             )
-            self.changeNickname(
+            self.change_nickname(
                 old_nicknames[changed_for],
                 changed_for,
                 thread_id=thread_id,

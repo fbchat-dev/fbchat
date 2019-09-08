@@ -2,7 +2,7 @@ from fbchat import ThreadType
 
 
 def test_search_for(client1):
-    users = client1.searchForUsers("Mark Zuckerberg")
+    users = client1.search_for_users("Mark Zuckerberg")
     assert len(users) > 0
 
     u = users[0]

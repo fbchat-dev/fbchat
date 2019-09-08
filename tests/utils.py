@@ -46,11 +46,11 @@ class ClientThread(threading.Thread):
         super(ClientThread, self).__init__(*args, **kwargs)
 
     def start(self):
-        self.client._doOneListen()  # QPrimer, Facebook now knows we're about to start pulling
+        self.client._do_one_listen()  # QPrimer, Facebook now knows we're about to start pulling
         super(ClientThread, self).start()
 
     def run(self):
-        while not self.should_stop.is_set() and self.client._doOneListen():
+        while not self.should_stop.is_set() and self.client._do_one_listen():
             pass
 
 
@@ -95,4 +95,4 @@ def load_client(n, cache):
         max_tries=1,
     )
     yield client
-    cache.set("client{}_session".format(n), client.getSession())
+    cache.set("client{}_session".format(n), client.get_session())

@@ -7,8 +7,8 @@ from utils import subset, STICKER_LIST, EMOJI_LIST, TEXT_LIST
 
 @pytest.mark.parametrize("text", TEXT_LIST)
 def test_send_text(client, catch_event, compare, text):
-    with catch_event("onMessage") as x:
-        mid = client.sendMessage(text)
+    with catch_event("on_message") as x:
+        mid = client.send(Message(text=text))
 
     assert compare(x, mid=mid, message=text)
     assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=text)
@@ -16,8 +16,8 @@ def test_send_text(client, catch_event, compare, text):
 
 @pytest.mark.parametrize("emoji, emoji_size", EMOJI_LIST)
 def test_send_emoji(client, catch_event, compare, emoji, emoji_size):
-    with catch_event("onMessage") as x:
-        mid = client.sendEmoji(emoji, emoji_size)
+    with catch_event("on_message") as x:
+        mid = client.send_emoji(emoji, emoji_size)
 
     assert compare(x, mid=mid, message=emoji)
     assert subset(
@@ -30,7 +30,7 @@ def test_send_emoji(client, catch_event, compare, emoji, emoji_size):
 
 
 def test_send_mentions(client, catch_event, compare, message_with_mentions):
-    with catch_event("onMessage") as x:
+    with catch_event("on_message") as x:
         mid = client.send(message_with_mentions)
 
     assert compare(x, mid=mid, message=message_with_mentions.text)
@@ -47,7 +47,7 @@ def test_send_mentions(client, catch_event, compare, message_with_mentions):
 
 @pytest.mark.parametrize("sticker", STICKER_LIST)
 def test_send_sticker(client, catch_event, compare, sticker):
-    with catch_event("onMessage") as x:
+    with catch_event("on_message") as x:
         mid = client.send(Message(sticker=sticker))
 
     assert compare(x, mid=mid)
@@ -68,7 +68,7 @@ def test_send_sticker(client, catch_event, compare, sticker):
 )
 def test_send_images(client, catch_event, compare, method_name, url):
     text = "An image sent with {}".format(method_name)
-    with catch_event("onMessage") as x:
+    with catch_event("on_message") as x:
         mid = getattr(client, method_name)(url, Message(text))
 
     assert compare(x, mid=mid, message=text)
@@ -87,8 +87,8 @@ def test_send_local_files(client, catch_event, compare):
         "video.mp4",
     ]
     text = "Files sent locally"
-    with catch_event("onMessage") as x:
-        mid = client.sendLocalFiles(
+    with catch_event("on_message") as x:
+        mid = client.send_local_files(
             [path.join(path.dirname(__file__), "resources", f) for f in files],
             message=Message(text),
         )
@@ -102,8 +102,8 @@ def test_send_local_files(client, catch_event, compare):
 def test_send_remote_files(client, catch_event, compare):
     files = ["image.png", "data.json"]
     text = "Files sent from remote"
-    with catch_event("onMessage") as x:
-        mid = client.sendRemoteFiles(
+    with catch_event("on_message") as x:
+        mid = client.send_remote_files(
             [
                 "https://github.com/carpedm20/fbchat/raw/master/tests/{}".format(f)
                 for f in files

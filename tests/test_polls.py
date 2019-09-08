@@ -39,9 +39,9 @@ from utils import random_hex, subset
     ],
 )
 def poll_data(request, client1, group, catch_event):
-    with catch_event("onPollCreated") as x:
-        client1.createPoll(request.param, thread_id=group["id"])
-    options = client1.fetchPollOptions(x.res["poll"].uid)
+    with catch_event("on_poll_created") as x:
+        client1.create_poll(request.param, thread_id=group["id"])
+    options = client1.fetch_poll_options(x.res["poll"].uid)
     return x.res, request.param, options
 
 
@@ -79,8 +79,8 @@ def test_update_poll_vote(client1, group, catch_event, poll_data):
     new_vote_ids = [o.uid for o in options[0 : len(options) : 2] if not o.vote]
     re_vote_ids = [o.uid for o in options[0 : len(options) : 2] if o.vote]
     new_options = [random_hex(), random_hex()]
-    with catch_event("onPollVoted") as x:
-        client1.updatePollVote(
+    with catch_event("on_poll_voted") as x:
+        client1.update_poll_vote(
             event["poll"].uid,
             option_ids=new_vote_ids + re_vote_ids,
             new_options=new_options,

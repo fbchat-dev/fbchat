@@ -55,7 +55,7 @@ def parse_json(content):
         raise FBchatFacebookError("Error while parsing JSON: {!r}".format(content))
 
 
-def digitToChar(digit):
+def digit_to_char(digit):
     if digit < 10:
         return str(digit)
     return chr(ord("a") + digit - 10)
@@ -66,21 +66,21 @@ def str_base(number, base):
         return "-" + str_base(-number, base)
     (d, m) = divmod(number, base)
     if d > 0:
-        return str_base(d, base) + digitToChar(m)
-    return digitToChar(m)
+        return str_base(d, base) + digit_to_char(m)
+    return digit_to_char(m)
 
 
-def generateMessageID(client_id=None):
+def generate_message_id(client_id=None):
     k = now()
     l = int(random.random() * 4294967295)
     return "<{}:{}-{}@mail.projektitan.com>".format(k, l, client_id)
 
 
-def getSignatureID():
+def get_signature_id():
     return hex(int(random.random() * 2147483648))
 
 
-def generateOfflineThreadingID():
+def generate_offline_threading_id():
     ret = now()
     value = int(random.random() * 4294967295)
     string = ("0000000000000000000000" + format(value, "b"))[-22:]

@@ -38,7 +38,7 @@ client.send(
 )
 
 # Will send the image located at `<image path>`
-client.sendLocalImage(
+client.send_local_image(
     "<image path>",
     message=Message(text="This is a local image"),
     thread_id=thread_id,
@@ -46,7 +46,7 @@ client.sendLocalImage(
 )
 
 # Will download the image at the URL `<image url>`, and then send it
-client.sendRemoteImage(
+client.send_remote_image(
     "<image url>",
     message=Message(text="This is a remote image"),
     thread_id=thread_id,
@@ -57,35 +57,35 @@ client.sendRemoteImage(
 # Only do these actions if the thread is a group
 if thread_type == ThreadType.GROUP:
     # Will remove the user with ID `<user id>` from the thread
-    client.removeUserFromGroup("<user id>", thread_id=thread_id)
+    client.remove_user_from_group("<user id>", thread_id=thread_id)
 
     # Will add the user with ID `<user id>` to the thread
-    client.addUsersToGroup("<user id>", thread_id=thread_id)
+    client.add_users_to_group("<user id>", thread_id=thread_id)
 
     # Will add the users with IDs `<1st user id>`, `<2nd user id>` and `<3th user id>` to the thread
-    client.addUsersToGroup(
+    client.add_users_to_group(
         ["<1st user id>", "<2nd user id>", "<3rd user id>"], thread_id=thread_id
     )
 
 
 # Will change the nickname of the user `<user_id>` to `<new nickname>`
-client.changeNickname(
+client.change_nickname(
     "<new nickname>", "<user id>", thread_id=thread_id, thread_type=thread_type
 )
 
 # Will change the title of the thread to `<title>`
-client.changeThreadTitle("<title>", thread_id=thread_id, thread_type=thread_type)
+client.change_thread_title("<title>", thread_id=thread_id, thread_type=thread_type)
 
 # Will set the typing status of the thread to `TYPING`
-client.setTypingStatus(
+client.set_typing_status(
     TypingStatus.TYPING, thread_id=thread_id, thread_type=thread_type
 )
 
 # Will change the thread color to `MESSENGER_BLUE`
-client.changeThreadColor(ThreadColor.MESSENGER_BLUE, thread_id=thread_id)
+client.change_thread_color(ThreadColor.MESSENGER_BLUE, thread_id=thread_id)
 
 # Will change the thread emoji to `👍`
-client.changeThreadEmoji("👍", thread_id=thread_id)
+client.change_thread_emoji("👍", thread_id=thread_id)
 
 # Will react to a message with a 😍 emoji
-client.reactToMessage("<message id>", MessageReaction.LOVE)
+client.react_to_message("<message id>", MessageReaction.LOVE)

@@ -9,7 +9,7 @@ This page will be periodically updated to show missing features and documentatio
 Missing Functionality
 ---------------------
 
-- Implement ``Client.searchForMessage``
+- Implement ``Client.search_for_message``
     - This will use the GraphQL request API
 - Implement chatting with pages properly
 - Write better FAQ
