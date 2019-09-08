@@ -1733,7 +1733,7 @@ class Client:
 
         data = {
             "event_type": "EVENT",
-            "event_time": plan.time,
+            "event_time": _util.datetime_to_seconds(plan.time),
             "title": plan.title,
             "thread_id": thread_id,
             "location_id": plan.location_id or "",
@@ -1760,7 +1760,7 @@ class Client:
         data = {
             "event_reminder_id": plan.uid,
             "delete": "false",
-            "date": new_plan.time,
+            "date": _util.datetime_to_seconds(new_plan.time),
             "location_name": new_plan.location or "",
             "location_id": new_plan.location_id or "",
             "title": new_plan.title,

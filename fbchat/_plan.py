@@ -1,6 +1,7 @@
 import attr
 import json
 from ._core import Enum
+from . import _util
 
 
 class GuestStatus(Enum):
@@ -15,8 +16,8 @@ class Plan:
 
     #: ID of the plan
     uid = attr.ib(None, init=False)
-    #: Plan time (timestamp), only precise down to the minute
-    time = attr.ib(converter=int)
+    #: Plan time (datetime), only precise down to the minute
+    time = attr.ib()
     #: Plan title
     title = attr.ib()
     #: Plan location name
@@ -58,7 +59,7 @@ class Plan:
     @classmethod
     def _from_pull(cls, data):
         rtn = cls(
-            time=data.get("event_time"),
+            time=_util.seconds_to_datetime(int(data.get("event_time"))),
             title=data.get("event_title"),
             location=data.get("event_location_name"),
             location_id=data.get("event_location_id"),
@@ -74,7 +75,7 @@ class Plan:
     @classmethod
     def _from_fetch(cls, data):
         rtn = cls(
-            time=data.get("event_time"),
+            time=_util.seconds_to_datetime(data.get("event_time")),
             title=data.get("title"),
             location=data.get("location_name"),
             location_id=str(data["location_id"]) if data.get("location_id") else None,
@@ -87,7 +88,7 @@ class Plan:
     @classmethod
     def _from_graphql(cls, data):
         rtn = cls(
-            time=data.get("time"),
+            time=_util.seconds_to_datetime(data.get("time")),
             title=data.get("event_title"),
             location=data.get("location_name"),
         )
