@@ -289,8 +289,10 @@ class Client:
 
         Args:
             thread_location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
-            before: Fetch only thread before this epoch (in ms) (default all threads)
-            after: Fetch only thread after this epoch (in ms) (default all threads)
+            before (datetime.datetime): Fetch only threads before this (default all
+                threads). Must be timezone-aware!
+            after (datetime.datetime): Fetch only threads after this (default all
+                threads). Must be timezone-aware!
             limit: The max. amount of threads to fetch (default all threads)
 
         Returns:
@@ -301,15 +303,15 @@ class Client:
         """
         threads = []
 
-        last_thread_timestamp = None
+        last_thread_dt = None
         while True:
             # break if limit is exceeded
             if limit and len(threads) >= limit:
                 break
 
-            # fetchThreadList returns at max 20 threads before last_thread_timestamp (included)
+            # fetchThreadList returns at max 20 threads before last_thread_dt (included)
             candidates = self.fetchThreadList(
-                before=last_thread_timestamp, thread_location=thread_location
+                before=last_thread_dt, thread_location=thread_location
             )
 
             if len(candidates) > 1:
@@ -317,20 +319,22 @@ class Client:
             else:  # End of threads
                 break
 
-            last_thread_timestamp = threads[-1].last_message_timestamp
+            last_thread_dt = _util.millis_to_datetime(
+                threads[-1].last_message_timestamp
+            )
 
             # FB returns a sorted list of threads
-            if (before is not None and int(last_thread_timestamp) > before) or (
-                after is not None and int(last_thread_timestamp) < after
+            if (before is not None and last_thread_dt > before) or (
+                after is not None and last_thread_dt < after
             ):
                 break
 
         # Return only threads between before and after (if set)
         if before is not None or after is not None:
             for t in threads:
-                last_message_timestamp = int(t.last_message_timestamp)
-                if (before is not None and last_message_timestamp > before) or (
-                    after is not None and last_message_timestamp < after
+                last_message_dt = _util.millis_to_datetime(t.last_message_timestamp)
+                if (before is not None and last_message_dt > before) or (
+                    after is not None and last_message_dt < after
                 ):
                     threads.remove(t)
 
@@ -746,7 +750,7 @@ class Client:
         Args:
             thread_id: User/Group ID to get messages from. See :ref:`intro_threads`
             limit (int): Max. number of messages to retrieve
-            before (int): A timestamp, indicating from which point to retrieve messages
+            before (datetime.datetime): The point from which to retrieve messages
 
         Returns:
             list: :class:`Message` objects
@@ -761,7 +765,7 @@ class Client:
             "message_limit": limit,
             "load_messages": True,
             "load_read_receipts": True,
-            "before": before,
+            "before": _util.datetime_to_millis(before) if before else None,
         }
         j, = self.graphql_requests(_graphql.from_doc_id("1860982147341344", params))
 
@@ -792,7 +796,7 @@ class Client:
             offset: Deprecated. Do not use!
             limit (int): Max. number of threads to retrieve. Capped at 20
             thread_location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
-            before (int): A timestamp (in milliseconds), indicating from which point to retrieve threads
+            before (datetime.datetime): The point from which to retrieve threads
 
         Returns:
             list: :class:`Thread` objects
@@ -818,7 +822,7 @@ class Client:
         params = {
             "limit": limit,
             "tags": [loc_str],
-            "before": before,
+            "before": _util.datetime_to_millis(before) if before else None,
             "includeDeliveryReceipts": True,
             "includeSeqID": False,
         }
