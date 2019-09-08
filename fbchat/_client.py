@@ -2230,7 +2230,7 @@ class Client:
         if metadata:
             mid = metadata["messageId"]
             author_id = str(metadata["actorFbId"])
-            ts = int(metadata.get("timestamp"))
+            at = _util.millis_to_datetime(int(metadata.get("timestamp")))
 
         # Added participants
         if "addedParticipants" in delta:
@@ -2241,7 +2241,7 @@ class Client:
                 added_ids=added_ids,
                 author_id=author_id,
                 thread_id=thread_id,
-                ts=ts,
+                at=at,
                 msg=m,
             )
 
@@ -2254,7 +2254,7 @@ class Client:
                 removed_id=removed_id,
                 author_id=author_id,
                 thread_id=thread_id,
-                ts=ts,
+                at=at,
                 msg=m,
             )
 
@@ -2268,7 +2268,7 @@ class Client:
                 new_color=new_color,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2283,7 +2283,7 @@ class Client:
                 new_emoji=new_emoji,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2298,7 +2298,7 @@ class Client:
                 new_title=new_title,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2313,7 +2313,7 @@ class Client:
                 fetch_info = self._forcedFetch(thread_id, mid)
                 fetch_data = fetch_info["message"]
                 author_id = fetch_data["message_sender"]["id"]
-                ts = fetch_data["timestamp_precise"]
+                at = _util.millis_to_datetime(int(fetch_data["timestamp_precise"]))
                 if fetch_data.get("__typename") == "ThreadImageMessage":
                     # Thread image change
                     image_metadata = fetch_data.get("image_with_metadata")
@@ -2328,7 +2328,7 @@ class Client:
                         new_image=image_id,
                         thread_id=thread_id,
                         thread_type=ThreadType.GROUP,
-                        ts=ts,
+                        at=at,
                         msg=m,
                     )
 
@@ -2344,7 +2344,7 @@ class Client:
                 new_nickname=new_nickname,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2361,7 +2361,7 @@ class Client:
                     author_id=author_id,
                     thread_id=thread_id,
                     thread_type=thread_type,
-                    ts=ts,
+                    at=at,
                     msg=m,
                 )
             elif admin_event == "remove_admin":
@@ -2371,7 +2371,7 @@ class Client:
                     author_id=author_id,
                     thread_id=thread_id,
                     thread_type=thread_type,
-                    ts=ts,
+                    at=at,
                     msg=m,
                 )
 
@@ -2385,7 +2385,7 @@ class Client:
                 author_id=author_id,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 msg=m,
             )
 
@@ -2395,14 +2395,14 @@ class Client:
             delivered_for = str(
                 delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"]
             )
-            ts = int(delta["deliveredWatermarkTimestampMs"])
+            at = _util.millis_to_datetime(int(delta["deliveredWatermarkTimestampMs"]))
             thread_id, thread_type = getThreadIdAndThreadType(delta)
             self.onMessageDelivered(
                 msg_ids=message_ids,
                 delivered_for=delivered_for,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2411,14 +2411,14 @@ class Client:
         elif delta_class == "ReadReceipt":
             seen_by = str(delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"])
             seen_at = _util.millis_to_datetime(int(delta["actionTimestampMs"]))
-            delivered_ts = int(delta["watermarkTimestampMs"])
+            at = _util.millis_to_datetime(int(delta["watermarkTimestampMs"]))
             thread_id, thread_type = getThreadIdAndThreadType(delta)
             self.onMessageSeen(
                 seen_by=seen_by,
                 thread_id=thread_id,
                 thread_type=thread_type,
                 seen_at=seen_at,
-                ts=delivered_ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2428,9 +2428,10 @@ class Client:
             seen_at = _util.millis_to_datetime(
                 int(delta.get("actionTimestampMs") or delta.get("actionTimestamp"))
             )
-            delivered_ts = int(
-                delta.get("watermarkTimestampMs") or delta.get("watermarkTimestamp")
+            watermark_ts = delta.get("watermarkTimestampMs") or delta.get(
+                "watermarkTimestamp"
             )
+            at = _util.millis_to_datetime(int(watermark_ts))
 
             threads = []
             if "folders" not in delta:
@@ -2441,7 +2442,7 @@ class Client:
 
             # thread_id, thread_type = getThreadIdAndThreadType(delta)
             self.onMarkedSeen(
-                threads=threads, seen_at=seen_at, ts=delivered_ts, metadata=delta, msg=m
+                threads=threads, seen_at=seen_at, at=at, metadata=delta, msg=m
             )
 
         # Game played
@@ -2464,7 +2465,7 @@ class Client:
                 leaderboard=leaderboard,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2484,7 +2485,7 @@ class Client:
                     is_video_call=is_video_call,
                     thread_id=thread_id,
                     thread_type=thread_type,
-                    ts=ts,
+                    at=at,
                     metadata=metadata,
                     msg=m,
                 )
@@ -2496,7 +2497,7 @@ class Client:
                     call_duration=call_duration,
                     thread_id=thread_id,
                     thread_type=thread_type,
-                    ts=ts,
+                    at=at,
                     metadata=metadata,
                     msg=m,
                 )
@@ -2511,7 +2512,7 @@ class Client:
                 is_video_call=is_video_call,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2530,7 +2531,7 @@ class Client:
                     author_id=author_id,
                     thread_id=thread_id,
                     thread_type=thread_type,
-                    ts=ts,
+                    at=at,
                     metadata=metadata,
                     msg=m,
                 )
@@ -2546,7 +2547,7 @@ class Client:
                     author_id=author_id,
                     thread_id=thread_id,
                     thread_type=thread_type,
-                    ts=ts,
+                    at=at,
                     metadata=metadata,
                     msg=m,
                 )
@@ -2560,7 +2561,7 @@ class Client:
                 author_id=author_id,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2573,7 +2574,7 @@ class Client:
                 plan=Plan._from_pull(delta["untypedData"]),
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2587,7 +2588,7 @@ class Client:
                 author_id=author_id,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2601,7 +2602,7 @@ class Client:
                 author_id=author_id,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2617,7 +2618,7 @@ class Client:
                 author_id=author_id,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2625,7 +2626,7 @@ class Client:
         # Client payload (that weird numbers)
         elif delta_class == "ClientPayload":
             payload = json.loads("".join(chr(z) for z in delta["payload"]))
-            ts = m.get("ofd_ts")
+            at = _util.millis_to_datetime(m.get("ofd_ts"))
             for d in payload.get("deltas", []):
 
                 # Message reaction
@@ -2645,7 +2646,7 @@ class Client:
                             author_id=author_id,
                             thread_id=thread_id,
                             thread_type=thread_type,
-                            ts=ts,
+                            at=at,
                             msg=m,
                         )
                     else:
@@ -2654,7 +2655,7 @@ class Client:
                             author_id=author_id,
                             thread_id=thread_id,
                             thread_type=thread_type,
-                            ts=ts,
+                            at=at,
                             msg=m,
                         )
 
@@ -2671,7 +2672,7 @@ class Client:
                                 author_id=author_id,
                                 thread_id=thread_id,
                                 thread_type=thread_type,
-                                ts=ts,
+                                at=at,
                                 msg=m,
                             )
                         else:
@@ -2679,7 +2680,7 @@ class Client:
                                 author_id=author_id,
                                 thread_id=thread_id,
                                 thread_type=thread_type,
-                                ts=ts,
+                                at=at,
                                 msg=m,
                             )
 
@@ -2697,7 +2698,7 @@ class Client:
                             author_id=author_id,
                             thread_id=thread_id,
                             thread_type=thread_type,
-                            ts=ts,
+                            at=at,
                             msg=m,
                         )
 
@@ -2706,14 +2707,14 @@ class Client:
                     i = d["deltaRecallMessageData"]
                     thread_id, thread_type = getThreadIdAndThreadType(i)
                     mid = i["messageID"]
-                    ts = i["deletionTimestamp"]
+                    at = _util.millis_to_datetime(i["deletionTimestamp"])
                     author_id = str(i["senderID"])
                     self.onMessageUnsent(
                         mid=mid,
                         author_id=author_id,
                         thread_id=thread_id,
                         thread_type=thread_type,
-                        ts=ts,
+                        at=at,
                         msg=m,
                     )
 
@@ -2731,7 +2732,7 @@ class Client:
                         message_object=message,
                         thread_id=thread_id,
                         thread_type=thread_type,
-                        ts=_util.datetime_to_millis(message.created_at),
+                        at=message.created_at,
                         metadata=metadata,
                         msg=m,
                     )
@@ -2748,11 +2749,11 @@ class Client:
                     mid=mid,
                     tags=metadata.get("tags"),
                     author=author_id,
-                    created_at=_util.millis_to_datetime(ts),
+                    created_at=at,
                 ),
                 thread_id=thread_id,
                 thread_type=thread_type,
-                ts=ts,
+                at=at,
                 metadata=metadata,
                 msg=m,
             )
@@ -2829,7 +2830,9 @@ class Client:
 
                 # Happens on every login
                 elif mtype == "qprimer":
-                    self.onQprimer(ts=m.get("made"), msg=m)
+                    self.onQprimer(
+                        at=_util.millis_to_datetime(int(m.get("made"))), msg=m
+                    )
 
                 # Is sent before any other message
                 elif mtype == "deltaflow":
@@ -2997,7 +3000,7 @@ class Client:
         message_object=None,
         thread_id=None,
         thread_type=ThreadType.USER,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3010,7 +3013,7 @@ class Client:
             message_object (Message): The message (As a `Message` object)
             thread_id: Thread ID that the message was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the message was sent to. See :ref:`intro_threads`
-            ts: The timestamp of the message
+            at (datetime.datetime): When the message was sent
             metadata: Extra metadata about the message
             msg: A full set of the data received
         """
@@ -3023,7 +3026,7 @@ class Client:
         new_color=None,
         thread_id=None,
         thread_type=ThreadType.USER,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3035,7 +3038,7 @@ class Client:
             new_color (ThreadColor): The new color
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3052,7 +3055,7 @@ class Client:
         new_emoji=None,
         thread_id=None,
         thread_type=ThreadType.USER,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3064,7 +3067,7 @@ class Client:
             new_emoji: The new emoji
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3081,7 +3084,7 @@ class Client:
         new_title=None,
         thread_id=None,
         thread_type=ThreadType.USER,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3093,7 +3096,7 @@ class Client:
             new_title: The new title
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3110,7 +3113,7 @@ class Client:
         new_image=None,
         thread_id=None,
         thread_type=ThreadType.GROUP,
-        ts=None,
+        at=None,
         msg=None,
     ):
         """Called when the client is listening, and somebody changes a thread's image.
@@ -3121,7 +3124,7 @@ class Client:
             new_image: The ID of the new image
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info("{} changed thread image in {}".format(author_id, thread_id))
@@ -3134,7 +3137,7 @@ class Client:
         new_nickname=None,
         thread_id=None,
         thread_type=ThreadType.USER,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3147,7 +3150,7 @@ class Client:
             new_nickname: The new nickname
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3164,7 +3167,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=ThreadType.GROUP,
-        ts=None,
+        at=None,
         msg=None,
     ):
         """Called when the client is listening, and somebody adds an admin to a group.
@@ -3174,7 +3177,7 @@ class Client:
             added_id: The ID of the admin who got added
             author_id: The ID of the person who added the admins
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info("{} added admin: {} in {}".format(author_id, added_id, thread_id))
@@ -3186,7 +3189,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=ThreadType.GROUP,
-        ts=None,
+        at=None,
         msg=None,
     ):
         """Called when the client is listening, and somebody is removed as an admin in a group.
@@ -3196,7 +3199,7 @@ class Client:
             removed_id: The ID of the admin who got removed
             author_id: The ID of the person who removed the admins
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info("{} removed admin: {} in {}".format(author_id, removed_id, thread_id))
@@ -3208,7 +3211,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=ThreadType.GROUP,
-        ts=None,
+        at=None,
         msg=None,
     ):
         """Called when the client is listening, and somebody changes approval mode in a group.
@@ -3218,7 +3221,7 @@ class Client:
             approval_mode: True if approval mode is activated
             author_id: The ID of the person who changed approval mode
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         if approval_mode:
@@ -3232,7 +3235,7 @@ class Client:
         thread_id=None,
         thread_type=ThreadType.USER,
         seen_at=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3243,7 +3246,7 @@ class Client:
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             seen_at (datetime.datetime): When the person saw the message
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3259,7 +3262,7 @@ class Client:
         delivered_for=None,
         thread_id=None,
         thread_type=ThreadType.USER,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3270,18 +3273,18 @@ class Client:
             delivered_for: The person that marked the messages as delivered
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
         log.info(
-            "Messages {} delivered to {} in {} ({}) at {}s".format(
-                msg_ids, delivered_for, thread_id, thread_type.name, ts / 1000
+            "Messages {} delivered to {} in {} ({}) at {}".format(
+                msg_ids, delivered_for, thread_id, thread_type.name, at
             )
         )
 
     def onMarkedSeen(
-        self, threads=None, seen_at=None, ts=None, metadata=None, msg=None
+        self, threads=None, seen_at=None, at=None, metadata=None, msg=None
     ):
         """Called when the client is listening, and the client has successfully marked threads as seen.
 
@@ -3289,7 +3292,7 @@ class Client:
             threads: The threads that were marked
             author_id: The ID of the person who changed the emoji
             seen_at (datetime.datetime): When the threads were seen
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3305,7 +3308,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         msg=None,
     ):
         """Called when the client is listening, and someone unsends (deletes for everyone) a message.
@@ -3315,12 +3318,12 @@ class Client:
             author_id: The ID of the person who unsent the message
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info(
-            "{} unsent the message {} in {} ({}) at {}s".format(
-                author_id, repr(mid), thread_id, thread_type.name, ts / 1000
+            "{} unsent the message {} in {} ({}) at {}".format(
+                author_id, repr(mid), thread_id, thread_type.name, at
             )
         )
 
@@ -3330,7 +3333,7 @@ class Client:
         added_ids=None,
         author_id=None,
         thread_id=None,
-        ts=None,
+        at=None,
         msg=None,
     ):
         """Called when the client is listening, and somebody adds people to a group thread.
@@ -3340,7 +3343,7 @@ class Client:
             added_ids: The IDs of the people who got added
             author_id: The ID of the person who added the people
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info(
@@ -3353,7 +3356,7 @@ class Client:
         removed_id=None,
         author_id=None,
         thread_id=None,
-        ts=None,
+        at=None,
         msg=None,
     ):
         """Called when the client is listening, and somebody removes a person from a group thread.
@@ -3363,7 +3366,7 @@ class Client:
             removed_id: The ID of the person who got removed
             author_id: The ID of the person who removed the person
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info("{} removed: {} in {}".format(author_id, removed_id, thread_id))
@@ -3414,7 +3417,7 @@ class Client:
         leaderboard=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3429,7 +3432,7 @@ class Client:
             leaderboard: Actual leader board of the game in the thread
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3446,7 +3449,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         msg=None,
     ):
         """Called when the client is listening, and somebody reacts to a message.
@@ -3458,7 +3461,7 @@ class Client:
             author_id: The ID of the person who reacted to the message
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info(
@@ -3473,7 +3476,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         msg=None,
     ):
         """Called when the client is listening, and somebody removes reaction from a message.
@@ -3483,7 +3486,7 @@ class Client:
             author_id: The ID of the person who removed reaction
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info(
@@ -3493,7 +3496,7 @@ class Client:
         )
 
     def onBlock(
-        self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None
+        self, author_id=None, thread_id=None, thread_type=None, at=None, msg=None
     ):
         """Called when the client is listening, and somebody blocks client.
 
@@ -3501,7 +3504,7 @@ class Client:
             author_id: The ID of the person who blocked
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info(
@@ -3509,7 +3512,7 @@ class Client:
         )
 
     def onUnblock(
-        self, author_id=None, thread_id=None, thread_type=None, ts=None, msg=None
+        self, author_id=None, thread_id=None, thread_type=None, at=None, msg=None
     ):
         """Called when the client is listening, and somebody blocks client.
 
@@ -3517,7 +3520,7 @@ class Client:
             author_id: The ID of the person who unblocked
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info(
@@ -3531,7 +3534,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         msg=None,
     ):
         """Called when the client is listening and somebody sends live location info.
@@ -3542,7 +3545,7 @@ class Client:
             author_id: The ID of the person who sent location info
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info(
@@ -3558,7 +3561,7 @@ class Client:
         is_video_call=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3573,7 +3576,7 @@ class Client:
             is_video_call: True if it's video call
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3589,7 +3592,7 @@ class Client:
         call_duration=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3605,7 +3608,7 @@ class Client:
             call_duration (datetime.timedelta): Call duration
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3620,7 +3623,7 @@ class Client:
         is_video_call=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3632,7 +3635,7 @@ class Client:
             is_video_call: True if it's video call
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3647,7 +3650,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3659,7 +3662,7 @@ class Client:
             author_id: The ID of the person who created the poll
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3678,7 +3681,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3690,7 +3693,7 @@ class Client:
             author_id: The ID of the person who voted in the poll
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3707,7 +3710,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3719,7 +3722,7 @@ class Client:
             author_id: The ID of the person who created the plan
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3735,7 +3738,7 @@ class Client:
         plan=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3746,7 +3749,7 @@ class Client:
             plan (Plan): Ended plan
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3761,7 +3764,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3773,7 +3776,7 @@ class Client:
             author_id: The ID of the person who edited the plan
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3790,7 +3793,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3802,7 +3805,7 @@ class Client:
             author_id: The ID of the person who deleted the plan
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3820,7 +3823,7 @@ class Client:
         author_id=None,
         thread_id=None,
         thread_type=None,
-        ts=None,
+        at=None,
         metadata=None,
         msg=None,
     ):
@@ -3833,7 +3836,7 @@ class Client:
             author_id: The ID of the person who will participate in the plan or not
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
@@ -3850,11 +3853,11 @@ class Client:
                 )
             )
 
-    def onQprimer(self, ts=None, msg=None):
+    def onQprimer(self, at=None, msg=None):
         """Called when the client just started listening.
 
         Args:
-            ts: A timestamp of the action
+            at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         pass
