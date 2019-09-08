@@ -1,4 +1,5 @@
 import attr
+from . import _util
 from ._attachment import Attachment
 
 
@@ -36,7 +37,7 @@ class AudioAttachment(Attachment):
     filename = attr.ib(None)
     #: URL of the audio file
     url = attr.ib(None)
-    #: Duration of the audio clip in milliseconds
+    #: Duration of the audio clip as a timedelta
     duration = attr.ib(None)
     #: Audio type
     audio_type = attr.ib(None)
@@ -49,7 +50,7 @@ class AudioAttachment(Attachment):
         return cls(
             filename=data.get("filename"),
             url=data.get("playable_url"),
-            duration=data.get("playable_duration_in_ms"),
+            duration=_util.millis_to_timedelta(data.get("playable_duration_in_ms")),
             audio_type=data.get("audio_type"),
         )
 
@@ -175,7 +176,7 @@ class VideoAttachment(Attachment):
     width = attr.ib(None)
     #: Height of original video
     height = attr.ib(None)
-    #: Length of video in milliseconds
+    #: Length of video as a timedelta
     duration = attr.ib(None)
     #: URL to very compressed preview video
     preview_url = attr.ib(None)
@@ -243,7 +244,7 @@ class VideoAttachment(Attachment):
         return cls(
             width=data.get("original_dimensions", {}).get("width"),
             height=data.get("original_dimensions", {}).get("height"),
-            duration=data.get("playable_duration_in_ms"),
+            duration=_util.millis_to_timedelta(data.get("playable_duration_in_ms")),
             preview_url=data.get("playable_url"),
             small_image=data.get("chat_image"),
             medium_image=data.get("inbox_image"),
@@ -255,7 +256,7 @@ class VideoAttachment(Attachment):
     def _from_subattachment(cls, data):
         media = data["media"]
         return cls(
-            duration=media.get("playable_duration_in_ms"),
+            duration=_util.millis_to_timedelta(media.get("playable_duration_in_ms")),
             preview_url=media.get("playable_url"),
             medium_image=media.get("image"),
             uid=data["target"].get("video_id"),

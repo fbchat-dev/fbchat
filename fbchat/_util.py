@@ -269,3 +269,21 @@ def datetime_to_millis(dt):
     The returned milliseconds will be rounded to the nearest whole number.
     """
     return round(dt.timestamp() * 1000)
+
+
+def seconds_to_timedelta(seconds):
+    """Convert seconds to a timedelta."""
+    return datetime.timedelta(seconds=seconds)
+
+
+def millis_to_timedelta(milliseconds):
+    """Convert a duration (in milliseconds) to a timedelta object."""
+    return datetime.timedelta(milliseconds=milliseconds)
+
+
+def timedelta_to_seconds(td):
+    """Convert a timedelta to seconds.
+
+    The returned seconds will be rounded to the nearest whole number.
+    """
+    return round(td.total_seconds())

@@ -1,3 +1,4 @@
+import datetime
 import time
 import json
 import requests
@@ -2109,15 +2110,19 @@ class Client:
         j = self._payload_post("/ajax/mercury/delete_messages.php?dpr=1", data)
         return True
 
-    def muteThread(self, mute_time=-1, thread_id=None):
+    def muteThread(self, mute_time=None, thread_id=None):
         """Mute thread.
 
         Args:
-            mute_time: Mute time in seconds, leave blank to mute forever
+            mute_time (datetime.timedelta): Time to mute, use ``None`` to mute forever
             thread_id: User/Group ID to mute. See :ref:`intro_threads`
         """
         thread_id, thread_type = self._getThread(thread_id, None)
-        data = {"mute_settings": str(mute_time), "thread_fbid": thread_id}
+        if mute_time is None:
+            mute_settings = -1
+        else:
+            mute_settings = _util.timedelta_to_seconds(mute_time)
+        data = {"mute_settings": str(mute_settings), "thread_fbid": thread_id}
         j = self._payload_post("/ajax/mercury/change_mute_thread.php?dpr=1", data)
 
     def unmuteThread(self, thread_id=None):
@@ -2126,7 +2131,7 @@ class Client:
         Args:
             thread_id: User/Group ID to unmute. See :ref:`intro_threads`
         """
-        return self.muteThread(0, thread_id)
+        return self.muteThread(datetime.timedelta(0), thread_id)
 
     def muteThreadReactions(self, mute=True, thread_id=None):
         """Mute thread reactions.
@@ -2468,7 +2473,9 @@ class Client:
         elif delta_type == "rtc_call_log":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
             call_status = delta["untypedData"]["event"]
-            call_duration = int(delta["untypedData"]["call_duration"])
+            call_duration = _util.seconds_to_timedelta(
+                int(delta["untypedData"]["call_duration"])
+            )
             is_video_call = bool(int(delta["untypedData"]["is_video_call"]))
             if call_status == "call_started":
                 self.onCallStarted(
@@ -3595,7 +3602,7 @@ class Client:
             mid: The action ID
             caller_id: The ID of the person who ended the call
             is_video_call: True if it was video call
-            call_duration: Call duration in seconds
+            call_duration (datetime.timedelta): Call duration
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
             ts: A timestamp of the action
