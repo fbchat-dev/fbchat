@@ -71,7 +71,7 @@ class Client:
         # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
         if (
             not session_cookies
-            or not self.set_gession(session_cookies)
+            or not self.set_session(session_cookies)
             or not self.is_logged_in()
         ):
             self.login(email, password)
