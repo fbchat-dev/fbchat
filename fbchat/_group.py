@@ -103,16 +103,3 @@ class Group(Thread):
 
     def _to_send_data(self):
         return {"thread_fbid": self.uid}
-
-
-@attr.s(cmp=False, init=False)
-class Room(Group):
-    """Deprecated. Use `Group` instead."""
-
-    # True is room is not discoverable
-    privacy_mode = attr.ib(None)
-
-    def __init__(self, uid, privacy_mode=None, **kwargs):
-        super(Room, self).__init__(uid, **kwargs)
-        self.type = ThreadType.ROOM
-        self.privacy_mode = privacy_mode

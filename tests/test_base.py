@@ -3,7 +3,7 @@ import py_compile
 
 from glob import glob
 from os import path, environ
-from fbchat import FBchatUserError, Message, Client
+from fbchat import FBchatException, Message, Client
 
 
 @pytest.mark.offline
@@ -24,7 +24,7 @@ def test_login(client1):
 
     assert not client1.isLoggedIn()
 
-    with pytest.raises(FBchatUserError):
+    with pytest.raises(FBchatException):
         client1.login("<invalid email>", "<invalid password>", max_tries=1)
 
     client1.login(email, password)
@@ -38,13 +38,3 @@ def test_sessions(client1):
     Client("no email needed", "no password needed", session_cookies=session)
     client1.setSession(session)
     assert client1.isLoggedIn()
-
-
-@pytest.mark.tryfirst
-def test_default_thread(client1, thread):
-    client1.setDefaultThread(thread["id"], thread["type"])
-    assert client1.send(Message(text="Sent to the specified thread"))
-
-    client1.resetDefaultThread()
-    with pytest.raises(ValueError):
-        client1.send(Message(text="Should not be sent"))

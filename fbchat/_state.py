@@ -23,11 +23,11 @@ def find_input_fields(html):
     return bs4.BeautifulSoup(html, "html.parser", parse_only=bs4.SoupStrainer("input"))
 
 
-def session_factory(user_agent=None):
+def session_factory():
     session = requests.session()
     session.headers["Referer"] = "https://www.facebook.com"
     # TODO: Deprecate setting the user agent manually
-    session.headers["User-Agent"] = user_agent or random.choice(_util.USER_AGENTS)
+    session.headers["User-Agent"] = random.choice(_util.USER_AGENTS)
     return session
 
 
@@ -120,8 +120,8 @@ class State:
         }
 
     @classmethod
-    def login(cls, email, password, on_2fa_callback, user_agent=None):
-        session = session_factory(user_agent=user_agent)
+    def login(cls, email, password, on_2fa_callback):
+        session = session_factory()
 
         soup = find_input_fields(session.get("https://m.facebook.com/").text)
         data = dict(
@@ -147,7 +147,7 @@ class State:
         if is_home(r.url):
             return cls.from_session(session=session)
         else:
-            raise _exception.FBchatUserError(
+            raise _exception.FBchatException(
                 "Login failed. Check email/password. "
                 "(Failed on url: {})".format(r.url)
             )
@@ -201,63 +201,29 @@ class State:
         return self._session.cookies.get_dict()
 
     @classmethod
-    def from_cookies(cls, cookies, user_agent=None):
-        session = session_factory(user_agent=user_agent)
+    def from_cookies(cls, cookies):
+        session = session_factory()
         session.cookies = requests.cookies.merge_cookies(session.cookies, cookies)
         return cls.from_session(session=session)
-
-    def _do_refresh(self):
-        # TODO: Raise the error instead, and make the user do the refresh manually
-        # It may be a bad idea to do this in an exception handler, if you have a better method, please suggest it!
-        log.warning("Refreshing state and resending request")
-        new = State.from_session(session=self._session)
-        self.user_id = new.user_id
-        self._fb_dtsg = new._fb_dtsg
-        self._revision = new._revision
-        self._counter = new._counter
-        self._logout_h = new._logout_h or self._logout_h
 
     def _get(self, url, params, error_retries=3):
         params.update(self.get_params())
         r = self._session.get(_util.prefix_url(url), params=params)
         content = _util.check_request(r)
-        j = _util.to_json(content)
-        try:
-            _util.handle_payload_error(j)
-        except _exception.FBchatPleaseRefresh:
-            if error_retries > 0:
-                self._do_refresh()
-                return self._get(url, params, error_retries=error_retries - 1)
-            raise
-        return j
+        return _util.to_json(content)
 
-    def _post(self, url, data, files=None, as_graphql=False, error_retries=3):
+    def _post(self, url, data, files=None, as_graphql=False):
         data.update(self.get_params())
         r = self._session.post(_util.prefix_url(url), data=data, files=files)
         content = _util.check_request(r)
-        try:
-            if as_graphql:
-                return _graphql.response_to_json(content)
-            else:
-                j = _util.to_json(content)
-                # TODO: Remove this, and move it to _payload_post instead
-                # We can't yet, since errors raised in here need to be caught below
-                _util.handle_payload_error(j)
-                return j
-        except _exception.FBchatPleaseRefresh:
-            if error_retries > 0:
-                self._do_refresh()
-                return self._post(
-                    url,
-                    data,
-                    files=files,
-                    as_graphql=as_graphql,
-                    error_retries=error_retries - 1,
-                )
-            raise
+        if as_graphql:
+            return _graphql.response_to_json(content)
+        else:
+            return _util.to_json(content)
 
     def _payload_post(self, url, data, files=None):
         j = self._post(url, data, files=files)
+        _util.handle_payload_error(j)
         try:
             return j["payload"]
         except (KeyError, TypeError):

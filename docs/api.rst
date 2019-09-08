@@ -38,7 +38,6 @@ Exceptions
 
 .. autoexception:: FBchatException()
 .. autoexception:: FBchatFacebookError()
-.. autoexception:: FBchatUserError()
 
 Attachments
 -----------

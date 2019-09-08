@@ -45,9 +45,11 @@ def client2(pytestconfig):
 
 @pytest.fixture(scope="module")
 def client(client1, thread):
-    client1.setDefaultThread(thread["id"], thread["type"])
+    # TODO: These are commented out since `setDefaultThread` is removed - But now any
+    # test that use this fixture is likely broken!
+    # client1.setDefaultThread(thread["id"], thread["type"])
     yield client1
-    client1.resetDefaultThread()
+    # client1.resetDefaultThread()
 
 
 @pytest.fixture(scope="session", params=["client1", "client2"])

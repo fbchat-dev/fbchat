@@ -11,10 +11,10 @@ _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 
 # The order of these is somewhat significant, e.g. User has to be imported after Thread!
 from . import _core, _util
-from ._exception import FBchatException, FBchatFacebookError, FBchatUserError
+from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadType, ThreadLocation, ThreadColor, Thread
 from ._user import TypingStatus, User, ActiveStatus
-from ._group import Group, Room
+from ._group import Group
 from ._page import Page
 from ._message import EmojiSize, MessageReaction, Mention, Message
 from ._attachment import Attachment, UnsentMessage, ShareAttachment

@@ -50,7 +50,3 @@ class FBchatPleaseRefresh(FBchatFacebookError):
 
     fb_error_code = "1357004"
     fb_error_message = "Please try closing and re-opening your browser window."
-
-
-class FBchatUserError(FBchatException):
-    """Thrown by ``fbchat`` when wrong values are entered."""
