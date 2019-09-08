@@ -779,7 +779,10 @@ class Client:
 
         for message in messages:
             for receipt in read_receipts:
-                if int(receipt["watermark"]) >= int(message.timestamp):
+                if (
+                    _util.millis_to_datetime(int(receipt["watermark"]))
+                    >= message.created_at
+                ):
                     message.read_by.append(receipt["actor"]["id"])
 
         return messages
@@ -2721,7 +2724,7 @@ class Client:
                         message_object=message,
                         thread_id=thread_id,
                         thread_type=thread_type,
-                        ts=message.timestamp,
+                        ts=_util.datetime_to_millis(message.created_at),
                         metadata=metadata,
                         msg=m,
                     )
@@ -2738,7 +2741,7 @@ class Client:
                     mid=mid,
                     tags=metadata.get("tags"),
                     author=author_id,
-                    timestamp=ts,
+                    created_at=_util.millis_to_datetime(ts),
                 ),
                 thread_id=thread_id,
                 thread_type=thread_type,
