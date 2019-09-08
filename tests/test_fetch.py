@@ -4,6 +4,8 @@ from os import path
 from fbchat import ThreadType, Message, Mention, EmojiSize, Sticker
 from utils import subset, STICKER_LIST, EMOJI_LIST
 
+pytestmark = pytest.mark.online
+
 
 def test_fetch_all_users(client1):
     users = client1.fetch_all_users()

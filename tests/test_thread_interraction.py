@@ -4,6 +4,8 @@ from fbchat import Message, ThreadType, FBchatFacebookError, TypingStatus, Threa
 from utils import random_hex, subset
 from os import path
 
+pytestmark = pytest.mark.online
+
 
 def test_remove_from_and_add_to_group(client1, client2, group, catch_event):
     # Test both methods, while ensuring that the user gets added to the group
@@ -97,12 +99,7 @@ def test_change_image_remote(client1, group, catch_event):
 
 @pytest.mark.parametrize(
     "color",
-    [
-        x
-        if x in [ThreadColor.MESSENGER_BLUE, ThreadColor.PUMPKIN]
-        else pytest.param(x, marks=[pytest.mark.expensive()])
-        for x in ThreadColor
-    ],
+    [x for x in ThreadColor if x in [ThreadColor.MESSENGER_BLUE, ThreadColor.PUMPKIN]],
 )
 def test_change_color(client, catch_event, compare, color):
     with catch_event("on_color_change") as x:

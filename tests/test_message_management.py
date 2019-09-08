@@ -3,6 +3,8 @@ import pytest
 from fbchat import Message, MessageReaction
 from utils import subset
 
+pytestmark = pytest.mark.online
+
 
 def test_set_reaction(client):
     mid = client.send(Message(text="This message will be reacted to"))

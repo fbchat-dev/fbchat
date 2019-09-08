@@ -6,7 +6,6 @@ from os import path, environ
 from fbchat import FBchatException, Message, Client
 
 
-@pytest.mark.offline
 def test_examples():
     # Compiles the examples, to check for syntax errors
     for name in glob(path.join(path.dirname(__file__), "../examples", "*.py")):
@@ -14,7 +13,7 @@ def test_examples():
 
 
 @pytest.mark.trylast
-@pytest.mark.expensive
+@pytest.mark.online
 def test_login(client1):
     assert client1.is_logged_in()
     email = client1.email
@@ -33,6 +32,7 @@ def test_login(client1):
 
 
 @pytest.mark.trylast
+@pytest.mark.online
 def test_sessions(client1):
     session = client1.get_session()
     Client("no email needed", "no password needed", session_cookies=session)

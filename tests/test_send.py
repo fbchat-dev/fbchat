@@ -4,6 +4,8 @@ from os import path
 from fbchat import FBchatFacebookError, Message, Mention
 from utils import subset, STICKER_LIST, EMOJI_LIST, TEXT_LIST
 
+pytestmark = pytest.mark.online
+
 
 @pytest.mark.parametrize("text", TEXT_LIST)
 def test_send_text(client, catch_event, compare, text):

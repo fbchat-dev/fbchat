@@ -1,4 +1,7 @@
+import pytest
 from fbchat import ThreadType
+
+pytestmark = pytest.mark.online
 
 
 def test_search_for(client1):

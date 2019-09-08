@@ -3,6 +3,8 @@ import pytest
 from fbchat import Poll, PollOption, ThreadType
 from utils import random_hex, subset
 
+pytestmark = pytest.mark.online
+
 
 @pytest.fixture(
     scope="module",

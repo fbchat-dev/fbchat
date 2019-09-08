@@ -4,6 +4,8 @@ from fbchat import Plan, FBchatFacebookError, ThreadType
 from utils import random_hex, subset
 from time import time
 
+pytestmark = pytest.mark.online
+
 
 @pytest.fixture(
     scope="module",
@@ -84,7 +86,7 @@ def test_edit_plan(client, thread, catch_event, compare, plan_data):
 
 
 @pytest.mark.trylast
-@pytest.mark.expensive
+@pytest.mark.skip
 def test_on_plan_ended(client, thread, catch_event, compare):
     with catch_event("on_plan_ended") as x:
         client.create_plan(Plan(int(time()) + 120, "Wait for ending"))

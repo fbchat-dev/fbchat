@@ -7,7 +7,7 @@ cache: pip
 before_install: pip install flit
 # Use `--deps production` so that we don't install unnecessary dependencies
 install: flit install --deps production --extras test
-script: pytest -m offline
+script: pytest
 
 jobs:
   include:
