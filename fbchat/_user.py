@@ -183,7 +183,7 @@ class User(Thread):
 class ActiveStatus:
     #: Whether the user is active now
     active = attr.ib(None)
-    #: Timestamp when the user was last active
+    #: Datetime when the user was last active
     last_active = attr.ib(None)
     #: Whether the user is playing Messenger game now
     in_game = attr.ib(None)
@@ -192,7 +192,7 @@ class ActiveStatus:
     def _from_chatproxy_presence(cls, id_, data):
         return cls(
             active=data["p"] in [2, 3] if "p" in data else None,
-            last_active=data.get("lat"),
+            last_active=_util.millis_to_datetime(data.get("lat")),
             in_game=int(id_) in data.get("gamers", {}),
         )
 
@@ -200,6 +200,6 @@ class ActiveStatus:
     def _from_buddylist_overlay(cls, data, in_game=None):
         return cls(
             active=data["a"] in [2, 3] if "a" in data else None,
-            last_active=data.get("la"),
+            last_active=_util.millis_to_datetime(data.get("la")),
             in_game=None,
         )
