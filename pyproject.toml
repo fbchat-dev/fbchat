@@ -51,7 +51,7 @@ Repository = "https://github.com/carpedm20/fbchat/"
 
 [tool.flit.metadata.requires-extra]
 test = [
-    "pytest~=4.0",
+    "pytest>=4.0,<6.0",
 ]
 docs = [
     "sphinx~=2.0",
