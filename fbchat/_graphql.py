@@ -24,6 +24,7 @@ class ConcatJSONDecoder(json.JSONDecoder):
 
 # End shameless copy
 
+
 class DocID(enum.Enum):
     FETCH_INFO = "1768656253222505"
     FETCH_THREAD_INFO = "2147762685294928"
