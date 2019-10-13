@@ -198,7 +198,7 @@ class Client:
 
     def _forced_fetch(self, thread_id, mid):
         params = {"thread_and_message_id": {"thread_id": thread_id, "message_id": mid}}
-        j, = self.graphql_requests(_graphql.from_doc_id("1768656253222505", params))
+        j, = self.graphql_requests(_graphql.from_doc_id(_graphql.DocID.FETCH_INFO, params))
         return j
 
     def fetch_threads(self, thread_location, before=None, after=None, limit=None):
@@ -615,7 +615,7 @@ class Client:
                 "load_read_receipts": False,
                 "before": None,
             }
-            queries.append(_graphql.from_doc_id("2147762685294928", params))
+            queries.append(_graphql.from_doc_id(_graphql.DocID.FETCH_THREAD_INFO, params))
 
         j = self.graphql_requests(*queries)
 
@@ -679,7 +679,7 @@ class Client:
             "load_read_receipts": True,
             "before": _util.datetime_to_millis(before) if before else None,
         }
-        j, = self.graphql_requests(_graphql.from_doc_id("1860982147341344", params))
+        j, = self.graphql_requests(_graphql.from_doc_id(_graphql.DocID.FETCH_THREAD_MESSAGES, params))
 
         if j.get("message_thread") is None:
             raise FBchatException("Could not fetch thread {}: {}".format(thread_id, j))
@@ -733,7 +733,7 @@ class Client:
             "includeDeliveryReceipts": True,
             "includeSeqID": False,
         }
-        j, = self.graphql_requests(_graphql.from_doc_id("1349387578499440", params))
+        j, = self.graphql_requests(_graphql.from_doc_id(_graphql.DocID.FETCH_THREAD_LIST, params))
 
         rtn = []
         for node in j["viewer"]["message_threads"]["nodes"]:
@@ -853,7 +853,7 @@ class Client:
         return Plan._from_fetch(j)
 
     def _get_private_data(self):
-        j, = self.graphql_requests(_graphql.from_doc_id("1868889766468115", {}))
+        j, = self.graphql_requests(_graphql.from_doc_id(_graphql.DocID.GET_PRIVATE_DATA, {}))
         return j["viewer"]
 
     def get_phone_numbers(self):
@@ -1370,7 +1370,7 @@ class Client:
             "surface": "ADMIN_MODEL_APPROVAL_CENTER",
         }
         j, = self.graphql_requests(
-            _graphql.from_doc_id("1574519202665847", {"data": data})
+            _graphql.from_doc_id(_graphql.DocID.USER_APPROVAL, {"data": data})
         )
 
     def accept_users_to_group(self, user_ids, thread_id=None):
@@ -1540,7 +1540,7 @@ class Client:
             "message_id": str(message_id),
             "reaction": reaction.value if reaction else None,
         }
-        data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
+        data = {"doc_id": _graphql.DocID.MESSAGE_REACT, "variables": json.dumps({"data": data})}
         j = self._payload_post("/webgraphql/mutation", data)
         _util.handle_graphql_errors(j)
 
