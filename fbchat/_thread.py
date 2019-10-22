@@ -67,7 +67,7 @@ class ThreadColor(Enum):
         return cls._extend_if_invalid(value)
 
 
-@attr.s(cmp=False, init=False)
+@attr.s(init=False)
 class Thread:
     """Represents a Facebook thread."""
 

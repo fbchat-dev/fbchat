@@ -3,7 +3,7 @@ from ._attachment import Attachment
 from . import _util
 
 
-@attr.s(cmp=False)
+@attr.s
 class LocationAttachment(Attachment):
     """Represents a user location.
 
@@ -53,7 +53,7 @@ class LocationAttachment(Attachment):
         return rtn
 
 
-@attr.s(cmp=False, init=False)
+@attr.s(init=False)
 class LiveLocationAttachment(LocationAttachment):
     """Represents a live user location."""
 

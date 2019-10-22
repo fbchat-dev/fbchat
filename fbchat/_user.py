@@ -41,7 +41,7 @@ class TypingStatus(Enum):
     TYPING = 1
 
 
-@attr.s(cmp=False, init=False)
+@attr.s(init=False)
 class User(Thread):
     """Represents a Facebook user. Inherits `Thread`."""
 
@@ -179,7 +179,7 @@ class User(Thread):
         )
 
 
-@attr.s(cmp=False)
+@attr.s
 class ActiveStatus:
     #: Whether the user is active now
     active = attr.ib(None)

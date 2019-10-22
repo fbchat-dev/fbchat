@@ -2,7 +2,7 @@ import attr
 from ._attachment import Attachment
 
 
-@attr.s(cmp=False, init=False)
+@attr.s(init=False)
 class Sticker(Attachment):
     """Represents a Facebook sticker that has been sent to a thread as an attachment."""
 

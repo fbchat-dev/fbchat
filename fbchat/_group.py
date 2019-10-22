@@ -3,7 +3,7 @@ from . import _util, _plan
 from ._thread import ThreadType, Thread
 
 
-@attr.s(cmp=False, init=False)
+@attr.s(init=False)
 class Group(Thread):
     """Represents a Facebook group. Inherits `Thread`."""
 

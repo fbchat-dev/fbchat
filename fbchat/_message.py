@@ -42,7 +42,7 @@ class MessageReaction(Enum):
     NO = "👎"
 
 
-@attr.s(cmp=False)
+@attr.s
 class Mention:
     """Represents a ``@mention``."""
 
@@ -54,7 +54,7 @@ class Mention:
     length = attr.ib(10)
 
 
-@attr.s(cmp=False)
+@attr.s
 class Message:
     """Represents a Facebook message."""
 

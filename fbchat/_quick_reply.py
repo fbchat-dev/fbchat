@@ -2,7 +2,7 @@ import attr
 from ._attachment import Attachment
 
 
-@attr.s(cmp=False)
+@attr.s
 class QuickReply:
     """Represents a quick reply."""
 
@@ -16,7 +16,7 @@ class QuickReply:
     is_response = attr.ib(False)
 
 
-@attr.s(cmp=False, init=False)
+@attr.s(init=False)
 class QuickReplyText(QuickReply):
     """Represents a text quick reply."""
 
@@ -33,7 +33,7 @@ class QuickReplyText(QuickReply):
         self.image_url = image_url
 
 
-@attr.s(cmp=False, init=False)
+@attr.s(init=False)
 class QuickReplyLocation(QuickReply):
     """Represents a location quick reply (Doesn't work on mobile)."""
 
@@ -45,7 +45,7 @@ class QuickReplyLocation(QuickReply):
         self.is_response = False
 
 
-@attr.s(cmp=False, init=False)
+@attr.s(init=False)
 class QuickReplyPhoneNumber(QuickReply):
     """Represents a phone number quick reply (Doesn't work on mobile)."""
 
@@ -59,7 +59,7 @@ class QuickReplyPhoneNumber(QuickReply):
         self.image_url = image_url
 
 
-@attr.s(cmp=False, init=False)
+@attr.s(init=False)
 class QuickReplyEmail(QuickReply):
     """Represents an email quick reply (Doesn't work on mobile)."""
 
