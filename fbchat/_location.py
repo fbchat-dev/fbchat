@@ -53,7 +53,7 @@ class LocationAttachment(Attachment):
         return rtn
 
 
-@attr.s(init=False)
+@attr.s
 class LiveLocationAttachment(LocationAttachment):
     """Represents a live user location."""
 
@@ -63,11 +63,6 @@ class LiveLocationAttachment(LocationAttachment):
     expires_at = attr.ib(None)
     #: True if live location is expired
     is_expired = attr.ib(None)
-
-    def __init__(self, name=None, expires_at=None, is_expired=None, **kwargs):
-        super(LiveLocationAttachment, self).__init__(**kwargs)
-        self.expires_at = expires_at
-        self.is_expired = is_expired
 
     @classmethod
     def _from_pull(cls, data):

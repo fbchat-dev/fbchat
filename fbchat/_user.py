@@ -41,9 +41,11 @@ class TypingStatus(Enum):
     TYPING = 1
 
 
-@attr.s(init=False)
+@attr.s
 class User(Thread):
     """Represents a Facebook user. Inherits `Thread`."""
+
+    type = ThreadType.USER
 
     #: The profile URL
     url = attr.ib(None)
@@ -65,33 +67,6 @@ class User(Thread):
     color = attr.ib(None)
     #: The default emoji
     emoji = attr.ib(None)
-
-    def __init__(
-        self,
-        uid,
-        url=None,
-        first_name=None,
-        last_name=None,
-        is_friend=None,
-        gender=None,
-        affinity=None,
-        nickname=None,
-        own_nickname=None,
-        color=None,
-        emoji=None,
-        **kwargs
-    ):
-        super(User, self).__init__(ThreadType.USER, uid, **kwargs)
-        self.url = url
-        self.first_name = first_name
-        self.last_name = last_name
-        self.is_friend = is_friend
-        self.gender = gender
-        self.affinity = affinity
-        self.nickname = nickname
-        self.own_nickname = own_nickname
-        self.color = color
-        self.emoji = emoji
 
     @classmethod
     def _from_graphql(cls, data):

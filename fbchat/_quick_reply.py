@@ -16,7 +16,7 @@ class QuickReply:
     is_response = attr.ib(False)
 
 
-@attr.s(init=False)
+@attr.s
 class QuickReplyText(QuickReply):
     """Represents a text quick reply."""
 
@@ -27,25 +27,16 @@ class QuickReplyText(QuickReply):
     #: Type of the quick reply
     _type = "text"
 
-    def __init__(self, title=None, image_url=None, **kwargs):
-        super(QuickReplyText, self).__init__(**kwargs)
-        self.title = title
-        self.image_url = image_url
 
-
-@attr.s(init=False)
+@attr.s
 class QuickReplyLocation(QuickReply):
     """Represents a location quick reply (Doesn't work on mobile)."""
 
     #: Type of the quick reply
     _type = "location"
 
-    def __init__(self, **kwargs):
-        super(QuickReplyLocation, self).__init__(**kwargs)
-        self.is_response = False
 
-
-@attr.s(init=False)
+@attr.s
 class QuickReplyPhoneNumber(QuickReply):
     """Represents a phone number quick reply (Doesn't work on mobile)."""
 
@@ -54,12 +45,8 @@ class QuickReplyPhoneNumber(QuickReply):
     #: Type of the quick reply
     _type = "user_phone_number"
 
-    def __init__(self, image_url=None, **kwargs):
-        super(QuickReplyPhoneNumber, self).__init__(**kwargs)
-        self.image_url = image_url
 
-
-@attr.s(init=False)
+@attr.s
 class QuickReplyEmail(QuickReply):
     """Represents an email quick reply (Doesn't work on mobile)."""
 
@@ -67,10 +54,6 @@ class QuickReplyEmail(QuickReply):
     image_url = attr.ib(None)
     #: Type of the quick reply
     _type = "user_email"
-
-    def __init__(self, image_url=None, **kwargs):
-        super(QuickReplyEmail, self).__init__(**kwargs)
-        self.image_url = image_url
 
 
 def graphql_to_quick_reply(q, is_response=False):

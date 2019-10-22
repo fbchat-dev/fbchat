@@ -2,7 +2,7 @@ import attr
 from ._attachment import Attachment
 
 
-@attr.s(init=False)
+@attr.s
 class Sticker(Attachment):
     """Represents a Facebook sticker that has been sent to a thread as an attachment."""
 
@@ -31,9 +31,6 @@ class Sticker(Attachment):
     height = attr.ib(None)
     #: The sticker's label/name
     label = attr.ib(None)
-
-    def __init__(self, uid=None):
-        super(Sticker, self).__init__(uid=uid)
 
     @classmethod
     def _from_graphql(cls, data):
