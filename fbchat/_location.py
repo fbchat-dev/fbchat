@@ -91,7 +91,7 @@ class LiveLocationAttachment(LocationAttachment):
             if target.get("coordinate")
             else None,
             name=data["title_with_entities"]["text"],
-            expires_at=_util.millis_to_datetime(target.get("expiration_time")),
+            expires_at=_util.seconds_to_datetime(target.get("expiration_time")),
             is_expired=target.get("is_expired"),
         )
         media = data.get("media")
