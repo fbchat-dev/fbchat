@@ -14,20 +14,20 @@ class GuestStatus(Enum):
 class Plan:
     """Represents a plan."""
 
-    #: ID of the plan
-    uid = attr.ib(None, init=False)
     #: Plan time (datetime), only precise down to the minute
     time = attr.ib()
     #: Plan title
     title = attr.ib()
+    #: ID of the plan
+    uid = attr.ib(None)
     #: Plan location name
     location = attr.ib(None, converter=lambda x: x or "")
     #: Plan location ID
     location_id = attr.ib(None, converter=lambda x: x or "")
     #: ID of the plan creator
-    author_id = attr.ib(None, init=False)
+    author_id = attr.ib(None)
     #: Dictionary of `User` IDs mapped to their `GuestStatus`
-    guests = attr.ib(None, init=False)
+    guests = attr.ib(None)
 
     @property
     def going(self):

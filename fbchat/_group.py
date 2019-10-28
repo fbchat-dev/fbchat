@@ -11,21 +11,19 @@ class Group(Thread):
     type = ThreadType.GROUP
 
     #: Unique list (set) of the group thread's participant user IDs
-    participants = attr.ib(factory=set, converter=lambda x: set() if x is None else x)
+    participants = attr.ib(factory=set)
     #: A dictionary, containing user nicknames mapped to their IDs
-    nicknames = attr.ib(factory=dict, converter=lambda x: {} if x is None else x)
+    nicknames = attr.ib(factory=dict)
     #: A :class:`ThreadColor`. The groups's message color
     color = attr.ib(None)
     #: The groups's default emoji
     emoji = attr.ib(None)
     # Set containing user IDs of thread admins
-    admins = attr.ib(factory=set, converter=lambda x: set() if x is None else x)
+    admins = attr.ib(factory=set)
     # True if users need approval to join
     approval_mode = attr.ib(None)
     # Set containing user IDs requesting to join
-    approval_requests = attr.ib(
-        factory=set, converter=lambda x: set() if x is None else x
-    )
+    approval_requests = attr.ib(factory=set)
     # Link for joining group
     join_link = attr.ib(None)
 

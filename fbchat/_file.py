@@ -17,9 +17,6 @@ class FileAttachment(Attachment):
     #: Whether Facebook determines that this file may be harmful
     is_malicious = attr.ib(None)
 
-    # Put here for backwards compatibility, so that the init argument order is preserved
-    uid = attr.ib(None)
-
     @classmethod
     def _from_graphql(cls, data):
         return cls(
@@ -42,9 +39,6 @@ class AudioAttachment(Attachment):
     duration = attr.ib(None)
     #: Audio type
     audio_type = attr.ib(None)
-
-    # Put here for backwards compatibility, so that the init argument order is preserved
-    uid = attr.ib(None)
 
     @classmethod
     def _from_graphql(cls, data):

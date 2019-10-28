@@ -16,14 +16,11 @@ class LocationAttachment(Attachment):
     #: Longitude of the location
     longitude = attr.ib(None)
     #: Image showing the map of the location
-    image = attr.ib(None, init=False)
+    image = attr.ib(None)
     #: URL to Bing maps with the location
-    url = attr.ib(None, init=False)
+    url = attr.ib(None)
     # Address of the location
     address = attr.ib(None)
-
-    # Put here for backwards compatibility, so that the init argument order is preserved
-    uid = attr.ib(None)
 
     @classmethod
     def _from_graphql(cls, data):

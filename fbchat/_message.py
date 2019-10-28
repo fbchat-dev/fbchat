@@ -61,35 +61,35 @@ class Message:
     #: The actual message
     text = attr.ib(None)
     #: A list of :class:`Mention` objects
-    mentions = attr.ib(factory=list, converter=lambda x: [] if x is None else x)
+    mentions = attr.ib(factory=list)
     #: A :class:`EmojiSize`. Size of a sent emoji
     emoji_size = attr.ib(None)
     #: The message ID
-    uid = attr.ib(None, init=False)
+    uid = attr.ib(None)
     #: ID of the sender
-    author = attr.ib(None, init=False)
+    author = attr.ib(None)
     #: Datetime of when the message was sent
-    created_at = attr.ib(None, init=False)
+    created_at = attr.ib(None)
     #: Whether the message is read
-    is_read = attr.ib(None, init=False)
+    is_read = attr.ib(None)
     #: A list of people IDs who read the message, works only with :func:`fbchat.Client.fetch_thread_messages`
-    read_by = attr.ib(factory=list, init=False)
+    read_by = attr.ib(factory=list)
     #: A dictionary with user's IDs as keys, and their :class:`MessageReaction` as values
-    reactions = attr.ib(factory=dict, init=False)
+    reactions = attr.ib(factory=dict)
     #: A :class:`Sticker`
     sticker = attr.ib(None)
     #: A list of attachments
-    attachments = attr.ib(factory=list, converter=lambda x: [] if x is None else x)
+    attachments = attr.ib(factory=list)
     #: A list of :class:`QuickReply`
-    quick_replies = attr.ib(factory=list, converter=lambda x: [] if x is None else x)
+    quick_replies = attr.ib(factory=list)
     #: Whether the message is unsent (deleted for everyone)
-    unsent = attr.ib(False, init=False)
+    unsent = attr.ib(False)
     #: Message ID you want to reply to
     reply_to_id = attr.ib(None)
     #: Replied message
-    replied_to = attr.ib(None, init=False)
+    replied_to = attr.ib(None)
     #: Whether the message was forwarded
-    forwarded = attr.ib(False, init=False)
+    forwarded = attr.ib(False)
 
     @classmethod
     def format_mentions(cls, text, *args, **kwargs):

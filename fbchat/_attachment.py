@@ -37,10 +37,7 @@ class ShareAttachment(Attachment):
     #: URL of the original image if Facebook uses ``safe_image``
     original_image_url = attr.ib(None)
     #: List of additional attachments
-    attachments = attr.ib(factory=list, converter=lambda x: [] if x is None else x)
-
-    # Put here for backwards compatibility, so that the init argument order is preserved
-    uid = attr.ib(None)
+    attachments = attr.ib(factory=list)
 
     @classmethod
     def _from_graphql(cls, data):
