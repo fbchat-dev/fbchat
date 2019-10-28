@@ -1,5 +1,6 @@
 import pytest
 import datetime
+import fbchat
 from fbchat._user import User, ActiveStatus
 
 
@@ -17,7 +18,7 @@ def test_user_from_graphql():
     }
     assert User(
         uid="1234",
-        photo="https://scontent-arn2-1.xx.fbcdn.net/v/...",
+        photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
         name="Abc Def Ghi",
         url="https://www.facebook.com/profile.php?id=1234",
         first_name="Abc",
@@ -137,7 +138,7 @@ def test_user_from_thread_fetch():
     }
     assert User(
         uid="1234",
-        photo="https://scontent-arn2-1.xx.fbcdn.net/v/...",
+        photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
         name="Abc Def Ghi",
         last_active=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
         message_count=1111,
@@ -175,7 +176,7 @@ def test_user_from_all_fetch():
     }
     assert User(
         uid="1234",
-        photo="https://scontent-arn2-1.xx.fbcdn.net/v/...",
+        photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
         name="Abc Def Ghi",
         url="https://www.facebook.com/profile.php?id=1234",
         first_name="Abc",

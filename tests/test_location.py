@@ -1,5 +1,6 @@
 import pytest
 import datetime
+import fbchat
 from fbchat._location import LocationAttachment, LiveLocationAttachment
 
 
@@ -34,9 +35,11 @@ def test_location_attachment_from_graphql():
         "subattachments": [],
     }
     expected = LocationAttachment(latitude=55.4, longitude=12.4322, uid=400828513928715)
-    expected.image_url = "https://external-arn2-1.xx.fbcdn.net/static_map.php?v=1020&osm_provider=2&size=545x280&zoom=15&markers=55.40000000%2C12.43220000&language=en"
-    expected.image_width = 545
-    expected.image_height = 280
+    expected.image = fbchat.Image(
+        url="https://external-arn2-1.xx.fbcdn.net/static_map.php?v=1020&osm_provider=2&size=545x280&zoom=15&markers=55.40000000%2C12.43220000&language=en",
+        width=545,
+        height=280,
+    )
     expected.url = "https://l.facebook.com/l.php?u=https%3A%2F%2Fwww.bing.com%2Fmaps%2Fdefault.aspx%3Fv%3D2%26pc%3DFACEBK%26mid%3D8100%26where1%3D55.4%252C%2B12.4322%26FORM%3DFBKPL1%26mkt%3Den-GB&h=a&s=1"
     assert expected == LocationAttachment._from_graphql(data)
 

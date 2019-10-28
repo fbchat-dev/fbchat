@@ -1,5 +1,5 @@
 import attr
-from ._core import Enum
+from ._core import Enum, Image
 from . import _util, _plan
 from ._thread import ThreadType, Thread
 
@@ -89,7 +89,7 @@ class User(Thread):
             color=c_info.get("color"),
             emoji=c_info.get("emoji"),
             own_nickname=c_info.get("own_nickname"),
-            photo=data["profile_picture"].get("uri"),
+            photo=Image._from_uri(data["profile_picture"]),
             name=data.get("name"),
             message_count=data.get("messages_count"),
             plan=plan,
@@ -135,7 +135,7 @@ class User(Thread):
             color=c_info.get("color"),
             emoji=c_info.get("emoji"),
             own_nickname=c_info.get("own_nickname"),
-            photo=user["big_image_src"].get("uri"),
+            photo=Image._from_uri(user["big_image_src"]),
             message_count=data.get("messages_count"),
             last_active=last_active,
             plan=plan,
@@ -147,7 +147,7 @@ class User(Thread):
             data["id"],
             first_name=data.get("firstName"),
             url=data.get("uri"),
-            photo=data.get("thumbSrc"),
+            photo=Image(url=data.get("thumbSrc")),
             name=data.get("name"),
             is_friend=data.get("is_friend"),
             gender=GENDERS.get(data.get("gender")),

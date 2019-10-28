@@ -1,3 +1,4 @@
+import fbchat
 from fbchat._page import Page
 
 
@@ -12,7 +13,7 @@ def test_page_from_graphql():
     }
     assert Page(
         uid="123456",
-        photo="https://scontent-arn2-1.xx.fbcdn.net/v/...",
+        photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
         name="Some school",
         url="https://www.facebook.com/some-school/",
         city=None,

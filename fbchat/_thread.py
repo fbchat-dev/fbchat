@@ -1,5 +1,5 @@
 import attr
-from ._core import Enum
+from ._core import Enum, Image
 
 
 class ThreadType(Enum):
@@ -75,7 +75,7 @@ class Thread:
     uid = attr.ib(converter=str)
     #: Specifies the type of thread. Can be used a ``thread_type``. See :ref:`intro_threads` for more info
     type = None
-    #: A URL to the thread's picture
+    #: The thread's picture
     photo = attr.ib(None)
     #: The name of the thread
     name = attr.ib(None)

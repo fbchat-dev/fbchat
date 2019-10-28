@@ -1,4 +1,5 @@
 import attr
+from ._core import Image
 from ._attachment import Attachment
 from . import _util
 
@@ -14,12 +15,8 @@ class LocationAttachment(Attachment):
     latitude = attr.ib(None)
     #: Longitude of the location
     longitude = attr.ib(None)
-    #: URL of image showing the map of the location
-    image_url = attr.ib(None, init=False)
-    #: Width of the image
-    image_width = attr.ib(None, init=False)
-    #: Height of the image
-    image_height = attr.ib(None, init=False)
+    #: Image showing the map of the location
+    image = attr.ib(None, init=False)
     #: URL to Bing maps with the location
     url = attr.ib(None, init=False)
     # Address of the location
@@ -45,10 +42,7 @@ class LocationAttachment(Attachment):
         )
         media = data.get("media")
         if media and media.get("image"):
-            image = media["image"]
-            rtn.image_url = image.get("uri")
-            rtn.image_width = image.get("width")
-            rtn.image_height = image.get("height")
+            rtn.image = Image._from_uri(media["image"])
         rtn.url = url
         return rtn
 
@@ -96,9 +90,6 @@ class LiveLocationAttachment(LocationAttachment):
         )
         media = data.get("media")
         if media and media.get("image"):
-            image = media["image"]
-            rtn.image_url = image.get("uri")
-            rtn.image_width = image.get("width")
-            rtn.image_height = image.get("height")
+            rtn.image = Image._from_uri(media["image"])
         rtn.url = data.get("url")
         return rtn

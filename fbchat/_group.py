@@ -1,4 +1,5 @@
 import attr
+from ._core import Image
 from . import _util, _plan
 from ._thread import ThreadType, Thread
 
@@ -64,7 +65,7 @@ class Group(Thread):
             if data.get("group_approval_queue")
             else None,
             join_link=data["joinable_mode"].get("link"),
-            photo=data["image"].get("uri"),
+            photo=Image._from_uri_or_none(data["image"]),
             name=data.get("name"),
             message_count=data.get("messages_count"),
             last_active=last_active,

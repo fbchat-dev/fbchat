@@ -33,17 +33,17 @@ def test_imageattachment_from_list():
         uid="1234",
         width=2833,
         height=1367,
-        thumbnail_url="https://scontent-arn2-1.xx.fbcdn.net/v/s261x260/1.jpg",
-        preview={
-            "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/2.jpg",
-            "width": 960,
-            "height": 463,
-        },
-        large_preview={
-            "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/s2048x2048/3.jpg",
-            "width": 2048,
-            "height": 988,
-        },
+        thumbnail=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/s261x260/1.jpg"
+        ),
+        preview=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/2.jpg", width=960, height=463
+        ),
+        large_preview=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/s2048x2048/3.jpg",
+            width=2048,
+            height=988,
+        ),
     ) == ImageAttachment._from_list({"node": data})
 
 
@@ -71,19 +71,19 @@ def test_videoattachment_from_list():
         uid="1234",
         width=640,
         height=368,
-        small_image={
-            "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/t15.3394-10/p261x260/1.jpg"
-        },
-        medium_image={
-            "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/t15.3394-10/2.jpg",
-            "width": 640,
-            "height": 368,
-        },
-        large_image={
-            "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/t15.3394-10/3.jpg",
-            "width": 640,
-            "height": 368,
-        },
+        small_image=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.3394-10/p261x260/1.jpg"
+        ),
+        medium_image=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.3394-10/2.jpg",
+            width=640,
+            height=368,
+        ),
+        large_image=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.3394-10/3.jpg",
+            width=640,
+            height=368,
+        ),
     ) == VideoAttachment._from_list({"node": data})
 
 
@@ -170,17 +170,15 @@ def test_graphql_to_attachment_image1():
         width=None,
         height=None,
         is_animated=False,
-        thumbnail_url="https://scontent-arn2-1.xx.fbcdn.net/v/p50x50/3.png",
-        preview={
-            "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/1.png",
-            "width": 128,
-            "height": 128,
-        },
-        large_preview={
-            "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/2.png",
-            "width": 128,
-            "height": 128,
-        },
+        thumbnail=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/p50x50/3.png"
+        ),
+        preview=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/1.png", width=128, height=128
+        ),
+        large_preview=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/2.png", width=128, height=128
+        ),
     ) == graphql_to_attachment(data)
 
 
@@ -209,12 +207,12 @@ def test_graphql_to_attachment_image2():
         width=None,
         height=None,
         is_animated=True,
-        preview={"uri": "https://cdn.fbsbx.com/v/1.gif", "width": 128, "height": 128},
-        animated_preview={
-            "uri": "https://cdn.fbsbx.com/v/1.gif",
-            "width": 128,
-            "height": 128,
-        },
+        preview=fbchat.Image(
+            url="https://cdn.fbsbx.com/v/1.gif", width=128, height=128
+        ),
+        animated_preview=fbchat.Image(
+            url="https://cdn.fbsbx.com/v/1.gif", width=128, height=128
+        ),
     ) == graphql_to_attachment(data)
 
 
@@ -251,21 +249,19 @@ def test_graphql_to_attachment_video():
         height=None,
         duration=datetime.timedelta(seconds=6),
         preview_url="https://video-arn2-1.xx.fbcdn.net/v/video-4321.mp4",
-        small_image={
-            "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/s168x128/1.jpg",
-            "width": 168,
-            "height": 96,
-        },
-        medium_image={
-            "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/p261x260/3.jpg",
-            "width": 452,
-            "height": 260,
-        },
-        large_image={
-            "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/2.jpg",
-            "width": 640,
-            "height": 368,
-        },
+        small_image=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/s168x128/1.jpg",
+            width=168,
+            height=96,
+        ),
+        medium_image=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/p261x260/3.jpg",
+            width=452,
+            height=260,
+        ),
+        large_image=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/2.jpg", width=640, height=368
+        ),
     ) == graphql_to_attachment(data)
 
 
@@ -350,9 +346,9 @@ def test_graphql_to_subattachment_video():
         uid="1234",
         duration=datetime.timedelta(seconds=24, microseconds=469000),
         preview_url="https://video-arn2-1.xx.fbcdn.net/v/t42.9040-2/vid.mp4",
-        medium_image={
-            "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
-            "width": 960,
-            "height": 540,
-        },
+        medium_image=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
+            width=960,
+            height=540,
+        ),
     ) == graphql_to_subattachment(data)

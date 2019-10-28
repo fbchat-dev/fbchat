@@ -1,4 +1,5 @@
 import pytest
+import fbchat
 from fbchat._sticker import Sticker
 
 
@@ -20,9 +21,11 @@ def test_from_graphql_normal():
         frames_per_row=None,
         frames_per_col=None,
         frame_rate=None,
-        url="https://scontent-arn2-1.xx.fbcdn.net/v/redacted.png",
-        width=274,
-        height=274,
+        image=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/redacted.png",
+            width=274,
+            height=274,
+        ),
         label="Like, thumbs up",
     ) == Sticker._from_graphql(
         {
@@ -54,9 +57,11 @@ def test_from_graphql_animated():
         frames_per_row=2,
         frames_per_col=2,
         frame_rate=142,
-        url="https://scontent-arn2-1.fbcdn.net/v/redacted1.png",
-        width=240,
-        height=293,
+        image=fbchat.Image(
+            url="https://scontent-arn2-1.fbcdn.net/v/redacted1.png",
+            width=240,
+            height=293,
+        ),
         label="Love, cat with heart",
     ) == Sticker._from_graphql(
         {

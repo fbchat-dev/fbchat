@@ -1,4 +1,5 @@
 import attr
+from ._core import Image
 from . import _util
 
 
@@ -31,14 +32,10 @@ class ShareAttachment(Attachment):
     description = attr.ib(None)
     #: Name of the source
     source = attr.ib(None)
-    #: URL of the attachment image
-    image_url = attr.ib(None)
+    #: The attached image
+    image = attr.ib(None)
     #: URL of the original image if Facebook uses ``safe_image``
     original_image_url = attr.ib(None)
-    #: Width of the image
-    image_width = attr.ib(None)
-    #: Height of the image
-    image_height = attr.ib(None)
     #: List of additional attachments
     attachments = attr.ib(factory=list, converter=lambda x: [] if x is None else x)
 
@@ -72,12 +69,10 @@ class ShareAttachment(Attachment):
         media = data.get("media")
         if media and media.get("image"):
             image = media["image"]
-            rtn.image_url = image.get("uri")
+            rtn.image = Image._from_uri(image)
             rtn.original_image_url = (
-                _util.get_url_parameter(rtn.image_url, "url")
-                if "/safe_image.php" in rtn.image_url
-                else rtn.image_url
+                _util.get_url_parameter(rtn.image.url, "url")
+                if "/safe_image.php" in rtn.image.url
+                else rtn.image.url
             )
-            rtn.image_width = image.get("width")
-            rtn.image_height = image.get("height")
         return rtn

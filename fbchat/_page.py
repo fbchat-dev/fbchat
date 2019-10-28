@@ -1,4 +1,5 @@
 import attr
+from ._core import Image
 from . import _plan
 from ._thread import ThreadType, Thread
 
@@ -35,7 +36,7 @@ class Page(Thread):
             url=data.get("url"),
             city=data.get("city").get("name"),
             category=data.get("category_type"),
-            photo=data["profile_picture"].get("uri"),
+            photo=Image._from_uri(data["profile_picture"]),
             name=data.get("name"),
             message_count=data.get("messages_count"),
             plan=plan,
