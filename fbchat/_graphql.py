@@ -1,3 +1,4 @@
+import enum
 import json
 import re
 from ._core import log
@@ -22,6 +23,16 @@ class ConcatJSONDecoder(json.JSONDecoder):
 
 
 # End shameless copy
+
+
+class DocID(enum.Enum):
+    FETCH_INFO = "1768656253222505"
+    FETCH_THREAD_INFO = "2147762685294928"
+    FETCH_THREAD_MESSAGES = "1860982147341344"
+    FETCH_THREAD_LIST = "1349387578499440"
+    GET_PRIVATE_DATA = "1868889766468115"
+    USER_APPROVAL = "1574519202665847"
+    MESSAGE_REACT = "1491398900900362"
 
 
 def queries_to_json(*queries):
