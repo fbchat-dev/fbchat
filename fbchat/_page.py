@@ -3,9 +3,11 @@ from . import _plan
 from ._thread import ThreadType, Thread
 
 
-@attr.s(cmp=False, init=False)
+@attr.s
 class Page(Thread):
     """Represents a Facebook page. Inherits `Thread`."""
+
+    type = ThreadType.PAGE
 
     #: The page's custom URL
     url = attr.ib(None)
@@ -17,23 +19,6 @@ class Page(Thread):
     sub_title = attr.ib(None)
     #: The page's category
     category = attr.ib(None)
-
-    def __init__(
-        self,
-        uid,
-        url=None,
-        city=None,
-        likes=None,
-        sub_title=None,
-        category=None,
-        **kwargs
-    ):
-        super(Page, self).__init__(ThreadType.PAGE, uid, **kwargs)
-        self.url = url
-        self.city = city
-        self.likes = likes
-        self.sub_title = sub_title
-        self.category = category
 
     @classmethod
     def _from_graphql(cls, data):

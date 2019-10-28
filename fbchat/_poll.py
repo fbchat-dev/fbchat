@@ -1,7 +1,7 @@
 import attr
 
 
-@attr.s(cmp=False)
+@attr.s
 class Poll:
     """Represents a poll."""
 
@@ -24,7 +24,7 @@ class Poll:
         )
 
 
-@attr.s(cmp=False)
+@attr.s
 class PollOption:
     """Represents a poll option."""
 

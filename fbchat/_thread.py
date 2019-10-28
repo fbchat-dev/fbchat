@@ -67,14 +67,14 @@ class ThreadColor(Enum):
         return cls._extend_if_invalid(value)
 
 
-@attr.s(cmp=False, init=False)
+@attr.s
 class Thread:
     """Represents a Facebook thread."""
 
     #: The unique identifier of the thread. Can be used a ``thread_id``. See :ref:`intro_threads` for more info
     uid = attr.ib(converter=str)
     #: Specifies the type of thread. Can be used a ``thread_type``. See :ref:`intro_threads` for more info
-    type = attr.ib()
+    type = None
     #: A URL to the thread's picture
     photo = attr.ib(None)
     #: The name of the thread
@@ -85,24 +85,6 @@ class Thread:
     message_count = attr.ib(None)
     #: Set :class:`Plan`
     plan = attr.ib(None)
-
-    def __init__(
-        self,
-        _type,
-        uid,
-        photo=None,
-        name=None,
-        last_active=None,
-        message_count=None,
-        plan=None,
-    ):
-        self.uid = str(uid)
-        self.type = _type
-        self.photo = photo
-        self.name = name
-        self.last_active = last_active
-        self.message_count = message_count
-        self.plan = plan
 
     @staticmethod
     def _parse_customization_info(data):

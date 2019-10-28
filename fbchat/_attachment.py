@@ -2,7 +2,7 @@ import attr
 from . import _util
 
 
-@attr.s(cmp=False)
+@attr.s
 class Attachment:
     """Represents a Facebook attachment."""
 
@@ -10,12 +10,12 @@ class Attachment:
     uid = attr.ib(None)
 
 
-@attr.s(cmp=False)
+@attr.s
 class UnsentMessage(Attachment):
     """Represents an unsent message attachment."""
 
 
-@attr.s(cmp=False)
+@attr.s
 class ShareAttachment(Attachment):
     """Represents a shared item (e.g. URL) attachment."""
 

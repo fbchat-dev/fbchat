@@ -3,7 +3,7 @@ from ._attachment import Attachment
 from . import _util
 
 
-@attr.s(cmp=False)
+@attr.s
 class LocationAttachment(Attachment):
     """Represents a user location.
 
@@ -53,7 +53,7 @@ class LocationAttachment(Attachment):
         return rtn
 
 
-@attr.s(cmp=False, init=False)
+@attr.s
 class LiveLocationAttachment(LocationAttachment):
     """Represents a live user location."""
 
@@ -63,11 +63,6 @@ class LiveLocationAttachment(LocationAttachment):
     expires_at = attr.ib(None)
     #: True if live location is expired
     is_expired = attr.ib(None)
-
-    def __init__(self, name=None, expires_at=None, is_expired=None, **kwargs):
-        super(LiveLocationAttachment, self).__init__(**kwargs)
-        self.expires_at = expires_at
-        self.is_expired = is_expired
 
     @classmethod
     def _from_pull(cls, data):
@@ -96,7 +91,7 @@ class LiveLocationAttachment(LocationAttachment):
             if target.get("coordinate")
             else None,
             name=data["title_with_entities"]["text"],
-            expires_at=_util.millis_to_datetime(target.get("expiration_time")),
+            expires_at=_util.seconds_to_datetime(target.get("expiration_time")),
             is_expired=target.get("is_expired"),
         )
         media = data.get("media")

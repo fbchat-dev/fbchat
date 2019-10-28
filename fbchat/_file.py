@@ -3,7 +3,7 @@ from . import _util
 from ._attachment import Attachment
 
 
-@attr.s(cmp=False)
+@attr.s
 class FileAttachment(Attachment):
     """Represents a file that has been sent as a Facebook attachment."""
 
@@ -29,7 +29,7 @@ class FileAttachment(Attachment):
         )
 
 
-@attr.s(cmp=False)
+@attr.s
 class AudioAttachment(Attachment):
     """Represents an audio file that has been sent as a Facebook attachment."""
 
@@ -55,7 +55,7 @@ class AudioAttachment(Attachment):
         )
 
 
-@attr.s(cmp=False, init=False)
+@attr.s(init=False)
 class ImageAttachment(Attachment):
     """Represents an image that has been sent as a Facebook attachment.
 
@@ -166,7 +166,7 @@ class ImageAttachment(Attachment):
         )
 
 
-@attr.s(cmp=False, init=False)
+@attr.s(init=False)
 class VideoAttachment(Attachment):
     """Represents a video that has been sent as a Facebook attachment."""
 

@@ -10,7 +10,7 @@ class GuestStatus(Enum):
     DECLINED = 3
 
 
-@attr.s(cmp=False)
+@attr.s
 class Plan:
     """Represents a plan."""
 
