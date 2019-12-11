@@ -53,6 +53,26 @@ class Mention:
     #: The length of the mention
     length = attr.ib(10)
 
+    @classmethod
+    def _from_range(cls, data):
+        return cls(
+            thread_id=data.get("entity", {}).get("id"),
+            offset=data.get("offset"),
+            length=data.get("length"),
+        )
+
+    @classmethod
+    def _from_prng(cls, data):
+        return cls(thread_id=data.get("i"), offset=data.get("o"), length=data.get("l"))
+
+    def _to_send_data(self, i):
+        return {
+            "profile_xmd[{}][id]".format(i): self.thread_id,
+            "profile_xmd[{}][offset]".format(i): self.offset,
+            "profile_xmd[{}][length]".format(i): self.length,
+            "profile_xmd[{}][type]".format(i): "p",
+        }
+
 
 @attrs_default
 class Message:
@@ -157,10 +177,7 @@ class Message:
             data["body"] = self.text
 
         for i, mention in enumerate(self.mentions):
-            data["profile_xmd[{}][id]".format(i)] = mention.thread_id
-            data["profile_xmd[{}][offset]".format(i)] = mention.offset
-            data["profile_xmd[{}][length]".format(i)] = mention.length
-            data["profile_xmd[{}][type]".format(i)] = "p"
+            data.update(mention._to_send_data(i))
 
         if self.emoji_size:
             if self.text:
@@ -235,12 +252,7 @@ class Message:
         return cls(
             text=data["message"].get("text"),
             mentions=[
-                Mention(
-                    thread_id=m.get("entity", {}).get("id"),
-                    offset=m.get("offset"),
-                    length=m.get("length"),
-                )
-                for m in data["message"].get("ranges") or ()
+                Mention._from_range(m) for m in data["message"].get("ranges") or ()
             ],
             emoji_size=EmojiSize._from_tags(tags),
             uid=str(data["message_id"]),
@@ -295,8 +307,8 @@ class Message:
         return cls(
             text=data.get("body"),
             mentions=[
-                Mention(thread_id=m.get("i"), offset=m.get("o"), length=m.get("l"))
-                for m in json.loads(data.get("data", {}).get("prng", "[]"))
+                Mention._from_prng(m)
+                for m in _util.parse_json(data.get("data", {}).get("prng", "[]"))
             ],
             emoji_size=EmojiSize._from_tags(tags),
             uid=metadata.get("messageId"),
@@ -317,12 +329,8 @@ class Message:
         if data.get("data") and data["data"].get("prng"):
             try:
                 mentions = [
-                    Mention(
-                        thread_id=str(mention.get("i")),
-                        offset=mention.get("o"),
-                        length=mention.get("l"),
-                    )
-                    for mention in _util.parse_json(data["data"]["prng"])
+                    Mention._from_prng(m)
+                    for m in _util.parse_json(data["data"]["prng"])
                 ]
             except Exception:
                 log.exception("An exception occured while reading attachments")
