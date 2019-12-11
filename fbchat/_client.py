@@ -198,7 +198,7 @@ class Client:
 
     def _forced_fetch(self, thread_id, mid):
         params = {"thread_and_message_id": {"thread_id": thread_id, "message_id": mid}}
-        j, = self.graphql_requests(_graphql.from_doc_id("1768656253222505", params))
+        (j,) = self.graphql_requests(_graphql.from_doc_id("1768656253222505", params))
         return j
 
     def fetch_threads(self, thread_location, before=None, after=None, limit=None):
@@ -323,7 +323,7 @@ class Client:
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        j, = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_USER, params))
+        (j,) = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_USER, params))
 
         return [User._from_graphql(node) for node in j[name]["users"]["nodes"]]
 
@@ -340,7 +340,7 @@ class Client:
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        j, = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_PAGE, params))
+        (j,) = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_PAGE, params))
 
         return [Page._from_graphql(node) for node in j[name]["pages"]["nodes"]]
 
@@ -358,7 +358,7 @@ class Client:
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        j, = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_GROUP, params))
+        (j,) = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_GROUP, params))
 
         return [Group._from_graphql(node) for node in j["viewer"]["groups"]["nodes"]]
 
@@ -376,7 +376,9 @@ class Client:
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        j, = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_THREAD, params))
+        (j,) = self.graphql_requests(
+            _graphql.from_query(_graphql.SEARCH_THREAD, params)
+        )
 
         rtn = []
         for node in j[name]["threads"]["nodes"]:
@@ -679,7 +681,7 @@ class Client:
             "load_read_receipts": True,
             "before": _util.datetime_to_millis(before) if before else None,
         }
-        j, = self.graphql_requests(_graphql.from_doc_id("1860982147341344", params))
+        (j,) = self.graphql_requests(_graphql.from_doc_id("1860982147341344", params))
 
         if j.get("message_thread") is None:
             raise FBchatException("Could not fetch thread {}: {}".format(thread_id, j))
@@ -733,7 +735,7 @@ class Client:
             "includeDeliveryReceipts": True,
             "includeSeqID": False,
         }
-        j, = self.graphql_requests(_graphql.from_doc_id("1349387578499440", params))
+        (j,) = self.graphql_requests(_graphql.from_doc_id("1349387578499440", params))
 
         rtn = []
         for node in j["viewer"]["message_threads"]["nodes"]:
@@ -853,7 +855,7 @@ class Client:
         return Plan._from_fetch(j)
 
     def _get_private_data(self):
-        j, = self.graphql_requests(_graphql.from_doc_id("1868889766468115", {}))
+        (j,) = self.graphql_requests(_graphql.from_doc_id("1868889766468115", {}))
         return j["viewer"]
 
     def get_phone_numbers(self):
@@ -903,7 +905,7 @@ class Client:
         """
         data = {"id": thread_id, "first": 48}
         thread_id = str(thread_id)
-        j, = self.graphql_requests(_graphql.from_query_id("515216185516880", data))
+        (j,) = self.graphql_requests(_graphql.from_query_id("515216185516880", data))
         while True:
             try:
                 i = j[thread_id]["message_shared_media"]["edges"][0]
@@ -914,7 +916,7 @@ class Client:
                     data["after"] = j[thread_id]["message_shared_media"][
                         "page_info"
                     ].get("end_cursor")
-                    j, = self.graphql_requests(
+                    (j,) = self.graphql_requests(
                         _graphql.from_query_id("515216185516880", data)
                     )
                     continue
@@ -1369,7 +1371,7 @@ class Client:
             "response": "ACCEPT" if approve else "DENY",
             "surface": "ADMIN_MODEL_APPROVAL_CENTER",
         }
-        j, = self.graphql_requests(
+        (j,) = self.graphql_requests(
             _graphql.from_doc_id("1574519202665847", {"data": data})
         )
 
@@ -1422,7 +1424,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        (image_id, mimetype), = self._upload(_util.get_files_from_urls([image_url]))
+        ((image_id, mimetype),) = self._upload(_util.get_files_from_urls([image_url]))
         return self._change_group_image(image_id, thread_id)
 
     def change_group_image_local(self, image_path, thread_id=None):
@@ -1436,7 +1438,7 @@ class Client:
             FBchatException: If request failed
         """
         with _util.get_files_from_paths([image_path]) as files:
-            (image_id, mimetype), = self._upload(files)
+            ((image_id, mimetype),) = self._upload(files)
 
         return self._change_group_image(image_id, thread_id)
 
