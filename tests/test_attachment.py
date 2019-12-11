@@ -447,11 +447,13 @@ def test_share_with_video_subattachment():
                 uid="2222",
                 duration=datetime.timedelta(seconds=24, microseconds=469000),
                 preview_url="https://video-arn2-1.xx.fbcdn.net/v/t42.9040-2/vid.mp4",
-                medium_image=fbchat.Image(
-                    url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
-                    width=960,
-                    height=540,
-                ),
+                previews={
+                    fbchat.Image(
+                        url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
+                        width=960,
+                        height=540,
+                    )
+                },
             )
         ],
         uid="deadbeef123",

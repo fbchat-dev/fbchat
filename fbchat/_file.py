@@ -65,45 +65,44 @@ class ImageAttachment(Attachment):
     width = attr.ib(None, converter=lambda x: None if x is None else int(x))
     #: Height of original image
     height = attr.ib(None, converter=lambda x: None if x is None else int(x))
-
     #: Whether the image is animated
     is_animated = attr.ib(None)
-
-    #: A thumbnail of the image
-    thumbnail = attr.ib(None)
-    #: A medium preview of the image
-    preview = attr.ib(None)
-    #: A large preview of the image
-    large_preview = attr.ib(None)
-    #: An animated preview of the image (e.g. for GIFs)
-    animated_preview = attr.ib(None)
+    #: A set, containing variously sized / various types of previews of the image
+    previews = attr.ib(factory=set)
 
     @classmethod
     def _from_graphql(cls, data):
+        previews = {
+            Image._from_uri_or_none(data.get("thumbnail")),
+            Image._from_uri_or_none(data.get("preview") or data.get("preview_image")),
+            Image._from_uri_or_none(data.get("large_preview")),
+            Image._from_uri_or_none(data.get("animated_image")),
+        }
+
         return cls(
             original_extension=data.get("original_extension")
             or (data["filename"].split("-")[0] if data.get("filename") else None),
             width=data.get("original_dimensions", {}).get("width"),
             height=data.get("original_dimensions", {}).get("height"),
             is_animated=data["__typename"] == "MessageAnimatedImage",
-            thumbnail=Image._from_uri_or_none(data.get("thumbnail")),
-            preview=Image._from_uri_or_none(
-                data.get("preview") or data.get("preview_image")
-            ),
-            large_preview=Image._from_uri_or_none(data.get("large_preview")),
-            animated_preview=Image._from_uri_or_none(data.get("animated_image")),
+            previews={p for p in previews if p},
             uid=data.get("legacy_attachment_id"),
         )
 
     @classmethod
     def _from_list(cls, data):
         data = data["node"]
+
+        previews = {
+            Image._from_uri_or_none(data["image"]),
+            Image._from_uri(data["image1"]),
+            Image._from_uri(data["image2"]),
+        }
+
         return cls(
             width=data["original_dimensions"].get("x"),
             height=data["original_dimensions"].get("y"),
-            thumbnail=Image._from_uri_or_none(data["image"]),
-            large_preview=Image._from_uri(data["image2"]),
-            preview=Image._from_uri(data["image1"]),
+            previews={p for p in previews if p},
             uid=data["legacy_attachment_id"],
         )
 
@@ -122,47 +121,52 @@ class VideoAttachment(Attachment):
     duration = attr.ib(None)
     #: URL to very compressed preview video
     preview_url = attr.ib(None)
-
-    #: A small preview image of the video
-    small_image = attr.ib(None)
-    #: A medium preview image of the video
-    medium_image = attr.ib(None)
-    #: A large preview image of the video
-    large_image = attr.ib(None)
+    #: A set, containing variously sized previews of the video
+    previews = attr.ib(factory=set)
 
     @classmethod
     def _from_graphql(cls, data, size=None):
+        previews = {
+            Image._from_uri_or_none(data.get("chat_image")),
+            Image._from_uri_or_none(data.get("inbox_image")),
+            Image._from_uri_or_none(data.get("large_image")),
+        }
+
         return cls(
             size=size,
             width=data.get("original_dimensions", {}).get("width"),
             height=data.get("original_dimensions", {}).get("height"),
             duration=_util.millis_to_timedelta(data.get("playable_duration_in_ms")),
             preview_url=data.get("playable_url"),
-            small_image=Image._from_uri_or_none(data.get("chat_image")),
-            medium_image=Image._from_uri_or_none(data.get("inbox_image")),
-            large_image=Image._from_uri_or_none(data.get("large_image")),
+            previews={p for p in previews if p},
             uid=data.get("legacy_attachment_id"),
         )
 
     @classmethod
     def _from_subattachment(cls, data):
         media = data["media"]
+        image = Image._from_uri_or_none(media.get("image"))
+
         return cls(
             duration=_util.millis_to_timedelta(media.get("playable_duration_in_ms")),
             preview_url=media.get("playable_url"),
-            medium_image=Image._from_uri_or_none(media.get("image")),
+            previews={image} if image else {},
             uid=data["target"].get("video_id"),
         )
 
     @classmethod
     def _from_list(cls, data):
         data = data["node"]
+        previews = {
+            Image._from_uri(data["image"]),
+            Image._from_uri(data["image1"]),
+            Image._from_uri(data["image2"]),
+        }
+
         return cls(
             width=data["original_dimensions"].get("x"),
             height=data["original_dimensions"].get("y"),
-            small_image=Image._from_uri(data["image"]),
-            medium_image=Image._from_uri(data["image1"]),
-            large_image=Image._from_uri(data["image2"]),
+            previews=previews,
             uid=data["legacy_attachment_id"],
         )
 

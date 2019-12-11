@@ -31,6 +31,7 @@ class Enum(aenum.Enum):
             return cls(value)
 
 
+# Frozen, so that it can be used in sets
 @attr.s(frozen=True, slots=True, kw_only=kw_only)
 class Image:
     #: URL to the image
