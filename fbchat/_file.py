@@ -18,9 +18,10 @@ class FileAttachment(Attachment):
     is_malicious = attr.ib(None)
 
     @classmethod
-    def _from_graphql(cls, data):
+    def _from_graphql(cls, data, size=None):
         return cls(
             url=data.get("url"),
+            size=size,
             name=data.get("filename"),
             is_malicious=data.get("is_malicious"),
             uid=data.get("message_file_fbid"),
@@ -130,8 +131,9 @@ class VideoAttachment(Attachment):
     large_image = attr.ib(None)
 
     @classmethod
-    def _from_graphql(cls, data):
+    def _from_graphql(cls, data, size=None):
         return cls(
+            size=size,
             width=data.get("original_dimensions", {}).get("width"),
             height=data.get("original_dimensions", {}).get("height"),
             duration=_util.millis_to_timedelta(data.get("playable_duration_in_ms")),
@@ -165,16 +167,16 @@ class VideoAttachment(Attachment):
         )
 
 
-def graphql_to_attachment(data):
+def graphql_to_attachment(data, size=None):
     _type = data["__typename"]
     if _type in ["MessageImage", "MessageAnimatedImage"]:
         return ImageAttachment._from_graphql(data)
     elif _type == "MessageVideo":
-        return VideoAttachment._from_graphql(data)
+        return VideoAttachment._from_graphql(data, size=size)
     elif _type == "MessageAudio":
         return AudioAttachment._from_graphql(data)
     elif _type == "MessageFile":
-        return FileAttachment._from_graphql(data)
+        return FileAttachment._from_graphql(data, size=size)
 
     return Attachment(uid=data.get("legacy_attachment_id"))
 

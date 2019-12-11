@@ -33,17 +33,20 @@ class Sticker(Attachment):
     def _from_graphql(cls, data):
         if not data:
             return None
-        self = cls(uid=data["id"])
-        if data.get("pack"):
-            self.pack = data["pack"].get("id")
-        if data.get("sprite_image"):
-            self.is_animated = True
-            self.medium_sprite_image = data["sprite_image"].get("uri")
-            self.large_sprite_image = data["sprite_image_2x"].get("uri")
-            self.frames_per_row = data.get("frames_per_row")
-            self.frames_per_col = data.get("frames_per_column")
-            self.frame_rate = data.get("frame_rate")
-        self.image = Image._from_url_or_none(data)
-        if data.get("label"):
-            self.label = data["label"]
-        return self
+
+        return cls(
+            uid=data["id"],
+            pack=data["pack"].get("id") if data.get("pack") else None,
+            is_animated=bool(data.get("sprite_image")),
+            medium_sprite_image=data["sprite_image"].get("uri")
+            if data.get("sprite_image")
+            else None,
+            large_sprite_image=data["sprite_image_2x"].get("uri")
+            if data.get("sprite_image_2x")
+            else None,
+            frames_per_row=data.get("frames_per_row"),
+            frames_per_col=data.get("frames_per_column"),
+            frame_rate=data.get("frame_rate"),
+            image=Image._from_url_or_none(data),
+            label=data["label"] if data.get("label") else None,
+        )

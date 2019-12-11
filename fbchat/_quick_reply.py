@@ -9,7 +9,7 @@ class QuickReply:
     #: Payload of the quick reply
     payload = attr.ib(None)
     #: External payload for responses
-    external_payload = attr.ib(None, init=False)
+    external_payload = attr.ib(None)
     #: Additional data
     data = attr.ib(None)
     #: Whether it's a response for a quick reply

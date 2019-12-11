@@ -43,8 +43,19 @@ class ShareAttachment(Attachment):
     def _from_graphql(cls, data):
         from . import _file
 
+        image = None
+        original_image_url = None
+        media = data.get("media")
+        if media and media.get("image"):
+            image = Image._from_uri(media["image"])
+            original_image_url = (
+                _util.get_url_parameter(image.url, "url")
+                if "/safe_image.php" in image.url
+                else image.url
+            )
+
         url = data.get("url")
-        rtn = cls(
+        return cls(
             uid=data.get("deduplication_key"),
             author=data["target"]["actors"][0]["id"]
             if data["target"].get("actors")
@@ -58,18 +69,10 @@ class ShareAttachment(Attachment):
             if data.get("description")
             else None,
             source=data["source"].get("text") if data.get("source") else None,
+            image=image,
+            original_image_url=original_image_url,
             attachments=[
                 _file.graphql_to_subattachment(attachment)
                 for attachment in data.get("subattachments")
             ],
         )
-        media = data.get("media")
-        if media and media.get("image"):
-            image = media["image"]
-            rtn.image = Image._from_uri(image)
-            rtn.original_image_url = (
-                _util.get_url_parameter(rtn.image.url, "url")
-                if "/safe_image.php" in rtn.image.url
-                else rtn.image.url
-            )
-        return rtn

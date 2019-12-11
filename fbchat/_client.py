@@ -686,21 +686,13 @@ class Client:
         if j.get("message_thread") is None:
             raise FBchatException("Could not fetch thread {}: {}".format(thread_id, j))
 
+        read_receipts = j["message_thread"]["read_receipts"]["nodes"]
+
         messages = [
-            Message._from_graphql(message)
+            Message._from_graphql(message, read_receipts)
             for message in j["message_thread"]["messages"]["nodes"]
         ]
         messages.reverse()
-
-        read_receipts = j["message_thread"]["read_receipts"]["nodes"]
-
-        for message in messages:
-            for receipt in read_receipts:
-                if (
-                    _util.millis_to_datetime(int(receipt["watermark"]))
-                    >= message.created_at
-                ):
-                    message.read_by.append(receipt["actor"]["id"])
 
         return messages
 
@@ -1009,11 +1001,16 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        quick_reply.is_response = True
         if isinstance(quick_reply, QuickReplyText):
-            return self.send(
-                Message(text=quick_reply.title, quick_replies=[quick_reply])
+            new = QuickReplyText(
+                payload=quick_reply.payload,
+                external_payload=quick_reply.external_payload,
+                data=quick_reply.data,
+                is_response=True,
+                title=quick_reply.title,
+                image_url=quick_reply.image_url,
             )
+            return self.send(Message(text=quick_reply.title, quick_replies=[new]))
         elif isinstance(quick_reply, QuickReplyLocation):
             if not isinstance(payload, LocationAttachment):
                 raise TypeError(
@@ -1023,17 +1020,23 @@ class Client:
                 payload, thread_id=thread_id, thread_type=thread_type
             )
         elif isinstance(quick_reply, QuickReplyEmail):
-            if not payload:
-                payload = self.get_emails()[0]
-            quick_reply.external_payload = quick_reply.payload
-            quick_reply.payload = payload
-            return self.send(Message(text=payload, quick_replies=[quick_reply]))
+            new = QuickReplyEmail(
+                payload=payload if payload else self.get_emails()[0],
+                external_payload=quick_reply.payload,
+                data=quick_reply.data,
+                is_response=True,
+                image_url=quick_reply.image_url,
+            )
+            return self.send(Message(text=payload, quick_replies=[new]))
         elif isinstance(quick_reply, QuickReplyPhoneNumber):
-            if not payload:
-                payload = self.get_phone_numbers()[0]
-            quick_reply.external_payload = quick_reply.payload
-            quick_reply.payload = payload
-            return self.send(Message(text=payload, quick_replies=[quick_reply]))
+            new = QuickReplyPhoneNumber(
+                payload=payload if payload else self.get_phone_numbers()[0],
+                external_payload=quick_reply.payload,
+                data=quick_reply.data,
+                is_response=True,
+                image_url=quick_reply.image_url,
+            )
+            return self.send(Message(text=payload, quick_replies=[new]))
 
     def unsend(self, mid):
         """Unsend message by it's ID (removes it for everyone).
@@ -2533,9 +2536,8 @@ class Client:
                     i = d["deltaMessageReply"]
                     metadata = i["message"]["messageMetadata"]
                     thread_id, thread_type = get_thread_id_and_thread_type(metadata)
-                    message = Message._from_reply(i["message"])
-                    message.replied_to = Message._from_reply(i["repliedToMessage"])
-                    message.reply_to_id = message.replied_to.uid
+                    replied_to = Message._from_reply(i["repliedToMessage"])
+                    message = Message._from_reply(i["message"], replied_to)
                     self.on_message(
                         mid=message.uid,
                         author_id=message.author,

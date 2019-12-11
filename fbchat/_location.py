@@ -31,17 +31,17 @@ class LocationAttachment(Attachment):
             address = None
         except ValueError:
             latitude, longitude = None, None
-        rtn = cls(
+
+        return cls(
             uid=int(data["deduplication_key"]),
             latitude=latitude,
             longitude=longitude,
+            image=Image._from_uri_or_none(data["media"].get("image"))
+            if data.get("media")
+            else None,
+            url=url,
             address=address,
         )
-        media = data.get("media")
-        if media and media.get("image"):
-            rtn.image = Image._from_uri(media["image"])
-        rtn.url = url
-        return rtn
 
 
 @attr.s
@@ -73,7 +73,13 @@ class LiveLocationAttachment(LocationAttachment):
     @classmethod
     def _from_graphql(cls, data):
         target = data["target"]
-        rtn = cls(
+
+        image = None
+        media = data.get("media")
+        if media and media.get("image"):
+            image = Image._from_uri(media["image"])
+
+        return cls(
             uid=int(target["live_location_id"]),
             latitude=target["coordinate"]["latitude"]
             if target.get("coordinate")
@@ -81,12 +87,9 @@ class LiveLocationAttachment(LocationAttachment):
             longitude=target["coordinate"]["longitude"]
             if target.get("coordinate")
             else None,
+            image=image,
+            url=data.get("url"),
             name=data["title_with_entities"]["text"],
             expires_at=_util.seconds_to_datetime(target.get("expiration_time")),
             is_expired=target.get("is_expired"),
         )
-        media = data.get("media")
-        if media and media.get("image"):
-            rtn.image = Image._from_uri(media["image"])
-        rtn.url = data.get("url")
-        return rtn
