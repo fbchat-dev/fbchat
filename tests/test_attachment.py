@@ -72,10 +72,8 @@ def test_share_from_graphql_link():
         title="a.com",
         description="",
         source="a.com",
-        image_url=None,
+        image=None,
         original_image_url=None,
-        image_width=None,
-        image_height=None,
         attachments=[],
         uid="ee.mid.$xyz",
     ) == ShareAttachment._from_graphql(data)
@@ -125,10 +123,10 @@ def test_share_from_graphql_link_with_image():
             " Share photos and videos, send messages and get updates."
         ),
         source=None,
-        image_url="https://www.facebook.com/rsrc.php/v3/x.png",
+        image=fbchat.Image(
+            url="https://www.facebook.com/rsrc.php/v3/x.png", width=325, height=325
+        ),
         original_image_url="https://www.facebook.com/rsrc.php/v3/x.png",
-        image_width=325,
-        image_height=325,
         attachments=[],
         uid="deadbeef123",
     ) == ShareAttachment._from_graphql(data)
@@ -187,14 +185,14 @@ def test_share_from_graphql_video():
             " Subscribe to the official Rick As..."
         ),
         source="youtube.com",
-        image_url=(
-            "https://external-arn2-1.xx.fbcdn.net/safe_image.php?d=xyz123"
+        image=fbchat.Image(
+            url="https://external-arn2-1.xx.fbcdn.net/safe_image.php?d=xyz123"
             "&w=960&h=540&url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FdQw4w9WgXcQ"
-            "%2Fmaxresdefault.jpg&sx=0&sy=0&sw=1280&sh=720&_nc_hash=abc123"
+            "%2Fmaxresdefault.jpg&sx=0&sy=0&sw=1280&sh=720&_nc_hash=abc123",
+            width=960,
+            height=540,
         ),
         original_image_url="https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-        image_width=960,
-        image_height=540,
         attachments=[],
         uid="ee.mid.$gAAT4Sw1WSGhzQ9uRWVtEpZHZ8ZPV",
     ) == ShareAttachment._from_graphql(data)
@@ -310,10 +308,12 @@ def test_share_with_image_subattachment():
         title="",
         description="Abc",
         source="Def",
-        image_url="https://scontent-arn2-1.xx.fbcdn.net/v/t1.0-9/1.jpg",
+        image=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/t1.0-9/1.jpg",
+            width=720,
+            height=960,
+        ),
         original_image_url="https://scontent-arn2-1.xx.fbcdn.net/v/t1.0-9/1.jpg",
-        image_width=720,
-        image_height=960,
         attachments=[None],
         uid="deadbeef123",
     ) == ShareAttachment._from_graphql(data)
@@ -436,19 +436,23 @@ def test_share_with_video_subattachment():
         title="",
         description="Abc",
         source="Def",
-        image_url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
+        image=fbchat.Image(
+            url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
+            width=960,
+            height=540,
+        ),
         original_image_url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
-        image_width=960,
-        image_height=540,
         attachments=[
             fbchat.VideoAttachment(
                 uid="2222",
                 duration=datetime.timedelta(seconds=24, microseconds=469000),
                 preview_url="https://video-arn2-1.xx.fbcdn.net/v/t42.9040-2/vid.mp4",
-                medium_image={
-                    "uri": "https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
-                    "width": 960,
-                    "height": 540,
+                previews={
+                    fbchat.Image(
+                        url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
+                        width=960,
+                        height=540,
+                    )
                 },
             )
         ],

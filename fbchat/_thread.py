@@ -1,5 +1,5 @@
 import attr
-from ._core import Enum
+from ._core import attrs_default, Enum, Image
 
 
 class ThreadType(Enum):
@@ -67,7 +67,7 @@ class ThreadColor(Enum):
         return cls._extend_if_invalid(value)
 
 
-@attr.s
+@attrs_default
 class Thread:
     """Represents a Facebook thread."""
 
@@ -75,7 +75,7 @@ class Thread:
     uid = attr.ib(converter=str)
     #: Specifies the type of thread. Can be used a ``thread_type``. See :ref:`intro_threads` for more info
     type = None
-    #: A URL to the thread's picture
+    #: The thread's picture
     photo = attr.ib(None)
     #: The name of the thread
     name = attr.ib(None)
@@ -83,7 +83,7 @@ class Thread:
     last_active = attr.ib(None)
     #: Number of messages in the thread
     message_count = attr.ib(None)
-    #: Set :class:`Plan`
+    #: Set `Plan`
     plan = attr.ib(None)
 
     @staticmethod

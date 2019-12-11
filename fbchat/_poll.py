@@ -1,13 +1,14 @@
 import attr
+from ._core import attrs_default
 
 
-@attr.s
+@attrs_default
 class Poll:
     """Represents a poll."""
 
     #: Title of the poll
     title = attr.ib()
-    #: List of :class:`PollOption`, can be fetched with :func:`fbchat.Client.fetch_poll_options`
+    #: List of `PollOption`, can be fetched with `Client.fetch_poll_options`
     options = attr.ib()
     #: Options count
     options_count = attr.ib(None)
@@ -24,7 +25,7 @@ class Poll:
         )
 
 
-@attr.s
+@attrs_default
 class PollOption:
     """Represents a poll option."""
 

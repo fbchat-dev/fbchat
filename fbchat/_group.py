@@ -1,30 +1,29 @@
 import attr
+from ._core import attrs_default, Image
 from . import _util, _plan
 from ._thread import ThreadType, Thread
 
 
-@attr.s
+@attrs_default
 class Group(Thread):
     """Represents a Facebook group. Inherits `Thread`."""
 
     type = ThreadType.GROUP
 
     #: Unique list (set) of the group thread's participant user IDs
-    participants = attr.ib(factory=set, converter=lambda x: set() if x is None else x)
+    participants = attr.ib(factory=set)
     #: A dictionary, containing user nicknames mapped to their IDs
-    nicknames = attr.ib(factory=dict, converter=lambda x: {} if x is None else x)
-    #: A :class:`ThreadColor`. The groups's message color
+    nicknames = attr.ib(factory=dict)
+    #: A `ThreadColor`. The groups's message color
     color = attr.ib(None)
     #: The groups's default emoji
     emoji = attr.ib(None)
     # Set containing user IDs of thread admins
-    admins = attr.ib(factory=set, converter=lambda x: set() if x is None else x)
+    admins = attr.ib(factory=set)
     # True if users need approval to join
     approval_mode = attr.ib(None)
     # Set containing user IDs requesting to join
-    approval_requests = attr.ib(
-        factory=set, converter=lambda x: set() if x is None else x
-    )
+    approval_requests = attr.ib(factory=set)
     # Link for joining group
     join_link = attr.ib(None)
 
@@ -43,7 +42,7 @@ class Group(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            data["thread_key"]["thread_fbid"],
+            uid=data["thread_key"]["thread_fbid"],
             participants=set(
                 [
                     node["messaging_actor"]["id"]
@@ -64,7 +63,7 @@ class Group(Thread):
             if data.get("group_approval_queue")
             else None,
             join_link=data["joinable_mode"].get("link"),
-            photo=data["image"].get("uri"),
+            photo=Image._from_uri_or_none(data["image"]),
             name=data.get("name"),
             message_count=data.get("messages_count"),
             last_active=last_active,

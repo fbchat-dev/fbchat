@@ -1,5 +1,6 @@
 import pytest
 import datetime
+import fbchat
 from fbchat._location import LocationAttachment, LiveLocationAttachment
 
 
@@ -33,12 +34,17 @@ def test_location_attachment_from_graphql():
         "target": {"__typename": "MessageLocation"},
         "subattachments": [],
     }
-    expected = LocationAttachment(latitude=55.4, longitude=12.4322, uid=400828513928715)
-    expected.image_url = "https://external-arn2-1.xx.fbcdn.net/static_map.php?v=1020&osm_provider=2&size=545x280&zoom=15&markers=55.40000000%2C12.43220000&language=en"
-    expected.image_width = 545
-    expected.image_height = 280
-    expected.url = "https://l.facebook.com/l.php?u=https%3A%2F%2Fwww.bing.com%2Fmaps%2Fdefault.aspx%3Fv%3D2%26pc%3DFACEBK%26mid%3D8100%26where1%3D55.4%252C%2B12.4322%26FORM%3DFBKPL1%26mkt%3Den-GB&h=a&s=1"
-    assert expected == LocationAttachment._from_graphql(data)
+    assert LocationAttachment(
+        uid=400828513928715,
+        latitude=55.4,
+        longitude=12.4322,
+        image=fbchat.Image(
+            url="https://external-arn2-1.xx.fbcdn.net/static_map.php?v=1020&osm_provider=2&size=545x280&zoom=15&markers=55.40000000%2C12.43220000&language=en",
+            width=545,
+            height=280,
+        ),
+        url="https://l.facebook.com/l.php?u=https%3A%2F%2Fwww.bing.com%2Fmaps%2Fdefault.aspx%3Fv%3D2%26pc%3DFACEBK%26mid%3D8100%26where1%3D55.4%252C%2B12.4322%26FORM%3DFBKPL1%26mkt%3Den-GB&h=a&s=1",
+    ) == LocationAttachment._from_graphql(data)
 
 
 @pytest.mark.skip(reason="need to gather test data")
@@ -73,16 +79,15 @@ def test_live_location_from_graphql_expired():
         },
         "subattachments": [],
     }
-    expected = LiveLocationAttachment(
+    assert LiveLocationAttachment(
         uid=2254535444791641,
         name="Location-sharing ended",
         expires_at=datetime.datetime(
             2019, 1, 4, 18, 25, 45, tzinfo=datetime.timezone.utc
         ),
         is_expired=True,
-    )
-    expected.url = "https://www.facebook.com/"
-    assert expected == LiveLocationAttachment._from_graphql(data)
+        url="https://www.facebook.com/",
+    ) == LiveLocationAttachment._from_graphql(data)
 
 
 @pytest.mark.skip(reason="need to gather test data")

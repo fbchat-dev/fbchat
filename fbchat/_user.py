@@ -1,5 +1,5 @@
 import attr
-from ._core import Enum
+from ._core import attrs_default, Enum, Image
 from . import _util, _plan
 from ._thread import ThreadType, Thread
 
@@ -41,7 +41,7 @@ class TypingStatus(Enum):
     TYPING = 1
 
 
-@attr.s
+@attrs_default
 class User(Thread):
     """Represents a Facebook user. Inherits `Thread`."""
 
@@ -63,7 +63,7 @@ class User(Thread):
     nickname = attr.ib(None)
     #: The clients nickname, as seen by the user
     own_nickname = attr.ib(None)
-    #: A :class:`ThreadColor`. The message color
+    #: A `ThreadColor`. The message color
     color = attr.ib(None)
     #: The default emoji
     emoji = attr.ib(None)
@@ -78,7 +78,7 @@ class User(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            data["id"],
+            uid=data["id"],
             url=data.get("url"),
             first_name=data.get("first_name"),
             last_name=data.get("last_name"),
@@ -89,7 +89,7 @@ class User(Thread):
             color=c_info.get("color"),
             emoji=c_info.get("emoji"),
             own_nickname=c_info.get("own_nickname"),
-            photo=data["profile_picture"].get("uri"),
+            photo=Image._from_uri(data["profile_picture"]),
             name=data.get("name"),
             message_count=data.get("messages_count"),
             plan=plan,
@@ -123,7 +123,7 @@ class User(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            user["id"],
+            uid=user["id"],
             url=user.get("url"),
             name=user.get("name"),
             first_name=first_name,
@@ -135,7 +135,7 @@ class User(Thread):
             color=c_info.get("color"),
             emoji=c_info.get("emoji"),
             own_nickname=c_info.get("own_nickname"),
-            photo=user["big_image_src"].get("uri"),
+            photo=Image._from_uri(user["big_image_src"]),
             message_count=data.get("messages_count"),
             last_active=last_active,
             plan=plan,
@@ -144,10 +144,10 @@ class User(Thread):
     @classmethod
     def _from_all_fetch(cls, data):
         return cls(
-            data["id"],
+            uid=data["id"],
             first_name=data.get("firstName"),
             url=data.get("uri"),
-            photo=data.get("thumbSrc"),
+            photo=Image(url=data.get("thumbSrc")),
             name=data.get("name"),
             is_friend=data.get("is_friend"),
             gender=GENDERS.get(data.get("gender")),

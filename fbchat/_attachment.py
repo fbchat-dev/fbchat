@@ -1,8 +1,9 @@
 import attr
+from ._core import attrs_default, Image
 from . import _util
 
 
-@attr.s
+@attrs_default
 class Attachment:
     """Represents a Facebook attachment."""
 
@@ -10,12 +11,12 @@ class Attachment:
     uid = attr.ib(None)
 
 
-@attr.s
+@attrs_default
 class UnsentMessage(Attachment):
     """Represents an unsent message attachment."""
 
 
-@attr.s
+@attrs_default
 class ShareAttachment(Attachment):
     """Represents a shared item (e.g. URL) attachment."""
 
@@ -31,26 +32,30 @@ class ShareAttachment(Attachment):
     description = attr.ib(None)
     #: Name of the source
     source = attr.ib(None)
-    #: URL of the attachment image
-    image_url = attr.ib(None)
+    #: The attached image
+    image = attr.ib(None)
     #: URL of the original image if Facebook uses ``safe_image``
     original_image_url = attr.ib(None)
-    #: Width of the image
-    image_width = attr.ib(None)
-    #: Height of the image
-    image_height = attr.ib(None)
     #: List of additional attachments
-    attachments = attr.ib(factory=list, converter=lambda x: [] if x is None else x)
-
-    # Put here for backwards compatibility, so that the init argument order is preserved
-    uid = attr.ib(None)
+    attachments = attr.ib(factory=list)
 
     @classmethod
     def _from_graphql(cls, data):
         from . import _file
 
+        image = None
+        original_image_url = None
+        media = data.get("media")
+        if media and media.get("image"):
+            image = Image._from_uri(media["image"])
+            original_image_url = (
+                _util.get_url_parameter(image.url, "url")
+                if "/safe_image.php" in image.url
+                else image.url
+            )
+
         url = data.get("url")
-        rtn = cls(
+        return cls(
             uid=data.get("deduplication_key"),
             author=data["target"]["actors"][0]["id"]
             if data["target"].get("actors")
@@ -64,20 +69,10 @@ class ShareAttachment(Attachment):
             if data.get("description")
             else None,
             source=data["source"].get("text") if data.get("source") else None,
+            image=image,
+            original_image_url=original_image_url,
             attachments=[
                 _file.graphql_to_subattachment(attachment)
                 for attachment in data.get("subattachments")
             ],
         )
-        media = data.get("media")
-        if media and media.get("image"):
-            image = media["image"]
-            rtn.image_url = image.get("uri")
-            rtn.original_image_url = (
-                _util.get_url_parameter(rtn.image_url, "url")
-                if "/safe_image.php" in rtn.image_url
-                else rtn.image_url
-            )
-            rtn.image_width = image.get("width")
-            rtn.image_height = image.get("height")
-        return rtn

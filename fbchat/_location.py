@@ -1,9 +1,10 @@
 import attr
+from ._core import attrs_default, Image
 from ._attachment import Attachment
 from . import _util
 
 
-@attr.s
+@attrs_default
 class LocationAttachment(Attachment):
     """Represents a user location.
 
@@ -14,19 +15,12 @@ class LocationAttachment(Attachment):
     latitude = attr.ib(None)
     #: Longitude of the location
     longitude = attr.ib(None)
-    #: URL of image showing the map of the location
-    image_url = attr.ib(None, init=False)
-    #: Width of the image
-    image_width = attr.ib(None, init=False)
-    #: Height of the image
-    image_height = attr.ib(None, init=False)
+    #: Image showing the map of the location
+    image = attr.ib(None)
     #: URL to Bing maps with the location
-    url = attr.ib(None, init=False)
+    url = attr.ib(None)
     # Address of the location
     address = attr.ib(None)
-
-    # Put here for backwards compatibility, so that the init argument order is preserved
-    uid = attr.ib(None)
 
     @classmethod
     def _from_graphql(cls, data):
@@ -37,23 +31,20 @@ class LocationAttachment(Attachment):
             address = None
         except ValueError:
             latitude, longitude = None, None
-        rtn = cls(
+
+        return cls(
             uid=int(data["deduplication_key"]),
             latitude=latitude,
             longitude=longitude,
+            image=Image._from_uri_or_none(data["media"].get("image"))
+            if data.get("media")
+            else None,
+            url=url,
             address=address,
         )
-        media = data.get("media")
-        if media and media.get("image"):
-            image = media["image"]
-            rtn.image_url = image.get("uri")
-            rtn.image_width = image.get("width")
-            rtn.image_height = image.get("height")
-        rtn.url = url
-        return rtn
 
 
-@attr.s
+@attrs_default
 class LiveLocationAttachment(LocationAttachment):
     """Represents a live user location."""
 
@@ -82,7 +73,13 @@ class LiveLocationAttachment(LocationAttachment):
     @classmethod
     def _from_graphql(cls, data):
         target = data["target"]
-        rtn = cls(
+
+        image = None
+        media = data.get("media")
+        if media and media.get("image"):
+            image = Image._from_uri(media["image"])
+
+        return cls(
             uid=int(target["live_location_id"]),
             latitude=target["coordinate"]["latitude"]
             if target.get("coordinate")
@@ -90,15 +87,9 @@ class LiveLocationAttachment(LocationAttachment):
             longitude=target["coordinate"]["longitude"]
             if target.get("coordinate")
             else None,
+            image=image,
+            url=data.get("url"),
             name=data["title_with_entities"]["text"],
             expires_at=_util.seconds_to_datetime(target.get("expiration_time")),
             is_expired=target.get("is_expired"),
         )
-        media = data.get("media")
-        if media and media.get("image"):
-            image = media["image"]
-            rtn.image_url = image.get("uri")
-            rtn.image_width = image.get("width")
-            rtn.image_height = image.get("height")
-        rtn.url = data.get("url")
-        return rtn

@@ -10,12 +10,12 @@ pytestmark = pytest.mark.online
 @pytest.fixture(
     scope="module",
     params=[
-        Plan(int(time()) + 100, random_hex()),
+        Plan(time=int(time()) + 100, title=random_hex()),
         pytest.param(
-            Plan(int(time()), random_hex()),
+            Plan(time=int(time()), title=random_hex()),
             marks=[pytest.mark.xfail(raises=FBchatFacebookError)],
         ),
-        pytest.param(Plan(0, None), marks=[pytest.mark.xfail()]),
+        pytest.param(Plan(time=0, title=None), marks=[pytest.mark.xfail()]),
     ],
 )
 def plan_data(request, client, user, thread, catch_event, compare):

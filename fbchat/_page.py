@@ -1,9 +1,10 @@
 import attr
+from ._core import attrs_default, Image
 from . import _plan
 from ._thread import ThreadType, Thread
 
 
-@attr.s
+@attrs_default
 class Page(Thread):
     """Represents a Facebook page. Inherits `Thread`."""
 
@@ -31,11 +32,11 @@ class Page(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            data["id"],
+            uid=data["id"],
             url=data.get("url"),
             city=data.get("city").get("name"),
             category=data.get("category_type"),
-            photo=data["profile_picture"].get("uri"),
+            photo=Image._from_uri(data["profile_picture"]),
             name=data.get("name"),
             message_count=data.get("messages_count"),
             plan=plan,

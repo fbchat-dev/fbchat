@@ -1,8 +1,9 @@
 import attr
+from ._core import attrs_default, Image
 from ._attachment import Attachment
 
 
-@attr.s
+@attrs_default
 class Sticker(Attachment):
     """Represents a Facebook sticker that has been sent to a thread as an attachment."""
 
@@ -23,12 +24,8 @@ class Sticker(Attachment):
     #: The frame rate the spritemap is intended to be played in
     frame_rate = attr.ib(None)
 
-    #: URL to the sticker's image
-    url = attr.ib(None)
-    #: Width of the sticker
-    width = attr.ib(None)
-    #: Height of the sticker
-    height = attr.ib(None)
+    #: The sticker's image
+    image = attr.ib(None)
     #: The sticker's label/name
     label = attr.ib(None)
 
@@ -36,19 +33,20 @@ class Sticker(Attachment):
     def _from_graphql(cls, data):
         if not data:
             return None
-        self = cls(uid=data["id"])
-        if data.get("pack"):
-            self.pack = data["pack"].get("id")
-        if data.get("sprite_image"):
-            self.is_animated = True
-            self.medium_sprite_image = data["sprite_image"].get("uri")
-            self.large_sprite_image = data["sprite_image_2x"].get("uri")
-            self.frames_per_row = data.get("frames_per_row")
-            self.frames_per_col = data.get("frames_per_column")
-            self.frame_rate = data.get("frame_rate")
-        self.url = data.get("url")
-        self.width = data.get("width")
-        self.height = data.get("height")
-        if data.get("label"):
-            self.label = data["label"]
-        return self
+
+        return cls(
+            uid=data["id"],
+            pack=data["pack"].get("id") if data.get("pack") else None,
+            is_animated=bool(data.get("sprite_image")),
+            medium_sprite_image=data["sprite_image"].get("uri")
+            if data.get("sprite_image")
+            else None,
+            large_sprite_image=data["sprite_image_2x"].get("uri")
+            if data.get("sprite_image_2x")
+            else None,
+            frames_per_row=data.get("frames_per_row"),
+            frames_per_col=data.get("frames_per_column"),
+            frame_rate=data.get("frame_rate"),
+            image=Image._from_url_or_none(data),
+            label=data["label"] if data.get("label") else None,
+        )

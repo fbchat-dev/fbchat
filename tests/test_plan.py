@@ -3,13 +3,16 @@ from fbchat._plan import GuestStatus, Plan
 
 
 def test_plan_properties():
-    plan = Plan(time=..., title=...)
-    plan.guests = {
-        "1234": GuestStatus.INVITED,
-        "2345": GuestStatus.INVITED,
-        "3456": GuestStatus.GOING,
-        "4567": GuestStatus.DECLINED,
-    }
+    plan = Plan(
+        time=...,
+        title=...,
+        guests={
+            "1234": GuestStatus.INVITED,
+            "2345": GuestStatus.INVITED,
+            "3456": GuestStatus.GOING,
+            "4567": GuestStatus.DECLINED,
+        },
+    )
     assert set(plan.invited) == {"1234", "2345"}
     assert plan.going == ["3456"]
     assert plan.declined == ["4567"]
@@ -32,19 +35,18 @@ def test_plan_from_pull():
             '{"guest_list_state":"GOING","node":{"id":"4567"}}]'
         ),
     }
-    plan = Plan(
+    assert Plan(
+        uid="1111",
         time=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
         title="abc",
-    )
-    plan.uid = "1111"
-    plan.author_id = "1234"
-    plan.guests = {
-        "1234": GuestStatus.INVITED,
-        "2356": GuestStatus.INVITED,
-        "3456": GuestStatus.DECLINED,
-        "4567": GuestStatus.GOING,
-    }
-    assert plan == Plan._from_pull(data)
+        author_id="1234",
+        guests={
+            "1234": GuestStatus.INVITED,
+            "2356": GuestStatus.INVITED,
+            "3456": GuestStatus.DECLINED,
+            "4567": GuestStatus.GOING,
+        },
+    ) == Plan._from_pull(data)
 
 
 def test_plan_from_fetch():
@@ -90,21 +92,20 @@ def test_plan_from_fetch():
             "4567": "GOING",
         },
     }
-    plan = Plan(
+    assert Plan(
+        uid=1111,
         time=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
         title="abc",
         location="",
         location_id="",
-    )
-    plan.uid = 1111
-    plan.author_id = 1234
-    plan.guests = {
-        "1234": GuestStatus.INVITED,
-        "2356": GuestStatus.INVITED,
-        "3456": GuestStatus.DECLINED,
-        "4567": GuestStatus.GOING,
-    }
-    assert plan == Plan._from_fetch(data)
+        author_id=1234,
+        guests={
+            "1234": GuestStatus.INVITED,
+            "2356": GuestStatus.INVITED,
+            "3456": GuestStatus.DECLINED,
+            "4567": GuestStatus.GOING,
+        },
+    ) == Plan._from_fetch(data)
 
 
 def test_plan_from_graphql():
@@ -133,18 +134,17 @@ def test_plan_from_graphql():
             ]
         },
     }
-    plan = Plan(
+    assert Plan(
         time=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
         title="abc",
         location="",
         location_id="",
-    )
-    plan.uid = "1111"
-    plan.author_id = "1234"
-    plan.guests = {
-        "1234": GuestStatus.INVITED,
-        "2356": GuestStatus.INVITED,
-        "3456": GuestStatus.DECLINED,
-        "4567": GuestStatus.GOING,
-    }
-    assert plan == Plan._from_graphql(data)
+        uid="1111",
+        author_id="1234",
+        guests={
+            "1234": GuestStatus.INVITED,
+            "2356": GuestStatus.INVITED,
+            "3456": GuestStatus.DECLINED,
+            "4567": GuestStatus.GOING,
+        },
+    ) == Plan._from_graphql(data)
