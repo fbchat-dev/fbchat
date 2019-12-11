@@ -1,10 +1,10 @@
 import attr
-from ._core import Image
+from ._core import attrs_default, Image
 from ._attachment import Attachment
 from . import _util
 
 
-@attr.s
+@attrs_default
 class LocationAttachment(Attachment):
     """Represents a user location.
 
@@ -44,7 +44,7 @@ class LocationAttachment(Attachment):
         )
 
 
-@attr.s
+@attrs_default
 class LiveLocationAttachment(LocationAttachment):
     """Represents a live user location."""
 

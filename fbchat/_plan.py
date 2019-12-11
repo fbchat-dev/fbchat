@@ -1,6 +1,6 @@
 import attr
 import json
-from ._core import Enum
+from ._core import attrs_default, Enum
 from . import _util
 
 
@@ -10,7 +10,7 @@ class GuestStatus(Enum):
     DECLINED = 3
 
 
-@attr.s
+@attrs_default
 class Plan:
     """Represents a plan."""
 

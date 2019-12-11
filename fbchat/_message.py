@@ -1,7 +1,7 @@
 import attr
 import json
 from string import Formatter
-from ._core import log, Enum
+from ._core import log, attrs_default, Enum
 from . import _util, _attachment, _location, _file, _quick_reply, _sticker
 
 
@@ -42,7 +42,7 @@ class MessageReaction(Enum):
     NO = "👎"
 
 
-@attr.s
+@attrs_default
 class Mention:
     """Represents a ``@mention``."""
 
@@ -54,7 +54,7 @@ class Mention:
     length = attr.ib(10)
 
 
-@attr.s
+@attrs_default
 class Message:
     """Represents a Facebook message."""
 

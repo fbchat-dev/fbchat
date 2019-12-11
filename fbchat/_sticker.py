@@ -1,9 +1,9 @@
 import attr
-from ._core import Image
+from ._core import attrs_default, Image
 from ._attachment import Attachment
 
 
-@attr.s
+@attrs_default
 class Sticker(Attachment):
     """Represents a Facebook sticker that has been sent to a thread as an attachment."""
 

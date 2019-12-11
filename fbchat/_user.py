@@ -1,5 +1,5 @@
 import attr
-from ._core import Enum, Image
+from ._core import attrs_default, Enum, Image
 from . import _util, _plan
 from ._thread import ThreadType, Thread
 
@@ -41,7 +41,7 @@ class TypingStatus(Enum):
     TYPING = 1
 
 
-@attr.s
+@attrs_default
 class User(Thread):
     """Represents a Facebook user. Inherits `Thread`."""
 

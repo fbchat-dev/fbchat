@@ -1,7 +1,8 @@
 import attr
+from ._core import attrs_default
 
 
-@attr.s
+@attrs_default
 class Poll:
     """Represents a poll."""
 
@@ -24,7 +25,7 @@ class Poll:
         )
 
 
-@attr.s
+@attrs_default
 class PollOption:
     """Represents a poll option."""
 

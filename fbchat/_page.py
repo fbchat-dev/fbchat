@@ -1,10 +1,10 @@
 import attr
-from ._core import Image
+from ._core import attrs_default, Image
 from . import _plan
 from ._thread import ThreadType, Thread
 
 
-@attr.s
+@attrs_default
 class Page(Thread):
     """Represents a Facebook page. Inherits `Thread`."""
 

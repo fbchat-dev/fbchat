@@ -4,6 +4,9 @@ import aenum
 
 log = logging.getLogger("fbchat")
 
+#: Default attrs settings for classes
+attrs_default = attr.s(slots=True)  # TODO: Add kw_only=True
+
 
 class Enum(aenum.Enum):
     """Used internally by ``fbchat`` to support enumerations"""

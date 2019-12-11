@@ -1,5 +1,5 @@
 import attr
-from ._core import Enum, Image
+from ._core import attrs_default, Enum, Image
 
 
 class ThreadType(Enum):
@@ -67,7 +67,7 @@ class ThreadColor(Enum):
         return cls._extend_if_invalid(value)
 
 
-@attr.s
+@attrs_default
 class Thread:
     """Represents a Facebook thread."""
 

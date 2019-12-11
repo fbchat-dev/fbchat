@@ -1,9 +1,9 @@
 import attr
-from ._core import Image
+from ._core import attrs_default, Image
 from . import _util
 
 
-@attr.s
+@attrs_default
 class Attachment:
     """Represents a Facebook attachment."""
 
@@ -11,12 +11,12 @@ class Attachment:
     uid = attr.ib(None)
 
 
-@attr.s
+@attrs_default
 class UnsentMessage(Attachment):
     """Represents an unsent message attachment."""
 
 
-@attr.s
+@attrs_default
 class ShareAttachment(Attachment):
     """Represents a shared item (e.g. URL) attachment."""
 

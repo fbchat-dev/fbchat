@@ -1,10 +1,10 @@
 import attr
-from ._core import Image
+from ._core import attrs_default, Image
 from . import _util, _plan
 from ._thread import ThreadType, Thread
 
 
-@attr.s
+@attrs_default
 class Group(Thread):
     """Represents a Facebook group. Inherits `Thread`."""
 

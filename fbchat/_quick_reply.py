@@ -1,8 +1,9 @@
 import attr
+from ._core import attrs_default
 from ._attachment import Attachment
 
 
-@attr.s
+@attrs_default
 class QuickReply:
     """Represents a quick reply."""
 
@@ -16,7 +17,7 @@ class QuickReply:
     is_response = attr.ib(False)
 
 
-@attr.s
+@attrs_default
 class QuickReplyText(QuickReply):
     """Represents a text quick reply."""
 
@@ -28,7 +29,7 @@ class QuickReplyText(QuickReply):
     _type = "text"
 
 
-@attr.s
+@attrs_default
 class QuickReplyLocation(QuickReply):
     """Represents a location quick reply (Doesn't work on mobile)."""
 
@@ -36,7 +37,7 @@ class QuickReplyLocation(QuickReply):
     _type = "location"
 
 
-@attr.s
+@attrs_default
 class QuickReplyPhoneNumber(QuickReply):
     """Represents a phone number quick reply (Doesn't work on mobile)."""
 
@@ -46,7 +47,7 @@ class QuickReplyPhoneNumber(QuickReply):
     _type = "user_phone_number"
 
 
-@attr.s
+@attrs_default
 class QuickReplyEmail(QuickReply):
     """Represents an email quick reply (Doesn't work on mobile)."""
 

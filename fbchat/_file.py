@@ -1,10 +1,10 @@
 import attr
-from ._core import Image
+from ._core import attrs_default, Image
 from . import _util
 from ._attachment import Attachment
 
 
-@attr.s
+@attrs_default
 class FileAttachment(Attachment):
     """Represents a file that has been sent as a Facebook attachment."""
 
@@ -28,7 +28,7 @@ class FileAttachment(Attachment):
         )
 
 
-@attr.s
+@attrs_default
 class AudioAttachment(Attachment):
     """Represents an audio file that has been sent as a Facebook attachment."""
 
@@ -51,7 +51,7 @@ class AudioAttachment(Attachment):
         )
 
 
-@attr.s
+@attrs_default
 class ImageAttachment(Attachment):
     """Represents an image that has been sent as a Facebook attachment.
 
@@ -108,7 +108,7 @@ class ImageAttachment(Attachment):
         )
 
 
-@attr.s
+@attrs_default
 class VideoAttachment(Attachment):
     """Represents a video that has been sent as a Facebook attachment."""
 

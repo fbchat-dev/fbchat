@@ -5,7 +5,7 @@ import requests
 import random
 import urllib.parse
 
-from ._core import log
+from ._core import log, attrs_default
 from . import _graphql, _util, _exception
 
 FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
@@ -98,7 +98,7 @@ def _2fa_helper(session, code, r):
     return r
 
 
-@attr.s(slots=True)  # TODO i Python 3: Add kw_only=True
+@attrs_default  # TODO i Python 3: Add kw_only=True
 class State:
     """Stores and manages state required for most Facebook requests."""
 
