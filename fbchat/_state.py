@@ -98,7 +98,7 @@ def _2fa_helper(session, code, r):
     return r
 
 
-@attrs_default  # TODO i Python 3: Add kw_only=True
+@attrs_default
 class State:
     """Stores and manages state required for most Facebook requests."""
 

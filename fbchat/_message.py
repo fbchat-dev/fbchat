@@ -236,7 +236,7 @@ class Message:
             text=data["message"].get("text"),
             mentions=[
                 Mention(
-                    m.get("entity", {}).get("id"),
+                    thread_id=m.get("entity", {}).get("id"),
                     offset=m.get("offset"),
                     length=m.get("length"),
                 )
@@ -295,7 +295,7 @@ class Message:
         return cls(
             text=data.get("body"),
             mentions=[
-                Mention(m.get("i"), offset=m.get("o"), length=m.get("l"))
+                Mention(thread_id=m.get("i"), offset=m.get("o"), length=m.get("l"))
                 for m in json.loads(data.get("data", {}).get("prng", "[]"))
             ],
             emoji_size=EmojiSize._from_tags(tags),
@@ -318,7 +318,7 @@ class Message:
             try:
                 mentions = [
                     Mention(
-                        str(mention.get("i")),
+                        thread_id=str(mention.get("i")),
                         offset=mention.get("o"),
                         length=mention.get("l"),
                     )

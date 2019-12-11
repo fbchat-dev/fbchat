@@ -1,11 +1,15 @@
+import sys
 import attr
 import logging
 import aenum
 
 log = logging.getLogger("fbchat")
 
+# Enable kw_only if the python version supports it
+kw_only = sys.version_info[:2] > (3, 5)
+
 #: Default attrs settings for classes
-attrs_default = attr.s(slots=True)  # TODO: Add kw_only=True
+attrs_default = attr.s(slots=True, kw_only=kw_only)
 
 
 class Enum(aenum.Enum):
@@ -27,7 +31,7 @@ class Enum(aenum.Enum):
             return cls(value)
 
 
-@attr.s(frozen=True, slots=True)  # TODO: Add kw_only=True
+@attr.s(frozen=True, slots=True, kw_only=kw_only)
 class Image:
     #: URL to the image
     url = attr.ib(type=str)

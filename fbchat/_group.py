@@ -42,7 +42,7 @@ class Group(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            data["thread_key"]["thread_fbid"],
+            uid=data["thread_key"]["thread_fbid"],
             participants=set(
                 [
                     node["messaging_actor"]["id"]

@@ -956,7 +956,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread = thread_type._to_class()(thread_id)
+        thread = thread_type._to_class()(uid=thread_id)
         data = thread._to_send_data()
         data.update(message._to_send_data())
         return self._do_send_request(data)
@@ -975,7 +975,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread = thread_type._to_class()(thread_id)
+        thread = thread_type._to_class()(uid=thread_id)
         data = thread._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
         data["lightweight_action_attachment[lwa_state]"] = (
@@ -1050,7 +1050,7 @@ class Client:
     def _send_location(
         self, location, current=True, message=None, thread_id=None, thread_type=None
     ):
-        thread = thread_type._to_class()(thread_id)
+        thread = thread_type._to_class()(uid=thread_id)
         data = thread._to_send_data()
         if message is not None:
             data.update(message._to_send_data())
@@ -1118,7 +1118,7 @@ class Client:
 
         `files` should be a list of tuples, with a file's ID and mimetype.
         """
-        thread = thread_type._to_class()(thread_id)
+        thread = thread_type._to_class()(uid=thread_id)
         data = thread._to_send_data()
         data.update(self._old_message(message)._to_send_data())
         data["action_type"] = "ma-type:user-generated-message"
@@ -1284,7 +1284,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        data = Group(thread_id)._to_send_data()
+        data = Group(uid=thread_id)._to_send_data()
 
         data["action_type"] = "ma-type:log-message"
         data["log_message_type"] = "log:subscribe"

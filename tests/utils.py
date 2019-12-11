@@ -22,9 +22,13 @@ EMOJI_LIST = [
 ]
 
 STICKER_LIST = [
-    Sticker("767334476626295"),
-    pytest.param(Sticker("0"), marks=[pytest.mark.xfail(raises=FBchatFacebookError)]),
-    pytest.param(Sticker(None), marks=[pytest.mark.xfail(raises=FBchatFacebookError)]),
+    Sticker(uid="767334476626295"),
+    pytest.param(
+        Sticker(uid="0"), marks=[pytest.mark.xfail(raises=FBchatFacebookError)]
+    ),
+    pytest.param(
+        Sticker(uid=None), marks=[pytest.mark.xfail(raises=FBchatFacebookError)]
+    ),
 ]
 
 TEXT_LIST = [

@@ -13,26 +13,26 @@ pytestmark = pytest.mark.online
         Poll(
             title=random_hex(),
             options=[
-                PollOption(random_hex(), vote=True),
-                PollOption(random_hex(), vote=True),
+                PollOption(text=random_hex(), vote=True),
+                PollOption(text=random_hex(), vote=True),
             ],
         ),
         Poll(
             title=random_hex(),
             options=[
-                PollOption(random_hex(), vote=False),
-                PollOption(random_hex(), vote=False),
+                PollOption(text=random_hex(), vote=False),
+                PollOption(text=random_hex(), vote=False),
             ],
         ),
         Poll(
             title=random_hex(),
             options=[
-                PollOption(random_hex(), vote=True),
-                PollOption(random_hex(), vote=True),
-                PollOption(random_hex(), vote=False),
-                PollOption(random_hex(), vote=False),
-                PollOption(random_hex()),
-                PollOption(random_hex()),
+                PollOption(text=random_hex(), vote=True),
+                PollOption(text=random_hex(), vote=True),
+                PollOption(text=random_hex(), vote=False),
+                PollOption(text=random_hex(), vote=False),
+                PollOption(text=random_hex()),
+                PollOption(text=random_hex()),
             ],
         ),
         pytest.param(
