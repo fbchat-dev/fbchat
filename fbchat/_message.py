@@ -80,9 +80,9 @@ class Message:
 
     #: The actual message
     text = attr.ib(None)
-    #: A list of :class:`Mention` objects
+    #: A list of `Mention` objects
     mentions = attr.ib(factory=list)
-    #: A :class:`EmojiSize`. Size of a sent emoji
+    #: A `EmojiSize`. Size of a sent emoji
     emoji_size = attr.ib(None)
     #: The message ID
     uid = attr.ib(None)
@@ -92,15 +92,15 @@ class Message:
     created_at = attr.ib(None)
     #: Whether the message is read
     is_read = attr.ib(None)
-    #: A list of people IDs who read the message, works only with :func:`fbchat.Client.fetch_thread_messages`
+    #: A list of people IDs who read the message, works only with `Client.fetch_thread_messages`
     read_by = attr.ib(factory=list)
-    #: A dictionary with user's IDs as keys, and their :class:`MessageReaction` as values
+    #: A dictionary with user's IDs as keys, and their `MessageReaction` as values
     reactions = attr.ib(factory=dict)
-    #: A :class:`Sticker`
+    #: A `Sticker`
     sticker = attr.ib(None)
     #: A list of attachments
     attachments = attr.ib(factory=list)
-    #: A list of :class:`QuickReply`
+    #: A list of `QuickReply`
     quick_replies = attr.ib(factory=list)
     #: Whether the message is unsent (deleted for everyone)
     unsent = attr.ib(False)

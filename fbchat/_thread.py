@@ -83,7 +83,7 @@ class Thread:
     last_active = attr.ib(None)
     #: Number of messages in the thread
     message_count = attr.ib(None)
-    #: Set :class:`Plan`
+    #: Set `Plan`
     plan = attr.ib(None)
 
     @staticmethod

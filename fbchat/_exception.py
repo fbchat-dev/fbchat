@@ -8,7 +8,7 @@ attrs_exception = attr.s(slots=True, auto_exc=True)
 class FBchatException(Exception):
     """Custom exception thrown by ``fbchat``.
 
-    All exceptions in the ``fbchat`` module inherits this.
+    All exceptions in the module inherits this.
     """
 
     message = attr.ib()

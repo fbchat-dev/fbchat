@@ -63,7 +63,7 @@ class User(Thread):
     nickname = attr.ib(None)
     #: The clients nickname, as seen by the user
     own_nickname = attr.ib(None)
-    #: A :class:`ThreadColor`. The message color
+    #: A `ThreadColor`. The message color
     color = attr.ib(None)
     #: The default emoji
     emoji = attr.ib(None)

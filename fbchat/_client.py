@@ -38,9 +38,9 @@ ACONTEXT = {
 class Client:
     """A client for the Facebook Chat (Messenger).
 
-    This is the main class of ``fbchat``, which contains all the methods you use to
-    interact with Facebook. You can extend this class, and overwrite the ``on`` methods,
-    to provide custom event handling (mainly useful while listening).
+    This is the main class, which contains all the methods you use to interact with
+    Facebook. You can extend this class, and overwrite the ``on`` methods, to provide
+    custom event handling (mainly useful while listening).
     """
 
     @property
@@ -215,7 +215,7 @@ class Client:
             limit: The max. amount of threads to fetch (default all threads)
 
         Returns:
-            list: :class:`Thread` objects
+            list: `Thread` objects
 
         Raises:
             FBchatException: If request failed
@@ -266,7 +266,7 @@ class Client:
             threads: Thread: List of threads to check for users
 
         Returns:
-            list: :class:`User` objects
+            list: `User` objects
 
         Raises:
             FBchatException: If request failed
@@ -292,7 +292,7 @@ class Client:
         """Fetch all users the client is currently chatting with.
 
         Returns:
-            list: :class:`User` objects
+            list: `User` objects
 
         Raises:
             FBchatException: If request failed
@@ -317,7 +317,7 @@ class Client:
             limit: The max. amount of users to fetch
 
         Returns:
-            list: :class:`User` objects, ordered by relevance
+            list: `User` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -334,7 +334,7 @@ class Client:
             name: Name of the page
 
         Returns:
-            list: :class:`Page` objects, ordered by relevance
+            list: `Page` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -352,7 +352,7 @@ class Client:
             limit: The max. amount of groups to fetch
 
         Returns:
-            list: :class:`Group` objects, ordered by relevance
+            list: `Group` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -370,7 +370,7 @@ class Client:
             limit: The max. amount of groups to fetch
 
         Returns:
-            list: :class:`User`, :class:`Group` and :class:`Page` objects, ordered by relevance
+            list: `User`, `Group` and `Page` objects, ordered by relevance
 
         Raises:
             FBchatException: If request failed
@@ -441,7 +441,7 @@ class Client:
             thread_id: User/Group ID to search in. See :ref:`intro_threads`
 
         Returns:
-            typing.Iterable: Found :class:`Message` objects
+            typing.Iterable: Found `Message` objects
 
         Raises:
             FBchatException: If request failed
@@ -457,7 +457,7 @@ class Client:
 
         Args:
             query: Text to search for
-            fetch_messages: Whether to fetch :class:`Message` objects or IDs only
+            fetch_messages: Whether to fetch `Message` objects or IDs only
             thread_limit (int): Max. number of threads to retrieve
             message_limit (int): Max. number of messages to retrieve
 
@@ -531,7 +531,7 @@ class Client:
             user_ids: One or more user ID(s) to query
 
         Returns:
-            dict: :class:`User` objects, labeled by their ID
+            dict: `User` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -556,7 +556,7 @@ class Client:
             page_ids: One or more page ID(s) to query
 
         Returns:
-            dict: :class:`Page` objects, labeled by their ID
+            dict: `Page` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -578,7 +578,7 @@ class Client:
             group_ids: One or more group ID(s) to query
 
         Returns:
-            dict: :class:`Group` objects, labeled by their ID
+            dict: `Group` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -603,7 +603,7 @@ class Client:
             thread_ids: One or more thread ID(s) to query
 
         Returns:
-            dict: :class:`Thread` objects, labeled by their ID
+            dict: `Thread` objects, labeled by their ID
 
         Raises:
             FBchatException: If request failed
@@ -669,7 +669,7 @@ class Client:
             before (datetime.datetime): The point from which to retrieve messages
 
         Returns:
-            list: :class:`Message` objects
+            list: `Message` objects
 
         Raises:
             FBchatException: If request failed
@@ -707,7 +707,7 @@ class Client:
             before (datetime.datetime): The point from which to retrieve threads
 
         Returns:
-            list: :class:`Thread` objects
+            list: `Thread` objects
 
         Raises:
             FBchatException: If request failed
@@ -806,7 +806,7 @@ class Client:
             thread_id: User/Group ID to get message info from. See :ref:`intro_threads`
 
         Returns:
-            Message: :class:`Message` object
+            Message: `Message` object
 
         Raises:
             FBchatException: If request failed
@@ -837,7 +837,7 @@ class Client:
             plan_id: Plan ID to fetch from
 
         Returns:
-            Plan: :class:`Plan` object
+            Plan: `Plan` object
 
         Raises:
             FBchatException: If request failed
@@ -893,7 +893,7 @@ class Client:
             thread_id: ID of the thread
 
         Returns:
-            typing.Iterable: :class:`ImageAttachment` or :class:`VideoAttachment`
+            typing.Iterable: `ImageAttachment` or `VideoAttachment`
         """
         data = {"id": thread_id, "first": 48}
         thread_id = str(thread_id)
@@ -1013,9 +1013,7 @@ class Client:
             return self.send(Message(text=quick_reply.title, quick_replies=[new]))
         elif isinstance(quick_reply, QuickReplyLocation):
             if not isinstance(payload, LocationAttachment):
-                raise TypeError(
-                    "Payload must be an instance of `fbchat.LocationAttachment`"
-                )
+                raise TypeError("Payload must be an instance of `LocationAttachment`")
             return self.send_location(
                 payload, thread_id=thread_id, thread_type=thread_type
             )
@@ -3655,7 +3653,7 @@ class Client:
         """Called when the client is listening and client receives information about friend active status.
 
         Args:
-            statuses (dict): Dictionary with user IDs as keys and :class:`ActiveStatus` as values
+            statuses (dict): Dictionary with user IDs as keys and `ActiveStatus` as values
             msg: A full set of the data received
         """
         log.debug("Buddylist overlay received: {}".format(statuses))

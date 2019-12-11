@@ -14,7 +14,7 @@ class Group(Thread):
     participants = attr.ib(factory=set)
     #: A dictionary, containing user nicknames mapped to their IDs
     nicknames = attr.ib(factory=dict)
-    #: A :class:`ThreadColor`. The groups's message color
+    #: A `ThreadColor`. The groups's message color
     color = attr.ib(None)
     #: The groups's default emoji
     emoji = attr.ib(None)

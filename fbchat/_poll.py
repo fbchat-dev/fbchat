@@ -8,7 +8,7 @@ class Poll:
 
     #: Title of the poll
     title = attr.ib()
-    #: List of :class:`PollOption`, can be fetched with :func:`fbchat.Client.fetch_poll_options`
+    #: List of `PollOption`, can be fetched with `Client.fetch_poll_options`
     options = attr.ib()
     #: Options count
     options_count = attr.ib(None)

@@ -13,7 +13,7 @@ attrs_default = attr.s(slots=True, kw_only=kw_only)
 
 
 class Enum(aenum.Enum):
-    """Used internally by ``fbchat`` to support enumerations"""
+    """Used internally to support enumerations"""
 
     def __repr__(self):
         # For documentation:
