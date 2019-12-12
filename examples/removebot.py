@@ -15,7 +15,7 @@ class RemoveBot(Client):
                 message_object=message_object,
                 thread_id=thread_id,
                 thread_type=thread_type,
-                **kwargs
+                **kwargs,
             )
 
 

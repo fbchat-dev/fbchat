@@ -1,5 +1,6 @@
 [tool.black]
 line-length = 88
+target-version = ['py36', 'py37', 'py38']
 
 [build-system]
 requires = ["flit"]
