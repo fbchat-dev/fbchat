@@ -2751,6 +2751,87 @@ class Client(object):
         else:
             self.onUnknownMesssageType(msg=m)
 
+    def _parse_payload(self, m):
+        mtype = m.get("type")
+        # Things that directly change chat
+        if mtype == "delta":
+            self._parseDelta(m)
+        # Inbox
+        elif mtype == "inbox":
+            self.onInbox(
+                unseen=m["unseen"],
+                unread=m["unread"],
+                recent_unread=m["recent_unread"],
+                msg=m,
+            )
+
+        # Typing
+        elif mtype == "typ" or mtype == "ttyp":
+            author_id = str(m.get("from"))
+            thread_id = m.get("thread_fbid")
+            if thread_id:
+                thread_type = ThreadType.GROUP
+                thread_id = str(thread_id)
+            else:
+                thread_type = ThreadType.USER
+                if author_id == self._uid:
+                    thread_id = m.get("to")
+                else:
+                    thread_id = author_id
+            typing_status = TypingStatus(m.get("st"))
+            self.onTyping(
+                author_id=author_id,
+                status=typing_status,
+                thread_id=thread_id,
+                thread_type=thread_type,
+                msg=m,
+            )
+
+        # Delivered
+
+        # Seen
+        # elif mtype == "m_read_receipt":
+        #
+        #     self.onSeen(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
+
+        elif mtype in ["jewel_requests_add"]:
+            from_id = m["from"]
+            self.onFriendRequest(from_id=from_id, msg=m)
+
+        # Happens on every login
+        elif mtype == "qprimer":
+            self.onQprimer(ts=m.get("made"), msg=m)
+
+        # Is sent before any other message
+        elif mtype == "deltaflow":
+            pass
+
+        # Chat timestamp
+        elif mtype == "chatproxy-presence":
+            statuses = dict()
+            for id_, data in m.get("buddyList", {}).items():
+                statuses[id_] = ActiveStatus._from_chatproxy_presence(id_, data)
+                self._buddylist[id_] = statuses[id_]
+
+            self.onChatTimestamp(buddylist=statuses, msg=m)
+
+        # Buddylist overlay
+        elif mtype == "buddylist_overlay":
+            statuses = dict()
+            for id_, data in m.get("overlay", {}).items():
+                old_in_game = None
+                if id_ in self._buddylist:
+                    old_in_game = self._buddylist[id_].in_game
+
+                statuses[id_] = ActiveStatus._from_buddylist_overlay(data, old_in_game)
+                self._buddylist[id_] = statuses[id_]
+
+            self.onBuddylistOverlay(statuses=statuses, msg=m)
+
+        # Unknown message type
+        else:
+            self.onUnknownMesssageType(msg=m)
+
     def _parseMessage(self, content):
         """Get message and author name from content.
 
@@ -2770,89 +2851,8 @@ class Client(object):
             return
 
         for m in content["ms"]:
-            mtype = m.get("type")
             try:
-                # Things that directly change chat
-                if mtype == "delta":
-                    self._parseDelta(m)
-                # Inbox
-                elif mtype == "inbox":
-                    self.onInbox(
-                        unseen=m["unseen"],
-                        unread=m["unread"],
-                        recent_unread=m["recent_unread"],
-                        msg=m,
-                    )
-
-                # Typing
-                elif mtype == "typ" or mtype == "ttyp":
-                    author_id = str(m.get("from"))
-                    thread_id = m.get("thread_fbid")
-                    if thread_id:
-                        thread_type = ThreadType.GROUP
-                        thread_id = str(thread_id)
-                    else:
-                        thread_type = ThreadType.USER
-                        if author_id == self._uid:
-                            thread_id = m.get("to")
-                        else:
-                            thread_id = author_id
-                    typing_status = TypingStatus(m.get("st"))
-                    self.onTyping(
-                        author_id=author_id,
-                        status=typing_status,
-                        thread_id=thread_id,
-                        thread_type=thread_type,
-                        msg=m,
-                    )
-
-                # Delivered
-
-                # Seen
-                # elif mtype == "m_read_receipt":
-                #
-                #     self.onSeen(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
-
-                elif mtype in ["jewel_requests_add"]:
-                    from_id = m["from"]
-                    self.onFriendRequest(from_id=from_id, msg=m)
-
-                # Happens on every login
-                elif mtype == "qprimer":
-                    self.onQprimer(ts=m.get("made"), msg=m)
-
-                # Is sent before any other message
-                elif mtype == "deltaflow":
-                    pass
-
-                # Chat timestamp
-                elif mtype == "chatproxy-presence":
-                    statuses = dict()
-                    for id_, data in m.get("buddyList", {}).items():
-                        statuses[id_] = ActiveStatus._from_chatproxy_presence(id_, data)
-                        self._buddylist[id_] = statuses[id_]
-
-                    self.onChatTimestamp(buddylist=statuses, msg=m)
-
-                # Buddylist overlay
-                elif mtype == "buddylist_overlay":
-                    statuses = dict()
-                    for id_, data in m.get("overlay", {}).items():
-                        old_in_game = None
-                        if id_ in self._buddylist:
-                            old_in_game = self._buddylist[id_].in_game
-
-                        statuses[id_] = ActiveStatus._from_buddylist_overlay(
-                            data, old_in_game
-                        )
-                        self._buddylist[id_] = statuses[id_]
-
-                    self.onBuddylistOverlay(statuses=statuses, msg=m)
-
-                # Unknown message type
-                else:
-                    self.onUnknownMesssageType(msg=m)
-
+                self._parse_payload(m)
             except Exception as e:
                 self.onMessageError(exception=e, msg=m)
 
