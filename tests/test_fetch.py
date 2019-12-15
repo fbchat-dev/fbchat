@@ -27,7 +27,7 @@ def test_fetch_threads(client1):
 @pytest.mark.parametrize("emoji, emoji_size", EMOJI_LIST)
 def test_fetch_message_emoji(client, emoji, emoji_size):
     mid = client.sendEmoji(emoji, emoji_size)
-    message, = client.fetchThreadMessages(limit=1)
+    (message,) = client.fetchThreadMessages(limit=1)
 
     assert subset(
         vars(message), uid=mid, author=client.uid, text=emoji, emoji_size=emoji_size
@@ -46,7 +46,7 @@ def test_fetch_message_info_emoji(client, thread, emoji, emoji_size):
 
 def test_fetch_message_mentions(client, thread, message_with_mentions):
     mid = client.send(message_with_mentions)
-    message, = client.fetchThreadMessages(limit=1)
+    (message,) = client.fetchThreadMessages(limit=1)
 
     assert subset(
         vars(message), uid=mid, author=client.uid, text=message_with_mentions.text
@@ -71,7 +71,7 @@ def test_fetch_message_info_mentions(client, thread, message_with_mentions):
 @pytest.mark.parametrize("sticker", STICKER_LIST)
 def test_fetch_message_sticker(client, sticker):
     mid = client.send(Message(sticker=sticker))
-    message, = client.fetchThreadMessages(limit=1)
+    (message,) = client.fetchThreadMessages(limit=1)
 
     assert subset(vars(message), uid=mid, author=client.uid)
     assert subset(vars(message.sticker), uid=sticker.uid)
@@ -96,6 +96,6 @@ def test_fetch_info(client1, group):
 
 def test_fetch_image_url(client):
     client.sendLocalFiles([path.join(path.dirname(__file__), "resources", "image.png")])
-    message, = client.fetchThreadMessages(limit=1)
+    (message,) = client.fetchThreadMessages(limit=1)
 
     assert client.fetchImageUrl(message.attachments[0].uid)

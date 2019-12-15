@@ -63,7 +63,7 @@ def test_create_poll(client1, group, catch_event, poll_data):
     for recv_option in event[
         "poll"
     ].options:  # The recieved options may not be the full list
-        old_option, = list(filter(lambda o: o.text == recv_option.text, poll.options))
+        (old_option,) = list(filter(lambda o: o.text == recv_option.text, poll.options))
         voters = [client1.uid] if old_option.vote else []
         assert subset(
             vars(recv_option), voters=voters, votes_count=len(voters), vote=False

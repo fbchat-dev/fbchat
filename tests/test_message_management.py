@@ -19,5 +19,5 @@ def test_delete_messages(client):
     mid1 = client.sendMessage(text1)
     mid2 = client.sendMessage(text2)
     client.deleteMessages(mid2)
-    message, = client.fetchThreadMessages(limit=1)
+    (message,) = client.fetchThreadMessages(limit=1)
     assert subset(vars(message), uid=mid1, author=client.uid, text=text1)
