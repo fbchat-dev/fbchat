@@ -1722,41 +1722,46 @@ class Client:
         j = self._payload_post("/ajax/mercury/delivery_receipts.php", data)
         return True
 
-    def _read_status(self, read, thread_ids):
+    def _read_status(self, read, thread_ids, timestamp=None):
         thread_ids = _util.require_list(thread_ids)
 
-        data = {"watermarkTimestamp": _util.now(), "shouldSendReadReceipt": "true"}
+        data = {
+            "watermarkTimestamp": timestamp or _util.now(),
+            "shouldSendReadReceipt": "true",
+        }
 
         for thread_id in thread_ids:
             data["ids[{}]".format(thread_id)] = "true" if read else "false"
 
         j = self._payload_post("/ajax/mercury/change_read_status.php", data)
 
-    def mark_as_read(self, thread_ids=None):
+    def mark_as_read(self, thread_ids=None, timestamp=None):
         """Mark threads as read.
 
         All messages inside the specified threads will be marked as read.
 
         Args:
             thread_ids: User/Group IDs to set as read. See :ref:`intro_threads`
+            timestamp: Timestamp to signal the read cursor at, in milliseconds, default is now()
 
         Raises:
             FBchatException: If request failed
         """
-        self._read_status(True, thread_ids)
+        self._read_status(True, thread_ids, timestamp)
 
-    def mark_as_unread(self, thread_ids=None):
+    def mark_as_unread(self, thread_ids=None, timestamp=None):
         """Mark threads as unread.
 
         All messages inside the specified threads will be marked as unread.
 
         Args:
             thread_ids: User/Group IDs to set as unread. See :ref:`intro_threads`
+            timestamp: Timestamp to signal the read cursor at, in milliseconds, default is now()
 
         Raises:
             FBchatException: If request failed
         """
-        self._read_status(False, thread_ids)
+        self._read_status(False, thread_ids, timestamp)
 
     def mark_as_seen(self):
         """
