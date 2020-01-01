@@ -1726,7 +1726,9 @@ class Client:
         thread_ids = _util.require_list(thread_ids)
 
         data = {
-            "watermarkTimestamp": timestamp or _util.now(),
+            "watermarkTimestamp": _util.datetime_to_millis(timestamp)
+            if timestamp
+            else _util.now(),
             "shouldSendReadReceipt": "true",
         }
 
@@ -1742,7 +1744,7 @@ class Client:
 
         Args:
             thread_ids: User/Group IDs to set as read. See :ref:`intro_threads`
-            timestamp: Timestamp to signal the read cursor at, in milliseconds, default is now()
+            timestamp: Timestamp (as a Datetime) to signal the read cursor at, default is the current time
 
         Raises:
             FBchatException: If request failed
@@ -1756,7 +1758,7 @@ class Client:
 
         Args:
             thread_ids: User/Group IDs to set as unread. See :ref:`intro_threads`
-            timestamp: Timestamp to signal the read cursor at, in milliseconds, default is now()
+            timestamp: Timestamp (as a Datetime) to signal the read cursor at, default is the current time
 
         Raises:
             FBchatException: If request failed
