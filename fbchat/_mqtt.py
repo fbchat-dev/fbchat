@@ -53,8 +53,21 @@ class Mqtt:
 
         self._configure_connect_options()
 
-        # TODO: Handle response code
-        response_code = mqtt.connect(self._HOST, 443, keepalive=10)
+        # Attempt to connect
+        try:
+            rc = mqtt.connect(self._HOST, 443, keepalive=10)
+        except (
+            # Taken from .loop_forever
+            paho.mqtt.client.socket.error,
+            OSError,
+            paho.mqtt.client.WebsocketConnectionError,
+        ) as e:
+            raise _exception.FBchatException("MQTT connection failed") from e
+
+        # Raise error if connecting failed
+        if rc != paho.mqtt.client.MQTT_ERR_SUCCESS:
+            err = paho.mqtt.client.error_string(rc)
+            raise _exception.FBchatException("MQTT connection failed: {}".format(err))
 
         return self
 
@@ -221,6 +234,9 @@ class Mqtt:
             return False  # Stop listening
 
         if rc != paho.mqtt.client.MQTT_ERR_SUCCESS:
+            err = paho.mqtt.client.error_string(rc)
+            log.warning("MQTT Error: %s", err)
+
             # Wait before reconnecting
             self._mqtt._reconnect_wait()
 
