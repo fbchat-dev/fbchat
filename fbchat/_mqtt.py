@@ -91,6 +91,12 @@ class Mqtt:
             if "lastIssuedSeqId" in j:
                 self._sequence_id = j["lastIssuedSeqId"]
 
+            if "errorCode" in j:
+                # Known types: ERROR_QUEUE_OVERFLOW | ERROR_QUEUE_NOT_FOUND
+                # 'F\xfa\x84\x8c\x85\xf8\xbc-\x88 FB_PAGES_INSUFFICIENT_PERMISSION\x00'
+                log.error("MQTT error code %s received", j["errorCode"])
+                # TODO: Consider resetting the sync_token and sequence ID here?
+
         log.debug("MQTT payload: %s", j)
 
         # Call the external callback

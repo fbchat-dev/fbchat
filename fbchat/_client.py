@@ -2834,10 +2834,13 @@ class Client(object):
 
     def stopListening(self):
         """Stop the listening loop."""
-        if not self._mqtt:
-            raise ValueError("Not listening")
-        self._mqtt.disconnect()
         self.listening = False
+        if not self._mqtt:
+            return
+        self._mqtt.disconnect()
+        # TODO: Preserve the _mqtt object
+        # Currently, there's some issues when disconnecting
+        self._mqtt = None
 
     def listen(self, markAlive=None):
         """Initialize and runs the listening loop continually.
