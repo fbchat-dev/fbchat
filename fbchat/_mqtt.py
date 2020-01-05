@@ -11,7 +11,7 @@ def generate_session_id():
 
 
 @attr.s(slots=True)
-class Mqtt:
+class Mqtt(object):
     _state = attr.ib()
     _mqtt = attr.ib()
     _on_message = attr.ib()
@@ -62,7 +62,7 @@ class Mqtt:
             OSError,
             paho.mqtt.client.WebsocketConnectionError,
         ) as e:
-            raise _exception.FBchatException("MQTT connection failed") from e
+            raise _exception.FBchatException("MQTT connection failed")
 
         # Raise error if connecting failed
         if rc != paho.mqtt.client.MQTT_ERR_SUCCESS:
