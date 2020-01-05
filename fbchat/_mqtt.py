@@ -78,6 +78,8 @@ class Mqtt:
             if "lastIssuedSeqId" in j:
                 self._sequence_id = j["lastIssuedSeqId"]
 
+        log.debug("MQTT payload: %s", j)
+
         # Call the external callback
         self._on_message(message.topic, j)
 
@@ -207,16 +209,18 @@ class Mqtt:
             path="/chat?sid={}".format(session_id), headers=headers
         )
 
-    def listen(self):
-        while True:
-            rc = self._mqtt.loop(timeout=1.0)
-            if rc == paho.mqtt.client.MQTT_ERR_SUCCESS:
-                continue  # No errors
+    def loop_once(self):
+        """Run the listening loop once.
 
-            # If disconnect() has been called
-            if self._mqtt._state == paho.mqtt.client.mqtt_cs_disconnecting:
-                break
+        Returns whether to keep listening or not.
+        """
+        rc = self._mqtt.loop(timeout=1.0)
 
+        # If disconnect() has been called
+        if self._mqtt._state == paho.mqtt.client.mqtt_cs_disconnecting:
+            return False  # Stop listening
+
+        if rc != paho.mqtt.client.MQTT_ERR_SUCCESS:
             # Wait before reconnecting
             self._mqtt._reconnect_wait()
 
@@ -232,7 +236,7 @@ class Mqtt:
             ):
                 log.debug("MQTT connection failed")
 
-        # self._mqtt.loop_forever()  # TODO: retry_first_connection=True?
+        return True  # Keep listening
 
     def disconnect(self):
         self._mqtt.disconnect()
