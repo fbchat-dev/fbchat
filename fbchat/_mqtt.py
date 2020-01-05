@@ -76,7 +76,7 @@ class Mqtt(object):
         try:
             j = _util.parse_json(message.payload)
         except _exception.FBchatFacebookError:
-            log.exception("Failed parsing MQTT data as JSON: %r", message.payload)
+            log.exception("Failed parsing MQTT data on %s as JSON", message.topic)
             return
 
         if message.topic == "/t_ms":
@@ -241,13 +241,15 @@ class Mqtt(object):
 
         if rc != paho.mqtt.client.MQTT_ERR_SUCCESS:
             err = paho.mqtt.client.error_string(rc)
-            log.warning("MQTT Error: %s", err)
-            if on_error:
-                # Temporary to support on_error param
-                try:
-                    raise _exception.FBchatException("MQTT Error: {}".format(err))
-                except _exception.FBchatException as e:
-                    on_error(exception=e)
+
+            # If known/expected error
+            if rc in [paho.mqtt.client.MQTT_ERR_CONN_LOST]:
+                log.warning(err)
+            else:
+                log.warning("MQTT Error: %s", err)
+                # For backwards compatibility
+                if on_error:
+                    on_error(exception=FBchatException("MQTT Error {}".format(err)))
 
             # Wait before reconnecting
             self._mqtt._reconnect_wait()
@@ -262,7 +264,7 @@ class Mqtt(object):
                 OSError,
                 paho.mqtt.client.WebsocketConnectionError,
             ):
-                log.debug("MQTT connection failed")
+                log.debug("MQTT reconnection failed")
 
         return True  # Keep listening
 
