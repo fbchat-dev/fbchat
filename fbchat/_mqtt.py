@@ -222,7 +222,7 @@ class Mqtt:
             path="/chat?sid={}".format(session_id), headers=headers
         )
 
-    def loop_once(self):
+    def loop_once(self, on_error=None):
         """Run the listening loop once.
 
         Returns whether to keep listening or not.
@@ -236,6 +236,12 @@ class Mqtt:
         if rc != paho.mqtt.client.MQTT_ERR_SUCCESS:
             err = paho.mqtt.client.error_string(rc)
             log.warning("MQTT Error: %s", err)
+            if on_error:
+                # Temporary to support on_error param
+                try:
+                    raise _exception.FBchatException("MQTT Error: {}".format(err))
+                except _exception.FBchatException as e:
+                    on_error(exception=e)
 
             # Wait before reconnecting
             self._mqtt._reconnect_wait()
@@ -264,11 +270,15 @@ class Mqtt:
         # TODO: We can't wait for this, since the loop is running with .loop_forever()
         # info.wait_for_publish()
 
-    # def set_client_settings(self, available_when_in_foreground: bool):
-    #     data = {"make_user_available_when_in_foreground": available_when_in_foreground}
-    #     payload = _util.json_minimal(data)
-    #     info = self._mqtt.publish("/set_client_settings", payload=payload, qos=1)
-    #
+    def set_chat_on(self, value):
+        # TODO: Is this the right request to make?
+        data = {"make_user_available_when_in_foreground": value}
+        payload = _util.json_minimal(data)
+        info = self._mqtt.publish("/set_client_settings", payload=payload, qos=1)
+        self._chat_on = value
+        # TODO: We can't wait for this, since the loop is running with .loop_forever()
+        # info.wait_for_publish()
+
     # def send_additional_contacts(self, additional_contacts):
     #     payload = _util.json_minimal({"additional_contacts": additional_contacts})
     #     info = self._mqtt.publish("/send_additional_contacts", payload=payload, qos=1)
