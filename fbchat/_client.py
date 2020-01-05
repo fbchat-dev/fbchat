@@ -2741,19 +2741,13 @@ class Client(object):
             )
 
         # Typing
-        elif topic in ["typ", "ttyp"]:
-            author_id = str(m.get("from"))
-            thread_id = m.get("thread_fbid")
-            if thread_id:
-                thread_type = ThreadType.GROUP
-                thread_id = str(thread_id)
-            else:
-                thread_type = ThreadType.USER
-                if author_id == self._uid:
-                    thread_id = m.get("to")
-                else:
-                    thread_id = author_id
-            typing_status = TypingStatus(m.get("st"))
+        elif topic in ("/thread_typing", "/orca_typing_notifications"):
+            author_id = str(m["sender_fbid"])
+            thread_id = m.get("thread", author_id)
+            typing_status = TypingStatus(m.get("state"))
+            thread_type = (
+                ThreadType.USER if thread_id == author_id else ThreadType.GROUP
+            )
             self.onTyping(
                 author_id=author_id,
                 status=typing_status,
