@@ -2168,7 +2168,7 @@ class Client(object):
     LISTEN METHODS
     """
 
-    def _parseDelta(self, m):
+    def _parseDelta(self, delta):
         def getThreadIdAndThreadType(msg_metadata):
             """Return a tuple consisting of thread ID and thread type."""
             id_thread = None
@@ -2181,7 +2181,6 @@ class Client(object):
                 type_thread = ThreadType.USER
             return id_thread, type_thread
 
-        delta = m["delta"]
         delta_type = delta.get("type")
         delta_class = delta.get("class")
         metadata = delta.get("messageMetadata")
@@ -2201,7 +2200,7 @@ class Client(object):
                 author_id=author_id,
                 thread_id=thread_id,
                 ts=ts,
-                msg=m,
+                msg=delta,
             )
 
         # Left/removed participants
@@ -2214,7 +2213,7 @@ class Client(object):
                 author_id=author_id,
                 thread_id=thread_id,
                 ts=ts,
-                msg=m,
+                msg=delta,
             )
 
         # Color change
@@ -2229,7 +2228,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Emoji change
@@ -2244,7 +2243,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Thread title change
@@ -2259,14 +2258,14 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Forced fetch
         elif delta_class == "ForcedFetch":
             mid = delta.get("messageId")
             if mid is None:
-                self.onUnknownMesssageType(msg=m)
+                self.onUnknownMesssageType(msg=delta)
             else:
                 thread_id = str(delta["threadKey"]["threadFbId"])
                 fetch_info = self._forcedFetch(thread_id, mid)
@@ -2288,7 +2287,7 @@ class Client(object):
                         thread_id=thread_id,
                         thread_type=ThreadType.GROUP,
                         ts=ts,
-                        msg=m,
+                        msg=delta,
                     )
 
         # Nickname change
@@ -2305,7 +2304,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Admin added or removed in a group thread
@@ -2321,7 +2320,7 @@ class Client(object):
                     thread_id=thread_id,
                     thread_type=thread_type,
                     ts=ts,
-                    msg=m,
+                    msg=delta,
                 )
             elif admin_event == "remove_admin":
                 self.onAdminRemoved(
@@ -2331,7 +2330,7 @@ class Client(object):
                     thread_id=thread_id,
                     thread_type=thread_type,
                     ts=ts,
-                    msg=m,
+                    msg=delta,
                 )
 
         # Group approval mode change
@@ -2345,7 +2344,7 @@ class Client(object):
                 thread_id=thread_id,
                 thread_type=thread_type,
                 ts=ts,
-                msg=m,
+                msg=delta,
             )
 
         # Message delivered
@@ -2363,7 +2362,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Message seen
@@ -2379,7 +2378,7 @@ class Client(object):
                 seen_ts=seen_ts,
                 ts=delivered_ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Messages marked as seen
@@ -2400,7 +2399,11 @@ class Client(object):
 
             # thread_id, thread_type = getThreadIdAndThreadType(delta)
             self.onMarkedSeen(
-                threads=threads, seen_ts=seen_ts, ts=delivered_ts, metadata=delta, msg=m
+                threads=threads,
+                seen_ts=seen_ts,
+                ts=delivered_ts,
+                metadata=delta,
+                msg=delta,
             )
 
         # Game played
@@ -2425,7 +2428,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Group call started/ended
@@ -2443,7 +2446,7 @@ class Client(object):
                     thread_type=thread_type,
                     ts=ts,
                     metadata=metadata,
-                    msg=m,
+                    msg=delta,
                 )
             elif call_status == "call_ended":
                 self.onCallEnded(
@@ -2455,7 +2458,7 @@ class Client(object):
                     thread_type=thread_type,
                     ts=ts,
                     metadata=metadata,
-                    msg=m,
+                    msg=delta,
                 )
 
         # User joined to group call
@@ -2470,7 +2473,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Group poll event
@@ -2489,7 +2492,7 @@ class Client(object):
                     thread_type=thread_type,
                     ts=ts,
                     metadata=metadata,
-                    msg=m,
+                    msg=delta,
                 )
             elif event_type == "update_vote":
                 # User voted on group poll
@@ -2505,7 +2508,7 @@ class Client(object):
                     thread_type=thread_type,
                     ts=ts,
                     metadata=metadata,
-                    msg=m,
+                    msg=delta,
                 )
 
         # Plan created
@@ -2519,7 +2522,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Plan ended
@@ -2532,7 +2535,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Plan edited
@@ -2546,7 +2549,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Plan deleted
@@ -2560,7 +2563,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Plan participation change
@@ -2576,13 +2579,13 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Client payload (that weird numbers)
         elif delta_class == "ClientPayload":
             payload = json.loads("".join(chr(z) for z in delta["payload"]))
-            ts = m.get("ofd_ts")
+            ts = now()  # Hack
             for d in payload.get("deltas", []):
 
                 # Message reaction
@@ -2603,7 +2606,7 @@ class Client(object):
                             thread_id=thread_id,
                             thread_type=thread_type,
                             ts=ts,
-                            msg=m,
+                            msg=delta,
                         )
                     else:
                         self.onReactionRemoved(
@@ -2612,7 +2615,7 @@ class Client(object):
                             thread_id=thread_id,
                             thread_type=thread_type,
                             ts=ts,
-                            msg=m,
+                            msg=delta,
                         )
 
                 # Viewer status change
@@ -2629,7 +2632,7 @@ class Client(object):
                                 thread_id=thread_id,
                                 thread_type=thread_type,
                                 ts=ts,
-                                msg=m,
+                                msg=delta,
                             )
                         else:
                             self.onBlock(
@@ -2637,7 +2640,7 @@ class Client(object):
                                 thread_id=thread_id,
                                 thread_type=thread_type,
                                 ts=ts,
-                                msg=m,
+                                msg=delta,
                             )
 
                 # Live location info
@@ -2655,7 +2658,7 @@ class Client(object):
                             thread_id=thread_id,
                             thread_type=thread_type,
                             ts=ts,
-                            msg=m,
+                            msg=delta,
                         )
 
                 # Message deletion
@@ -2671,7 +2674,7 @@ class Client(object):
                         thread_id=thread_id,
                         thread_type=thread_type,
                         ts=ts,
-                        msg=m,
+                        msg=delta,
                     )
 
                 elif d.get("deltaMessageReply"):
@@ -2690,7 +2693,7 @@ class Client(object):
                         thread_type=thread_type,
                         ts=message.timestamp,
                         metadata=metadata,
-                        msg=m,
+                        msg=delta,
                     )
 
         # New message
@@ -2711,17 +2714,20 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Unknown message type
         else:
-            self.onUnknownMesssageType(msg=m)
+            self.onUnknownMesssageType(msg=delta)
 
     def _parse_payload(self, topic, m):
         # Things that directly change chat
-        if topic == "delta":
-            self._parseDelta(m)
+        if topic == "/t_ms":
+            if "deltas" not in m:
+                return
+            for delta in m["deltas"]:
+                self._parseDelta(delta)
 
         # TODO: Remove old parsing below
 
