@@ -2231,6 +2231,12 @@ class Client(object):
                 msg=delta,
             )
 
+        elif delta_class == "MarkFolderSeen":
+            locations = [
+                ThreadLocation(folder.lstrip("FOLDER_")) for folder in delta["folders"]
+            ]
+            self._onSeen(locations=locations, ts=delta["timestamp"], msg=delta)
+
         # Emoji change
         elif delta_type == "change_thread_icon":
             new_emoji = delta["untypedData"]["thread_icon"]
@@ -2741,6 +2747,8 @@ class Client(object):
             )
 
         # Typing
+        # /thread_typing {'sender_fbid': X, 'state': 1, 'type': 'typ', 'thread': 'Y'}
+        # /orca_typing_notifications {'type': 'typ', 'sender_fbid': X, 'state': 0}
         elif topic in ("/thread_typing", "/orca_typing_notifications"):
             author_id = str(m["sender_fbid"])
             thread_id = m.get("thread", author_id)
@@ -2755,13 +2763,6 @@ class Client(object):
                 thread_type=thread_type,
                 msg=m,
             )
-
-        # Delivered
-
-        # Seen
-        # elif mtype == "m_read_receipt":
-        #
-        #     self.onSeen(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
 
         elif topic == "jewel_requests_add":
             from_id = m["from"]
@@ -3298,6 +3299,17 @@ class Client(object):
             msg: A full set of the data received
         """
         log.info("Friend request from {}".format(from_id))
+
+    def _onSeen(self, locations=None, ts=None, msg=None):
+        """
+        Todo:
+            Document this, and make it public
+
+        Args:
+            locations: ---
+            ts: A timestamp of the action
+            msg: A full set of the data received
+        """
 
     def onInbox(self, unseen=None, unread=None, recent_unread=None, msg=None):
         """
