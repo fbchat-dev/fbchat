@@ -192,17 +192,6 @@ class ActiveStatus(object):
     in_game = attr.ib(None)
 
     @classmethod
-    def _from_chatproxy_presence(cls, id_, data):
-        return cls(
-            active=data["p"] in [2, 3] if "p" in data else None,
-            last_active=data.get("lat"),
-            in_game=int(id_) in data.get("gamers", {}),
-        )
-
-    @classmethod
-    def _from_buddylist_overlay(cls, data, in_game=None):
-        return cls(
-            active=data["a"] in [2, 3] if "a" in data else None,
-            last_active=data.get("la"),
-            in_game=None,
-        )
+    def _from_orca_presence(cls, data):
+        # TODO: Handle `c` and `vc` keys (Probably some binary data)
+        return cls(active=data["p"] in [2, 3], last_active=data.get("l"), in_game=None)

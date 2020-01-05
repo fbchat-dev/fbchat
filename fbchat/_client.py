@@ -2773,26 +2773,19 @@ class Client(object):
             from_id = m["from"]
             self.onFriendRequest(from_id=from_id, msg=m)
 
-        # Chat timestamp
-        elif topic == "chatproxy-presence":
-            statuses = dict()
-            for id_, data in m.get("buddyList", {}).items():
-                statuses[id_] = ActiveStatus._from_chatproxy_presence(id_, data)
-                self._buddylist[id_] = statuses[id_]
+        # Chat timestamp / Buddylist overlay
+        elif topic == "/orca_presence":
+            if m["list_type"] == "full":
+                self._buddylist = {}  # Refresh internal list
 
+            statuses = dict()
+            for data in m["list"]:
+                user_id = str(data["u"])
+                statuses[user_id] = ActiveStatus._from_orca_presence(data)
+                self._buddylist[user_id] = statuses[user_id]
+
+            # TODO: Which one should we call?
             self.onChatTimestamp(buddylist=statuses, msg=m)
-
-        # Buddylist overlay
-        elif topic == "buddylist_overlay":
-            statuses = dict()
-            for id_, data in m.get("overlay", {}).items():
-                old_in_game = None
-                if id_ in self._buddylist:
-                    old_in_game = self._buddylist[id_].in_game
-
-                statuses[id_] = ActiveStatus._from_buddylist_overlay(data, old_in_game)
-                self._buddylist[id_] = statuses[id_]
-
             self.onBuddylistOverlay(statuses=statuses, msg=m)
 
         # Unknown message type
@@ -3807,7 +3800,6 @@ class Client(object):
             statuses (dict): Dictionary with user IDs as keys and :class:`ActiveStatus` as values
             msg: A full set of the data received
         """
-        log.debug("Buddylist overlay received: {}".format(statuses))
 
     def onUnknownMesssageType(self, msg=None):
         """Called when the client is listening, and some unknown data was received.
