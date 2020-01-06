@@ -12,6 +12,7 @@ from ._util import *
 from .models import *
 from . import _graphql
 from ._state import State
+from ._mqtt import Mqtt
 import time
 import json
 
@@ -85,13 +86,11 @@ class Client(object):
         Raises:
             FBchatException: On failed login
         """
-        self._sticky, self._pool = (None, None)
-        self._seq = "0"
         self._default_thread_id = None
         self._default_thread_type = None
-        self._pull_channel = 0
         self._markAlive = True
         self._buddylist = dict()
+        self._mqtt = None
 
         handler.setLevel(logging_level)
 
@@ -2169,39 +2168,7 @@ class Client(object):
     LISTEN METHODS
     """
 
-    def _ping(self):
-        data = {
-            "seq": self._seq,
-            "channel": "p_" + self._uid,
-            "clientid": self._state._client_id,
-            "partition": -2,
-            "cap": 0,
-            "uid": self._uid,
-            "sticky_token": self._sticky,
-            "sticky_pool": self._pool,
-            "viewer_uid": self._uid,
-            "state": "active",
-        }
-        j = self._get(
-            "https://{}-edge-chat.facebook.com/active_ping".format(self._pull_channel),
-            data,
-        )
-
-    def _pullMessage(self):
-        """Call pull api to fetch message data."""
-        data = {
-            "seq": self._seq,
-            "msgs_recv": 0,
-            "sticky_token": self._sticky,
-            "sticky_pool": self._pool,
-            "clientid": self._state._client_id,
-            "state": "active" if self._markAlive else "offline",
-        }
-        return self._get(
-            "https://{}-edge-chat.facebook.com/pull".format(self._pull_channel), data
-        )
-
-    def _parseDelta(self, m):
+    def _parseDelta(self, delta):
         def getThreadIdAndThreadType(msg_metadata):
             """Return a tuple consisting of thread ID and thread type."""
             id_thread = None
@@ -2214,7 +2181,6 @@ class Client(object):
                 type_thread = ThreadType.USER
             return id_thread, type_thread
 
-        delta = m["delta"]
         delta_type = delta.get("type")
         delta_class = delta.get("class")
         metadata = delta.get("messageMetadata")
@@ -2234,7 +2200,7 @@ class Client(object):
                 author_id=author_id,
                 thread_id=thread_id,
                 ts=ts,
-                msg=m,
+                msg=delta,
             )
 
         # Left/removed participants
@@ -2247,7 +2213,7 @@ class Client(object):
                 author_id=author_id,
                 thread_id=thread_id,
                 ts=ts,
-                msg=m,
+                msg=delta,
             )
 
         # Color change
@@ -2262,8 +2228,14 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
+
+        elif delta_class == "MarkFolderSeen":
+            locations = [
+                ThreadLocation(folder.lstrip("FOLDER_")) for folder in delta["folders"]
+            ]
+            self._onSeen(locations=locations, ts=delta["timestamp"], msg=delta)
 
         # Emoji change
         elif delta_type == "change_thread_icon":
@@ -2277,7 +2249,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Thread title change
@@ -2292,14 +2264,14 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Forced fetch
         elif delta_class == "ForcedFetch":
             mid = delta.get("messageId")
             if mid is None:
-                self.onUnknownMesssageType(msg=m)
+                self.onUnknownMesssageType(msg=delta)
             else:
                 thread_id = str(delta["threadKey"]["threadFbId"])
                 fetch_info = self._forcedFetch(thread_id, mid)
@@ -2321,7 +2293,7 @@ class Client(object):
                         thread_id=thread_id,
                         thread_type=ThreadType.GROUP,
                         ts=ts,
-                        msg=m,
+                        msg=delta,
                     )
 
         # Nickname change
@@ -2338,7 +2310,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Admin added or removed in a group thread
@@ -2354,7 +2326,7 @@ class Client(object):
                     thread_id=thread_id,
                     thread_type=thread_type,
                     ts=ts,
-                    msg=m,
+                    msg=delta,
                 )
             elif admin_event == "remove_admin":
                 self.onAdminRemoved(
@@ -2364,7 +2336,7 @@ class Client(object):
                     thread_id=thread_id,
                     thread_type=thread_type,
                     ts=ts,
-                    msg=m,
+                    msg=delta,
                 )
 
         # Group approval mode change
@@ -2378,7 +2350,7 @@ class Client(object):
                 thread_id=thread_id,
                 thread_type=thread_type,
                 ts=ts,
-                msg=m,
+                msg=delta,
             )
 
         # Message delivered
@@ -2396,7 +2368,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Message seen
@@ -2412,7 +2384,7 @@ class Client(object):
                 seen_ts=seen_ts,
                 ts=delivered_ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Messages marked as seen
@@ -2433,7 +2405,11 @@ class Client(object):
 
             # thread_id, thread_type = getThreadIdAndThreadType(delta)
             self.onMarkedSeen(
-                threads=threads, seen_ts=seen_ts, ts=delivered_ts, metadata=delta, msg=m
+                threads=threads,
+                seen_ts=seen_ts,
+                ts=delivered_ts,
+                metadata=delta,
+                msg=delta,
             )
 
         # Game played
@@ -2458,8 +2434,12 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
+
+        # Skip "no operation" events
+        elif delta_class == "NoOp":
+            pass
 
         # Group call started/ended
         elif delta_type == "rtc_call_log":
@@ -2476,7 +2456,7 @@ class Client(object):
                     thread_type=thread_type,
                     ts=ts,
                     metadata=metadata,
-                    msg=m,
+                    msg=delta,
                 )
             elif call_status == "call_ended":
                 self.onCallEnded(
@@ -2488,7 +2468,7 @@ class Client(object):
                     thread_type=thread_type,
                     ts=ts,
                     metadata=metadata,
-                    msg=m,
+                    msg=delta,
                 )
 
         # User joined to group call
@@ -2503,7 +2483,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Group poll event
@@ -2522,7 +2502,7 @@ class Client(object):
                     thread_type=thread_type,
                     ts=ts,
                     metadata=metadata,
-                    msg=m,
+                    msg=delta,
                 )
             elif event_type == "update_vote":
                 # User voted on group poll
@@ -2538,7 +2518,7 @@ class Client(object):
                     thread_type=thread_type,
                     ts=ts,
                     metadata=metadata,
-                    msg=m,
+                    msg=delta,
                 )
 
         # Plan created
@@ -2552,7 +2532,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Plan ended
@@ -2565,7 +2545,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Plan edited
@@ -2579,7 +2559,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Plan deleted
@@ -2593,7 +2573,7 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Plan participation change
@@ -2609,13 +2589,13 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
-                msg=m,
+                msg=delta,
             )
 
         # Client payload (that weird numbers)
         elif delta_class == "ClientPayload":
             payload = json.loads("".join(chr(z) for z in delta["payload"]))
-            ts = m.get("ofd_ts")
+            ts = now()  # Hack
             for d in payload.get("deltas", []):
 
                 # Message reaction
@@ -2636,7 +2616,7 @@ class Client(object):
                             thread_id=thread_id,
                             thread_type=thread_type,
                             ts=ts,
-                            msg=m,
+                            msg=delta,
                         )
                     else:
                         self.onReactionRemoved(
@@ -2645,7 +2625,7 @@ class Client(object):
                             thread_id=thread_id,
                             thread_type=thread_type,
                             ts=ts,
-                            msg=m,
+                            msg=delta,
                         )
 
                 # Viewer status change
@@ -2662,7 +2642,7 @@ class Client(object):
                                 thread_id=thread_id,
                                 thread_type=thread_type,
                                 ts=ts,
-                                msg=m,
+                                msg=delta,
                             )
                         else:
                             self.onBlock(
@@ -2670,7 +2650,7 @@ class Client(object):
                                 thread_id=thread_id,
                                 thread_type=thread_type,
                                 ts=ts,
-                                msg=m,
+                                msg=delta,
                             )
 
                 # Live location info
@@ -2688,7 +2668,7 @@ class Client(object):
                             thread_id=thread_id,
                             thread_type=thread_type,
                             ts=ts,
-                            msg=m,
+                            msg=delta,
                         )
 
                 # Message deletion
@@ -2704,7 +2684,7 @@ class Client(object):
                         thread_id=thread_id,
                         thread_type=thread_type,
                         ts=ts,
-                        msg=m,
+                        msg=delta,
                     )
 
                 elif d.get("deltaMessageReply"):
@@ -2723,7 +2703,7 @@ class Client(object):
                         thread_type=thread_type,
                         ts=message.timestamp,
                         metadata=metadata,
-                        msg=m,
+                        msg=delta,
                     )
 
         # New message
@@ -2744,117 +2724,78 @@ class Client(object):
                 thread_type=thread_type,
                 ts=ts,
                 metadata=metadata,
+                msg=delta,
+            )
+
+        # Unknown message type
+        else:
+            self.onUnknownMesssageType(msg=delta)
+
+    def _parse_payload(self, topic, m):
+        # Things that directly change chat
+        if topic == "/t_ms":
+            if "deltas" not in m:
+                return
+            for delta in m["deltas"]:
+                self._parseDelta(delta)
+
+        # TODO: Remove old parsing below
+
+        # Inbox
+        elif topic == "inbox":
+            self.onInbox(
+                unseen=m["unseen"],
+                unread=m["unread"],
+                recent_unread=m["recent_unread"],
                 msg=m,
             )
+
+        # Typing
+        # /thread_typing {'sender_fbid': X, 'state': 1, 'type': 'typ', 'thread': 'Y'}
+        # /orca_typing_notifications {'type': 'typ', 'sender_fbid': X, 'state': 0}
+        elif topic in ("/thread_typing", "/orca_typing_notifications"):
+            author_id = str(m["sender_fbid"])
+            thread_id = m.get("thread", author_id)
+            typing_status = TypingStatus(m.get("state"))
+            thread_type = (
+                ThreadType.USER if thread_id == author_id else ThreadType.GROUP
+            )
+            self.onTyping(
+                author_id=author_id,
+                status=typing_status,
+                thread_id=thread_id,
+                thread_type=thread_type,
+                msg=m,
+            )
+
+        elif topic == "jewel_requests_add":
+            from_id = m["from"]
+            self.onFriendRequest(from_id=from_id, msg=m)
+
+        # Chat timestamp / Buddylist overlay
+        elif topic == "/orca_presence":
+            if m["list_type"] == "full":
+                self._buddylist = {}  # Refresh internal list
+
+            statuses = dict()
+            for data in m["list"]:
+                user_id = str(data["u"])
+                statuses[user_id] = ActiveStatus._from_orca_presence(data)
+                self._buddylist[user_id] = statuses[user_id]
+
+            # TODO: Which one should we call?
+            self.onChatTimestamp(buddylist=statuses, msg=m)
+            self.onBuddylistOverlay(statuses=statuses, msg=m)
 
         # Unknown message type
         else:
             self.onUnknownMesssageType(msg=m)
 
-    def _parseMessage(self, content):
-        """Get message and author name from content.
-
-        May contain multiple messages in the content.
-        """
-        self._seq = content.get("seq", "0")
-
-        if "lb_info" in content:
-            self._sticky = content["lb_info"]["sticky"]
-            self._pool = content["lb_info"]["pool"]
-
-        if "batches" in content:
-            for batch in content["batches"]:
-                self._parseMessage(batch)
-
-        if "ms" not in content:
-            return
-
-        for m in content["ms"]:
-            mtype = m.get("type")
-            try:
-                # Things that directly change chat
-                if mtype == "delta":
-                    self._parseDelta(m)
-                # Inbox
-                elif mtype == "inbox":
-                    self.onInbox(
-                        unseen=m["unseen"],
-                        unread=m["unread"],
-                        recent_unread=m["recent_unread"],
-                        msg=m,
-                    )
-
-                # Typing
-                elif mtype == "typ" or mtype == "ttyp":
-                    author_id = str(m.get("from"))
-                    thread_id = m.get("thread_fbid")
-                    if thread_id:
-                        thread_type = ThreadType.GROUP
-                        thread_id = str(thread_id)
-                    else:
-                        thread_type = ThreadType.USER
-                        if author_id == self._uid:
-                            thread_id = m.get("to")
-                        else:
-                            thread_id = author_id
-                    typing_status = TypingStatus(m.get("st"))
-                    self.onTyping(
-                        author_id=author_id,
-                        status=typing_status,
-                        thread_id=thread_id,
-                        thread_type=thread_type,
-                        msg=m,
-                    )
-
-                # Delivered
-
-                # Seen
-                # elif mtype == "m_read_receipt":
-                #
-                #     self.onSeen(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
-
-                elif mtype in ["jewel_requests_add"]:
-                    from_id = m["from"]
-                    self.onFriendRequest(from_id=from_id, msg=m)
-
-                # Happens on every login
-                elif mtype == "qprimer":
-                    self.onQprimer(ts=m.get("made"), msg=m)
-
-                # Is sent before any other message
-                elif mtype == "deltaflow":
-                    pass
-
-                # Chat timestamp
-                elif mtype == "chatproxy-presence":
-                    statuses = dict()
-                    for id_, data in m.get("buddyList", {}).items():
-                        statuses[id_] = ActiveStatus._from_chatproxy_presence(id_, data)
-                        self._buddylist[id_] = statuses[id_]
-
-                    self.onChatTimestamp(buddylist=statuses, msg=m)
-
-                # Buddylist overlay
-                elif mtype == "buddylist_overlay":
-                    statuses = dict()
-                    for id_, data in m.get("overlay", {}).items():
-                        old_in_game = None
-                        if id_ in self._buddylist:
-                            old_in_game = self._buddylist[id_].in_game
-
-                        statuses[id_] = ActiveStatus._from_buddylist_overlay(
-                            data, old_in_game
-                        )
-                        self._buddylist[id_] = statuses[id_]
-
-                    self.onBuddylistOverlay(statuses=statuses, msg=m)
-
-                # Unknown message type
-                else:
-                    self.onUnknownMesssageType(msg=m)
-
-            except Exception as e:
-                self.onMessageError(exception=e, msg=m)
+    def _parse_message(self, topic, data):
+        try:
+            self._parse_payload(topic, data)
+        except Exception as e:
+            self.onMessageError(exception=e, msg=data)
 
     def startListening(self):
         """Start listening from an external event loop.
@@ -2862,6 +2803,15 @@ class Client(object):
         Raises:
             FBchatException: If request failed
         """
+        if not self._mqtt:
+            self._mqtt = Mqtt.connect(
+                state=self._state,
+                on_message=self._parse_message,
+                chat_on=self._markAlive,
+                foreground=True,
+            )
+            # Backwards compat
+            self.onQprimer(ts=now(), msg=None)
         self.listening = True
 
     def doOneListen(self, markAlive=None):
@@ -2879,36 +2829,23 @@ class Client(object):
         """
         if markAlive is not None:
             self._markAlive = markAlive
-        try:
-            if self._markAlive:
-                self._ping()
-            content = self._pullMessage()
-            if content:
-                self._parseMessage(content)
-        except KeyboardInterrupt:
-            return False
-        except requests.Timeout:
-            pass
-        except requests.ConnectionError:
-            # If the client has lost their internet connection, keep trying every 30 seconds
-            time.sleep(30)
-        except FBchatFacebookError as e:
-            # Fix 502 and 503 pull errors
-            if e.request_status_code in [502, 503]:
-                # Bump pull channel, while contraining withing 0-4
-                self._pull_channel = (self._pull_channel + 1) % 5
-                self.startListening()
-            else:
-                raise e
-        except Exception as e:
-            return self.onListenError(exception=e)
 
-        return True
+        # TODO: Remove this wierd check, and let the user handle the chat_on parameter
+        if self._markAlive != self._mqtt._chat_on:
+            self._mqtt.set_chat_on(self._markAlive)
+
+        # TODO: Remove on_error param
+        return self._mqtt.loop_once(on_error=self.onListenError)
 
     def stopListening(self):
-        """Clean up the variables from `Client.startListening`."""
+        """Stop the listening loop."""
         self.listening = False
-        self._sticky, self._pool = (None, None)
+        if not self._mqtt:
+            return
+        self._mqtt.disconnect()
+        # TODO: Preserve the _mqtt object
+        # Currently, there's some issues when disconnecting
+        self._mqtt = None
 
     def listen(self, markAlive=None):
         """Initialize and runs the listening loop continually.
@@ -3366,6 +3303,17 @@ class Client(object):
             msg: A full set of the data received
         """
         log.info("Friend request from {}".format(from_id))
+
+    def _onSeen(self, locations=None, ts=None, msg=None):
+        """
+        Todo:
+            Document this, and make it public
+
+        Args:
+            locations: ---
+            ts: A timestamp of the action
+            msg: A full set of the data received
+        """
 
     def onInbox(self, unseen=None, unread=None, recent_unread=None, msg=None):
         """
@@ -3865,7 +3813,6 @@ class Client(object):
             statuses (dict): Dictionary with user IDs as keys and :class:`ActiveStatus` as values
             msg: A full set of the data received
         """
-        log.debug("Buddylist overlay received: {}".format(statuses))
 
     def onUnknownMesssageType(self, msg=None):
         """Called when the client is listening, and some unknown data was received.

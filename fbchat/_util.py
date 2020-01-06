@@ -57,12 +57,24 @@ def now():
     return int(time() * 1000)
 
 
+def json_minimal(data):
+    """Get JSON data in minimal form."""
+    return json.dumps(data, separators=(",", ":"))
+
+
 def strip_json_cruft(text):
     """Removes `for(;;);` (and other cruft) that preceeds JSON responses."""
     try:
         return text[text.index("{") :]
     except ValueError:
         raise FBchatException("No JSON object found: {!r}".format(text))
+
+
+def get_cookie_header(session, host):
+    """Extract a cookie header from a requests session."""
+    return requests.cookies.get_cookie_header(
+        session.cookies, requests.Request("GET", host),
+    )
 
 
 def get_decoded_r(r):
