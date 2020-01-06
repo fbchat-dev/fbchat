@@ -2437,6 +2437,10 @@ class Client(object):
                 msg=delta,
             )
 
+        # Skip "no operation" events
+        elif delta_class == "NoOp":
+            pass
+
         # Group call started/ended
         elif delta_type == "rtc_call_log":
             thread_id, thread_type = getThreadIdAndThreadType(metadata)
