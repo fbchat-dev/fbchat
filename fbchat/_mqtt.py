@@ -97,7 +97,7 @@ class Mqtt(object):
                 log.error("MQTT error code %s received", j["errorCode"])
                 # TODO: Consider resetting the sync_token and sequence ID here?
 
-        log.debug("MQTT payload: %s", j)
+        log.debug("MQTT payload: %s, %s", message.topic, j)
 
         # Call the external callback
         self._on_message(message.topic, j)
@@ -149,6 +149,40 @@ class Mqtt(object):
         # Generate a new session ID on each reconnect
         session_id = generate_session_id()
 
+        topics = [
+            # Things that happen in chats (e.g. messages)
+            "/t_ms",
+            # Group typing notifications
+            "/thread_typing",
+            # Private chat typing notifications
+            "/orca_typing_notifications",
+            # Active notifications
+            "/orca_presence",
+            # Other notifications not related to chats (e.g. friend requests)
+            "/legacy_web",
+            # Facebook's continuous error reporting/logging?
+            "/br_sr",
+            # Response to /br_sr
+            "/sr_res",
+            # TODO: Investigate the response from this! (A bunch of binary data)
+            # "/t_p",
+            # TODO: Find out what this does!
+            "/webrtc",
+            # TODO: Find out what this does!
+            "/onevc",
+            # TODO: Find out what this does!
+            "/notify_disconnect",
+            # Old, no longer active topics
+            # These are here just in case something interesting pops up
+            "/inbox",
+            "/mercury",
+            "/messaging_events",
+            "/orca_message_notifications",
+            "/pp",
+            "/t_rtc",
+            "/webrtc_response",
+        ]
+
         username = {
             # The user ID
             "u": self._state.user_id,
@@ -163,31 +197,7 @@ class Mqtt(object):
             # Application ID, taken from facebook.com
             "aid": 219994525426954,
             # MQTT extension by FB, allows making a SUBSCRIBE while CONNECTing
-            "st": [
-                # TODO: Investigate the result from these
-                # "/inbox",
-                # "/mercury",
-                # "/messaging_events",
-                # "/orca_message_notifications",
-                # "/pp",
-                # "/t_p",
-                # "/t_rtc",
-                # "/webrtc_response",
-                "/legacy_web",
-                "/webrtc",
-                "/onevc",
-                # Things that happen in chats (e.g. messages)
-                "/t_ms",
-                # Group typing notifications
-                "/thread_typing",
-                # Private chat typing notifications
-                "/orca_typing_notifications",
-                "/notify_disconnect",
-                # Active notifications
-                "/orca_presence",
-                "/br_sr",
-                "/sr_res",
-            ],
+            "st": topics,
             # MQTT extension by FB, allows making a PUBLISH while CONNECTing
             # Using this is more efficient, but the same can be acheived with:
             #     def on_connect(*args):
@@ -290,3 +300,6 @@ class Mqtt(object):
     # def send_additional_contacts(self, additional_contacts):
     #     payload = _util.json_minimal({"additional_contacts": additional_contacts})
     #     info = self._mqtt.publish("/send_additional_contacts", payload=payload, qos=1)
+    #
+    # def browser_close(self):
+    #     info = self._mqtt.publish("/browser_close", payload=b"{}", qos=1)
