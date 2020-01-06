@@ -2835,7 +2835,7 @@ class Client(object):
             self._mqtt.set_chat_on(self._markAlive)
 
         # TODO: Remove on_error param
-        return self._mqtt.loop_once(on_error=self.onListenError)
+        return self._mqtt.loop_once(on_error=lambda e: self.onListenError(exception=e))
 
     def stopListening(self):
         """Stop the listening loop."""

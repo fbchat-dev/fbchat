@@ -31,9 +31,9 @@ class Mqtt(object):
             transport="websockets",
         )
         mqtt.enable_logger()
-        # mqtt.max_inflight_messages_set(20)
-        # mqtt.max_queued_messages_set(0)  # unlimited
-        # mqtt.message_retry_set(5)
+        # mqtt.max_inflight_messages_set(20)  # The rest will get queued
+        # mqtt.max_queued_messages_set(0)  # Unlimited messages can be queued
+        # mqtt.message_retry_set(20)  # Retry sending for at least 20 seconds
         # mqtt.reconnect_delay_set(min_delay=1, max_delay=120)
         # TODO: Is region (lla | atn | odn | others?) important?
         mqtt.tls_set()
@@ -250,16 +250,19 @@ class Mqtt(object):
             return False  # Stop listening
 
         if rc != paho.mqtt.client.MQTT_ERR_SUCCESS:
-            err = paho.mqtt.client.error_string(rc)
-
             # If known/expected error
-            if rc in [paho.mqtt.client.MQTT_ERR_CONN_LOST]:
-                log.warning(err)
+            if rc == paho.mqtt.client.MQTT_ERR_CONN_LOST:
+                log.warning("Connection lost, retrying")
+            elif rc == paho.mqtt.client.MQTT_ERR_NOMEM:
+                # This error is wrongly classified
+                # See https://github.com/eclipse/paho.mqtt.python/issues/340
+                log.warning("Connection error, retrying")
             else:
-                log.warning("MQTT Error: %s", err)
+                err = paho.mqtt.client.error_string(rc)
+                log.error("MQTT Error: %s", err)
                 # For backwards compatibility
                 if on_error:
-                    on_error(exception=FBchatException("MQTT Error {}".format(err)))
+                    on_error(_exception.FBchatException("MQTT Error {}".format(err)))
 
             # Wait before reconnecting
             self._mqtt._reconnect_wait()
@@ -273,8 +276,8 @@ class Mqtt(object):
                 paho.mqtt.client.socket.error,
                 OSError,
                 paho.mqtt.client.WebsocketConnectionError,
-            ):
-                log.debug("MQTT reconnection failed")
+            ) as e:
+                log.debug("MQTT reconnection failed: %s", e)
 
         return True  # Keep listening
 
