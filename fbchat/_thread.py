@@ -1,5 +1,6 @@
 import attr
 from ._core import attrs_default, Enum, Image
+from . import _session
 
 
 class ThreadType(Enum):
@@ -71,6 +72,8 @@ class ThreadColor(Enum):
 class Thread:
     """Represents a Facebook thread."""
 
+    #: The session to use when making requests.
+    session = attr.ib(type=_session.Session)
     #: The unique identifier of the thread.
     id = attr.ib(converter=str)
     #: Specifies the type of thread. Can be used a ``thread_type``. See :ref:`intro_threads` for more info

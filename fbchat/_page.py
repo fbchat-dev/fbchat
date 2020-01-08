@@ -1,6 +1,6 @@
 import attr
 from ._core import attrs_default, Image
-from . import _plan
+from . import _session, _plan
 from ._thread import ThreadType, Thread
 
 
@@ -10,6 +10,10 @@ class Page(Thread):
 
     type = ThreadType.PAGE
 
+    #: The session to use when making requests.
+    session = attr.ib(type=_session.Session)
+    #: The unique identifier of the page.
+    id = attr.ib(converter=str)
     #: The page's picture
     photo = attr.ib(None)
     #: The name of the page
@@ -32,7 +36,7 @@ class Page(Thread):
     category = attr.ib(None)
 
     @classmethod
-    def _from_graphql(cls, data):
+    def _from_graphql(cls, session, data):
         if data.get("profile_picture") is None:
             data["profile_picture"] = {}
         if data.get("city") is None:
@@ -42,6 +46,7 @@ class Page(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
+            session=session,
             id=data["id"],
             url=data.get("url"),
             city=data.get("city").get("name"),

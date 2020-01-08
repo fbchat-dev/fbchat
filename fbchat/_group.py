@@ -1,6 +1,6 @@
 import attr
 from ._core import attrs_default, Image
-from . import _util, _plan
+from . import _util, _session, _plan
 from ._thread import ThreadType, Thread
 
 
@@ -10,6 +10,10 @@ class Group(Thread):
 
     type = ThreadType.GROUP
 
+    #: The session to use when making requests.
+    session = attr.ib(type=_session.Session)
+    #: The group's unique identifier.
+    id = attr.ib(converter=str)
     #: The group's picture
     photo = attr.ib(None)
     #: The name of the group
@@ -38,7 +42,7 @@ class Group(Thread):
     join_link = attr.ib(None)
 
     @classmethod
-    def _from_graphql(cls, data):
+    def _from_graphql(cls, session, data):
         if data.get("image") is None:
             data["image"] = {}
         c_info = cls._parse_customization_info(data)
@@ -52,6 +56,7 @@ class Group(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
+            session=session,
             id=data["thread_key"]["thread_fbid"],
             participants=set(
                 [

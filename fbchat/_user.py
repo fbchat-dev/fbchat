@@ -1,6 +1,6 @@
 import attr
 from ._core import attrs_default, Enum, Image
-from . import _util, _plan
+from . import _util, _session, _plan
 from ._thread import ThreadType, Thread
 
 
@@ -47,6 +47,10 @@ class User(Thread):
 
     type = ThreadType.USER
 
+    #: The session to use when making requests.
+    session = attr.ib(type=_session.Session)
+    #: The user's unique identifier.
+    id = attr.ib(converter=str)
     #: The user's picture
     photo = attr.ib(None)
     #: The name of the user
@@ -79,7 +83,7 @@ class User(Thread):
     emoji = attr.ib(None)
 
     @classmethod
-    def _from_graphql(cls, data):
+    def _from_graphql(cls, session, data):
         if data.get("profile_picture") is None:
             data["profile_picture"] = {}
         c_info = cls._parse_customization_info(data)
@@ -88,6 +92,7 @@ class User(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
+            session=session,
             id=data["id"],
             url=data.get("url"),
             first_name=data.get("first_name"),
@@ -106,7 +111,7 @@ class User(Thread):
         )
 
     @classmethod
-    def _from_thread_fetch(cls, data):
+    def _from_thread_fetch(cls, session, data):
         if data.get("big_image_src") is None:
             data["big_image_src"] = {}
         c_info = cls._parse_customization_info(data)
@@ -133,6 +138,7 @@ class User(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
+            session=session,
             id=user["id"],
             url=user.get("url"),
             name=user.get("name"),
@@ -152,8 +158,9 @@ class User(Thread):
         )
 
     @classmethod
-    def _from_all_fetch(cls, data):
+    def _from_all_fetch(cls, session, data):
         return cls(
+            session=session,
             id=data["id"],
             first_name=data.get("firstName"),
             url=data.get("uri"),

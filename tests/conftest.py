@@ -7,6 +7,11 @@ from fbchat import ThreadType, Message, Mention
 
 
 @pytest.fixture(scope="session")
+def session():
+    return object()  # TODO: Add a mocked session
+
+
+@pytest.fixture(scope="session")
 def user(client2):
     return {"id": client2.id, "type": ThreadType.USER}
 
