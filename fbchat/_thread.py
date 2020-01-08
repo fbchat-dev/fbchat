@@ -270,7 +270,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         read_receipts = j["message_thread"]["read_receipts"]["nodes"]
 
         messages = [
-            Message._from_graphql(message, read_receipts)
+            Message._from_graphql(self.session, message, read_receipts)
             for message in j["message_thread"]["messages"]["nodes"]
         ]
         messages.reverse()

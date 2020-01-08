@@ -1524,8 +1524,12 @@ class Client:
                     i = d["deltaMessageReply"]
                     metadata = i["message"]["messageMetadata"]
                     thread_id, thread_type = get_thread_id_and_thread_type(metadata)
-                    replied_to = Message._from_reply(i["repliedToMessage"])
-                    message = Message._from_reply(i["message"], replied_to)
+                    replied_to = Message._from_reply(
+                        self.session, i["repliedToMessage"]
+                    )
+                    message = Message._from_reply(
+                        self.session, i["message"], replied_to
+                    )
                     self.on_message(
                         mid=message.id,
                         author_id=message.author,
@@ -1544,6 +1548,7 @@ class Client:
                 mid=mid,
                 author_id=author_id,
                 message_object=Message._from_pull(
+                    self.session,
                     delta,
                     mid=mid,
                     tags=metadata.get("tags"),

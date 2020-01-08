@@ -2,7 +2,7 @@ import attr
 import json
 from string import Formatter
 from ._core import log, attrs_default, Enum
-from . import _util, _attachment, _location, _file, _quick_reply, _sticker
+from . import _util, _session, _attachment, _location, _file, _quick_reply, _sticker
 
 
 class EmojiSize(Enum):
@@ -78,14 +78,18 @@ class Mention:
 class Message:
     """Represents a Facebook message."""
 
+    # TODO: Make these fields required!
+    #: The session to use when making requests.
+    session = attr.ib(None, type=_session.Session)
+    #: The message ID
+    id = attr.ib(None)
+
     #: The actual message
     text = attr.ib(None)
     #: A list of `Mention` objects
     mentions = attr.ib(factory=list)
     #: A `EmojiSize`. Size of a sent emoji
     emoji_size = attr.ib(None)
-    #: The message ID
-    id = attr.ib(None)
     #: ID of the sender
     author = attr.ib(None)
     #: Datetime of when the message was sent
@@ -119,7 +123,7 @@ class Message:
             message_id: Message ID to fetch from
         """
         message_info = thread._forced_fetch(message_id).get("message")
-        return Message._from_graphql(message_info)
+        return Message._from_graphql(thread.session, message_info)
 
     @classmethod
     def format_mentions(cls, text, *args, **kwargs):
@@ -234,7 +238,7 @@ class Message:
         return []
 
     @classmethod
-    def _from_graphql(cls, data, read_receipts=None):
+    def _from_graphql(cls, session, data, read_receipts=None):
         if data.get("message_sender") is None:
             data["message_sender"] = {}
         if data.get("message") is None:
@@ -260,12 +264,13 @@ class Message:
             replied_to = cls._from_graphql(data["replied_to_message"]["message"])
 
         return cls(
+            session=session,
+            id=str(data["message_id"]),
             text=data["message"].get("text"),
             mentions=[
                 Mention._from_range(m) for m in data["message"].get("ranges") or ()
             ],
             emoji_size=EmojiSize._from_tags(tags),
-            id=str(data["message_id"]),
             author=str(data["message_sender"]["id"]),
             created_at=created_at,
             is_read=not data["unread"] if data.get("unread") is not None else None,
@@ -288,7 +293,7 @@ class Message:
         )
 
     @classmethod
-    def _from_reply(cls, data, replied_to=None):
+    def _from_reply(cls, session, data, replied_to=None):
         tags = data["messageMetadata"].get("tags")
         metadata = data.get("messageMetadata", {})
 
@@ -315,13 +320,14 @@ class Message:
                 )
 
         return cls(
+            session=session,
+            id=metadata.get("messageId"),
             text=data.get("body"),
             mentions=[
                 Mention._from_prng(m)
                 for m in _util.parse_json(data.get("data", {}).get("prng", "[]"))
             ],
             emoji_size=EmojiSize._from_tags(tags),
-            id=metadata.get("messageId"),
             author=str(metadata.get("actorFbId")),
             created_at=_util.millis_to_datetime(metadata.get("timestamp")),
             sticker=sticker,
@@ -334,7 +340,9 @@ class Message:
         )
 
     @classmethod
-    def _from_pull(cls, data, mid=None, tags=None, author=None, created_at=None):
+    def _from_pull(
+        cls, session, data, mid=None, tags=None, author=None, created_at=None
+    ):
         mentions = []
         if data.get("data") and data["data"].get("prng"):
             try:
@@ -381,10 +389,11 @@ class Message:
             )
 
         return cls(
+            session=session,
+            id=mid,
             text=data.get("body"),
             mentions=mentions,
             emoji_size=EmojiSize._from_tags(tags),
-            id=mid,
             author=author,
             created_at=created_at,
             sticker=sticker,
