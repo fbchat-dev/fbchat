@@ -1,7 +1,7 @@
 import attr
 from ._core import attrs_default, Enum, Image
 from . import _util, _session, _plan
-from ._thread import ThreadType, Thread
+from ._thread import Thread
 
 
 GENDERS = {
@@ -44,8 +44,6 @@ class TypingStatus(Enum):
 @attrs_default
 class User(Thread):
     """Represents a Facebook user. Inherits `Thread`."""
-
-    type = ThreadType.USER
 
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)

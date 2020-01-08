@@ -1,14 +1,12 @@
 import attr
 from ._core import attrs_default, Image
 from . import _session, _plan
-from ._thread import ThreadType, Thread
+from ._thread import Thread
 
 
 @attrs_default
 class Page(Thread):
     """Represents a Facebook page. Inherits `Thread`."""
-
-    type = ThreadType.PAGE
 
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)

@@ -186,10 +186,10 @@ class Client:
         users = []
         users_to_fetch = []  # It's more efficient to fetch all users in one request
         for thread in threads:
-            if thread.type == ThreadType.USER:
+            if isinstance(thread, User):
                 if thread.id not in [user.id for user in users]:
                     users.append(thread)
-            elif thread.type == ThreadType.GROUP:
+            elif isinstance(thread, Group):
                 for user_id in thread.participants:
                     if (
                         user_id not in [user.id for user in users]
@@ -458,7 +458,7 @@ class Client:
         threads = self.fetch_thread_info(*user_ids)
         users = {}
         for id_, thread in threads.items():
-            if thread.type == ThreadType.USER:
+            if isinstance(thread, User):
                 users[id_] = thread
             else:
                 raise ValueError("Thread {} was not a user".format(thread))
@@ -483,7 +483,7 @@ class Client:
         threads = self.fetch_thread_info(*page_ids)
         pages = {}
         for id_, thread in threads.items():
-            if thread.type == ThreadType.PAGE:
+            if isinstance(thread, Page):
                 pages[id_] = thread
             else:
                 raise ValueError("Thread {} was not a page".format(thread))
@@ -505,7 +505,7 @@ class Client:
         threads = self.fetch_thread_info(*group_ids)
         groups = {}
         for id_, thread in threads.items():
-            if thread.type == ThreadType.GROUP:
+            if isinstance(thread, Group):
                 groups[id_] = thread
             else:
                 raise ValueError("Thread {} was not a group".format(thread))

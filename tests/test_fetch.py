@@ -89,7 +89,6 @@ def test_fetch_info(client1, group):
     assert info.name == "Mark Zuckerberg"
 
     info = client1.fetch_group_info(group["id"])[group["id"]]
-    assert info.type == ThreadType.GROUP
 
 
 def test_fetch_image_url(client):
