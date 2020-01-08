@@ -2,6 +2,7 @@ import attr
 from ._core import attrs_default, Image
 from . import _util, _session, _plan
 from ._thread import ThreadType, Thread
+from typing import Iterable
 
 
 @attrs_default
@@ -40,6 +41,118 @@ class Group(Thread):
     approval_requests = attr.ib(factory=set)
     # Link for joining group
     join_link = attr.ib(None)
+
+    def add_participants(self, user_ids: Iterable[str]):
+        """Add users to the group.
+
+        Args:
+            user_ids: One or more user IDs to add
+        """
+        data = self._to_send_data()
+
+        data["action_type"] = "ma-type:log-message"
+        data["log_message_type"] = "log:subscribe"
+
+        for i, user_id in enumerate(user_ids):
+            if user_id == self.session.user_id:
+                raise ValueError(
+                    "Error when adding users: Cannot add self to group thread"
+                )
+            else:
+                data[
+                    "log_message_data[added_participants][{}]".format(i)
+                ] = "fbid:{}".format(user_id)
+
+        return self.session._do_send_request(data)
+
+    def remove_participant(self, user_id: str):
+        """Remove user from the group.
+
+        Args:
+            user_id: User ID to remove
+        """
+        data = {"uid": user_id, "tid": self.id}
+        j = self._payload_post("/chat/remove_participants/", data)
+
+    def _admin_status(self, user_ids: Iterable[str], status: bool):
+        data = {"add": admin, "thread_fbid": self.id}
+
+        for i, user_id in enumerate(user_ids):
+            data["admin_ids[{}]".format(i)] = str(user_id)
+
+        j = self.session._payload_post("/messaging/save_admins/?dpr=1", data)
+
+    def add_admins(self, user_ids: Iterable[str]):
+        """Set specified users as group admins.
+
+        Args:
+            user_ids: One or more user IDs to set admin
+        """
+        self._admin_status(user_ids, True)
+
+    def remove_admins(self, user_ids: Iterable[str]):
+        """Remove admin status from specified users.
+
+        Args:
+            user_ids: One or more user IDs to remove admin
+        """
+        self._admin_status(user_ids, False)
+
+    def set_title(self, title: str):
+        """Change title of the group.
+
+        Args:
+            title: New title
+        """
+        data = {"thread_name": title, "thread_id": self.id}
+        j = self.session._payload_post("/messaging/set_thread_name/?dpr=1", data)
+
+    def set_image(self, image_id: str):
+        """Change the group image from an image id.
+
+        Args:
+            image_id: ID of uploaded image
+        """
+        data = {"thread_image_id": image_id, "thread_id": self.id}
+        j = self.session._payload_post("/messaging/set_thread_image/?dpr=1", data)
+
+    def set_approval_mode(self, require_admin_approval: bool):
+        """Change the group's approval mode.
+
+        Args:
+            require_admin_approval: True or False
+        """
+        data = {"set_mode": int(require_admin_approval), "thread_fbid": thread_id}
+        j = self.session._payload_post("/messaging/set_approval_mode/?dpr=1", data)
+
+    def _users_approval(self, user_ids: Iterable[str], approve: bool):
+        data = {
+            "client_mutation_id": "0",
+            "actor_id": self.session.user_id,
+            "thread_fbid": self.id,
+            "user_ids": list(user_ids),
+            "response": "ACCEPT" if approve else "DENY",
+            "surface": "ADMIN_MODEL_APPROVAL_CENTER",
+        }
+        (j,) = self.session._graphql_requests(
+            _graphql.from_doc_id("1574519202665847", {"data": data})
+        )
+
+    def accept_users(self, user_ids: Iterable[str]):
+        """Accept users to the group from the group's approval.
+
+        Args:
+            user_ids: One or more user IDs to accept
+        """
+        self._users_approval(user_ids, True)
+
+    def deny_users(self, user_ids: Iterable[str]):
+        """Deny users from joining the group.
+
+        Args:
+            user_ids: One or more user IDs to deny
+        """
+        self._users_approval(user_ids, False)
 
     @classmethod
     def _from_graphql(cls, session, data):
