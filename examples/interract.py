@@ -1,37 +1,43 @@
-from fbchat import Client
-from fbchat.models import *
+import fbchat
 
-client = Client("<email>", "<password>")
+session = fbchat.Session.login("<email>", "<password>")
+
+client = fbchat.Client(session)
 
 thread_id = "1234567890"
-thread_type = ThreadType.GROUP
+thread_type = fbchat.ThreadType.GROUP
 
 # Will send a message to the thread
-client.send(Message(text="<message>"), thread_id=thread_id, thread_type=thread_type)
+client.send(
+    fbchat.Message(text="<message>"), thread_id=thread_id, thread_type=thread_type
+)
 
 # Will send the default `like` emoji
 client.send(
-    Message(emoji_size=EmojiSize.LARGE), thread_id=thread_id, thread_type=thread_type
+    fbchat.Message(emoji_size=fbchat.EmojiSize.LARGE),
+    thread_id=thread_id,
+    thread_type=thread_type,
 )
 
 # Will send the emoji `👍`
 client.send(
-    Message(text="👍", emoji_size=EmojiSize.LARGE),
+    fbchat.Message(text="👍", emoji_size=fbchat.EmojiSize.LARGE),
     thread_id=thread_id,
     thread_type=thread_type,
 )
 
 # Will send the sticker with ID `767334476626295`
 client.send(
-    Message(sticker=Sticker("767334476626295")),
+    fbchat.Message(sticker=fbchat.Sticker("767334476626295")),
     thread_id=thread_id,
     thread_type=thread_type,
 )
 
 # Will send a message with a mention
 client.send(
-    Message(
-        text="This is a @mention", mentions=[Mention(thread_id, offset=10, length=8)]
+    fbchat.Message(
+        text="This is a @mention",
+        mentions=[fbchat.Mention(thread_id, offset=10, length=8)],
     ),
     thread_id=thread_id,
     thread_type=thread_type,
@@ -40,7 +46,7 @@ client.send(
 # Will send the image located at `<image path>`
 client.send_local_image(
     "<image path>",
-    message=Message(text="This is a local image"),
+    message=fbchat.Message(text="This is a local image"),
     thread_id=thread_id,
     thread_type=thread_type,
 )
@@ -48,14 +54,14 @@ client.send_local_image(
 # Will download the image at the URL `<image url>`, and then send it
 client.send_remote_image(
     "<image url>",
-    message=Message(text="This is a remote image"),
+    message=fbchat.Message(text="This is a remote image"),
     thread_id=thread_id,
     thread_type=thread_type,
 )
 
 
 # Only do these actions if the thread is a group
-if thread_type == ThreadType.GROUP:
+if thread_type == fbchat.ThreadType.GROUP:
     # Will remove the user with ID `<user id>` from the thread
     client.remove_user_from_group("<user id>", thread_id=thread_id)
 
@@ -78,14 +84,14 @@ client.change_thread_title("<title>", thread_id=thread_id, thread_type=thread_ty
 
 # Will set the typing status of the thread to `TYPING`
 client.set_typing_status(
-    TypingStatus.TYPING, thread_id=thread_id, thread_type=thread_type
+    fbchat.TypingStatus.TYPING, thread_id=thread_id, thread_type=thread_type
 )
 
 # Will change the thread color to `MESSENGER_BLUE`
-client.change_thread_color(ThreadColor.MESSENGER_BLUE, thread_id=thread_id)
+client.change_thread_color(fbchat.ThreadColor.MESSENGER_BLUE, thread_id=thread_id)
 
 # Will change the thread emoji to `👍`
 client.change_thread_emoji("👍", thread_id=thread_id)
 
 # Will react to a message with a 😍 emoji
-client.react_to_message("<message id>", MessageReaction.LOVE)
+client.react_to_message("<message id>", fbchat.MessageReaction.LOVE)

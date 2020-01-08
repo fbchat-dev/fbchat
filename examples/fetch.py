@@ -1,8 +1,9 @@
-from itertools import islice
-from fbchat import Client
-from fbchat.models import *
+import itertools
+import fbchat
 
-client = Client("<email>", "<password>")
+session = fbchat.Session.login("<email>", "<password>")
+
+client = fbchat.Client(session)
 
 # Fetches a list of all users you're currently chatting with, as `User` objects
 users = client.fetch_all_users()
@@ -65,5 +66,5 @@ print("thread's type: {}".format(thread.type))
 
 # Print image url for 20 last images from thread.
 images = client.fetch_thread_images("<thread id>")
-for image in islice(image, 20):
+for image in itertools.islice(image, 20):
     print(image.large_preview_url)

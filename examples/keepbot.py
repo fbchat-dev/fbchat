@@ -1,11 +1,10 @@
-from fbchat import Client
-from fbchat.models import *
+import fbchat
 
 # Change this to your group id
 old_thread_id = "1234567890"
 
 # Change these to match your liking
-old_color = ThreadColor.MESSENGER_BLUE
+old_color = fbchat.ThreadColor.MESSENGER_BLUE
 old_emoji = "👍"
 old_title = "Old group chat name"
 old_nicknames = {
@@ -16,7 +15,7 @@ old_nicknames = {
 }
 
 
-class KeepBot(Client):
+class KeepBot(fbchat.Client):
     def on_color_change(self, author_id, new_color, thread_id, thread_type, **kwargs):
         if old_thread_id == thread_id and old_color != new_color:
             print(
@@ -77,5 +76,7 @@ class KeepBot(Client):
             )
 
 
-client = KeepBot("<email>", "<password>")
-client.listen()
+session = fbchat.Session.login("<email>", "<password>")
+
+keep_bot = KeepBot(session)
+keep_bot.listen()

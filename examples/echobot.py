@@ -1,7 +1,7 @@
-from fbchat import Client
+import fbchat
 
 # Subclass fbchat.Client and override required methods
-class EchoBot(Client):
+class EchoBot(fbchat.Client):
     def on_message(self, author_id, message_object, thread_id, thread_type, **kwargs):
         self.mark_as_delivered(thread_id, message_object.uid)
         self.mark_as_read(thread_id)
@@ -13,5 +13,7 @@ class EchoBot(Client):
             self.send(message_object, thread_id=thread_id, thread_type=thread_type)
 
 
-client = EchoBot("<email>", "<password>")
-client.listen()
+session = fbchat.Session.login("<email>", "<password>")
+
+echo_bot = EchoBot(session)
+echo_bot.listen()

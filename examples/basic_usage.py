@@ -1,10 +1,19 @@
-from fbchat import Client
-from fbchat.models import *
+import fbchat
 
-client = Client("<email>", "<password>")
+# Log the user in
+session = fbchat.Session.login("<email>", "<password>")
 
-print("Own id: {}".format(client.uid))
+print("Own id: {}".format(sesion.user_id))
 
-client.send(Message(text="Hi me!"), thread_id=client.uid, thread_type=ThreadType.USER)
+# Create helper client class
+client = fbchat.Client(session)
 
-client.logout()
+# Send a message to yourself
+client.send(
+    fbchat.Message(text="Hi me!"),
+    thread_id=session.user_id,
+    thread_type=fbchat.ThreadType.USER,
+)
+
+# Log the user out
+session.logout()
