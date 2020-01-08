@@ -1,7 +1,7 @@
 import attr
 from ._core import attrs_default, Image
-from . import _util, _session, _plan, _thread
-from typing import Iterable
+from . import _util, _session, _plan, _thread, _user
+from typing import Sequence, Iterable
 
 
 @attrs_default
@@ -197,3 +197,32 @@ class Group(_thread.ThreadABC):
 
     def _to_send_data(self):
         return {"thread_fbid": self.id}
+
+
+@attrs_default
+class NewGroup(_thread.ThreadABC):
+    """Helper class to create new groups.
+
+    TODO: Complete this!
+
+    Construct this class with the desired users, and call a method like `wave`, to...
+    """
+
+    #: The session to use when making requests.
+    session = attr.ib(type=_session.Session)
+    #: The users that should be added to the group.
+    _users = attr.ib(type=Sequence[_user.User])
+
+    @property
+    def id(self):
+        raise NotImplementedError(
+            "The method you called is not supported on NewGroup objects."
+            " Please use the supported methods to create the group, before attempting"
+            " to call the method."
+        )
+
+    def _to_send_data(self) -> dict:
+        return {
+            "specific_to_list[{}]".format(i): "fbid:{}".format(user.id)
+            for i, user in enumerate(self._users)
+        }

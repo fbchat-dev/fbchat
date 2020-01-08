@@ -1158,34 +1158,6 @@ class Client:
                 fb_error_message=j["error"],
             )
 
-    def create_group(self, message, user_ids):
-        """Create a group with the given user ids.
-
-        Args:
-            message: The initial message
-            user_ids: A list of users to create the group with.
-
-        Returns:
-            ID of the new group
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = self._old_message(message)._to_send_data()
-
-        if len(user_ids) < 2:
-            raise ValueError("Error when creating group: Not enough participants")
-
-        for i, user_id in enumerate(user_ids + [self._session.user_id]):
-            data["specific_to_list[{}]".format(i)] = "fbid:{}".format(user_id)
-
-        message_id, thread_id = self._do_send_request(data, get_thread_id=True)
-        if not thread_id:
-            raise FBchatException(
-                "Error when creating group: No thread_id could be found"
-            )
-        return thread_id
-
     def change_thread_title(self, title, thread_id=None, thread_type=ThreadType.USER):
         """Change title of a thread.
 
