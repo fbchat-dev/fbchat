@@ -112,6 +112,16 @@ class Message:
     forwarded = attr.ib(False)
 
     @classmethod
+    def from_fetch(cls, thread, message_id: str) -> "Message":
+        """Fetch `Message` object from the given message id.
+
+        Args:
+            message_id: Message ID to fetch from
+        """
+        message_info = thread._forced_fetch(message_id).get("message")
+        return Message._from_graphql(message_info)
+
+    @classmethod
     def format_mentions(cls, text, *args, **kwargs):
         """Like `str.format`, but takes tuples with a thread id and text instead.
 

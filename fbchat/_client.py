@@ -623,22 +623,6 @@ class Client:
             raise FBchatException("Could not fetch image URL from: {}".format(j))
         return url
 
-    def fetch_message_info(self, mid, thread_id=None):
-        """Fetch `Message` object from the given message id.
-
-        Args:
-            mid: Message ID to fetch from
-            thread_id: User/Group ID to get message info from. See :ref:`intro_threads`
-
-        Returns:
-            Message: `Message` object
-
-        Raises:
-            FBchatException: If request failed
-        """
-        message_info = self._forced_fetch(thread_id, mid).get("message")
-        return Message._from_graphql(message_info)
-
     def fetch_poll_options(self, poll_id):
         """Fetch list of `PollOption` objects from the poll id.
 
