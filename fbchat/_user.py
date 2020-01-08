@@ -84,7 +84,7 @@ class User(Thread):
             last_name=data.get("last_name"),
             is_friend=data.get("is_viewer_friend"),
             gender=GENDERS.get(data.get("gender")),
-            affinity=data.get("affinity"),
+            affinity=data.get("viewer_affinity"),
             nickname=c_info.get("nickname"),
             color=c_info.get("color"),
             emoji=c_info.get("emoji"),
