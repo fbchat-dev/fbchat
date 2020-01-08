@@ -74,8 +74,8 @@ class Mqtt(object):
     def _on_message_handler(self, client, userdata, message):
         # Parse payload JSON
         try:
-            j = _util.parse_json(message.payload)
-        except _exception.FBchatFacebookError:
+            j = _util.parse_json(message.payload.decode("utf-8"))
+        except (_exception.FBchatFacebookError, UnicodeDecodeError):
             log.exception("Failed parsing MQTT data on %s as JSON", message.topic)
             return
 
