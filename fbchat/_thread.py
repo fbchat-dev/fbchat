@@ -75,16 +75,6 @@ class Thread:
     uid = attr.ib(converter=str)
     #: Specifies the type of thread. Can be used a ``thread_type``. See :ref:`intro_threads` for more info
     type = None
-    #: The thread's picture
-    photo = attr.ib(None)
-    #: The name of the thread
-    name = attr.ib(None)
-    #: Datetime when the thread was last active / when the last message was sent
-    last_active = attr.ib(None)
-    #: Number of messages in the thread
-    message_count = attr.ib(None)
-    #: Set `Plan`
-    plan = attr.ib(None)
 
     @staticmethod
     def _parse_customization_info(data):
