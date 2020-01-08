@@ -987,66 +987,6 @@ class Client:
         j = self._payload_post("/ajax/mercury/delete_messages.php?dpr=1", data)
         return True
 
-    def mute_thread(self, mute_time=None, thread_id=None):
-        """Mute thread.
-
-        Args:
-            mute_time (datetime.timedelta): Time to mute, use ``None`` to mute forever
-            thread_id: User/Group ID to mute. See :ref:`intro_threads`
-        """
-        if mute_time is None:
-            mute_settings = -1
-        else:
-            mute_settings = _util.timedelta_to_seconds(mute_time)
-        data = {"mute_settings": str(mute_settings), "thread_fbid": thread_id}
-        j = self._payload_post("/ajax/mercury/change_mute_thread.php?dpr=1", data)
-
-    def unmute_thread(self, thread_id=None):
-        """Unmute thread.
-
-        Args:
-            thread_id: User/Group ID to unmute. See :ref:`intro_threads`
-        """
-        return self.mute_thread(datetime.timedelta(0), thread_id)
-
-    def mute_thread_reactions(self, mute=True, thread_id=None):
-        """Mute thread reactions.
-
-        Args:
-            mute: Boolean. True to mute, False to unmute
-            thread_id: User/Group ID to mute. See :ref:`intro_threads`
-        """
-        data = {"reactions_mute_mode": int(mute), "thread_fbid": thread_id}
-        j = self._payload_post(
-            "/ajax/mercury/change_reactions_mute_thread/?dpr=1", data
-        )
-
-    def unmute_thread_reactions(self, thread_id=None):
-        """Unmute thread reactions.
-
-        Args:
-            thread_id: User/Group ID to unmute. See :ref:`intro_threads`
-        """
-        return self.mute_thread_reactions(False, thread_id)
-
-    def mute_thread_mentions(self, mute=True, thread_id=None):
-        """Mute thread mentions.
-
-        Args:
-            mute: Boolean. True to mute, False to unmute
-            thread_id: User/Group ID to mute. See :ref:`intro_threads`
-        """
-        data = {"mentions_mute_mode": int(mute), "thread_fbid": thread_id}
-        j = self._payload_post("/ajax/mercury/change_mentions_mute_thread/?dpr=1", data)
-
-    def unmute_thread_mentions(self, thread_id=None):
-        """Unmute thread mentions.
-
-        Args:
-            thread_id: User/Group ID to unmute. See :ref:`intro_threads`
-        """
-        return self.mute_thread_mentions(False, thread_id)
-
     """
     LISTEN METHODS
     """

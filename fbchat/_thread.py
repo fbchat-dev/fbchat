@@ -440,6 +440,53 @@ class ThreadABC(metaclass=abc.ABCMeta):
                 fb_error_message=j.get("errorMessage"),
             )
 
+    def mute(self, duration: datetime.timedelta = None):
+        """Mute the thread.
+
+        Args:
+            duration: Time to mute, use ``None`` to mute forever
+        """
+        if duration is None:
+            setting = "-1"
+        else:
+            setting = str(_util.timedelta_to_seconds(duration))
+        data = {"mute_settings": setting, "thread_fbid": self.id}
+        j = self.session._payload_post(
+            "/ajax/mercury/change_mute_thread.php?dpr=1", data
+        )
+
+    def unmute(self):
+        """Unmute the thread."""
+        return self.mute(datetime.timedelta(0))
+
+    def _mute_reactions(self, mode: bool):
+        data = {"reactions_mute_mode": "1" if mode else "0", "thread_fbid": self.id}
+        j = self.session._payload_post(
+            "/ajax/mercury/change_reactions_mute_thread/?dpr=1", data
+        )
+
+    def mute_reactions(self):
+        """Mute thread reactions."""
+        self._mute_reactions(True)
+
+    def unmute_reactions(self):
+        """Unmute thread reactions."""
+        self._mute_reactions(False)
+
+    def _mute_mentions(self, mode: bool):
+        data = {"mentions_mute_mode": "1" if mode else "0", "thread_fbid": self.id}
+        j = self.session._payload_post(
+            "/ajax/mercury/change_mentions_mute_thread/?dpr=1", data
+        )
+
+    def mute_mentions(self):
+        """Mute thread mentions."""
+        self._mute_mentions(True)
+
+    def unmute_mentions(self):
+        """Unmute thread mentions."""
+        self._mute_mentions(False)
+
     def mark_as_spam(self):
         """Mark the thread as spam, and delete it."""
         data = {"id": self.id}
