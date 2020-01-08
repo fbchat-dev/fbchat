@@ -5,7 +5,7 @@ import requests
 from collections import OrderedDict
 
 from ._core import log
-from . import _util, _graphql, _state
+from . import _util, _graphql, _session
 
 from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadType, ThreadLocation, ThreadColor
@@ -81,13 +81,13 @@ class Client:
     """
 
     def _get(self, url, params):
-        return self._state._get(url, params)
+        return self._session._get(url, params)
 
     def _post(self, url, params, files=None):
-        return self._state._post(url, params, files=files)
+        return self._session._post(url, params, files=files)
 
     def _payload_post(self, url, data, files=None):
-        return self._state._payload_post(url, data, files=files)
+        return self._session._payload_post(url, data, files=files)
 
     def graphql_requests(self, *queries):
         """Execute GraphQL queries.
@@ -101,7 +101,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        return tuple(self._state._graphql_requests(*queries))
+        return tuple(self._session._graphql_requests(*queries))
 
     def graphql_request(self, query):
         """Shorthand for ``graphql_requests(query)[0]``.
@@ -125,7 +125,7 @@ class Client:
         Returns:
             bool: True if the client is still logged in
         """
-        return self._state.is_logged_in()
+        return self._session.is_logged_in()
 
     def get_session(self):
         """Retrieve session cookies.
@@ -133,7 +133,7 @@ class Client:
         Returns:
             dict: A dictionary containing session cookies
         """
-        return self._state.get_cookies()
+        return self._session.get_cookies()
 
     def set_session(self, session_cookies):
         """Load session cookies.
@@ -146,8 +146,8 @@ class Client:
         """
         try:
             # Load cookies into current session
-            self._state = _state.State.from_cookies(session_cookies)
-            self._uid = self._state.user_id
+            self._session = _session.Session.from_cookies(session_cookies)
+            self._uid = self._session.user_id
         except Exception as e:
             log.exception("Failed loading session")
             return False
@@ -170,10 +170,10 @@ class Client:
         if not (email and password):
             raise ValueError("Email and password not set")
 
-        self._state = _state.State.login(
+        self._session = _session.Session.login(
             email, password, on_2fa_callback=self.on_2fa_code
         )
-        self._uid = self._state.user_id
+        self._uid = self._session.user_id
         self.on_logged_in(email=email)
 
     def logout(self):
@@ -182,8 +182,8 @@ class Client:
         Returns:
             bool: True if the action was successful
         """
-        if self._state.logout():
-            self._state = None
+        if self._session.logout():
+            self._session = None
             self._uid = None
             return True
         return False
@@ -936,7 +936,7 @@ class Client:
 
     def _do_send_request(self, data, get_thread_id=False):
         """Send the data to `SendURL`, and returns the message ID or None on failure."""
-        mid, thread_id = self._state._do_send_request(data)
+        mid, thread_id = self._session._do_send_request(data)
         if get_thread_id:
             return mid, thread_id
         else:
@@ -1107,7 +1107,7 @@ class Client:
         )
 
     def _upload(self, files, voice_clip=False):
-        return self._state._upload(files, voice_clip=voice_clip)
+        return self._session._upload(files, voice_clip=voice_clip)
 
     def _send_files(
         self, files, message=None, thread_id=None, thread_type=ThreadType.USER
@@ -1997,7 +1997,7 @@ class Client:
         data = {
             "seq": self._seq,
             "channel": "p_" + self._uid,
-            "clientid": self._state._client_id,
+            "clientid": self._session._client_id,
             "partition": -2,
             "cap": 0,
             "uid": self._uid,
@@ -2019,7 +2019,7 @@ class Client:
             "msgs_recv": 0,
             "sticky_token": self._sticky,
             "sticky_pool": self._pool,
-            "clientid": self._state._client_id,
+            "clientid": self._session._client_id,
             "state": "active" if self._mark_alive else "offline",
         }
         j = self._get(

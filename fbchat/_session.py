@@ -99,7 +99,7 @@ def _2fa_helper(session, code, r):
 
 
 @attrs_default
-class State:
+class Session:
     """Stores and manages state required for most Facebook requests."""
 
     user_id = attr.ib()
