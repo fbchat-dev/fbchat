@@ -313,59 +313,6 @@ class Client:
 
         return rtn
 
-    def search_for_message_ids(self, query, offset=0, limit=5, thread_id=None):
-        """Find and get message IDs by query.
-
-        Args:
-            query: Text to search for
-            offset (int): Number of messages to skip
-            limit (int): Max. number of messages to retrieve
-            thread_id: User/Group ID to search in. See :ref:`intro_threads`
-
-        Returns:
-            typing.Iterable: Found Message IDs
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {
-            "query": query,
-            "snippetOffset": offset,
-            "snippetLimit": limit,
-            "identifier": "thread_fbid",
-            "thread_fbid": thread_id,
-        }
-        j = self._payload_post("/ajax/mercury/search_snippets.php?dpr=1", data)
-
-        result = j["search_snippets"][query]
-        snippets = result[thread_id]["snippets"] if result.get(thread_id) else []
-        for snippet in snippets:
-            yield snippet["message_id"]
-
-    def search_for_messages(self, query, offset=0, limit=5, thread_id=None):
-        """Find and get `Message` objects by query.
-
-        Warning:
-            This method sends request for every found message ID.
-
-        Args:
-            query: Text to search for
-            offset (int): Number of messages to skip
-            limit (int): Max. number of messages to retrieve
-            thread_id: User/Group ID to search in. See :ref:`intro_threads`
-
-        Returns:
-            typing.Iterable: Found `Message` objects
-
-        Raises:
-            FBchatException: If request failed
-        """
-        message_ids = self.search_for_message_ids(
-            query, offset=offset, limit=limit, thread_id=thread_id
-        )
-        for mid in message_ids:
-            yield self.fetch_message_info(mid, thread_id)
-
     def search(self, query, fetch_messages=False, thread_limit=5, message_limit=5):
         """Search for messages in all threads.
 
@@ -574,42 +521,6 @@ class Client:
 
         return rtn
 
-    def fetch_thread_messages(self, thread_id=None, limit=20, before=None):
-        """Fetch messages in a thread, ordered by most recent.
-
-        Args:
-            thread_id: User/Group ID to get messages from. See :ref:`intro_threads`
-            limit (int): Max. number of messages to retrieve
-            before (datetime.datetime): The point from which to retrieve messages
-
-        Returns:
-            list: `Message` objects
-
-        Raises:
-            FBchatException: If request failed
-        """
-        params = {
-            "id": thread_id,
-            "message_limit": limit,
-            "load_messages": True,
-            "load_read_receipts": True,
-            "before": _util.datetime_to_millis(before) if before else None,
-        }
-        (j,) = self.graphql_requests(_graphql.from_doc_id("1860982147341344", params))
-
-        if j.get("message_thread") is None:
-            raise FBchatException("Could not fetch thread {}: {}".format(thread_id, j))
-
-        read_receipts = j["message_thread"]["read_receipts"]["nodes"]
-
-        messages = [
-            Message._from_graphql(message, read_receipts)
-            for message in j["message_thread"]["messages"]["nodes"]
-        ]
-        messages.reverse()
-
-        return messages
-
     def fetch_thread_list(
         self, limit=20, thread_location=ThreadLocation.INBOX, before=None
     ):
@@ -799,43 +710,6 @@ class Client:
             ActiveStatus: Given user active status
         """
         return self._buddylist.get(str(user_id))
-
-    def fetch_thread_images(self, thread_id=None):
-        """Fetch images posted in thread.
-
-        Args:
-            thread_id: ID of the thread
-
-        Returns:
-            typing.Iterable: `ImageAttachment` or `VideoAttachment`
-        """
-        data = {"id": thread_id, "first": 48}
-        thread_id = str(thread_id)
-        (j,) = self.graphql_requests(_graphql.from_query_id("515216185516880", data))
-        while True:
-            try:
-                i = j[thread_id]["message_shared_media"]["edges"][0]
-            except IndexError:
-                if j[thread_id]["message_shared_media"]["page_info"].get(
-                    "has_next_page"
-                ):
-                    data["after"] = j[thread_id]["message_shared_media"][
-                        "page_info"
-                    ].get("end_cursor")
-                    (j,) = self.graphql_requests(
-                        _graphql.from_query_id("515216185516880", data)
-                    )
-                    continue
-                else:
-                    break
-
-            if i["node"].get("__typename") == "MessageImage":
-                yield ImageAttachment._from_list(i)
-            elif i["node"].get("__typename") == "MessageVideo":
-                yield VideoAttachment._from_list(i)
-            else:
-                yield Attachment(id=i["node"].get("legacy_attachment_id"))
-            del j[thread_id]["message_shared_media"]["edges"][0]
 
     """
     END FETCH METHODS

@@ -213,6 +213,99 @@ class ThreadABC(metaclass=abc.ABCMeta):
     #         )
     #         return self.send(Message(text=payload, quick_replies=[new]))
 
+    def search_messages(
+        self, query: str, offset: int = 0, limit: int = 5
+    ) -> Iterable[str]:
+        """Find and get message IDs by query.
+
+        Args:
+            query: Text to search for
+            offset (int): Number of messages to skip
+            limit (int): Max. number of messages to retrieve
+
+        Returns:
+            typing.Iterable: Found Message IDs
+        """
+        # TODO: Return proper searchable iterator
+        data = {
+            "query": query,
+            "snippetOffset": offset,
+            "snippetLimit": limit,
+            "identifier": "thread_fbid",
+            "thread_fbid": self.id,
+        }
+        j = self.session._payload_post("/ajax/mercury/search_snippets.php?dpr=1", data)
+
+        result = j["search_snippets"][query]
+        snippets = result[self.id]["snippets"] if result.get(self.id) else []
+        for snippet in snippets:
+            yield snippet["message_id"]
+
+    def fetch_messages(self, limit: int = 20, before: datetime.datetime = None):
+        """Fetch messages in a thread, ordered by most recent.
+
+        Args:
+            limit: Max. number of messages to retrieve
+            before: The point from which to retrieve messages
+
+        Returns:
+            list: `Message` objects
+        """
+        # TODO: Return proper searchable iterator
+        params = {
+            "id": self.id,
+            "message_limit": limit,
+            "load_messages": True,
+            "load_read_receipts": True,
+            "before": _util.datetime_to_millis(before) if before else None,
+        }
+        (j,) = self.session._graphql_requests(
+            _graphql.from_doc_id("1860982147341344", params)
+        )
+
+        if j.get("message_thread") is None:
+            raise FBchatException("Could not fetch thread {}: {}".format(self.id, j))
+
+        read_receipts = j["message_thread"]["read_receipts"]["nodes"]
+
+        messages = [
+            Message._from_graphql(message, read_receipts)
+            for message in j["message_thread"]["messages"]["nodes"]
+        ]
+        messages.reverse()
+
+        return messages
+
+    def fetch_images(self):
+        """Fetch images/videos posted in the thread."""
+        # TODO: Return proper searchable iterator
+        data = {"id": self.id, "first": 48}
+        (j,) = self.session._graphql_requests(
+            _graphql.from_query_id("515216185516880", data)
+        )
+        while True:
+            try:
+                i = j[self.id]["message_shared_media"]["edges"][0]
+            except IndexError:
+                if j[self.id]["message_shared_media"]["page_info"].get("has_next_page"):
+                    data["after"] = j[self.id]["message_shared_media"]["page_info"].get(
+                        "end_cursor"
+                    )
+                    (j,) = self.session._graphql_requests(
+                        _graphql.from_query_id("515216185516880", data)
+                    )
+                    continue
+                else:
+                    break
+
+            if i["node"].get("__typename") == "MessageImage":
+                yield ImageAttachment._from_list(i)
+            elif i["node"].get("__typename") == "MessageVideo":
+                yield VideoAttachment._from_list(i)
+            else:
+                yield Attachment(id=i["node"].get("legacy_attachment_id"))
+            del j[self.id]["message_shared_media"]["edges"][0]
+
     def _forced_fetch(self, message_id: str) -> dict:
         params = {
             "thread_and_message_id": {"thread_id": self.id, "message_id": message_id}
