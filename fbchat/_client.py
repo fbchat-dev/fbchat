@@ -51,7 +51,7 @@ class Client:
         """
         return self._uid
 
-    def __init__(self, email, password, session_cookies=None):
+    def __init__(self, session):
         """Initialize and log in the client.
 
         Args:
@@ -67,14 +67,8 @@ class Client:
         self._pull_channel = 0
         self._mark_alive = True
         self._buddylist = dict()
-
-        # If session cookies aren't set, not properly loaded or gives us an invalid session, then do the login
-        if (
-            not session_cookies
-            or not self.set_session(session_cookies)
-            or not self.is_logged_in()
-        ):
-            self.login(email, password)
+        self._session = session
+        self._uid = session.user_id
 
     """
     INTERNAL REQUEST METHODS
@@ -113,83 +107,6 @@ class Client:
 
     """
     END INTERNAL REQUEST METHODS
-    """
-
-    """
-    LOGIN METHODS
-    """
-
-    def is_logged_in(self):
-        """Send a request to Facebook to check the login status.
-
-        Returns:
-            bool: True if the client is still logged in
-        """
-        return self._session.is_logged_in()
-
-    def get_session(self):
-        """Retrieve session cookies.
-
-        Returns:
-            dict: A dictionary containing session cookies
-        """
-        return self._session.get_cookies()
-
-    def set_session(self, session_cookies):
-        """Load session cookies.
-
-        Args:
-            session_cookies (dict): A dictionary containing session cookies
-
-        Returns:
-            bool: False if ``session_cookies`` does not contain proper cookies
-        """
-        try:
-            # Load cookies into current session
-            self._session = _session.Session.from_cookies(session_cookies)
-            self._uid = self._session.user_id
-        except Exception as e:
-            log.exception("Failed loading session")
-            return False
-        return True
-
-    def login(self, email, password):
-        """Login the user, using ``email`` and ``password``.
-
-        If the user is already logged in, this will do a re-login.
-
-        Args:
-            email: Facebook ``email`` or ``id`` or ``phone number``
-            password: Facebook account password
-
-        Raises:
-            FBchatException: On failed login
-        """
-        self.on_logging_in(email=email)
-
-        if not (email and password):
-            raise ValueError("Email and password not set")
-
-        self._session = _session.Session.login(
-            email, password, on_2fa_callback=self.on_2fa_code
-        )
-        self._uid = self._session.user_id
-        self.on_logged_in(email=email)
-
-    def logout(self):
-        """Safely log out the client.
-
-        Returns:
-            bool: True if the action was successful
-        """
-        if self._session.logout():
-            self._session = None
-            self._uid = None
-            return True
-        return False
-
-    """
-    END LOGIN METHODS
     """
 
     """
