@@ -1,12 +1,11 @@
 import attr
 from ._core import attrs_default, Image
-from . import _session, _plan
-from ._thread import Thread
+from . import _session, _plan, _thread
 
 
 @attrs_default
-class Page(Thread):
-    """Represents a Facebook page. Inherits `Thread`."""
+class Page(_thread.ThreadABC):
+    """Represents a Facebook page. Implements `ThreadABC`."""
 
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
@@ -32,6 +31,9 @@ class Page(Thread):
     sub_title = attr.ib(None)
     #: The page's category
     category = attr.ib(None)
+
+    def _to_send_data(self):
+        return {"other_user_fbid": self.id}
 
     @classmethod
     def _from_graphql(cls, session, data):

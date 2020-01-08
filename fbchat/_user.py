@@ -1,7 +1,6 @@
 import attr
 from ._core import attrs_default, Enum, Image
-from . import _util, _session, _plan
-from ._thread import Thread
+from . import _util, _session, _plan, _thread
 
 
 GENDERS = {
@@ -42,8 +41,8 @@ class TypingStatus(Enum):
 
 
 @attrs_default
-class User(Thread):
-    """Represents a Facebook user. Inherits `Thread`."""
+class User(_thread.ThreadABC):
+    """Represents a Facebook user. Implements `ThreadABC`."""
 
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
@@ -79,6 +78,9 @@ class User(Thread):
     color = attr.ib(None)
     #: The default emoji
     emoji = attr.ib(None)
+
+    def _to_send_data(self):
+        return {"other_user_fbid": self.id}
 
     def confirm_friend_request(self):
         """Confirm a friend request, adding the user to your friend list."""

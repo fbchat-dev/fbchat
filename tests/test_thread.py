@@ -1,6 +1,6 @@
 import pytest
 import fbchat
-from fbchat._thread import ThreadType, ThreadColor, Thread
+from fbchat import ThreadType, ThreadColor, ThreadABC, Thread
 
 
 def test_thread_type_to_class():
@@ -19,8 +19,8 @@ def test_thread_color_from_graphql():
 
 
 def test_thread_parse_customization_info_empty():
-    assert {} == Thread._parse_customization_info(None)
-    assert {} == Thread._parse_customization_info({"customization_info": None})
+    assert {} == ThreadABC._parse_customization_info(None)
+    assert {} == ThreadABC._parse_customization_info({"customization_info": None})
 
 
 def test_thread_parse_customization_info_group():
@@ -43,7 +43,7 @@ def test_thread_parse_customization_info_group():
         "color": ThreadColor.BRILLIANT_ROSE,
         "nicknames": {"123456789": "A", "987654321": "B"},
     }
-    assert expected == Thread._parse_customization_info(data)
+    assert expected == ThreadABC._parse_customization_info(data)
 
 
 def test_thread_parse_customization_info_user():
@@ -62,4 +62,9 @@ def test_thread_parse_customization_info_user():
         # ... Other irrelevant fields
     }
     expected = {"emoji": None, "color": None, "own_nickname": "A", "nickname": "B"}
-    assert expected == Thread._parse_customization_info(data)
+    assert expected == ThreadABC._parse_customization_info(data)
+
+
+def test_thread_create_and_implements_thread_abc(session):
+    thread = Thread(session=session, id="123")
+    assert thread._parse_customization_info

@@ -1,13 +1,12 @@
 import attr
 from ._core import attrs_default, Image
-from . import _util, _session, _plan
-from ._thread import Thread
+from . import _util, _session, _plan, _thread
 from typing import Iterable
 
 
 @attrs_default
-class Group(Thread):
-    """Represents a Facebook group. Inherits `Thread`."""
+class Group(_thread.ThreadABC):
+    """Represents a Facebook group. Implements `ThreadABC`."""
 
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)

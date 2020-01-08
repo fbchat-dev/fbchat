@@ -108,11 +108,6 @@ class Client:
     FETCH METHODS
     """
 
-    def _forced_fetch(self, thread_id, mid):
-        params = {"thread_and_message_id": {"thread_id": thread_id, "message_id": mid}}
-        (j,) = self.graphql_requests(_graphql.from_doc_id("1768656253222505", params))
-        return j
-
     def fetch_threads(self, thread_location, before=None, after=None, limit=None):
         """Fetch all threads in ``thread_location``.
 
@@ -1820,7 +1815,8 @@ class Client:
                 self.on_unknown_messsage_type(msg=m)
             else:
                 thread_id = str(delta["threadKey"]["threadFbId"])
-                fetch_info = self._forced_fetch(thread_id, mid)
+                thread = Thread(session=self.session, id=thread_id)
+                fetch_info = thread._forced_fetch(mid)
                 fetch_data = fetch_info["message"]
                 author_id = fetch_data["message_sender"]["id"]
                 at = _util.millis_to_datetime(int(fetch_data["timestamp_precise"]))

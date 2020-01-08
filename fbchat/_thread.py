@@ -1,6 +1,8 @@
+import abc
 import attr
 from ._core import attrs_default, Enum, Image
 from . import _session
+from typing import MutableMapping, Any
 
 
 class ThreadType(Enum):
@@ -68,17 +70,39 @@ class ThreadColor(Enum):
         return cls._extend_if_invalid(value)
 
 
-@attrs_default
-class Thread:
-    """Represents a Facebook thread."""
+class ThreadABC(metaclass=abc.ABCMeta):
+    """Implemented by thread-like classes.
 
-    #: The session to use when making requests.
-    session = attr.ib(type=_session.Session)
-    #: The unique identifier of the thread.
-    id = attr.ib(converter=str)
+    This is private to implement.
+    """
+
+    @property
+    @abc.abstractmethod
+    def session(self) -> _session.Session:
+        """The session to use when making requests."""
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def id(self) -> str:
+        """The unique identifier of the thread."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _to_send_data(self) -> MutableMapping[str, str]:
+        raise NotImplementedError
+
+    def _forced_fetch(self, message_id: str) -> dict:
+        params = {
+            "thread_and_message_id": {"thread_id": self.id, "message_id": message_id}
+        }
+        (j,) = self.session._graphql_requests(
+            _graphql.from_doc_id("1768656253222505", params)
+        )
+        return j
 
     @staticmethod
-    def _parse_customization_info(data):
+    def _parse_customization_info(data: Any) -> MutableMapping[str, Any]:
         if data is None or data.get("customization_info") is None:
             return {}
         info = data["customization_info"]
@@ -110,6 +134,24 @@ class Thread:
                     rtn["own_nickname"] = pc[1].get("nickname")
         return rtn
 
+
+@attrs_default
+class Thread(ThreadABC):
+    """Represents a Facebook thread, where the actual type is unknown.
+
+    Implements parts of `ThreadABC`, call the method to figure out if your use case is
+    supported. Otherwise, you'll have to use an `User`/`Group`/`Page` object.
+
+    Note: This list may change in minor versions!
+    """
+
+    #: The session to use when making requests.
+    session = attr.ib(type=_session.Session)
+    #: The unique identifier of the thread.
+    id = attr.ib(converter=str)
+
     def _to_send_data(self):
-        # TODO: Only implement this in subclasses
-        return {"other_user_fbid": self.id}
+        raise NotImplementedError(
+            "The method you called is not supported on raw Thread objects."
+            " Please use an appropriate User/Group/Page object instead!"
+        )
