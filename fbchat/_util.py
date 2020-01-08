@@ -70,10 +70,11 @@ def strip_json_cruft(text):
         raise FBchatException("No JSON object found: {!r}".format(text))
 
 
-def get_cookie_header(session, host):
+def get_cookie_header(session, url):
     """Extract a cookie header from a requests session."""
+    # The cookies are extracted this way to make sure they're escaped correctly
     return requests.cookies.get_cookie_header(
-        session.cookies, requests.Request("GET", host),
+        session.cookies, requests.Request("GET", url),
     )
 
 

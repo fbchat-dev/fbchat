@@ -122,6 +122,13 @@ class Mqtt(object):
             raise
 
     def _on_connect_handler(self, client, userdata, flags, rc):
+        if rc == 21:
+            raise _exception.FBchatException(
+                "Failed connecting. Maybe your cookies are wrong?"
+            )
+        if rc != 0:
+            return  # Don't try to send publish if the connection failed
+
         # configure receiving messages.
         payload = {
             "sync_api_version": 10,
@@ -228,7 +235,9 @@ class Mqtt(object):
 
         headers = {
             # TODO: Make this access thread safe
-            "Cookie": _util.get_cookie_header(self._state._session, self._HOST),
+            "Cookie": _util.get_cookie_header(
+                self._state._session, "https://edge-chat.facebook.com/chat"
+            ),
             "User-Agent": self._state._session.headers["User-Agent"],
             "Origin": "https://www.facebook.com",
             "Host": self._HOST,
