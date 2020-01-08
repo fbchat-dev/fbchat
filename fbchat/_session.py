@@ -105,13 +105,18 @@ class Session:
     This is the main class, which is used to login to Facebook.
     """
 
-    user_id = attr.ib()
+    _user_id = attr.ib()
     _fb_dtsg = attr.ib()
     _revision = attr.ib()
     _session = attr.ib(factory=session_factory)
     _counter = attr.ib(0)
     _client_id = attr.ib(factory=client_id_factory)
     _logout_h = attr.ib(None)
+
+    @property
+    def user_id(self):
+        """The logged in user's ID."""
+        return self._user_id
 
     def _get_params(self):
         self._counter += 1  # TODO: Make this operation atomic / thread-safe
@@ -308,7 +313,7 @@ class Session:
     def _do_send_request(self, data):
         offline_threading_id = _util.generate_offline_threading_id()
         data["client"] = "mercury"
-        data["author"] = "fbid:{}".format(self.user_id)
+        data["author"] = "fbid:{}".format(self._user_id)
         data["timestamp"] = _util.now()
         data["source"] = "source:chat:web"
         data["offline_threading_id"] = offline_threading_id
