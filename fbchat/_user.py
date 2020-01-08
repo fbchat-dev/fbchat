@@ -82,6 +82,26 @@ class User(Thread):
     #: The default emoji
     emoji = attr.ib(None)
 
+    def confirm_friend_request(self):
+        """Confirm a friend request, adding the user to your friend list."""
+        data = {"to_friend": self.id, "action": "confirm"}
+        j = self.session._payload_post("/ajax/add_friend/action.php?dpr=1", data)
+
+    def remove_friend(self):
+        """Remove the user from the client's friend list."""
+        data = {"uid": self.id}
+        j = self.session._payload_post("/ajax/profile/removefriendconfirm.php", data)
+
+    def block(self):
+        """Block messages from the user."""
+        data = {"fbid": self.id}
+        j = self.session._payload_post("/messaging/block_messages/?dpr=1", data)
+
+    def unblock(self):
+        """Unblock a previously blocked user."""
+        data = {"fbid": self.id}
+        j = self.session._payload_post("/messaging/unblock_messages/?dpr=1", data)
+
     @classmethod
     def _from_graphql(cls, session, data):
         if data.get("profile_picture") is None:

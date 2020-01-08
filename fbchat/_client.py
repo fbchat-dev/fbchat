@@ -1693,63 +1693,6 @@ class Client:
             "/ajax/mercury/mark_seen.php", {"seen_timestamp": _util.now()}
         )
 
-    def friend_connect(self, friend_id):
-        """
-        Todo:
-            Documenting this
-        """
-        data = {"to_friend": friend_id, "action": "confirm"}
-
-        j = self._payload_post("/ajax/add_friend/action.php?dpr=1", data)
-
-    def remove_friend(self, friend_id=None):
-        """Remove a specified friend from the client's friend list.
-
-        Args:
-            friend_id: The ID of the friend that you want to remove
-
-        Returns:
-            True
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {"uid": friend_id}
-        j = self._payload_post("/ajax/profile/removefriendconfirm.php", data)
-        return True
-
-    def block_user(self, user_id):
-        """Block messages from a specified user.
-
-        Args:
-            user_id: The ID of the user that you want to block
-
-        Returns:
-            True
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {"fbid": user_id}
-        j = self._payload_post("/messaging/block_messages/?dpr=1", data)
-        return True
-
-    def unblock_user(self, user_id):
-        """Unblock a previously blocked user.
-
-        Args:
-            user_id: The ID of the user that you want to unblock
-
-        Returns:
-            Whether the request was successful
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {"fbid": user_id}
-        j = self._payload_post("/messaging/unblock_messages/?dpr=1", data)
-        return True
-
     def move_threads(self, location, thread_ids):
         """Move threads to specified location.
 
