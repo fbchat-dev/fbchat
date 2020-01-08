@@ -38,9 +38,9 @@ ACONTEXT = {
 class Client:
     """A client for the Facebook Chat (Messenger).
 
-    This is the main class, which contains all the methods you use to interact with
-    Facebook. You can extend this class, and overwrite the ``on`` methods, to provide
-    custom event handling (mainly useful while listening).
+    This contains all the methods you use to interact with Facebook. You can extend this
+    class, and overwrite the ``on`` methods, to provide custom event handling (mainly
+    useful while listening).
     """
 
     @property

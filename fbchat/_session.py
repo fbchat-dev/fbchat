@@ -100,7 +100,10 @@ def _2fa_helper(session, code, r):
 
 @attrs_default
 class Session:
-    """Stores and manages state required for most Facebook requests."""
+    """Stores and manages state required for most Facebook requests.
+
+    This is the main class, which is used to login to Facebook.
+    """
 
     user_id = attr.ib()
     _fb_dtsg = attr.ib()
@@ -110,7 +113,7 @@ class Session:
     _client_id = attr.ib(factory=client_id_factory)
     _logout_h = attr.ib(None)
 
-    def get_params(self):
+    def _get_params(self):
         self._counter += 1  # TODO: Make this operation atomic / thread-safe
         return {
             "__a": 1,
@@ -121,6 +124,16 @@ class Session:
 
     @classmethod
     def login(cls, email, password, on_2fa_callback):
+        """Login the user, using ``email`` and ``password``.
+
+        Args:
+            email: Facebook ``email`` or ``id`` or ``phone number``
+            password: Facebook account password
+            on_2fa_callback: Function that will be called, in case a 2FA code is needed
+
+        Raises:
+            FBchatException: On failed login
+        """
         session = session_factory()
 
         soup = find_input_fields(session.get("https://m.facebook.com/").text)
@@ -145,7 +158,7 @@ class Session:
             r = session.get("https://m.facebook.com/login/save-device/cancel/")
 
         if is_home(r.url):
-            return cls.from_session(session=session)
+            return cls._from_session(session=session)
         else:
             raise _exception.FBchatException(
                 "Login failed. Check email/password. "
@@ -153,12 +166,24 @@ class Session:
             )
 
     def is_logged_in(self):
+        """Send a request to Facebook to check the login status.
+
+        Returns:
+            bool: Whether the user is still logged in
+        """
         # Send a request to the login url, to see if we're directed to the home page
         url = "https://m.facebook.com/login.php?login_attempt=1"
         r = self._session.get(url, allow_redirects=False)
         return "Location" in r.headers and is_home(r.headers["Location"])
 
     def logout(self):
+        """Safely log out the user.
+
+        The session object must not be used after this action has been performed!
+
+        Raises:
+            FBchatException: On failed logout
+        """
         logout_h = self._logout_h
         if not logout_h:
             url = _util.prefix_url("/bluebar/modern_settings_menu/")
@@ -166,10 +191,14 @@ class Session:
             logout_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
 
         url = _util.prefix_url("/logout.php")
-        return self._session.get(url, params={"ref": "mb", "h": logout_h}).ok
+        r = self._session.get(url, params={"ref": "mb", "h": logout_h})
+        if not r.ok:
+            raise exception.FBchatException(
+                "Failed logging out: {}".format(r.status_code)
+            )
 
     @classmethod
-    def from_session(cls, session):
+    def _from_session(cls, session):
         # TODO: Automatically set user_id when the cookie changes in the session
         user_id = get_user_id(session)
 
@@ -198,22 +227,35 @@ class Session:
         )
 
     def get_cookies(self):
+        """Retrieve session cookies, that can later be used in `from_cookies`.
+
+        Returns:
+            dict: A dictionary containing session cookies
+        """
         return self._session.cookies.get_dict()
 
     @classmethod
     def from_cookies(cls, cookies):
+        """Load a session from session cookies.
+
+        Args:
+            cookies (dict): A dictionary containing session cookies
+
+        Raises:
+            FBchatException: If given invalid cookies
+        """
         session = session_factory()
         session.cookies = requests.cookies.merge_cookies(session.cookies, cookies)
-        return cls.from_session(session=session)
+        return cls._from_session(session=session)
 
     def _get(self, url, params, error_retries=3):
-        params.update(self.get_params())
+        params.update(self._get_params())
         r = self._session.get(_util.prefix_url(url), params=params)
         content = _util.check_request(r)
         return _util.to_json(content)
 
     def _post(self, url, data, files=None, as_graphql=False):
-        data.update(self.get_params())
+        data.update(self._get_params())
         r = self._session.post(_util.prefix_url(url), data=data, files=files)
         content = _util.check_request(r)
         if as_graphql:
