@@ -1,8 +1,8 @@
 import abc
 import attr
 from ._core import attrs_default, Enum, Image
-from . import _session
-from typing import MutableMapping, Any
+from . import _util, _session
+from typing import MutableMapping, Any, Iterable, Tuple
 
 
 class ThreadType(Enum):
@@ -91,6 +91,127 @@ class ThreadABC(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _to_send_data(self) -> MutableMapping[str, str]:
         raise NotImplementedError
+
+    def wave(self, first: bool = True) -> str:
+        """Wave hello to the thread.
+
+        Args:
+            first: Whether to wave first or wave back
+        """
+        data = self._to_send_data()
+        data["action_type"] = "ma-type:user-generated-message"
+        data["lightweight_action_attachment[lwa_state]"] = (
+            "INITIATED" if first else "RECIPROCATED"
+        )
+        data["lightweight_action_attachment[lwa_type]"] = "WAVE"
+        # TODO: This!
+        # if thread_type == ThreadType.USER:
+        #     data["specific_to_list[0]"] = "fbid:{}".format(thread_id)
+        message_id, thread_id = self.session._do_send_request(data)
+        return message_id
+
+    def send(self, message) -> str:
+        """Send message to the thread.
+
+        Args:
+            message (Message): Message to send
+
+        Returns:
+            :ref:`Message ID <intro_message_ids>` of the sent message
+        """
+        data = self._to_send_data()
+        data.update(message._to_send_data())
+        return self.session._do_send_request(data)
+
+    def _send_location(self, current, latitude, longitude, message=None) -> str:
+        data = self._to_send_data()
+        if message is not None:
+            data.update(message._to_send_data())
+        data["action_type"] = "ma-type:user-generated-message"
+        data["location_attachment[coordinates][latitude]"] = latitude
+        data["location_attachment[coordinates][longitude]"] = longitude
+        data["location_attachment[is_current_location]"] = current
+        return self.session._do_send_request(data)
+
+    def send_location(self, latitude: float, longitude: float, message=None):
+        """Send a given location to a thread as the user's current location.
+
+        Args:
+            latitude: The location latitude
+            longitude: The location longitude
+            message: Additional message
+        """
+        self._send_location(
+            True, latitude=latitude, longitude=longitude, message=message,
+        )
+
+    def send_pinned_location(self, latitude: float, longitude: float, message=None):
+        """Send a given location to a thread as a pinned location.
+
+        Args:
+            latitude: The location latitude
+            longitude: The location longitude
+            message: Additional message
+        """
+        self._send_location(
+            False, latitude=latitude, longitude=longitude, message=message,
+        )
+
+    def send_files(self, files: Iterable[Tuple[str, str]], message):
+        """Send files from file IDs to a thread.
+
+        `files` should be a list of tuples, with a file's ID and mimetype.
+        """
+        data = self._to_send_data()
+        data.update(message._to_send_data())
+        data["action_type"] = "ma-type:user-generated-message"
+        data["has_attachment"] = True
+
+        for i, (file_id, mimetype) in enumerate(files):
+            data["{}s[{}]".format(_util.mimetype_to_key(mimetype), i)] = file_id
+
+        return self.session._do_send_request(data)
+
+    # TODO: This!
+    # def quick_reply(self, quick_reply, payload=None):
+    #     """Reply to chosen quick reply.
+    #
+    #     Args:
+    #         quick_reply (QuickReply): Quick reply to reply to
+    #         payload: Optional answer to the quick reply
+    #     """
+    #     if isinstance(quick_reply, QuickReplyText):
+    #         new = QuickReplyText(
+    #             payload=quick_reply.payload,
+    #             external_payload=quick_reply.external_payload,
+    #             data=quick_reply.data,
+    #             is_response=True,
+    #             title=quick_reply.title,
+    #             image_url=quick_reply.image_url,
+    #         )
+    #         return self.send(Message(text=quick_reply.title, quick_replies=[new]))
+    #     elif isinstance(quick_reply, QuickReplyLocation):
+    #         if not isinstance(payload, LocationAttachment):
+    #             raise TypeError("Payload must be an instance of `LocationAttachment`")
+    #         return self.send_location(payload)
+    #     elif isinstance(quick_reply, QuickReplyEmail):
+    #         new = QuickReplyEmail(
+    #             payload=payload if payload else self.get_emails()[0],
+    #             external_payload=quick_reply.payload,
+    #             data=quick_reply.data,
+    #             is_response=True,
+    #             image_url=quick_reply.image_url,
+    #         )
+    #         return self.send(Message(text=payload, quick_replies=[new]))
+    #     elif isinstance(quick_reply, QuickReplyPhoneNumber):
+    #         new = QuickReplyPhoneNumber(
+    #             payload=payload if payload else self.get_phone_numbers()[0],
+    #             external_payload=quick_reply.payload,
+    #             data=quick_reply.data,
+    #             is_response=True,
+    #             image_url=quick_reply.image_url,
+    #         )
+    #         return self.send(Message(text=payload, quick_replies=[new]))
 
     def _forced_fetch(self, message_id: str) -> dict:
         params = {
