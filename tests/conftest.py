@@ -8,7 +8,7 @@ from fbchat import ThreadType, Message, Mention
 
 @pytest.fixture(scope="session")
 def user(client2):
-    return {"id": client2.uid, "type": ThreadType.USER}
+    return {"id": client2.id, "type": ThreadType.USER}
 
 
 @pytest.fixture(scope="session")
@@ -88,7 +88,7 @@ def catch_event(client2):
     try:
         # Make the client send a messages to itself, so the blocking pull request will return
         # This is probably not safe, since the client is making two requests simultaneously
-        client2.send(Message(text=random_hex()), client2.uid)
+        client2.send(Message(text=random_hex()), client2.id)
     finally:
         t.join()
 
@@ -97,8 +97,8 @@ def catch_event(client2):
 def compare(client, thread):
     def inner(caught_event, **kwargs):
         d = {
-            "author_id": client.uid,
-            "thread_id": client.uid
+            "author_id": client.id,
+            "thread_id": client.id
             if thread["type"] == ThreadType.USER
             else thread["id"],
             "thread_type": thread["type"],
@@ -114,10 +114,10 @@ def message_with_mentions(request, client, client2, group):
     text = "Hi there ["
     mentions = []
     if "me" in request.param:
-        mentions.append(Mention(thread_id=client.uid, offset=len(text), length=2))
+        mentions.append(Mention(thread_id=client.id, offset=len(text), length=2))
         text += "me, "
     if "other" in request.param:
-        mentions.append(Mention(thread_id=client2.uid, offset=len(text), length=5))
+        mentions.append(Mention(thread_id=client2.id, offset=len(text), length=5))
         text += "other, "
     # Unused, because Facebook don't properly support sending mentions with groups as targets
     if "group" in request.param:

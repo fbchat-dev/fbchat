@@ -88,7 +88,7 @@ class User(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            uid=data["id"],
+            id=data["id"],
             url=data.get("url"),
             first_name=data.get("first_name"),
             last_name=data.get("last_name"),
@@ -133,7 +133,7 @@ class User(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            uid=user["id"],
+            id=user["id"],
             url=user.get("url"),
             name=user.get("name"),
             first_name=first_name,
@@ -154,7 +154,7 @@ class User(Thread):
     @classmethod
     def _from_all_fetch(cls, data):
         return cls(
-            uid=data["id"],
+            id=data["id"],
             first_name=data.get("firstName"),
             url=data.get("uri"),
             photo=Image(url=data.get("thumbSrc")),

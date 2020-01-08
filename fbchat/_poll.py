@@ -13,12 +13,12 @@ class Poll:
     #: Options count
     options_count = attr.ib(None)
     #: ID of the poll
-    uid = attr.ib(None)
+    id = attr.ib(None)
 
     @classmethod
     def _from_graphql(cls, data):
         return cls(
-            uid=int(data["id"]),
+            id=int(data["id"]),
             title=data.get("title") if data.get("title") else data.get("text"),
             options=[PollOption._from_graphql(m) for m in data.get("options")],
             options_count=data.get("total_count"),
@@ -38,7 +38,7 @@ class PollOption:
     #: Votes count
     votes_count = attr.ib(None)
     #: ID of the poll option
-    uid = attr.ib(None)
+    id = attr.ib(None)
 
     @classmethod
     def _from_graphql(cls, data):
@@ -49,7 +49,7 @@ class PollOption:
         else:
             vote = data["viewer_has_voted"] == "true"
         return cls(
-            uid=int(data["id"]),
+            id=int(data["id"]),
             text=data.get("text"),
             vote=vote,
             voters=(

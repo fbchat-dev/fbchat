@@ -42,7 +42,7 @@ class Page(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            uid=data["id"],
+            id=data["id"],
             url=data.get("url"),
             city=data.get("city").get("name"),
             category=data.get("category_type"),

@@ -35,7 +35,7 @@ class Sticker(Attachment):
             return None
 
         return cls(
-            uid=data["id"],
+            id=data["id"],
             pack=data["pack"].get("id") if data.get("pack") else None,
             is_animated=bool(data.get("sprite_image")),
             medium_sprite_image=data["sprite_image"].get("uri")

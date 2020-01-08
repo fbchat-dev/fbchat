@@ -71,8 +71,8 @@ class ThreadColor(Enum):
 class Thread:
     """Represents a Facebook thread."""
 
-    #: The unique identifier of the thread. Can be used a ``thread_id``. See :ref:`intro_threads` for more info
-    uid = attr.ib(converter=str)
+    #: The unique identifier of the thread.
+    id = attr.ib(converter=str)
     #: Specifies the type of thread. Can be used a ``thread_type``. See :ref:`intro_threads` for more info
     type = None
 
@@ -95,15 +95,15 @@ class Thread:
             for k in info.get("participant_customizations", []):
                 rtn["nicknames"][k["participant_id"]] = k.get("nickname")
         elif info.get("participant_customizations"):
-            uid = data.get("thread_key", {}).get("other_user_id") or data.get("id")
+            user_id = data.get("thread_key", {}).get("other_user_id") or data.get("id")
             pc = info["participant_customizations"]
             if len(pc) > 0:
-                if pc[0].get("participant_id") == uid:
+                if pc[0].get("participant_id") == user_id:
                     rtn["nickname"] = pc[0].get("nickname")
                 else:
                     rtn["own_nickname"] = pc[0].get("nickname")
             if len(pc) > 1:
-                if pc[1].get("participant_id") == uid:
+                if pc[1].get("participant_id") == user_id:
                     rtn["nickname"] = pc[1].get("nickname")
                 else:
                     rtn["own_nickname"] = pc[1].get("nickname")
@@ -111,4 +111,4 @@ class Thread:
 
     def _to_send_data(self):
         # TODO: Only implement this in subclasses
-        return {"other_user_fbid": self.uid}
+        return {"other_user_fbid": self.id}

@@ -24,7 +24,7 @@ class FileAttachment(Attachment):
             size=size,
             name=data.get("filename"),
             is_malicious=data.get("is_malicious"),
-            uid=data.get("message_file_fbid"),
+            id=data.get("message_file_fbid"),
         )
 
 
@@ -86,7 +86,7 @@ class ImageAttachment(Attachment):
             height=data.get("original_dimensions", {}).get("height"),
             is_animated=data["__typename"] == "MessageAnimatedImage",
             previews={p for p in previews if p},
-            uid=data.get("legacy_attachment_id"),
+            id=data.get("legacy_attachment_id"),
         )
 
     @classmethod
@@ -103,7 +103,7 @@ class ImageAttachment(Attachment):
             width=data["original_dimensions"].get("x"),
             height=data["original_dimensions"].get("y"),
             previews={p for p in previews if p},
-            uid=data["legacy_attachment_id"],
+            id=data["legacy_attachment_id"],
         )
 
 
@@ -139,7 +139,7 @@ class VideoAttachment(Attachment):
             duration=_util.millis_to_timedelta(data.get("playable_duration_in_ms")),
             preview_url=data.get("playable_url"),
             previews={p for p in previews if p},
-            uid=data.get("legacy_attachment_id"),
+            id=data.get("legacy_attachment_id"),
         )
 
     @classmethod
@@ -151,7 +151,7 @@ class VideoAttachment(Attachment):
             duration=_util.millis_to_timedelta(media.get("playable_duration_in_ms")),
             preview_url=media.get("playable_url"),
             previews={image} if image else {},
-            uid=data["target"].get("video_id"),
+            id=data["target"].get("video_id"),
         )
 
     @classmethod
@@ -167,7 +167,7 @@ class VideoAttachment(Attachment):
             width=data["original_dimensions"].get("x"),
             height=data["original_dimensions"].get("y"),
             previews=previews,
-            uid=data["legacy_attachment_id"],
+            id=data["legacy_attachment_id"],
         )
 
 
@@ -182,7 +182,7 @@ def graphql_to_attachment(data, size=None):
     elif _type == "MessageFile":
         return FileAttachment._from_graphql(data, size=size)
 
-    return Attachment(uid=data.get("legacy_attachment_id"))
+    return Attachment(id=data.get("legacy_attachment_id"))
 
 
 def graphql_to_subattachment(data):

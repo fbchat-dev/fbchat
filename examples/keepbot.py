@@ -31,7 +31,7 @@ class KeepBot(fbchat.Client):
             self.change_thread_emoji(old_emoji, thread_id=thread_id)
 
     def on_people_added(self, added_ids, author_id, thread_id, **kwargs):
-        if old_thread_id == thread_id and author_id != self.uid:
+        if old_thread_id == thread_id and author_id != session.user_id:
             print("{} got added. They will be removed".format(added_ids))
             for added_id in added_ids:
                 self.remove_user_from_group(added_id, thread_id=thread_id)
@@ -40,8 +40,8 @@ class KeepBot(fbchat.Client):
         # No point in trying to add ourself
         if (
             old_thread_id == thread_id
-            and removed_id != self.uid
-            and author_id != self.uid
+            and removed_id != session.user_id
+            and author_id != session.user_id
         ):
             print("{} got removed. They will be re-added".format(removed_id))
             self.add_users_to_group(removed_id, thread_id=thread_id)

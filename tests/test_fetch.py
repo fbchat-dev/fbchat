@@ -28,7 +28,7 @@ def test_fetch_message_emoji(client, emoji, emoji_size):
     (message,) = client.fetch_thread_messages(limit=1)
 
     assert subset(
-        vars(message), uid=mid, author=client.uid, text=emoji, emoji_size=emoji_size
+        vars(message), id=mid, author=client.id, text=emoji, emoji_size=emoji_size
     )
 
 
@@ -38,7 +38,7 @@ def test_fetch_message_info_emoji(client, thread, emoji, emoji_size):
     message = client.fetch_message_info(mid, thread_id=thread["id"])
 
     assert subset(
-        vars(message), uid=mid, author=client.uid, text=emoji, emoji_size=emoji_size
+        vars(message), id=mid, author=client.id, text=emoji, emoji_size=emoji_size
     )
 
 
@@ -47,7 +47,7 @@ def test_fetch_message_mentions(client, thread, message_with_mentions):
     (message,) = client.fetch_thread_messages(limit=1)
 
     assert subset(
-        vars(message), uid=mid, author=client.uid, text=message_with_mentions.text
+        vars(message), id=mid, author=client.id, text=message_with_mentions.text
     )
     # The mentions are not ordered by offset
     for m in message.mentions:
@@ -59,7 +59,7 @@ def test_fetch_message_info_mentions(client, thread, message_with_mentions):
     message = client.fetch_message_info(mid, thread_id=thread["id"])
 
     assert subset(
-        vars(message), uid=mid, author=client.uid, text=message_with_mentions.text
+        vars(message), id=mid, author=client.id, text=message_with_mentions.text
     )
     # The mentions are not ordered by offset
     for m in message.mentions:
@@ -71,8 +71,8 @@ def test_fetch_message_sticker(client, sticker):
     mid = client.send(Message(sticker=sticker))
     (message,) = client.fetch_thread_messages(limit=1)
 
-    assert subset(vars(message), uid=mid, author=client.uid)
-    assert subset(vars(message.sticker), uid=sticker.uid)
+    assert subset(vars(message), id=mid, author=client.id)
+    assert subset(vars(message.sticker), id=sticker.id)
 
 
 @pytest.mark.parametrize("sticker", STICKER_LIST)
@@ -80,8 +80,8 @@ def test_fetch_message_info_sticker(client, thread, sticker):
     mid = client.send(Message(sticker=sticker))
     message = client.fetch_message_info(mid, thread_id=thread["id"])
 
-    assert subset(vars(message), uid=mid, author=client.uid)
-    assert subset(vars(message.sticker), uid=sticker.uid)
+    assert subset(vars(message), id=mid, author=client.id)
+    assert subset(vars(message.sticker), id=sticker.id)
 
 
 def test_fetch_info(client1, group):
@@ -98,4 +98,4 @@ def test_fetch_image_url(client):
     )
     (message,) = client.fetch_thread_messages(limit=1)
 
-    assert client.fetch_image_url(message.attachments[0].uid)
+    assert client.fetch_image_url(message.attachments[0].id)

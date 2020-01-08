@@ -12,7 +12,7 @@ def test_page_from_graphql():
         "city": None,
     }
     assert Page(
-        uid="123456",
+        id="123456",
         photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
         name="Some school",
         url="https://www.facebook.com/some-school/",

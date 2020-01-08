@@ -33,7 +33,7 @@ class LocationAttachment(Attachment):
             latitude, longitude = None, None
 
         return cls(
-            uid=int(data["deduplication_key"]),
+            id=int(data["deduplication_key"]),
             latitude=latitude,
             longitude=longitude,
             image=Image._from_uri_or_none(data["media"].get("image"))
@@ -58,7 +58,7 @@ class LiveLocationAttachment(LocationAttachment):
     @classmethod
     def _from_pull(cls, data):
         return cls(
-            uid=data["id"],
+            id=data["id"],
             latitude=data["coordinate"]["latitude"] / (10 ** 8)
             if not data.get("stopReason")
             else None,
@@ -80,7 +80,7 @@ class LiveLocationAttachment(LocationAttachment):
             image = Image._from_uri(media["image"])
 
         return cls(
-            uid=int(target["live_location_id"]),
+            id=int(target["live_location_id"]),
             latitude=target["coordinate"]["latitude"]
             if target.get("coordinate")
             else None,

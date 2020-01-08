@@ -19,7 +19,7 @@ class Plan:
     #: Plan title
     title = attr.ib()
     #: ID of the plan
-    uid = attr.ib(None)
+    id = attr.ib(None)
     #: Plan location name
     location = attr.ib(None, converter=lambda x: x or "")
     #: Plan location ID
@@ -59,7 +59,7 @@ class Plan:
     @classmethod
     def _from_pull(cls, data):
         return cls(
-            uid=data.get("event_id"),
+            id=data.get("event_id"),
             time=_util.seconds_to_datetime(int(data.get("event_time"))),
             title=data.get("event_title"),
             location=data.get("event_location_name"),
@@ -74,7 +74,7 @@ class Plan:
     @classmethod
     def _from_fetch(cls, data):
         return cls(
-            uid=data.get("oid"),
+            id=data.get("oid"),
             time=_util.seconds_to_datetime(data.get("event_time")),
             title=data.get("title"),
             location=data.get("location_name"),
@@ -86,7 +86,7 @@ class Plan:
     @classmethod
     def _from_graphql(cls, data):
         return cls(
-            uid=data.get("id"),
+            id=data.get("id"),
             time=_util.seconds_to_datetime(data.get("time")),
             title=data.get("event_title"),
             location=data.get("location_name"),

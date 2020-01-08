@@ -85,7 +85,7 @@ class Message:
     #: A `EmojiSize`. Size of a sent emoji
     emoji_size = attr.ib(None)
     #: The message ID
-    uid = attr.ib(None)
+    id = attr.ib(None)
     #: ID of the sender
     author = attr.ib(None)
     #: Datetime of when the message was sent
@@ -186,7 +186,7 @@ class Message:
                 data["sticker_id"] = self.emoji_size.value
 
         if self.sticker:
-            data["sticker_id"] = self.sticker.uid
+            data["sticker_id"] = self.sticker.id
 
         if self.quick_replies:
             xmd = {"quick_replies": []}
@@ -255,7 +255,7 @@ class Message:
                 Mention._from_range(m) for m in data["message"].get("ranges") or ()
             ],
             emoji_size=EmojiSize._from_tags(tags),
-            uid=str(data["message_id"]),
+            id=str(data["message_id"]),
             author=str(data["message_sender"]["id"]),
             created_at=created_at,
             is_read=not data["unread"] if data.get("unread") is not None else None,
@@ -272,7 +272,7 @@ class Message:
             attachments=attachments,
             quick_replies=cls._parse_quick_replies(data.get("platform_xmd_encoded")),
             unsent=unsent,
-            reply_to_id=replied_to.uid if replied_to else None,
+            reply_to_id=replied_to.id if replied_to else None,
             replied_to=replied_to,
             forwarded=cls._get_forwarded_from_tags(tags),
         )
@@ -311,14 +311,14 @@ class Message:
                 for m in _util.parse_json(data.get("data", {}).get("prng", "[]"))
             ],
             emoji_size=EmojiSize._from_tags(tags),
-            uid=metadata.get("messageId"),
+            id=metadata.get("messageId"),
             author=str(metadata.get("actorFbId")),
             created_at=_util.millis_to_datetime(metadata.get("timestamp")),
             sticker=sticker,
             attachments=attachments,
             quick_replies=cls._parse_quick_replies(data.get("platform_xmd_encoded")),
             unsent=unsent,
-            reply_to_id=replied_to.uid if replied_to else None,
+            reply_to_id=replied_to.id if replied_to else None,
             replied_to=replied_to,
             forwarded=cls._get_forwarded_from_tags(tags),
         )
@@ -374,7 +374,7 @@ class Message:
             text=data.get("body"),
             mentions=mentions,
             emoji_size=EmojiSize._from_tags(tags),
-            uid=mid,
+            id=mid,
             author=author,
             created_at=created_at,
             sticker=sticker,
@@ -391,7 +391,7 @@ def graphql_to_extensible_attachment(data):
 
     target = story.get("target")
     if not target:
-        return _attachment.UnsentMessage(uid=data.get("legacy_attachment_id"))
+        return _attachment.UnsentMessage(id=data.get("legacy_attachment_id"))
 
     _type = target["__typename"]
     if _type == "MessageLocation":

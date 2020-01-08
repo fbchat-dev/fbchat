@@ -26,13 +26,13 @@ def plan_data(request, client, user, thread, catch_event, compare):
         vars(x.res["plan"]),
         time=request.param.time,
         title=request.param.title,
-        author_id=client.uid,
-        going=[client.uid],
+        author_id=client.id,
+        going=[client.id],
         declined=[],
     )
     plan_id = x.res["plan"]
     assert user["id"] in x.res["plan"].invited
-    request.param.uid = x.res["plan"].uid
+    request.param.id = x.res["plan"].id
     yield x.res, request.param
     with catch_event("on_plan_deleted") as x:
         client.delete_plan(plan_id)
@@ -46,9 +46,9 @@ def test_create_delete_plan(plan_data):
 
 def test_fetch_plan_info(client, catch_event, plan_data):
     event, plan = plan_data
-    fetched_plan = client.fetch_plan_info(plan.uid)
+    fetched_plan = client.fetch_plan_info(plan.id)
     assert subset(
-        vars(fetched_plan), time=plan.time, title=plan.title, author_id=int(client.uid)
+        vars(fetched_plan), time=plan.time, title=plan.title, author_id=int(client.id)
     )
 
 
@@ -64,9 +64,9 @@ def test_change_plan_participation(
         vars(x.res["plan"]),
         time=plan.time,
         title=plan.title,
-        author_id=client.uid,
-        going=[client.uid] if take_part else [],
-        declined=[client.uid] if not take_part else [],
+        author_id=client.id,
+        going=[client.id] if take_part else [],
+        declined=[client.id] if not take_part else [],
     )
 
 
@@ -81,7 +81,7 @@ def test_edit_plan(client, thread, catch_event, compare, plan_data):
         vars(x.res["plan"]),
         time=new_plan.time,
         title=new_plan.title,
-        author_id=client.uid,
+        author_id=client.id,
     )
 
 
@@ -93,7 +93,7 @@ def test_on_plan_ended(client, thread, catch_event, compare):
         x.wait(180)
     assert subset(
         x.res,
-        thread_id=client.uid if thread["type"] == ThreadType.USER else thread["id"],
+        thread_id=client.id if thread["type"] == ThreadType.USER else thread["id"],
         thread_type=thread["type"],
     )
 

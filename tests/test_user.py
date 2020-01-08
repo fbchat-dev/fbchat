@@ -17,7 +17,7 @@ def test_user_from_graphql():
         "viewer_affinity": 0.4560002,
     }
     assert User(
-        uid="1234",
+        id="1234",
         photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
         name="Abc Def Ghi",
         url="https://www.facebook.com/profile.php?id=1234",
@@ -137,7 +137,7 @@ def test_user_from_thread_fetch():
         "delivery_receipts": ...,
     }
     assert User(
-        uid="1234",
+        id="1234",
         photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
         name="Abc Def Ghi",
         last_active=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
@@ -175,7 +175,7 @@ def test_user_from_all_fetch():
         "is_blocked": False,
     }
     assert User(
-        uid="1234",
+        id="1234",
         photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
         name="Abc Def Ghi",
         url="https://www.facebook.com/profile.php?id=1234",
