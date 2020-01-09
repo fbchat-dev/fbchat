@@ -13,6 +13,7 @@ _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 from . import _core, _util
 from ._core import Image
 from ._exception import FBchatException, FBchatFacebookError
+from ._session import Session
 from ._thread import ThreadType, ThreadLocation, ThreadColor, Thread
 from ._user import TypingStatus, User, ActiveStatus
 from ._group import Group
@@ -44,4 +45,4 @@ __license__ = "BSD 3-Clause"
 __author__ = "Taehoon Kim; Moreels Pieter-Jan; Mads Marquart"
 __email__ = "carpedm20@gmail.com"
 
-__all__ = ("Client",)
+__all__ = ("Session", "Client")

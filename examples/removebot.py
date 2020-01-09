@@ -1,11 +1,13 @@
-from fbchat import Client
-from fbchat.models import *
+import fbchat
 
 
-class RemoveBot(Client):
+class RemoveBot(fbchat.Client):
     def on_message(self, author_id, message_object, thread_id, thread_type, **kwargs):
         # We can only kick people from group chats, so no need to try if it's a user chat
-        if message_object.text == "Remove me!" and thread_type == ThreadType.GROUP:
+        if (
+            message_object.text == "Remove me!"
+            and thread_type == fbchat.ThreadType.GROUP
+        ):
             print("{} will be removed from {}".format(author_id, thread_id))
             self.remove_user_from_group(author_id, thread_id=thread_id)
         else:
@@ -19,5 +21,7 @@ class RemoveBot(Client):
             )
 
 
-client = RemoveBot("<email>", "<password>")
-client.listen()
+session = fbchat.Session.login("<email>", "<password>")
+
+remove_bot = RemoveBot(session)
+remove_bot.listen()
