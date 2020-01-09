@@ -501,7 +501,7 @@ class Client:
                 if pages_and_users.get(_id) is None:
                     raise FBchatException("Could not fetch thread {}".format(_id))
                 entry.update(pages_and_users[_id])
-                if "first_name" in entry["type"]:
+                if "first_name" in entry:
                     rtn[_id] = UserData._from_graphql(self.session, entry)
                 else:
                     rtn[_id] = PageData._from_graphql(self.session, entry)
@@ -551,7 +551,9 @@ class Client:
             if _type == "GROUP":
                 rtn.append(GroupData._from_graphql(self.session, node))
             elif _type == "ONE_TO_ONE":
-                rtn.append(UserData._from_thread_fetch(self.session, node))
+                user = UserData._from_thread_fetch(self.session, node)
+                if user:
+                    rtn.append(user)
             else:
                 raise FBchatException(
                     "Unknown thread type: {}, with data: {}".format(_type, node)

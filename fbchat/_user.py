@@ -1,5 +1,5 @@
 import attr
-from ._core import attrs_default, Enum, Image
+from ._core import log, attrs_default, Enum, Image
 from . import _util, _session, _plan, _thread
 
 
@@ -81,23 +81,23 @@ class UserData(User):
     """
 
     #: The user's picture
-    photo = attr.ib(None)
+    photo = attr.ib()
     #: The name of the user
-    name = attr.ib(None)
+    name = attr.ib()
+    #: Whether the user and the client are friends
+    is_friend = attr.ib()
+    #: The users first name
+    first_name = attr.ib()
+    #: The users last name
+    last_name = attr.ib(None)
     #: Datetime when the thread was last active / when the last message was sent
     last_active = attr.ib(None)
     #: Number of messages in the thread
     message_count = attr.ib(None)
     #: Set `Plan`
     plan = attr.ib(None)
-    #: The profile URL
+    #: The profile URL. ``None`` for Messenger-only users
     url = attr.ib(None)
-    #: The users first name
-    first_name = attr.ib(None)
-    #: The users last name
-    last_name = attr.ib(None)
-    #: Whether the user and the client are friends
-    is_friend = attr.ib(None)
     #: The user's gender
     gender = attr.ib(None)
     #: From 0 to 1. How close the client is to the user
@@ -123,18 +123,18 @@ class UserData(User):
         return cls(
             session=session,
             id=data["id"],
-            url=data.get("url"),
-            first_name=data.get("first_name"),
+            url=data["url"],
+            first_name=data["first_name"],
             last_name=data.get("last_name"),
-            is_friend=data.get("is_viewer_friend"),
-            gender=GENDERS.get(data.get("gender")),
+            is_friend=data["is_viewer_friend"],
+            gender=GENDERS.get(data["gender"]),
             affinity=data.get("viewer_affinity"),
             nickname=c_info.get("nickname"),
             color=c_info.get("color"),
             emoji=c_info.get("emoji"),
             own_nickname=c_info.get("own_nickname"),
             photo=Image._from_uri(data["profile_picture"]),
-            name=data.get("name"),
+            name=data["name"],
             message_count=data.get("messages_count"),
             plan=plan,
         )
@@ -150,17 +150,19 @@ class UserData(User):
         user = next(
             p for p in participants if p["id"] == data["thread_key"]["other_user_id"]
         )
+        if user["__typename"] != "User":
+            # TODO: Add Page._from_thread_fetch, and parse it there
+            log.warning("Tried to parse %s as a user.", user["__typename"])
+            return None
+
         last_active = None
         if "last_message" in data:
             last_active = _util.millis_to_datetime(
                 int(data["last_message"]["nodes"][0]["timestamp_precise"])
             )
 
-        first_name = user.get("short_name")
-        if first_name is None:
-            last_name = None
-        else:
-            last_name = user.get("name").split(first_name, 1).pop().strip()
+        first_name = user["short_name"]
+        last_name = user.get("name").split(first_name, 1).pop().strip()
 
         plan = None
         if data.get("event_reminders") and data["event_reminders"].get("nodes"):
@@ -169,19 +171,18 @@ class UserData(User):
         return cls(
             session=session,
             id=user["id"],
-            url=user.get("url"),
-            name=user.get("name"),
+            url=user["url"],
+            name=user["name"],
             first_name=first_name,
             last_name=last_name,
-            is_friend=user.get("is_viewer_friend"),
-            gender=GENDERS.get(user.get("gender")),
-            affinity=user.get("affinity"),
+            is_friend=user["is_viewer_friend"],
+            gender=GENDERS.get(user["gender"]),
             nickname=c_info.get("nickname"),
             color=c_info.get("color"),
             emoji=c_info.get("emoji"),
             own_nickname=c_info.get("own_nickname"),
             photo=Image._from_uri(user["big_image_src"]),
-            message_count=data.get("messages_count"),
+            message_count=data["messages_count"],
             last_active=last_active,
             plan=plan,
         )
@@ -191,12 +192,12 @@ class UserData(User):
         return cls(
             session=session,
             id=data["id"],
-            first_name=data.get("firstName"),
-            url=data.get("uri"),
-            photo=Image(url=data.get("thumbSrc")),
-            name=data.get("name"),
-            is_friend=data.get("is_friend"),
-            gender=GENDERS.get(data.get("gender")),
+            first_name=data["firstName"],
+            url=data["uri"],
+            photo=Image(url=data["thumbSrc"]),
+            name=data["name"],
+            is_friend=data["is_friend"],
+            gender=GENDERS.get(data["gender"]),
         )
 
 

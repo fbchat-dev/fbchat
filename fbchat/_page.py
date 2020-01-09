@@ -24,9 +24,9 @@ class PageData(Page):
     """
 
     #: The page's picture
-    photo = attr.ib(None)
+    photo = attr.ib()
     #: The name of the page
-    name = attr.ib(None)
+    name = attr.ib()
     #: Datetime when the thread was last active / when the last message was sent
     last_active = attr.ib(None)
     #: Number of messages in the thread
@@ -61,7 +61,7 @@ class PageData(Page):
             city=data.get("city").get("name"),
             category=data.get("category_type"),
             photo=Image._from_uri(data["profile_picture"]),
-            name=data.get("name"),
+            name=data["name"],
             message_count=data.get("messages_count"),
             plan=plan,
         )
