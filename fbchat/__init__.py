@@ -15,9 +15,9 @@ from ._core import Image
 from ._exception import FBchatException, FBchatFacebookError
 from ._session import Session
 from ._thread import ThreadLocation, ThreadColor, ThreadABC, Thread
-from ._user import TypingStatus, User, ActiveStatus
-from ._group import Group
-from ._page import Page
+from ._user import TypingStatus, User, UserData, ActiveStatus
+from ._group import Group, GroupData
+from ._page import Page, PageData
 from ._message import EmojiSize, MessageReaction, Mention, Message
 from ._attachment import Attachment, UnsentMessage, ShareAttachment
 from ._sticker import Sticker
@@ -31,7 +31,7 @@ from ._quick_reply import (
     QuickReplyEmail,
 )
 from ._poll import Poll, PollOption
-from ._plan import GuestStatus, Plan
+from ._plan import GuestStatus, Plan, PlanData
 
 from ._client import Client
 

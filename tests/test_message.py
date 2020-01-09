@@ -4,6 +4,7 @@ from fbchat._message import (
     EmojiSize,
     Mention,
     Message,
+    MessageData,
     graphql_to_extensible_attachment,
 )
 
@@ -46,10 +47,25 @@ def test_graphql_to_extensible_attachment_dispatch(monkeypatch, obj, type_):
     assert graphql_to_extensible_attachment(data)
 
 
+def test_mention_to_send_data():
+    assert {
+        "profile_xmd[0][id]": "1234",
+        "profile_xmd[0][length]": 7,
+        "profile_xmd[0][offset]": 4,
+        "profile_xmd[0][type]": "p",
+    } == Mention(thread_id="1234", offset=4, length=7)._to_send_data(0)
+    assert {
+        "profile_xmd[1][id]": "4321",
+        "profile_xmd[1][length]": 7,
+        "profile_xmd[1][offset]": 24,
+        "profile_xmd[1][type]": "p",
+    } == Mention(thread_id="4321", offset=24, length=7)._to_send_data(1)
+
+
 def test_message_format_mentions():
-    expected = Message(
-        text="Hey 'Peter'! My name is Michael",
-        mentions=[
+    expected = (
+        "Hey 'Peter'! My name is Michael",
+        [
             Mention(thread_id="1234", offset=4, length=7),
             Mention(thread_id="4321", offset=24, length=7),
         ],
@@ -63,61 +79,11 @@ def test_message_format_mentions():
 
 
 def test_message_get_forwarded_from_tags():
-    assert not Message._get_forwarded_from_tags(None)
-    assert not Message._get_forwarded_from_tags(["hot_emoji_size:unknown"])
-    assert Message._get_forwarded_from_tags(
+    assert not MessageData._get_forwarded_from_tags(None)
+    assert not MessageData._get_forwarded_from_tags(["hot_emoji_size:unknown"])
+    assert MessageData._get_forwarded_from_tags(
         ["attachment:photo", "inbox", "sent", "source:chat:forward", "tq"]
     )
-
-
-def test_message_to_send_data_minimal():
-    assert {"action_type": "ma-type:user-generated-message", "body": "Hey"} == Message(
-        text="Hey"
-    )._to_send_data()
-
-
-def test_message_to_send_data_mentions():
-    msg = Message(
-        text="Hey 'Peter'! My name is Michael",
-        mentions=[
-            Mention(thread_id="1234", offset=4, length=7),
-            Mention(thread_id="4321", offset=24, length=7),
-        ],
-    )
-    assert {
-        "action_type": "ma-type:user-generated-message",
-        "body": "Hey 'Peter'! My name is Michael",
-        "profile_xmd[0][id]": "1234",
-        "profile_xmd[0][length]": 7,
-        "profile_xmd[0][offset]": 4,
-        "profile_xmd[0][type]": "p",
-        "profile_xmd[1][id]": "4321",
-        "profile_xmd[1][length]": 7,
-        "profile_xmd[1][offset]": 24,
-        "profile_xmd[1][type]": "p",
-    } == msg._to_send_data()
-
-
-def test_message_to_send_data_sticker():
-    msg = Message(sticker=fbchat.Sticker(id="123"))
-    assert {
-        "action_type": "ma-type:user-generated-message",
-        "sticker_id": "123",
-    } == msg._to_send_data()
-
-
-def test_message_to_send_data_emoji():
-    msg = Message(text="😀", emoji_size=EmojiSize.LARGE)
-    assert {
-        "action_type": "ma-type:user-generated-message",
-        "body": "😀",
-        "tags[0]": "hot_emoji_size:large",
-    } == msg._to_send_data()
-    msg = Message(emoji_size=EmojiSize.LARGE)
-    assert {
-        "action_type": "ma-type:user-generated-message",
-        "sticker_id": "369239383222810",
-    } == msg._to_send_data()
 
 
 @pytest.mark.skip(reason="need to be added")

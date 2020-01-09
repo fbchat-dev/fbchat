@@ -10,7 +10,7 @@ class EchoBot(fbchat.Client):
 
         # If you're not the author, echo
         if author_id != self.session.user_id:
-            thread.send(message_object)
+            thread.send_text(message_object.text)
 
 
 session = fbchat.Session.login("<email>", "<password>")

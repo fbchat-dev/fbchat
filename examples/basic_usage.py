@@ -9,7 +9,7 @@ print("Own id: {}".format(session.user_id))
 user = fbchat.Thread(session=session, id=session.user_id)
 
 # Send a message to yourself
-user.send(fbchat.Message(text="Hi me!"))
+user.send_text("Hi me!")
 
 # Log the user out
 session.logout()

@@ -11,10 +11,22 @@ class Page(_thread.ThreadABC):
     session = attr.ib(type=_session.Session)
     #: The unique identifier of the page.
     id = attr.ib(converter=str)
+
+    def _to_send_data(self):
+        return {"other_user_fbid": self.id}
+
+
+@attrs_default
+class PageData(Page):
+    """Represents data about a Facebook page.
+
+    Inherits `Page`, and implements `ThreadABC`.
+    """
+
     #: The page's picture
-    photo = attr.ib(None)
+    photo = attr.ib()
     #: The name of the page
-    name = attr.ib(None)
+    name = attr.ib()
     #: Datetime when the thread was last active / when the last message was sent
     last_active = attr.ib(None)
     #: Number of messages in the thread
@@ -32,9 +44,6 @@ class Page(_thread.ThreadABC):
     #: The page's category
     category = attr.ib(None)
 
-    def _to_send_data(self):
-        return {"other_user_fbid": self.id}
-
     @classmethod
     def _from_graphql(cls, session, data):
         if data.get("profile_picture") is None:
@@ -43,7 +52,9 @@ class Page(_thread.ThreadABC):
             data["city"] = {}
         plan = None
         if data.get("event_reminders") and data["event_reminders"].get("nodes"):
-            plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
+            plan = _plan.PlanData._from_graphql(
+                session, data["event_reminders"]["nodes"][0]
+            )
 
         return cls(
             session=session,
@@ -52,7 +63,7 @@ class Page(_thread.ThreadABC):
             city=data.get("city").get("name"),
             category=data.get("category_type"),
             photo=Image._from_uri(data["profile_picture"]),
-            name=data.get("name"),
+            name=data["name"],
             message_count=data.get("messages_count"),
             plan=plan,
         )

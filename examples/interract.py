@@ -1,4 +1,5 @@
 import fbchat
+import requests
 
 session = fbchat.Session.login("<email>", "<password>")
 
@@ -9,34 +10,32 @@ thread = fbchat.User(session=session, id=session.user_id)
 # thread = fbchat.Group(session=session, id="1234567890")
 
 # Will send a message to the thread
-thread.send(fbchat.Message(text="<message>"))
+thread.send_text("<message>")
 
 # Will send the default `like` emoji
-thread.send(fbchat.Message(emoji_size=fbchat.EmojiSize.LARGE))
+thread.send_sticker(fbchat.EmojiSize.LARGE.value)
 
 # Will send the emoji `👍`
-thread.send(fbchat.Message(text="👍", emoji_size=fbchat.EmojiSize.LARGE))
+thread.send_emoji("👍", size=fbchat.EmojiSize.LARGE)
 
 # Will send the sticker with ID `767334476626295`
-thread.send(fbchat.Message(sticker=fbchat.Sticker("767334476626295")))
+thread.send_sticker("767334476626295")
 
 # Will send a message with a mention
-thread.send(
-    fbchat.Message(
-        text="This is a @mention",
-        mentions=[fbchat.Mention(thread.id, offset=10, length=8)],
-    )
+thread.send_text(
+    text="This is a @mention",
+    mentions=[fbchat.Mention(thread.id, offset=10, length=8)],
 )
 
 # Will send the image located at `<image path>`
-thread.send_local_image(
-    "<image path>", message=fbchat.Message(text="This is a local image")
-)
+with open("<image path>", "rb") as f:
+    files = session._upload([("image_name.png", f, "image/png")])
+thread.send_text(text="This is a local image", files=files)
 
 # Will download the image at the URL `<image url>`, and then send it
-thread.send_remote_image(
-    "<image url>", message=fbchat.Message(text="This is a remote image")
-)
+r = requests.get("<image url>")
+files = session._upload([("image_name.png", r.content, "image/png")])
+thread.send_files(files)  # Alternative to .send_text
 
 
 # Only do these actions if the thread is a group
@@ -46,7 +45,7 @@ if isinstance(thread, fbchat.Group):
     # Will add the users with IDs `<1st user id>`, `<2nd user id>` and `<3th user id>` to the group
     thread.add_participants(["<1st user id>", "<2nd user id>", "<3rd user id>"])
     # Will change the title of the group to `<title>`
-    thread.change_title("<title>")
+    thread.set_title("<title>")
 
 
 # Will change the nickname of the user `<user_id>` to `<new nickname>`
@@ -61,7 +60,7 @@ thread.set_color(fbchat.ThreadColor.MESSENGER_BLUE)
 # Will change the thread emoji to `👍`
 thread.set_emoji("👍")
 
-# message = fbchat.Message(session=session, id="<message id>")
-#
-# # Will react to a message with a 😍 emoji
-# message.react(fbchat.MessageReaction.LOVE)
+message = fbchat.Message(session=session, id="<message id>")
+
+# Will react to a message with a 😍 emoji
+message.react(fbchat.MessageReaction.LOVE)

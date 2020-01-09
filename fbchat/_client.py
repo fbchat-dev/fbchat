@@ -8,9 +8,9 @@ from . import _util, _graphql, _session
 
 from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadLocation, ThreadColor
-from ._user import TypingStatus, User, ActiveStatus
-from ._group import Group
-from ._page import Page
+from ._user import TypingStatus, User, UserData, ActiveStatus
+from ._group import Group, GroupData
+from ._page import Page, PageData
 from ._message import EmojiSize, MessageReaction, Mention, Message
 from ._attachment import Attachment
 from ._sticker import Sticker
@@ -24,7 +24,7 @@ from ._quick_reply import (
     QuickReplyEmail,
 )
 from ._poll import Poll, PollOption
-from ._plan import ACONTEXT, Plan
+from ._plan import PlanData
 
 
 class Client:
@@ -204,7 +204,7 @@ class Client:
                 if data["id"] in ["0", 0]:
                     # Skip invalid users
                     continue
-                users.append(User._from_all_fetch(self.session, data))
+                users.append(UserData._from_all_fetch(self.session, data))
         return users
 
     def search_for_users(self, name, limit=10):
@@ -224,7 +224,8 @@ class Client:
         (j,) = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_USER, params))
 
         return [
-            User._from_graphql(self.session, node) for node in j[name]["users"]["nodes"]
+            UserData._from_graphql(self.session, node)
+            for node in j[name]["users"]["nodes"]
         ]
 
     def search_for_pages(self, name, limit=10):
@@ -243,7 +244,8 @@ class Client:
         (j,) = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_PAGE, params))
 
         return [
-            Page._from_graphql(self.session, node) for node in j[name]["pages"]["nodes"]
+            PageData._from_graphql(self.session, node)
+            for node in j[name]["pages"]["nodes"]
         ]
 
     def search_for_groups(self, name, limit=10):
@@ -263,7 +265,7 @@ class Client:
         (j,) = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_GROUP, params))
 
         return [
-            Group._from_graphql(self.session, node)
+            GroupData._from_graphql(self.session, node)
             for node in j["viewer"]["groups"]["nodes"]
         ]
 
@@ -288,12 +290,12 @@ class Client:
         rtn = []
         for node in j[name]["threads"]["nodes"]:
             if node["__typename"] == "User":
-                rtn.append(User._from_graphql(self.session, node))
+                rtn.append(UserData._from_graphql(self.session, node))
             elif node["__typename"] == "MessageThread":
                 # MessageThread => Group thread
-                rtn.append(Group._from_graphql(self.session, node))
+                rtn.append(GroupData._from_graphql(self.session, node))
             elif node["__typename"] == "Page":
-                rtn.append(Page._from_graphql(self.session, node))
+                rtn.append(PageData._from_graphql(self.session, node))
             elif node["__typename"] == "Group":
                 # We don't handle Facebook "Groups"
                 pass
@@ -493,16 +495,16 @@ class Client:
             entry = entry["message_thread"]
             if entry.get("thread_type") == "GROUP":
                 _id = entry["thread_key"]["thread_fbid"]
-                rtn[_id] = Group._from_graphql(self.session, entry)
+                rtn[_id] = GroupData._from_graphql(self.session, entry)
             elif entry.get("thread_type") == "ONE_TO_ONE":
                 _id = entry["thread_key"]["other_user_id"]
                 if pages_and_users.get(_id) is None:
                     raise FBchatException("Could not fetch thread {}".format(_id))
                 entry.update(pages_and_users[_id])
-                if "first_name" in entry["type"]:
-                    rtn[_id] = User._from_graphql(self.session, entry)
+                if "first_name" in entry:
+                    rtn[_id] = UserData._from_graphql(self.session, entry)
                 else:
-                    rtn[_id] = Page._from_graphql(self.session, entry)
+                    rtn[_id] = PageData._from_graphql(self.session, entry)
             else:
                 raise FBchatException(
                     "{} had an unknown thread type: {}".format(thread_ids[i], entry)
@@ -547,9 +549,11 @@ class Client:
         for node in j["viewer"]["message_threads"]["nodes"]:
             _type = node.get("thread_type")
             if _type == "GROUP":
-                rtn.append(Group._from_graphql(self.session, node))
+                rtn.append(GroupData._from_graphql(self.session, node))
             elif _type == "ONE_TO_ONE":
-                rtn.append(User._from_thread_fetch(self.session, node))
+                user = UserData._from_thread_fetch(self.session, node)
+                if user:
+                    rtn.append(user)
             else:
                 raise FBchatException(
                     "Unknown thread type: {}, with data: {}".format(_type, node)
@@ -628,22 +632,6 @@ class Client:
         j = self._payload_post("/ajax/mercury/get_poll_options", data)
         return [PollOption._from_graphql(m) for m in j]
 
-    def fetch_plan_info(self, plan_id):
-        """Fetch `Plan` object from the plan id.
-
-        Args:
-            plan_id: Plan ID to fetch from
-
-        Returns:
-            Plan: `Plan` object
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {"event_reminder_id": plan_id}
-        j = self._payload_post("/ajax/eventreminder", data)
-        return Plan._from_fetch(j)
-
     def _get_private_data(self):
         (j,) = self.graphql_requests(_graphql.from_doc_id("1868889766468115", {}))
         return j["viewer"]
@@ -691,56 +679,6 @@ class Client:
     """
     SEND METHODS
     """
-
-    def edit_plan(self, plan, new_plan):
-        """Edit a plan.
-
-        Args:
-            plan (Plan): Plan to edit
-            new_plan: New plan
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {
-            "event_reminder_id": plan.id,
-            "delete": "false",
-            "date": _util.datetime_to_seconds(new_plan.time),
-            "location_name": new_plan.location or "",
-            "location_id": new_plan.location_id or "",
-            "title": new_plan.title,
-            "acontext": ACONTEXT,
-        }
-        j = self._payload_post("/ajax/eventreminder/submit", data)
-
-    def delete_plan(self, plan):
-        """Delete a plan.
-
-        Args:
-            plan: Plan to delete
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {"event_reminder_id": plan.id, "delete": "true", "acontext": ACONTEXT}
-        j = self._payload_post("/ajax/eventreminder/submit", data)
-
-    def change_plan_participation(self, plan, take_part=True):
-        """Change participation in a plan.
-
-        Args:
-            plan: Plan to take part in or not
-            take_part: Whether to take part in the plan
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {
-            "event_reminder_id": plan.id,
-            "guest_state": "GOING" if take_part else "DECLINED",
-            "acontext": ACONTEXT,
-        }
-        j = self._payload_post("/ajax/eventreminder/rsvp", data)
 
     def update_poll_vote(self, poll_id, option_ids=[], new_options=[]):
         """Update a poll vote.
@@ -1280,7 +1218,7 @@ class Client:
         elif delta_type == "lightweight_event_create":
             self.on_plan_created(
                 mid=mid,
-                plan=Plan._from_pull(delta["untypedData"]),
+                plan=PlanData._from_pull(self.session, delta["untypedData"]),
                 author_id=author_id,
                 thread=get_thread(metadata),
                 at=at,
@@ -1292,7 +1230,7 @@ class Client:
         elif delta_type == "lightweight_event_notify":
             self.on_plan_ended(
                 mid=mid,
-                plan=Plan._from_pull(delta["untypedData"]),
+                plan=PlanData._from_pull(self.session, delta["untypedData"]),
                 thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
@@ -1303,7 +1241,7 @@ class Client:
         elif delta_type == "lightweight_event_update":
             self.on_plan_edited(
                 mid=mid,
-                plan=Plan._from_pull(delta["untypedData"]),
+                plan=PlanData._from_pull(self.session, delta["untypedData"]),
                 author_id=author_id,
                 thread=get_thread(metadata),
                 at=at,
@@ -1315,7 +1253,7 @@ class Client:
         elif delta_type == "lightweight_event_delete":
             self.on_plan_deleted(
                 mid=mid,
-                plan=Plan._from_pull(delta["untypedData"]),
+                plan=PlanData._from_pull(self.session, delta["untypedData"]),
                 author_id=author_id,
                 thread=get_thread(metadata),
                 at=at,
@@ -1328,7 +1266,7 @@ class Client:
             take_part = delta["untypedData"]["guest_status"] == "GOING"
             self.on_plan_participation(
                 mid=mid,
-                plan=Plan._from_pull(delta["untypedData"]),
+                plan=PlanData._from_pull(self.session, delta["untypedData"]),
                 take_part=take_part,
                 author_id=author_id,
                 thread=get_thread(metadata),
@@ -1424,18 +1362,15 @@ class Client:
 
                 elif d.get("deltaMessageReply"):
                     i = d["deltaMessageReply"]
+                    thread = get_thread(metadata)
                     metadata = i["message"]["messageMetadata"]
-                    replied_to = Message._from_reply(
-                        self.session, i["repliedToMessage"]
-                    )
-                    message = Message._from_reply(
-                        self.session, i["message"], replied_to
-                    )
+                    replied_to = MessageData._from_reply(thread, i["repliedToMessage"])
+                    message = MessageData._from_reply(thread, i["message"], replied_to)
                     self.on_message(
                         mid=message.id,
                         author_id=message.author,
                         message_object=message,
-                        thread=get_thread(metadata),
+                        thread=thread,
                         at=message.created_at,
                         metadata=metadata,
                         msg=m,
@@ -1443,18 +1378,19 @@ class Client:
 
         # New message
         elif delta.get("class") == "NewMessage":
+            thread = get_thread(metadata)
             self.on_message(
                 mid=mid,
                 author_id=author_id,
-                message_object=Message._from_pull(
-                    self.session,
+                message_object=MessageData._from_pull(
+                    thread,
                     delta,
                     mid=mid,
                     tags=metadata.get("tags"),
                     author=author_id,
                     created_at=at,
                 ),
-                thread=get_thread(metadata),
+                thread=thread,
                 at=at,
                 metadata=metadata,
                 msg=m,

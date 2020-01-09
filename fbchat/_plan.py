@@ -1,7 +1,8 @@
 import attr
+import datetime
 import json
 from ._core import attrs_default, Enum
-from . import _util
+from . import _exception, _util, _session
 
 
 class GuestStatus(Enum):
@@ -19,14 +20,96 @@ ACONTEXT = {
 
 @attrs_default
 class Plan:
-    """Represents a plan."""
+    """Base model for plans."""
+
+    #: The session to use when making requests.
+    session = attr.ib(type=_session.Session)
+    #: The plan's unique identifier.
+    id = attr.ib(converter=str)
+
+    def fetch(self) -> "PlanData":
+        """Fetch fresh `PlanData` object."""
+        data = {"event_reminder_id": self.id}
+        j = self.session._payload_post("/ajax/eventreminder", data)
+        return PlanData._from_fetch(self.session, j)
+
+    @classmethod
+    def _create(
+        cls,
+        thread,
+        name: str,
+        at: datetime.datetime,
+        location_name: str = None,
+        location_id: str = None,
+    ):
+        data = {
+            "event_type": "EVENT",
+            "event_time": _util.datetime_to_seconds(at),
+            "title": name,
+            "thread_id": thread.id,
+            "location_id": location_id or "",
+            "location_name": location_name or "",
+            "acontext": ACONTEXT,
+        }
+        j = thread.session._payload_post("/ajax/eventreminder/create", data)
+        if "error" in j:
+            raise _exception.FBchatFacebookError(
+                "Failed creating plan: {}".format(j["error"]),
+                fb_error_message=j["error"],
+            )
+
+    def edit(
+        self,
+        name: str,
+        at: datetime.datetime,
+        location_name: str = None,
+        location_id: str = None,
+    ):
+        """Edit the plan.
+
+        # TODO: Arguments
+        """
+        data = {
+            "event_reminder_id": self.id,
+            "delete": "false",
+            "date": _util.datetime_to_seconds(at),
+            "location_name": location_name or "",
+            "location_id": location_id or "",
+            "title": name,
+            "acontext": ACONTEXT,
+        }
+        j = self.session._payload_post("/ajax/eventreminder/submit", data)
+
+    def delete(self):
+        """Delete the plan."""
+        data = {"event_reminder_id": self.id, "delete": "true", "acontext": ACONTEXT}
+        j = self.session._payload_post("/ajax/eventreminder/submit", data)
+
+    def _change_participation(self):
+        data = {
+            "event_reminder_id": self.id,
+            "guest_state": "GOING" if take_part else "DECLINED",
+            "acontext": ACONTEXT,
+        }
+        j = self.session._payload_post("/ajax/eventreminder/rsvp", data)
+
+    def participate(self):
+        """Set yourself as GOING/participating to the plan."""
+        self._change_participation(True)
+
+    def decline(self):
+        """Set yourself as having DECLINED the plan."""
+        self._change_participation(False)
+
+
+@attrs_default
+class PlanData(Plan):
+    """Represents data about a plan."""
 
     #: Plan time (datetime), only precise down to the minute
     time = attr.ib()
     #: Plan title
     title = attr.ib()
-    #: ID of the plan
-    id = attr.ib(None)
     #: Plan location name
     location = attr.ib(None, converter=lambda x: x or "")
     #: Plan location ID
@@ -64,8 +147,9 @@ class Plan:
         ]
 
     @classmethod
-    def _from_pull(cls, data):
+    def _from_pull(cls, session, data):
         return cls(
+            session=session,
             id=data.get("event_id"),
             time=_util.seconds_to_datetime(int(data.get("event_time"))),
             title=data.get("event_title"),
@@ -79,8 +163,9 @@ class Plan:
         )
 
     @classmethod
-    def _from_fetch(cls, data):
+    def _from_fetch(cls, session, data):
         return cls(
+            session=session,
             id=data.get("oid"),
             time=_util.seconds_to_datetime(data.get("event_time")),
             title=data.get("title"),
@@ -91,8 +176,9 @@ class Plan:
         )
 
     @classmethod
-    def _from_graphql(cls, data):
+    def _from_graphql(cls, session, data):
         return cls(
+            session=session,
             id=data.get("id"),
             time=_util.seconds_to_datetime(data.get("time")),
             title=data.get("event_title"),

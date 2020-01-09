@@ -1,7 +1,7 @@
 import pytest
 import datetime
 import fbchat
-from fbchat._user import User, ActiveStatus
+from fbchat._user import UserData, ActiveStatus
 
 
 def test_user_from_graphql(session):
@@ -16,7 +16,7 @@ def test_user_from_graphql(session):
         "gender": "FEMALE",
         "viewer_affinity": 0.4560002,
     }
-    assert User(
+    assert UserData(
         session=session,
         id="1234",
         photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
@@ -27,7 +27,7 @@ def test_user_from_graphql(session):
         is_friend=True,
         gender="female_singular",
         affinity=0.4560002,
-    ) == User._from_graphql(session, data)
+    ) == UserData._from_graphql(session, data)
 
 
 def test_user_from_thread_fetch(session):
@@ -138,7 +138,7 @@ def test_user_from_thread_fetch(session):
         "read_receipts": ...,
         "delivery_receipts": ...,
     }
-    assert User(
+    assert UserData(
         session=session,
         id="1234",
         photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
@@ -154,7 +154,7 @@ def test_user_from_thread_fetch(session):
         own_nickname="B",
         color=None,
         emoji=None,
-    ) == User._from_thread_fetch(session, data)
+    ) == UserData._from_thread_fetch(session, data)
 
 
 def test_user_from_all_fetch(session):
@@ -177,7 +177,7 @@ def test_user_from_all_fetch(session):
         "is_nonfriend_messenger_contact": False,
         "is_blocked": False,
     }
-    assert User(
+    assert UserData(
         session=session,
         id="1234",
         photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
@@ -186,7 +186,7 @@ def test_user_from_all_fetch(session):
         first_name="Abc",
         is_friend=True,
         gender="female_singular",
-    ) == User._from_all_fetch(session, data)
+    ) == UserData._from_all_fetch(session, data)
 
 
 @pytest.mark.skip(reason="can't gather test data, the pulling is broken")
