@@ -381,24 +381,10 @@ class ThreadABC(metaclass=abc.ABCMeta):
         # TODO: Arguments
 
         Args:
-            title: Name of the new plan
+            name: Name of the new plan
             at: When the plan is for
         """
-        data = {
-            "event_type": "EVENT",
-            "event_time": _util.datetime_to_seconds(at),
-            "title": name,
-            "thread_id": self.id,
-            "location_id": location_id or "",
-            "location_name": location_name or "",
-            "acontext": _plan.ACONTEXT,
-        }
-        j = self.session._payload_post("/ajax/eventreminder/create", data)
-        if "error" in j:
-            raise _exception.FBchatFacebookError(
-                "Failed creating plan: {}".format(j["error"]),
-                fb_error_message=j["error"],
-            )
+        return _plan.Plan._create(self, name, at, location_name, location_id)
 
     def create_poll(self, question: str, options=Iterable[Tuple[str, bool]]):
         """Create poll in a thread.

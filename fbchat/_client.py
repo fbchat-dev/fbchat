@@ -24,7 +24,7 @@ from ._quick_reply import (
     QuickReplyEmail,
 )
 from ._poll import Poll, PollOption
-from ._plan import ACONTEXT, PlanData
+from ._plan import PlanData
 
 
 class Client:
@@ -632,22 +632,6 @@ class Client:
         j = self._payload_post("/ajax/mercury/get_poll_options", data)
         return [PollOption._from_graphql(m) for m in j]
 
-    def fetch_plan_info(self, plan_id):
-        """Fetch `Plan` object from the plan id.
-
-        Args:
-            plan_id: Plan ID to fetch from
-
-        Returns:
-            Plan: `Plan` object
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {"event_reminder_id": plan_id}
-        j = self._payload_post("/ajax/eventreminder", data)
-        return PlanData._from_fetch(self.session, j)
-
     def _get_private_data(self):
         (j,) = self.graphql_requests(_graphql.from_doc_id("1868889766468115", {}))
         return j["viewer"]
@@ -695,56 +679,6 @@ class Client:
     """
     SEND METHODS
     """
-
-    def edit_plan(self, plan, new_plan):
-        """Edit a plan.
-
-        Args:
-            plan (Plan): Plan to edit
-            new_plan: New plan
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {
-            "event_reminder_id": plan.id,
-            "delete": "false",
-            "date": _util.datetime_to_seconds(new_plan.time),
-            "location_name": new_plan.location or "",
-            "location_id": new_plan.location_id or "",
-            "title": new_plan.title,
-            "acontext": ACONTEXT,
-        }
-        j = self._payload_post("/ajax/eventreminder/submit", data)
-
-    def delete_plan(self, plan):
-        """Delete a plan.
-
-        Args:
-            plan: Plan to delete
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {"event_reminder_id": plan.id, "delete": "true", "acontext": ACONTEXT}
-        j = self._payload_post("/ajax/eventreminder/submit", data)
-
-    def change_plan_participation(self, plan, take_part=True):
-        """Change participation in a plan.
-
-        Args:
-            plan: Plan to take part in or not
-            take_part: Whether to take part in the plan
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {
-            "event_reminder_id": plan.id,
-            "guest_state": "GOING" if take_part else "DECLINED",
-            "acontext": ACONTEXT,
-        }
-        j = self._payload_post("/ajax/eventreminder/rsvp", data)
 
     def update_poll_vote(self, poll_id, option_ids=[], new_options=[]):
         """Update a poll vote.
