@@ -3,7 +3,7 @@ import time
 import requests
 
 from ._core import log
-from . import _util, _graphql, _session, _poll
+from . import _util, _graphql, _session, _poll, _user
 
 from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadLocation
@@ -23,6 +23,8 @@ from ._quick_reply import (
     QuickReplyEmail,
 )
 from ._plan import PlanData
+
+from typing import Sequence
 
 
 class Client:
@@ -184,25 +186,26 @@ class Client:
             users.append(user)
         return users
 
-    def fetch_all_users(self):
-        """Fetch all users the client is currently chatting with.
+    def fetch_users(self) -> Sequence[_user.UserData]:
+        """Fetch users the client is currently chatting with.
 
-        Returns:
-            list: `User` objects
+        This is very close to your friend list, with the follow differences:
 
-        Raises:
-            FBchatException: If request failed
+        It differs by including users that you're not friends with, but have chatted
+        with before, and by including accounts that are "Messenger Only".
+
+        But does not include deactivated, deleted or memorialized users (logically,
+        since you can't chat with those).
         """
-        data = {"viewer": self._session.user_id}
-        j = self._payload_post("/chat/user_info_all", data)
+        data = {"viewer": self.session.user_id}
+        j = self.session._payload_post("/chat/user_info_all", data)
 
         users = []
         for data in j.values():
-            if data["type"] in ["user", "friend"]:
-                if data["id"] in ["0", 0]:
-                    # Skip invalid users
-                    continue
-                users.append(UserData._from_all_fetch(self.session, data))
+            if data["type"] not in ["user", "friend"] or data["id"] in ["0", 0]:
+                log.warning("Invalid user data %s", data)
+                continue  # Skip invalid users
+            users.append(_user.UserData._from_all_fetch(self.session, data))
         return users
 
     def search_for_users(self, name, limit=10):
