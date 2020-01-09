@@ -55,8 +55,6 @@ Miscellaneous
 .. autoclass:: ThreadLocation(Enum)
     :undoc-members:
 .. autoclass:: ActiveStatus()
-.. autoclass:: TypingStatus(Enum)
-    :undoc-members:
 
 .. autoclass:: QuickReply
 .. autoclass:: QuickReplyText

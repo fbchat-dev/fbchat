@@ -7,7 +7,7 @@ from . import _util, _graphql, _session
 
 from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadLocation
-from ._user import TypingStatus, User, UserData, ActiveStatus
+from ._user import User, UserData, ActiveStatus
 from ._group import Group, GroupData
 from ._page import Page, PageData
 from ._message import EmojiSize, Mention, Message
@@ -1401,9 +1401,8 @@ class Client:
                         else:
                             thread_id = author_id
                         thread = User(session=self.session, id=thread_id)
-                    typing_status = TypingStatus(m.get("st"))
                     self.on_typing(
-                        author_id=author_id, status=typing_status, thread=thread,
+                        author_id=author_id, status=m["st"] == 1, thread=thread
                     )
 
                 # Delivered
@@ -1812,7 +1811,7 @@ class Client:
 
         Args:
             author_id: The ID of the person who sent the action
-            status (TypingStatus): The typing status
+            is_typing: ``True`` if the user started typing, ``False`` if they stopped.
             thread: Thread that the action was sent to. See :ref:`intro_threads`
         """
         pass

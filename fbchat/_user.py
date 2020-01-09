@@ -1,5 +1,5 @@
 import attr
-from ._core import log, attrs_default, Enum, Image
+from ._core import log, attrs_default, Image
 from . import _util, _session, _plan, _thread
 
 
@@ -31,13 +31,6 @@ GENDERS = {
     # '': 'neuter_plural',
     # '': 'unknown_plural',
 }
-
-
-class TypingStatus(Enum):
-    """Used to specify whether the user is typing or has stopped typing."""
-
-    STOPPED = 0
-    TYPING = 1
 
 
 @attrs_default
