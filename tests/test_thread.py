@@ -1,20 +1,19 @@
 import pytest
 import fbchat
-from fbchat import ThreadColor, ThreadABC, Thread
+from fbchat import ThreadABC, Thread
 
 
-def test_thread_color_from_graphql():
-    assert None is ThreadColor._from_graphql(None)
-    assert ThreadColor.MESSENGER_BLUE is ThreadColor._from_graphql("")
-    assert ThreadColor.VIKING is ThreadColor._from_graphql("FF44BEC7")
-    assert ThreadColor._from_graphql("DEADBEEF") is getattr(
-        ThreadColor, "UNKNOWN_#ADBEEF"
-    )
+def test_parse_color():
+    assert "#0084ff" == ThreadABC._parse_color(None)
+    assert "#0084ff" == ThreadABC._parse_color("")
+    assert "#44bec7" == ThreadABC._parse_color("FF44BEC7")
+    assert "#adbeef" == ThreadABC._parse_color("DEADBEEF")
 
 
 def test_thread_parse_customization_info_empty():
-    assert {} == ThreadABC._parse_customization_info(None)
-    assert {} == ThreadABC._parse_customization_info({"customization_info": None})
+    default = {"color": "#0084ff", "emoji": None}
+    assert default == ThreadABC._parse_customization_info(None)
+    assert default == ThreadABC._parse_customization_info({"customization_info": None})
 
 
 def test_thread_parse_customization_info_group():
@@ -34,7 +33,7 @@ def test_thread_parse_customization_info_group():
     }
     expected = {
         "emoji": "🎉",
-        "color": ThreadColor.BRILLIANT_ROSE,
+        "color": "#ff5ca1",
         "nicknames": {"123456789": "A", "987654321": "B"},
     }
     assert expected == ThreadABC._parse_customization_info(data)
@@ -55,7 +54,7 @@ def test_thread_parse_customization_info_user():
         "thread_type": "ONE_TO_ONE",
         # ... Other irrelevant fields
     }
-    expected = {"emoji": None, "color": None, "own_nickname": "A", "nickname": "B"}
+    expected = {"emoji": None, "color": "#0084ff", "own_nickname": "A", "nickname": "B"}
     assert expected == ThreadABC._parse_customization_info(data)
 
 

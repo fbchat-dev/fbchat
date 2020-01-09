@@ -1,5 +1,5 @@
 import attr
-from ._core import log, attrs_default, Enum, Image
+from ._core import log, attrs_default, Image
 from . import _util, _session, _plan, _thread
 
 
@@ -31,13 +31,6 @@ GENDERS = {
     # '': 'neuter_plural',
     # '': 'unknown_plural',
 }
-
-
-class TypingStatus(Enum):
-    """Used to specify whether the user is typing or has stopped typing."""
-
-    STOPPED = 0
-    TYPING = 1
 
 
 @attrs_default
@@ -110,7 +103,7 @@ class UserData(User):
     nickname = attr.ib(None)
     #: The clients nickname, as seen by the user
     own_nickname = attr.ib(None)
-    #: A `ThreadColor`. The message color
+    #: The message color
     color = attr.ib(None)
     #: The default emoji
     emoji = attr.ib(None)
@@ -136,8 +129,8 @@ class UserData(User):
             gender=GENDERS.get(data["gender"]),
             affinity=data.get("viewer_affinity"),
             nickname=c_info.get("nickname"),
-            color=c_info.get("color"),
-            emoji=c_info.get("emoji"),
+            color=c_info["color"],
+            emoji=c_info["emoji"],
             own_nickname=c_info.get("own_nickname"),
             photo=Image._from_uri(data["profile_picture"]),
             name=data["name"],
@@ -186,8 +179,8 @@ class UserData(User):
             is_friend=user["is_viewer_friend"],
             gender=GENDERS.get(user["gender"]),
             nickname=c_info.get("nickname"),
-            color=c_info.get("color"),
-            emoji=c_info.get("emoji"),
+            color=c_info["color"],
+            emoji=c_info["emoji"],
             own_nickname=c_info.get("own_nickname"),
             photo=Image._from_uri(user["big_image_src"]),
             message_count=data["messages_count"],

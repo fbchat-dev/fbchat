@@ -27,6 +27,7 @@ def test_user_from_graphql(session):
         is_friend=True,
         gender="female_singular",
         affinity=0.4560002,
+        color="#0084ff",
     ) == UserData._from_graphql(session, data)
 
 
@@ -152,7 +153,7 @@ def test_user_from_thread_fetch(session):
         gender="female_singular",
         nickname="A",
         own_nickname="B",
-        color=None,
+        color="#0084ff",
         emoji=None,
     ) == UserData._from_thread_fetch(session, data)
 

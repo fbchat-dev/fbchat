@@ -1,7 +1,6 @@
 import sys
 import attr
 import logging
-import aenum
 
 log = logging.getLogger("fbchat")
 
@@ -10,25 +9,6 @@ kw_only = sys.version_info[:2] > (3, 5)
 
 #: Default attrs settings for classes
 attrs_default = attr.s(slots=True, kw_only=kw_only)
-
-
-class Enum(aenum.Enum):
-    """Used internally to support enumerations"""
-
-    def __repr__(self):
-        # For documentation:
-        return "{}.{}".format(type(self).__name__, self.name)
-
-    @classmethod
-    def _extend_if_invalid(cls, value):
-        try:
-            return cls(value)
-        except ValueError:
-            log.warning(
-                "Failed parsing {.__name__}({!r}). Extending enum.".format(cls, value)
-            )
-            aenum.extend_enum(cls, "UNKNOWN_{}".format(value).upper(), value)
-            return cls(value)
 
 
 # Frozen, so that it can be used in sets

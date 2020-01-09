@@ -35,7 +35,7 @@ def test_group_from_graphql(session):
         plan=None,
         participants={"1234", "2345", "3456"},
         nicknames={},
-        color=None,
+        color="#0084ff",
         emoji="😀",
         admins={"1234"},
         approval_mode=False,

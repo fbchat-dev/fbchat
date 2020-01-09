@@ -1,11 +1,12 @@
 import attr
+import enum
 from string import Formatter
-from ._core import log, attrs_default, Enum
+from ._core import log, attrs_default
 from . import _util, _session, _attachment, _location, _file, _quick_reply, _sticker
 from typing import Optional
 
 
-class EmojiSize(Enum):
+class EmojiSize(enum.Enum):
     """Used to specify the size of a sent emoji."""
 
     LARGE = "369239383222810"
@@ -27,19 +28,6 @@ class EmojiSize(Enum):
             if len(data) > 1 and data[0] == "hot_emoji_size":
                 return string_to_emojisize.get(data[1])
         return None
-
-
-class MessageReaction(Enum):
-    """Used to specify a message reaction."""
-
-    HEART = "❤"
-    LOVE = "😍"
-    SMILE = "😆"
-    WOW = "😮"
-    SAD = "😢"
-    ANGRY = "😠"
-    YES = "👍"
-    NO = "👎"
 
 
 @attrs_default
@@ -74,6 +62,9 @@ class Mention:
         }
 
 
+SENDABLE_REACTIONS = ("❤", "😍", "😆", "😮", "😢", "😠", "👍", "👎")
+
+
 @attrs_default
 class Message:
     """Represents a Facebook message."""
@@ -93,18 +84,26 @@ class Message:
         data = {"message_id": self.id}
         j = self.session._payload_post("/messaging/unsend_message/?dpr=1", data)
 
-    def react(self, reaction: Optional[MessageReaction]):
+    def react(self, reaction: Optional[str]):
         """React to the message, or removes reaction.
 
+        Currently, you can use "❤", "😍", "😆", "😮", "😢", "😠", "👍" or "👎". It
+        should be possible to add support for more, but we haven't figured that out yet.
+
         Args:
-            reaction: Reaction emoji to use, if ``None`` removes reaction
+            reaction: Reaction emoji to use, or if ``None``, removes reaction.
         """
+        if reaction and reaction not in SENDABLE_REACTIONS:
+            raise ValueError(
+                "Invalid reaction! Please use one of: {}".format(SENDABLE_REACTIONS)
+            )
+
         data = {
             "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
             "client_mutation_id": "1",
             "actor_id": self.session.user_id,
             "message_id": self.id,
-            "reaction": reaction.value if reaction else None,
+            "reaction": reaction,
         }
         data = {
             "doc_id": 1491398900900362,
@@ -190,7 +189,7 @@ class MessageData(Message):
     is_read = attr.ib(None)
     #: A list of people IDs who read the message, works only with `Client.fetch_thread_messages`
     read_by = attr.ib(factory=list)
-    #: A dictionary with user's IDs as keys, and their `MessageReaction` as values
+    #: A dictionary with user's IDs as keys, and their reaction as values
     reactions = attr.ib(factory=dict)
     #: A `Sticker`
     sticker = attr.ib(None)
@@ -266,8 +265,7 @@ class MessageData(Message):
                 if _util.millis_to_datetime(int(receipt["watermark"])) >= created_at
             ],
             reactions={
-                str(r["user"]["id"]): MessageReaction._extend_if_invalid(r["reaction"])
-                for r in data["message_reactions"]
+                str(r["user"]["id"]): r["reaction"] for r in data["message_reactions"]
             },
             sticker=_sticker.Sticker._from_graphql(data.get("sticker")),
             attachments=attachments,

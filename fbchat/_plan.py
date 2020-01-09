@@ -1,10 +1,11 @@
 import attr
 import datetime
-from ._core import attrs_default, Enum
+import enum
+from ._core import attrs_default
 from . import _exception, _util, _session
 
 
-class GuestStatus(Enum):
+class GuestStatus(enum.Enum):
     INVITED = 1
     GOING = 2
     DECLINED = 3

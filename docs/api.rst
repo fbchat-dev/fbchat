@@ -28,8 +28,6 @@ Messages
 .. autoclass:: Mention
 .. autoclass:: EmojiSize(Enum)
     :undoc-members:
-.. autoclass:: MessageReaction(Enum)
-    :undoc-members:
 
 Exceptions
 ----------
@@ -56,11 +54,7 @@ Miscellaneous
 
 .. autoclass:: ThreadLocation(Enum)
     :undoc-members:
-.. autoclass:: ThreadColor(Enum)
-    :undoc-members:
 .. autoclass:: ActiveStatus()
-.. autoclass:: TypingStatus(Enum)
-    :undoc-members:
 
 .. autoclass:: QuickReply
 .. autoclass:: QuickReplyText

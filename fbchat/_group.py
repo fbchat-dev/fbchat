@@ -150,7 +150,7 @@ class GroupData(Group):
     participants = attr.ib(factory=set)
     #: A dictionary, containing user nicknames mapped to their IDs
     nicknames = attr.ib(factory=dict)
-    #: A `ThreadColor`. The groups's message color
+    #: The groups's message color
     color = attr.ib(None)
     #: The groups's default emoji
     emoji = attr.ib(None)
@@ -189,8 +189,8 @@ class GroupData(Group):
                 ]
             ),
             nicknames=c_info.get("nicknames"),
-            color=c_info.get("color"),
-            emoji=c_info.get("emoji"),
+            color=c_info["color"],
+            emoji=c_info["emoji"],
             admins=set([node.get("id") for node in data.get("thread_admins")]),
             approval_mode=bool(data.get("approval_mode"))
             if data.get("approval_mode") is not None
