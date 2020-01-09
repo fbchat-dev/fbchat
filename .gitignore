@@ -33,6 +33,9 @@ my_data.json
 tests.data
 .pytest_cache
 
+# MyPy
+.mypy_cache/
+
 # Virtual environment
 venv/
 .venv*/
