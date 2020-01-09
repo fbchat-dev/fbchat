@@ -44,15 +44,10 @@ class Client:
     """
 
     def __init__(self, session):
-        """Initialize and log in the client.
+        """Initialize the client model.
 
         Args:
-            email: Facebook ``email``, ``id`` or ``phone number``
-            password: Facebook account password
-            session_cookies (dict): Cookies from a previous session (Will default to login if these are invalid)
-
-        Raises:
-            FBchatException: On failed login
+            session: The session to use when making requests.
         """
         self._sticky, self._pool = (None, None)
         self._seq = "0"
@@ -60,6 +55,11 @@ class Client:
         self._mark_alive = True
         self._buddylist = dict()
         self._session = session
+
+    @property
+    def session(self):
+        """The session that's used when making requests."""
+        return self._session
 
     """
     INTERNAL REQUEST METHODS

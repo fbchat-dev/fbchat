@@ -9,7 +9,7 @@ class EchoBot(fbchat.Client):
         print("{} from {} in {}".format(message_object, thread_id, thread_type.name))
 
         # If you're not the author, echo
-        if author_id != session.user_id:
+        if author_id != self.session.user_id:
             self.send(message_object, thread_id=thread_id, thread_type=thread_type)
 
 
