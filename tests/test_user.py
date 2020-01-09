@@ -25,6 +25,7 @@ def test_user_from_graphql():
         last_name="Ghi",
         is_friend=True,
         gender="female_singular",
+        affinity=0.4560002,
     ) == User._from_graphql(data)
 
 
