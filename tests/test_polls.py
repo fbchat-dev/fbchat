@@ -9,40 +9,26 @@ pytestmark = pytest.mark.online
 @pytest.fixture(
     scope="module",
     params=[
-        Poll(title=random_hex(), options=[]),
-        Poll(
-            title=random_hex(),
-            options=[
-                PollOption(text=random_hex(), vote=True),
-                PollOption(text=random_hex(), vote=True),
+        (random_hex(), []),
+        (random_hex(), [(random_hex(), True), (random_hex(), True),],),
+        (random_hex(), [(random_hex(), False), (random_hex(), False),],),
+        (
+            random_hex(),
+            [
+                (random_hex(), True),
+                (random_hex(), True),
+                (random_hex(), False),
+                (random_hex(), False),
+                (random_hex()),
+                (random_hex()),
             ],
         ),
-        Poll(
-            title=random_hex(),
-            options=[
-                PollOption(text=random_hex(), vote=False),
-                PollOption(text=random_hex(), vote=False),
-            ],
-        ),
-        Poll(
-            title=random_hex(),
-            options=[
-                PollOption(text=random_hex(), vote=True),
-                PollOption(text=random_hex(), vote=True),
-                PollOption(text=random_hex(), vote=False),
-                PollOption(text=random_hex(), vote=False),
-                PollOption(text=random_hex()),
-                PollOption(text=random_hex()),
-            ],
-        ),
-        pytest.param(
-            Poll(title=None, options=[]), marks=[pytest.mark.xfail(raises=ValueError)]
-        ),
+        pytest.param((None, []), marks=[pytest.mark.xfail(raises=ValueError)]),
     ],
 )
 def poll_data(request, client1, group, catch_event):
     with catch_event("on_poll_created") as x:
-        client1.create_poll(request.param, thread_id=group["id"])
+        client1.create_poll(request.param[0], request.param[1], thread_id=group["id"])
     options = client1.fetch_poll_options(x.res["poll"].id)
     return x.res, request.param, options
 

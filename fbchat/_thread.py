@@ -5,7 +5,7 @@ import datetime
 import enum
 from ._core import attrs_default, Image
 from . import _util, _exception, _session, _graphql, _attachment, _file, _plan
-from typing import MutableMapping, Any, Iterable, Tuple, Optional
+from typing import MutableMapping, Mapping, Any, Iterable, Tuple, Optional
 
 
 class ThreadLocation(enum.Enum):
@@ -473,10 +473,15 @@ class ThreadABC(metaclass=abc.ABCMeta):
         """
         return _plan.Plan._create(self, name, at, location_name, location_id)
 
-    def create_poll(self, question: str, options=Iterable[Tuple[str, bool]]):
+    def create_poll(self, question: str, options=Mapping[str, bool]):
         """Create poll in a thread.
 
-        # TODO: Arguments
+        Args:
+            question: The question
+            options: Options and whether you want to select the option
+
+        Example:
+            thread.create_poll("Test poll", {"Option 1": True, "Option 2": False})
         """
         # We're using ordered dictionaries, because the Facebook endpoint that parses
         # the POST parameters is badly implemented, and deals with ordering the options
@@ -486,9 +491,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
             [("question_text", question), ("target_id", self.id)]
         )
 
-        for i, (text, vote) in enumerate(options):
+        for i, (text, vote) in enumerate(options.items()):
             data["option_text_array[{}]".format(i)] = text
-            data["option_is_selected_array[{}]".format(i)] = str(int(vote))
+            data["option_is_selected_array[{}]".format(i)] = "1" if vote else "0"
 
         j = self.session._payload_post(
             "/messaging/group_polling/create_poll/?dpr=1", data

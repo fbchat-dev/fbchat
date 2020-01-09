@@ -3,7 +3,7 @@ import time
 import requests
 
 from ._core import log
-from . import _util, _graphql, _session
+from . import _util, _graphql, _session, _poll
 
 from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadLocation
@@ -22,7 +22,6 @@ from ._quick_reply import (
     QuickReplyPhoneNumber,
     QuickReplyEmail,
 )
-from ._poll import Poll, PollOption
 from ._plan import PlanData
 
 
@@ -615,22 +614,6 @@ class Client:
             raise FBchatException("Could not fetch image URL from: {}".format(j))
         return url
 
-    def fetch_poll_options(self, poll_id):
-        """Fetch list of `PollOption` objects from the poll id.
-
-        Args:
-            poll_id: Poll ID to fetch from
-
-        Returns:
-            list
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {"question_id": poll_id}
-        j = self._payload_post("/ajax/mercury/get_poll_options", data)
-        return [PollOption._from_graphql(m) for m in j]
-
     def _get_private_data(self):
         (j,) = self.graphql_requests(_graphql.from_doc_id("1868889766468115", {}))
         return j["viewer"]
@@ -673,40 +656,6 @@ class Client:
 
     """
     END FETCH METHODS
-    """
-
-    """
-    SEND METHODS
-    """
-
-    def update_poll_vote(self, poll_id, option_ids=[], new_options=[]):
-        """Update a poll vote.
-
-        Args:
-            poll_id: ID of the poll to update vote
-            option_ids: List of the option IDs to vote
-            new_options: List of the new option names
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {"question_id": poll_id}
-
-        for i, option_id in enumerate(option_ids):
-            data["selected_options[{}]".format(i)] = option_id
-
-        for i, option_text in enumerate(new_options):
-            data["new_options[{}]".format(i)] = option_text
-
-        j = self._payload_post("/messaging/group_polling/update_vote/?dpr=1", data)
-        if j.get("status") != "success":
-            raise FBchatFacebookError(
-                "Failed updating poll vote: {}".format(j.get("errorTitle")),
-                fb_error_message=j.get("errorMessage"),
-            )
-
-    """
-    END SEND METHODS
     """
 
     def mark_as_delivered(self, thread_id, message_id):
@@ -1165,7 +1114,7 @@ class Client:
         elif delta_type == "group_poll":
             event_type = delta["untypedData"]["event_type"]
             poll_json = _util.parse_json(delta["untypedData"]["question_json"])
-            poll = Poll._from_graphql(poll_json)
+            poll = _poll.Poll._from_graphql(self.session, poll_json)
             if event_type == "question_creation":
                 # User created group poll
                 self.on_poll_created(

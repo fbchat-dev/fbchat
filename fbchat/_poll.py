@@ -1,49 +1,28 @@
 import attr
 from ._core import attrs_default
-
-
-@attrs_default
-class Poll:
-    """Represents a poll."""
-
-    #: Title of the poll
-    title = attr.ib()
-    #: List of `PollOption`, can be fetched with `Client.fetch_poll_options`
-    options = attr.ib()
-    #: Options count
-    options_count = attr.ib(None)
-    #: ID of the poll
-    id = attr.ib(None)
-
-    @classmethod
-    def _from_graphql(cls, data):
-        return cls(
-            id=int(data["id"]),
-            title=data.get("title") if data.get("title") else data.get("text"),
-            options=[PollOption._from_graphql(m) for m in data.get("options")],
-            options_count=data.get("total_count"),
-        )
+from . import _exception, _session
+from typing import Iterable, Sequence
 
 
 @attrs_default
 class PollOption:
     """Represents a poll option."""
 
-    #: Text of the poll option
-    text = attr.ib()
-    #: Whether vote when creating or client voted
-    vote = attr.ib(False)
-    #: ID of the users who voted for this poll option
-    voters = attr.ib(None)
-    #: Votes count
-    votes_count = attr.ib(None)
     #: ID of the poll option
-    id = attr.ib(None)
+    id = attr.ib(converter=str, type=str)
+    #: Text of the poll option
+    text = attr.ib(type=str)
+    #: Whether vote when creating or client voted
+    vote = attr.ib(type=bool)
+    #: ID of the users who voted for this poll option
+    voters = attr.ib(type=Sequence[str])
+    #: Votes count
+    votes_count = attr.ib(type=int)
 
     @classmethod
     def _from_graphql(cls, data):
         if data.get("viewer_has_voted") is None:
-            vote = None
+            vote = False
         elif isinstance(data["viewer_has_voted"], bool):
             vote = data["viewer_has_voted"]
         else:
@@ -53,13 +32,76 @@ class PollOption:
             text=data.get("text"),
             vote=vote,
             voters=(
-                [m.get("node").get("id") for m in data.get("voters").get("edges")]
+                [m["node"]["id"] for m in data["voters"]["edges"]]
                 if isinstance(data.get("voters"), dict)
-                else data.get("voters")
+                else data["voters"]
             ),
             votes_count=(
-                data.get("voters").get("count")
+                data["voters"]["count"]
                 if isinstance(data.get("voters"), dict)
-                else data.get("total_count")
+                else data["total_count"]
             ),
         )
+
+
+@attrs_default
+class Poll:
+    """Represents a poll."""
+
+    #: ID of the poll
+    session = attr.ib(type=_session.Session)
+    #: ID of the poll
+    id = attr.ib(converter=str, type=str)
+    #: The poll's question
+    question = attr.ib(type=str)
+    #: The poll's top few options. The full list can be fetched with `fetch_options`
+    options = attr.ib(type=Sequence[PollOption])
+    #: Options count
+    options_count = attr.ib(type=int)
+
+    @classmethod
+    def _from_graphql(cls, session, data):
+        return cls(
+            session=session,
+            id=data["id"],
+            question=data["title"] if data.get("title") else data["text"],
+            options=[PollOption._from_graphql(m) for m in data["options"]],
+            options_count=data["total_count"],
+        )
+
+    def fetch_options(self) -> Sequence[PollOption]:
+        """Fetch full list of `PollOption` objects on the poll."""
+        data = {"question_id": self.id}
+        j = self.session._payload_post("/ajax/mercury/get_poll_options", data)
+        return [PollOption._from_graphql(m) for m in j]
+
+    def set_votes(self, option_ids: Iterable[str], new_options: Iterable[str] = None):
+        """Update the user's poll vote.
+
+        Args:
+            option_ids: Option ids to vote for / keep voting for
+            new_options: New options to add
+
+        Example:
+            options = poll.fetch_options()
+            # Add option
+            poll.set_votes([o.id for o in options], new_options=["New option"])
+            # Remove vote from option
+            poll.set_votes([o.id for o in options if o.text != "Option 1"])
+        """
+        data = {"question_id": self.id}
+
+        for i, option_id in enumerate(option_ids or ()):
+            data["selected_options[{}]".format(i)] = option_id
+
+        for i, option_text in enumerate(new_options or ()):
+            data["new_options[{}]".format(i)] = option_text
+
+        j = self.session._payload_post(
+            "/messaging/group_polling/update_vote/?dpr=1", data
+        )
+        if j.get("status") != "success":
+            raise _exception.FBchatFacebookError(
+                "Failed updating poll vote: {}".format(j.get("errorTitle")),
+                fb_error_message=j.get("errorMessage"),
+            )
