@@ -48,7 +48,7 @@ class Sticker(Attachment):
             else None,
             frames_per_row=data.get("frames_per_row"),
             frames_per_col=data.get("frames_per_column"),
-            frame_count = data.get("frame_count"),
+            frame_count=data.get("frame_count"),
             frame_rate=data.get("frame_rate"),
             image=Image._from_url_or_none(data),
             label=data["label"] if data.get("label") else None,
