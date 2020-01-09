@@ -1,4 +1,4 @@
-from fbchat._group import Group
+from fbchat._group import GroupData
 
 
 def test_group_from_graphql(session):
@@ -25,7 +25,7 @@ def test_group_from_graphql(session):
         "joinable_mode": {"mode": "0", "link": ""},
         "event_reminders": {"nodes": []},
     }
-    assert Group(
+    assert GroupData(
         session=session,
         id="11223344",
         photo=None,
@@ -41,4 +41,4 @@ def test_group_from_graphql(session):
         approval_mode=False,
         approval_requests=set(),
         join_link="",
-    ) == Group._from_graphql(session, data)
+    ) == GroupData._from_graphql(session, data)

@@ -12,32 +12,9 @@ class Group(_thread.ThreadABC):
     session = attr.ib(type=_session.Session)
     #: The group's unique identifier.
     id = attr.ib(converter=str)
-    #: The group's picture
-    photo = attr.ib(None)
-    #: The name of the group
-    name = attr.ib(None)
-    #: Datetime when the group was last active / when the last message was sent
-    last_active = attr.ib(None)
-    #: Number of messages in the group
-    message_count = attr.ib(None)
-    #: Set `Plan`
-    plan = attr.ib(None)
-    #: Unique list (set) of the group thread's participant user IDs
-    participants = attr.ib(factory=set)
-    #: A dictionary, containing user nicknames mapped to their IDs
-    nicknames = attr.ib(factory=dict)
-    #: A `ThreadColor`. The groups's message color
-    color = attr.ib(None)
-    #: The groups's default emoji
-    emoji = attr.ib(None)
-    # Set containing user IDs of thread admins
-    admins = attr.ib(factory=set)
-    # True if users need approval to join
-    approval_mode = attr.ib(None)
-    # Set containing user IDs requesting to join
-    approval_requests = attr.ib(factory=set)
-    # Link for joining group
-    join_link = attr.ib(None)
+
+    def _to_send_data(self):
+        return {"thread_fbid": self.id}
 
     def add_participants(self, user_ids: Iterable[str]):
         """Add users to the group.
@@ -151,6 +128,41 @@ class Group(_thread.ThreadABC):
         """
         self._users_approval(user_ids, False)
 
+
+@attrs_default
+class GroupData(Group):
+    """Represents data about a Facebook group.
+
+    Inherits `Group`, and implements `ThreadABC`.
+    """
+
+    #: The group's picture
+    photo = attr.ib(None)
+    #: The name of the group
+    name = attr.ib(None)
+    #: Datetime when the group was last active / when the last message was sent
+    last_active = attr.ib(None)
+    #: Number of messages in the group
+    message_count = attr.ib(None)
+    #: Set `Plan`
+    plan = attr.ib(None)
+    #: Unique list (set) of the group thread's participant user IDs
+    participants = attr.ib(factory=set)
+    #: A dictionary, containing user nicknames mapped to their IDs
+    nicknames = attr.ib(factory=dict)
+    #: A `ThreadColor`. The groups's message color
+    color = attr.ib(None)
+    #: The groups's default emoji
+    emoji = attr.ib(None)
+    # Set containing user IDs of thread admins
+    admins = attr.ib(factory=set)
+    # True if users need approval to join
+    approval_mode = attr.ib(None)
+    # Set containing user IDs requesting to join
+    approval_requests = attr.ib(factory=set)
+    # Link for joining group
+    join_link = attr.ib(None)
+
     @classmethod
     def _from_graphql(cls, session, data):
         if data.get("image") is None:
@@ -194,9 +206,6 @@ class Group(_thread.ThreadABC):
             last_active=last_active,
             plan=plan,
         )
-
-    def _to_send_data(self):
-        return {"thread_fbid": self.id}
 
 
 @attrs_default

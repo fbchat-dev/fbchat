@@ -9,7 +9,7 @@ from . import _util, _graphql, _session
 from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadLocation, ThreadColor
 from ._user import TypingStatus, User, UserData, ActiveStatus
-from ._group import Group
+from ._group import Group, GroupData
 from ._page import Page, PageData
 from ._message import EmojiSize, MessageReaction, Mention, Message
 from ._attachment import Attachment
@@ -265,7 +265,7 @@ class Client:
         (j,) = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_GROUP, params))
 
         return [
-            Group._from_graphql(self.session, node)
+            GroupData._from_graphql(self.session, node)
             for node in j["viewer"]["groups"]["nodes"]
         ]
 
@@ -293,7 +293,7 @@ class Client:
                 rtn.append(UserData._from_graphql(self.session, node))
             elif node["__typename"] == "MessageThread":
                 # MessageThread => Group thread
-                rtn.append(Group._from_graphql(self.session, node))
+                rtn.append(GroupData._from_graphql(self.session, node))
             elif node["__typename"] == "Page":
                 rtn.append(PageData._from_graphql(self.session, node))
             elif node["__typename"] == "Group":
@@ -495,7 +495,7 @@ class Client:
             entry = entry["message_thread"]
             if entry.get("thread_type") == "GROUP":
                 _id = entry["thread_key"]["thread_fbid"]
-                rtn[_id] = Group._from_graphql(self.session, entry)
+                rtn[_id] = GroupData._from_graphql(self.session, entry)
             elif entry.get("thread_type") == "ONE_TO_ONE":
                 _id = entry["thread_key"]["other_user_id"]
                 if pages_and_users.get(_id) is None:
@@ -549,7 +549,7 @@ class Client:
         for node in j["viewer"]["message_threads"]["nodes"]:
             _type = node.get("thread_type")
             if _type == "GROUP":
-                rtn.append(Group._from_graphql(self.session, node))
+                rtn.append(GroupData._from_graphql(self.session, node))
             elif _type == "ONE_TO_ONE":
                 rtn.append(UserData._from_thread_fetch(self.session, node))
             else:
