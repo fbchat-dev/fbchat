@@ -4,7 +4,7 @@ import fbchat
 from fbchat._user import User, ActiveStatus
 
 
-def test_user_from_graphql():
+def test_user_from_graphql(session):
     data = {
         "id": "1234",
         "name": "Abc Def Ghi",
@@ -17,6 +17,7 @@ def test_user_from_graphql():
         "viewer_affinity": 0.4560002,
     }
     assert User(
+        session=session,
         id="1234",
         photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
         name="Abc Def Ghi",
@@ -26,10 +27,10 @@ def test_user_from_graphql():
         is_friend=True,
         gender="female_singular",
         affinity=0.4560002,
-    ) == User._from_graphql(data)
+    ) == User._from_graphql(session, data)
 
 
-def test_user_from_thread_fetch():
+def test_user_from_thread_fetch(session):
     data = {
         "thread_key": {"thread_fbid": None, "other_user_id": "1234"},
         "name": None,
@@ -138,6 +139,7 @@ def test_user_from_thread_fetch():
         "delivery_receipts": ...,
     }
     assert User(
+        session=session,
         id="1234",
         photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
         name="Abc Def Ghi",
@@ -152,10 +154,10 @@ def test_user_from_thread_fetch():
         own_nickname="B",
         color=None,
         emoji=None,
-    ) == User._from_thread_fetch(data)
+    ) == User._from_thread_fetch(session, data)
 
 
-def test_user_from_all_fetch():
+def test_user_from_all_fetch(session):
     data = {
         "id": "1234",
         "name": "Abc Def Ghi",
@@ -176,6 +178,7 @@ def test_user_from_all_fetch():
         "is_blocked": False,
     }
     assert User(
+        session=session,
         id="1234",
         photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
         name="Abc Def Ghi",
@@ -183,7 +186,7 @@ def test_user_from_all_fetch():
         first_name="Abc",
         is_friend=True,
         gender="female_singular",
-    ) == User._from_all_fetch(data)
+    ) == User._from_all_fetch(session, data)
 
 
 @pytest.mark.skip(reason="can't gather test data, the pulling is broken")

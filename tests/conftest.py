@@ -3,19 +3,24 @@ import json
 
 from utils import *
 from contextlib import contextmanager
-from fbchat import ThreadType, Message, Mention
+from fbchat import Message, Mention
+
+
+@pytest.fixture(scope="session")
+def session():
+    return object()  # TODO: Add a mocked session
 
 
 @pytest.fixture(scope="session")
 def user(client2):
-    return {"id": client2.id, "type": ThreadType.USER}
+    return {"id": client2.id, "type": None}
 
 
 @pytest.fixture(scope="session")
 def group(pytestconfig):
     return {
         "id": load_variable("group_id", pytestconfig.cache),
-        "type": ThreadType.GROUP,
+        "type": None,
     }
 
 
@@ -24,11 +29,9 @@ def group(pytestconfig):
     params=["user", "group", pytest.param("none", marks=[pytest.mark.xfail()])],
 )
 def thread(request, user, group):
-    return {
-        "user": user,
-        "group": group,
-        "none": {"id": "0", "type": ThreadType.GROUP},
-    }[request.param]
+    return {"user": user, "group": group, "none": {"id": "0", "type": None},}[
+        request.param
+    ]
 
 
 @pytest.fixture(scope="session")
@@ -98,9 +101,7 @@ def compare(client, thread):
     def inner(caught_event, **kwargs):
         d = {
             "author_id": client.id,
-            "thread_id": client.id
-            if thread["type"] == ThreadType.USER
-            else thread["id"],
+            "thread_id": client.id if thread["type"] == None else thread["id"],
             "thread_type": thread["type"],
         }
         d.update(kwargs)

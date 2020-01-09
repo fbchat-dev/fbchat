@@ -1,7 +1,7 @@
 import pytest
 
 from os import path
-from fbchat import ThreadType, Message, Mention, EmojiSize, Sticker
+from fbchat import Message, Mention, EmojiSize, Sticker
 from utils import subset, STICKER_LIST, EMOJI_LIST
 
 pytestmark = pytest.mark.online
@@ -89,7 +89,6 @@ def test_fetch_info(client1, group):
     assert info.name == "Mark Zuckerberg"
 
     info = client1.fetch_group_info(group["id"])[group["id"]]
-    assert info.type == ThreadType.GROUP
 
 
 def test_fetch_image_url(client):

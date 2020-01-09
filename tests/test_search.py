@@ -1,5 +1,4 @@
 import pytest
-from fbchat import ThreadType
 
 pytestmark = pytest.mark.online
 
@@ -11,7 +10,6 @@ def test_search_for(client1):
     u = users[0]
 
     assert u.id == "4"
-    assert u.type == ThreadType.USER
     assert u.photo[:4] == "http"
     assert u.url[:4] == "http"
     assert u.name == "Mark Zuckerberg"
