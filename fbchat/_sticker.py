@@ -21,6 +21,8 @@ class Sticker(Attachment):
     frames_per_row = attr.ib(None)
     #: The amount of frames present in the spritemap pr. column
     frames_per_col = attr.ib(None)
+    #: The total amount of frames in the spritemap
+    frame_count = attr.ib(None)
     #: The frame rate the spritemap is intended to be played in
     frame_rate = attr.ib(None)
 
@@ -46,6 +48,7 @@ class Sticker(Attachment):
             else None,
             frames_per_row=data.get("frames_per_row"),
             frames_per_col=data.get("frames_per_column"),
+            frame_count = data.get("frame_count"),
             frame_rate=data.get("frame_rate"),
             image=Image._from_url_or_none(data),
             label=data["label"] if data.get("label") else None,
