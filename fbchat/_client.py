@@ -728,112 +728,6 @@ class Client:
         data = {"message_id": mid}
         j = self._payload_post("/messaging/unsend_message/?dpr=1", data)
 
-    def forward_attachment(self, attachment_id, thread_id=None):
-        """Forward an attachment.
-
-        Args:
-            attachment_id: Attachment ID to forward
-            thread_id: User/Group ID to send to. See :ref:`intro_threads`
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {
-            "attachment_id": attachment_id,
-            "recipient_map[{}]".format(
-                _util.generate_offline_threading_id()
-            ): thread_id,
-        }
-        j = self._payload_post("/mercury/attachments/forward/", data)
-        if not j.get("success"):
-            raise FBchatFacebookError(
-                "Failed forwarding attachment: {}".format(j["error"]),
-                fb_error_message=j["error"],
-            )
-
-    def change_thread_title(self, title, thread_id=None, thread_type=ThreadType.USER):
-        """Change title of a thread.
-
-        If this is executed on a user thread, this will change the nickname of that
-        user, effectively changing the title.
-
-        Args:
-            title: New group thread title
-            thread_id: Group ID to change title of. See :ref:`intro_threads`
-            thread_type (ThreadType): See :ref:`intro_threads`
-
-        Raises:
-            FBchatException: If request failed
-        """
-        if thread_type == ThreadType.USER:
-            # The thread is a user, so we change the user's nickname
-            return self.change_nickname(
-                title, thread_id, thread_id=thread_id, thread_type=thread_type
-            )
-
-        data = {"thread_name": title, "thread_id": thread_id}
-        j = self._payload_post("/messaging/set_thread_name/?dpr=1", data)
-
-    def change_nickname(
-        self, nickname, user_id, thread_id=None, thread_type=ThreadType.USER
-    ):
-        """Change the nickname of a user in a thread.
-
-        Args:
-            nickname: New nickname
-            user_id: User that will have their nickname changed
-            thread_id: User/Group ID to change color of. See :ref:`intro_threads`
-            thread_type (ThreadType): See :ref:`intro_threads`
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {
-            "nickname": nickname,
-            "participant_id": user_id,
-            "thread_or_other_fbid": thread_id,
-        }
-        j = self._payload_post(
-            "/messaging/save_thread_nickname/?source=thread_settings&dpr=1", data
-        )
-
-    def change_thread_color(self, color, thread_id=None):
-        """Change thread color.
-
-        Args:
-            color (ThreadColor): New thread color
-            thread_id: User/Group ID to change color of. See :ref:`intro_threads`
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {
-            "color_choice": color.value if color != ThreadColor.MESSENGER_BLUE else "",
-            "thread_or_other_fbid": thread_id,
-        }
-        j = self._payload_post(
-            "/messaging/save_thread_color/?source=thread_settings&dpr=1", data
-        )
-
-    def change_thread_emoji(self, emoji, thread_id=None):
-        """Change thread color.
-
-        Note:
-            While changing the emoji, the Facebook web client actually sends multiple
-            different requests, though only this one is required to make the change.
-
-        Args:
-            color: New thread emoji
-            thread_id: User/Group ID to change emoji of. See :ref:`intro_threads`
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {"emoji_choice": emoji, "thread_or_other_fbid": thread_id}
-        j = self._payload_post(
-            "/messaging/save_thread_emoji/?source=thread_settings&dpr=1", data
-        )
-
     def react_to_message(self, message_id, reaction):
         """React to a message, or removes reaction.
 
@@ -854,32 +748,6 @@ class Client:
         data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
         j = self._payload_post("/webgraphql/mutation", data)
         _util.handle_graphql_errors(j)
-
-    def create_plan(self, plan, thread_id=None):
-        """Set a plan.
-
-        Args:
-            plan (Plan): Plan to set
-            thread_id: User/Group ID to send plan to. See :ref:`intro_threads`
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {
-            "event_type": "EVENT",
-            "event_time": _util.datetime_to_seconds(plan.time),
-            "title": plan.title,
-            "thread_id": thread_id,
-            "location_id": plan.location_id or "",
-            "location_name": plan.location or "",
-            "acontext": ACONTEXT,
-        }
-        j = self._payload_post("/ajax/eventreminder/create", data)
-        if "error" in j:
-            raise FBchatFacebookError(
-                "Failed creating plan: {}".format(j["error"]),
-                fb_error_message=j["error"],
-            )
 
     def edit_plan(self, plan, new_plan):
         """Edit a plan.
@@ -931,33 +799,6 @@ class Client:
         }
         j = self._payload_post("/ajax/eventreminder/rsvp", data)
 
-    def create_poll(self, poll, thread_id=None):
-        """Create poll in a group thread.
-
-        Args:
-            poll (Poll): Poll to create
-            thread_id: User/Group ID to create poll in. See :ref:`intro_threads`
-
-        Raises:
-            FBchatException: If request failed
-        """
-        # We're using ordered dictionaries, because the Facebook endpoint that parses
-        # the POST parameters is badly implemented, and deals with ordering the options
-        # wrongly. If you can find a way to fix this for the endpoint, or if you find
-        # another endpoint, please do suggest it ;)
-        data = OrderedDict([("question_text", poll.title), ("target_id", thread_id)])
-
-        for i, option in enumerate(poll.options):
-            data["option_text_array[{}]".format(i)] = option.text
-            data["option_is_selected_array[{}]".format(i)] = str(int(option.vote))
-
-        j = self._payload_post("/messaging/group_polling/create_poll/?dpr=1", data)
-        if j.get("status") != "success":
-            raise FBchatFacebookError(
-                "Failed creating poll: {}".format(j.get("errorTitle")),
-                fb_error_message=j.get("errorMessage"),
-            )
-
     def update_poll_vote(self, poll_id, option_ids=[], new_options=[]):
         """Update a poll vote.
 
@@ -985,25 +826,6 @@ class Client:
                 "Failed updating poll vote: {}".format(j.get("errorTitle")),
                 fb_error_message=j.get("errorMessage"),
             )
-
-    def set_typing_status(self, status, thread_id=None, thread_type=None):
-        """Set users typing status in a thread.
-
-        Args:
-            status (TypingStatus): Specify the typing status
-            thread_id: User/Group ID to change status in. See :ref:`intro_threads`
-            thread_type (ThreadType): See :ref:`intro_threads`
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {
-            "typ": status.value,
-            "thread": thread_id,
-            "to": thread_id if thread_type == ThreadType.USER else "",
-            "source": "mercury-chat",
-        }
-        j = self._payload_post("/ajax/messaging/typ.php", data)
 
     """
     END SEND METHODS
@@ -1144,21 +966,6 @@ class Client:
         j_delete = self._payload_post(
             "/ajax/mercury/delete_thread.php?dpr=1", data_delete
         )
-        return True
-
-    def mark_as_spam(self, thread_id=None):
-        """Mark a thread as spam, and delete it.
-
-        Args:
-            thread_id: User/Group ID to mark as spam. See :ref:`intro_threads`
-
-        Returns:
-            True
-
-        Raises:
-            FBchatException: If request failed
-        """
-        j = self._payload_post("/ajax/mercury/mark_spam.php?dpr=1", {"id": thread_id})
         return True
 
     def delete_messages(self, message_ids):

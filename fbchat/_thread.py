@@ -1,7 +1,8 @@
 import abc
 import attr
+import datetime
 from ._core import attrs_default, Enum, Image
-from . import _util, _session
+from . import _util, _exception, _session
 from typing import MutableMapping, Any, Iterable, Tuple
 
 
@@ -305,6 +306,144 @@ class ThreadABC(metaclass=abc.ABCMeta):
             else:
                 yield Attachment(id=i["node"].get("legacy_attachment_id"))
             del j[self.id]["message_shared_media"]["edges"][0]
+
+    def set_nickname(self, user_id: str, nickname: str):
+        """Change the nickname of a user in the thread.
+
+        Args:
+            user_id: User that will have their nickname changed
+            nickname: New nickname
+        """
+        data = {
+            "nickname": nickname,
+            "participant_id": user_id,
+            "thread_or_other_fbid": self.id,
+        }
+        j = self.session._payload_post(
+            "/messaging/save_thread_nickname/?source=thread_settings&dpr=1", data
+        )
+
+    def set_color(self, color: ThreadColor):
+        """Change thread color.
+
+        Args:
+            color: New thread color
+        """
+        data = {
+            "color_choice": color.value if color != ThreadColor.MESSENGER_BLUE else "",
+            "thread_or_other_fbid": self.id,
+        }
+        j = self.session._payload_post(
+            "/messaging/save_thread_color/?source=thread_settings&dpr=1", data
+        )
+
+    def set_emoji(self, emoji: str):
+        """Change thread color.
+
+        Args:
+            emoji: New thread emoji
+        """
+        data = {"emoji_choice": emoji, "thread_or_other_fbid": self.id}
+        # While changing the emoji, the Facebook web client actually sends multiple
+        # different requests, though only this one is required to make the change.
+        j = self.session._payload_post(
+            "/messaging/save_thread_emoji/?source=thread_settings&dpr=1", data
+        )
+
+    def forward_attachment(self, attachment_id):
+        """Forward an attachment.
+
+        Args:
+            attachment_id: Attachment ID to forward
+        """
+        data = {
+            "attachment_id": attachment_id,
+            "recipient_map[{}]".format(_util.generate_offline_threading_id()): self.id,
+        }
+        j = self.session._payload_post("/mercury/attachments/forward/", data)
+        if not j.get("success"):
+            raise _exception.FBchatFacebookError(
+                "Failed forwarding attachment: {}".format(j["error"]),
+                fb_error_message=j["error"],
+            )
+
+    def _set_typing(self, typing):
+        data = {
+            "typ": "1" if typing else "0",
+            "thread": self.id,
+            # TODO: This
+            "to": self.id if thread_type == ThreadType.USER else "",
+            "source": "mercury-chat",
+        }
+        j = self.session._payload_post("/ajax/messaging/typ.php", data)
+
+    def start_typing(self):
+        """Set the current user to start typing in the thread."""
+        self._set_typing(True)
+
+    def stop_typing(self):
+        """Set the current user to stop typing in the thread."""
+        self._set_typing(False)
+
+    def create_plan(
+        self,
+        name: str,
+        at: datetime.datetime,
+        location_name: str = None,
+        location_id: str = None,
+    ):
+        """Create a new plan.
+
+        # TODO: Arguments
+
+        Args:
+            title: Name of the new plan
+            at: When the plan is for
+        """
+        data = {
+            "event_type": "EVENT",
+            "event_time": _util.datetime_to_seconds(at),
+            "title": name,
+            "thread_id": self.id,
+            "location_id": location_id or "",
+            "location_name": location or "",
+            "acontext": ACONTEXT,
+        }
+        j = self.session._payload_post("/ajax/eventreminder/create", data)
+        if "error" in j:
+            raise _exception.FBchatFacebookError(
+                "Failed creating plan: {}".format(j["error"]),
+                fb_error_message=j["error"],
+            )
+
+    def create_poll(self, question: str, options=Iterable[Tuple[str, bool]]):
+        """Create poll in a thread.
+
+        # TODO: Arguments
+        """
+        # We're using ordered dictionaries, because the Facebook endpoint that parses
+        # the POST parameters is badly implemented, and deals with ordering the options
+        # wrongly. If you can find a way to fix this for the endpoint, or if you find
+        # another endpoint, please do suggest it ;)
+        data = OrderedDict([("question_text", question), ("target_id", self.id)])
+
+        for i, (text, vote) in enumerate(options):
+            data["option_text_array[{}]".format(i)] = text
+            data["option_is_selected_array[{}]".format(i)] = str(int(vote))
+
+        j = self.session._payload_post(
+            "/messaging/group_polling/create_poll/?dpr=1", data
+        )
+        if j.get("status") != "success":
+            raise _exception.FBchatFacebookError(
+                "Failed creating poll: {}".format(j.get("errorTitle")),
+                fb_error_message=j.get("errorMessage"),
+            )
+
+    def mark_as_spam(self):
+        """Mark the thread as spam, and delete it."""
+        data = {"id": self.id}
+        j = self.session._payload_post("/ajax/mercury/mark_spam.php?dpr=1", data)
 
     def _forced_fetch(self, message_id: str) -> dict:
         params = {
