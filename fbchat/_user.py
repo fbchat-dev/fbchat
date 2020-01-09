@@ -50,7 +50,11 @@ class User(_thread.ThreadABC):
     id = attr.ib(converter=str)
 
     def _to_send_data(self):
-        return {"other_user_fbid": self.id}
+        return {
+            "other_user_fbid": self.id,
+            # The entry below is to support .wave
+            "specific_to_list[0]": "fbid:{}".format(self.id),
+        }
 
     def confirm_friend_request(self):
         """Confirm a friend request, adding the user to your friend list."""

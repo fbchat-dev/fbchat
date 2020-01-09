@@ -2,11 +2,7 @@ import datetime
 import json
 import time
 import random
-import contextlib
-import mimetypes
 import urllib.parse
-import requests
-from os import path
 
 from ._core import log
 from ._exception import (
@@ -186,39 +182,6 @@ def mimetype_to_key(mimetype):
     if x[0] in ["video", "image", "audio"]:
         return "%s_id" % x[0]
     return "file_id"
-
-
-def get_files_from_urls(file_urls):
-    files = []
-    for file_url in file_urls:
-        r = requests.get(file_url)
-        # We could possibly use r.headers.get('Content-Disposition'), see
-        # https://stackoverflow.com/a/37060758
-        file_name = path.basename(file_url).split("?")[0].split("#")[0]
-        files.append(
-            (
-                file_name,
-                r.content,
-                r.headers.get("Content-Type") or mimetypes.guess_type(file_name)[0],
-            )
-        )
-    return files
-
-
-@contextlib.contextmanager
-def get_files_from_paths(filenames):
-    files = []
-    for filename in filenames:
-        files.append(
-            (
-                path.basename(filename),
-                open(filename, "rb"),
-                mimetypes.guess_type(filename)[0],
-            )
-        )
-    yield files
-    for fn, fp, ft in files:
-        fp.close()
 
 
 def get_url_parameters(url, *args):
