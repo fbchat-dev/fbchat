@@ -14,7 +14,6 @@ maintainer = "Mads Marquart"
 maintainer-email = "madsmtm@gmail.com"
 home-page = "https://github.com/carpedm20/fbchat/"
 requires = [
-    "aenum~=2.0",
     "attrs>=19.1",
     "requests~=2.19",
     "beautifulsoup4~=4.0",

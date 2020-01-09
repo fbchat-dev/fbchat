@@ -2,12 +2,13 @@ import abc
 import attr
 import collections
 import datetime
-from ._core import attrs_default, Enum, Image
+import enum
+from ._core import attrs_default, Image
 from . import _util, _exception, _session, _graphql, _attachment, _file, _plan
 from typing import MutableMapping, Any, Iterable, Tuple, Optional
 
 
-class ThreadLocation(Enum):
+class ThreadLocation(enum.Enum):
     """Used to specify where a thread is located (inbox, pending, archived, other)."""
 
     INBOX = "INBOX"

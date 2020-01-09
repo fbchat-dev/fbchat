@@ -1,11 +1,12 @@
 import attr
+import enum
 from string import Formatter
-from ._core import log, attrs_default, Enum
+from ._core import log, attrs_default
 from . import _util, _session, _attachment, _location, _file, _quick_reply, _sticker
 from typing import Optional
 
 
-class EmojiSize(Enum):
+class EmojiSize(enum.Enum):
     """Used to specify the size of a sent emoji."""
 
     LARGE = "369239383222810"
