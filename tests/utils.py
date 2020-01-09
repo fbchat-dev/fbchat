@@ -5,7 +5,7 @@ import pytest
 from os import environ
 from random import randrange
 from contextlib import contextmanager
-from fbchat import ThreadType, EmojiSize, FBchatFacebookError, Sticker, Client
+from fbchat import EmojiSize, FBchatFacebookError, Sticker, Client
 
 log = logging.getLogger("fbchat.tests").addHandler(logging.NullHandler())
 

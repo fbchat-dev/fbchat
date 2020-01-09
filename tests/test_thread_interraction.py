@@ -1,6 +1,6 @@
 import pytest
 
-from fbchat import Message, ThreadType, FBchatFacebookError, TypingStatus, ThreadColor
+from fbchat import Message, FBchatFacebookError, TypingStatus, ThreadColor
 from utils import random_hex, subset
 from os import path
 
@@ -42,14 +42,8 @@ def test_remove_from_and_add_admins_to_group(client1, client2, group, catch_even
 def test_change_title(client1, group, catch_event):
     title = random_hex()
     with catch_event("on_title_change") as x:
-        client1.change_thread_title(title, group["id"], thread_type=ThreadType.GROUP)
-    assert subset(
-        x.res,
-        author_id=client1.id,
-        new_title=title,
-        thread_id=group["id"],
-        thread_type=ThreadType.GROUP,
-    )
+        client1.change_thread_title(title, group["id"])
+    assert subset(x.res, author_id=client1.id, new_title=title, thread=group)
 
 
 def test_change_nickname(client, client_all, catch_event, compare):

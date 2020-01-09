@@ -39,8 +39,13 @@ threads += client.fetch_thread_list(offset=20, limit=10)
 print("Threads: {}".format(threads))
 
 
+# If we have a thread id, we can use `fetch_thread_info` to fetch a `Thread` object
+thread = client.fetch_thread_info("<thread id>")["<thread id>"]
+print("thread's name: {}".format(thread.name))
+
+
 # Gets the last 10 messages sent to the thread
-messages = client.fetch_thread_messages(thread_id="<thread id>", limit=10)
+messages = thread.fetch_messages(limit=10)
 # Since the message come in reversed order, reverse them
 messages.reverse()
 
@@ -49,22 +54,15 @@ for message in messages:
     print(message.text)
 
 
-# If we have a thread id, we can use `fetch_thread_info` to fetch a `Thread` object
-thread = client.fetch_thread_info("<thread id>")["<thread id>"]
-print("thread's name: {}".format(thread.name))
-print("thread's type: {}".format(thread.type))
-
-
 # `search_for_threads` searches works like `search_for_users`, but gives us a list of threads instead
 thread = client.search_for_threads("<name of thread>")[0]
 print("thread's name: {}".format(thread.name))
-print("thread's type: {}".format(thread.type))
 
 
 # Here should be an example of `getUnread`
 
 
 # Print image url for 20 last images from thread.
-images = client.fetch_thread_images("<thread id>")
+images = thread.fetch_images()
 for image in itertools.islice(image, 20):
     print(image.large_preview_url)

@@ -8,7 +8,7 @@ from ._core import log
 from . import _util, _graphql, _session
 
 from ._exception import FBchatException, FBchatFacebookError
-from ._thread import ThreadType, ThreadLocation, ThreadColor
+from ._thread import ThreadLocation, ThreadColor
 from ._user import TypingStatus, User, ActiveStatus
 from ._group import Group
 from ._page import Page
@@ -358,7 +358,6 @@ class Client:
             if k["type"] in ["user", "friend"]:
                 entries[_id] = {
                     "id": _id,
-                    "type": ThreadType.USER,
                     "url": k.get("uri"),
                     "first_name": k.get("firstName"),
                     "is_viewer_friend": k.get("is_friend"),
@@ -369,7 +368,6 @@ class Client:
             elif k["type"] == "page":
                 entries[_id] = {
                     "id": _id,
-                    "type": ThreadType.PAGE,
                     "url": k.get("uri"),
                     "profile_picture": {"uri": k.get("thumbSrc")},
                     "name": k.get("name"),
@@ -510,7 +508,7 @@ class Client:
                 if pages_and_users.get(_id) is None:
                     raise FBchatException("Could not fetch thread {}".format(_id))
                 entry.update(pages_and_users[_id])
-                if entry["type"] == ThreadType.USER:
+                if "first_name" in entry["type"]:
                     rtn[_id] = User._from_graphql(self.session, entry)
                 else:
                     rtn[_id] = Page._from_graphql(self.session, entry)
@@ -760,8 +758,6 @@ class Client:
             poll_id: ID of the poll to update vote
             option_ids: List of the option IDs to vote
             new_options: List of the new option names
-            thread_id: User/Group ID to change status in. See :ref:`intro_threads`
-            thread_type (ThreadType): See :ref:`intro_threads`
 
         Raises:
             FBchatException: If request failed
@@ -981,17 +977,14 @@ class Client:
         return j
 
     def _parse_delta(self, m):
-        def get_thread_id_and_thread_type(msg_metadata):
-            """Return a tuple consisting of thread ID and thread type."""
-            id_thread = None
-            type_thread = None
-            if "threadFbId" in msg_metadata["threadKey"]:
-                id_thread = str(msg_metadata["threadKey"]["threadFbId"])
-                type_thread = ThreadType.GROUP
-            elif "otherUserFbId" in msg_metadata["threadKey"]:
-                id_thread = str(msg_metadata["threadKey"]["otherUserFbId"])
-                type_thread = ThreadType.USER
-            return id_thread, type_thread
+        def get_thread(data):
+            if "threadFbId" in data["threadKey"]:
+                group_id = str(data["threadKey"]["threadFbId"])
+                return Group(session=self.session, id=group_id)
+            elif "otherUserFbId" in data["threadKey"]:
+                user_id = str(data["threadKey"]["otherUserFbId"])
+                return User(session=self.session, id=user_id)
+            return None
 
         delta = m["delta"]
         delta_type = delta.get("type")
@@ -1006,12 +999,11 @@ class Client:
         # Added participants
         if "addedParticipants" in delta:
             added_ids = [str(x["userFbId"]) for x in delta["addedParticipants"]]
-            thread_id = str(metadata["threadKey"]["threadFbId"])
             self.on_people_added(
                 mid=mid,
                 added_ids=added_ids,
                 author_id=author_id,
-                thread_id=thread_id,
+                group=get_thread(metadata),
                 at=at,
                 msg=m,
             )
@@ -1019,12 +1011,11 @@ class Client:
         # Left/removed participants
         elif "leftParticipantFbId" in delta:
             removed_id = str(delta["leftParticipantFbId"])
-            thread_id = str(metadata["threadKey"]["threadFbId"])
             self.on_person_removed(
                 mid=mid,
                 removed_id=removed_id,
                 author_id=author_id,
-                thread_id=thread_id,
+                group=get_thread(metadata),
                 at=at,
                 msg=m,
             )
@@ -1032,13 +1023,12 @@ class Client:
         # Color change
         elif delta_type == "change_thread_theme":
             new_color = ThreadColor._from_graphql(delta["untypedData"]["theme_color"])
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
+            thread = get_thread(metadata)
             self.on_color_change(
                 mid=mid,
                 author_id=author_id,
                 new_color=new_color,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1047,13 +1037,11 @@ class Client:
         # Emoji change
         elif delta_type == "change_thread_icon":
             new_emoji = delta["untypedData"]["thread_icon"]
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             self.on_emoji_change(
                 mid=mid,
                 author_id=author_id,
                 new_emoji=new_emoji,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1062,13 +1050,11 @@ class Client:
         # Thread title change
         elif delta_class == "ThreadName":
             new_title = delta["name"]
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             self.on_title_change(
                 mid=mid,
                 author_id=author_id,
                 new_title=new_title,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1080,9 +1066,8 @@ class Client:
             if mid is None:
                 self.on_unknown_messsage_type(msg=m)
             else:
-                thread_id = str(delta["threadKey"]["threadFbId"])
-                thread = Thread(session=self.session, id=thread_id)
-                fetch_info = thread._forced_fetch(mid)
+                group = get_thread(metadata)
+                fetch_info = group._forced_fetch(mid)
                 fetch_data = fetch_info["message"]
                 author_id = fetch_data["message_sender"]["id"]
                 at = _util.millis_to_datetime(int(fetch_data["timestamp_precise"]))
@@ -1098,8 +1083,7 @@ class Client:
                         mid=mid,
                         author_id=author_id,
                         new_image=image_id,
-                        thread_id=thread_id,
-                        thread_type=ThreadType.GROUP,
+                        group=group,
                         at=at,
                         msg=m,
                     )
@@ -1108,14 +1092,12 @@ class Client:
         elif delta_type == "change_thread_nickname":
             changed_for = str(delta["untypedData"]["participant_id"])
             new_nickname = delta["untypedData"]["nickname"]
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             self.on_nickname_change(
                 mid=mid,
                 author_id=author_id,
                 changed_for=changed_for,
                 new_nickname=new_nickname,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1123,7 +1105,6 @@ class Client:
 
         # Admin added or removed in a group thread
         elif delta_type == "change_thread_admins":
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             target_id = delta["untypedData"]["TARGET_ID"]
             admin_event = delta["untypedData"]["ADMIN_EVENT"]
             if admin_event == "add_admin":
@@ -1131,8 +1112,7 @@ class Client:
                     mid=mid,
                     added_id=target_id,
                     author_id=author_id,
-                    thread_id=thread_id,
-                    thread_type=thread_type,
+                    thread=get_thread(metadata),
                     at=at,
                     msg=m,
                 )
@@ -1141,22 +1121,19 @@ class Client:
                     mid=mid,
                     removed_id=target_id,
                     author_id=author_id,
-                    thread_id=thread_id,
-                    thread_type=thread_type,
+                    thread=get_thread(metadata),
                     at=at,
                     msg=m,
                 )
 
         # Group approval mode change
         elif delta_type == "change_thread_approval_mode":
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             approval_mode = bool(int(delta["untypedData"]["APPROVAL_MODE"]))
             self.on_approval_mode_change(
                 mid=mid,
                 approval_mode=approval_mode,
                 author_id=author_id,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 msg=m,
             )
@@ -1168,12 +1145,10 @@ class Client:
                 delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"]
             )
             at = _util.millis_to_datetime(int(delta["deliveredWatermarkTimestampMs"]))
-            thread_id, thread_type = get_thread_id_and_thread_type(delta)
             self.on_message_delivered(
                 msg_ids=message_ids,
                 delivered_for=delivered_for,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1184,11 +1159,9 @@ class Client:
             seen_by = str(delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"])
             seen_at = _util.millis_to_datetime(int(delta["actionTimestampMs"]))
             at = _util.millis_to_datetime(int(delta["watermarkTimestampMs"]))
-            thread_id, thread_type = get_thread_id_and_thread_type(delta)
             self.on_message_seen(
                 seen_by=seen_by,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 seen_at=seen_at,
                 at=at,
                 metadata=metadata,
@@ -1208,11 +1181,9 @@ class Client:
             threads = []
             if "folders" not in delta:
                 threads = [
-                    get_thread_id_and_thread_type({"threadKey": thr})
-                    for thr in delta.get("threadKeys")
+                    get_thread({"threadKey": thr}) for thr in delta.get("threadKeys")
                 ]
 
-            # thread_id, thread_type = get_thread_id_and_thread_type(delta)
             self.on_marked_seen(
                 threads=threads, seen_at=seen_at, at=at, metadata=delta, msg=m
             )
@@ -1227,7 +1198,6 @@ class Client:
             leaderboard = delta["untypedData"].get("leaderboard")
             if leaderboard is not None:
                 leaderboard = json.loads(leaderboard)["scores"]
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             self.on_game_played(
                 mid=mid,
                 author_id=author_id,
@@ -1235,8 +1205,7 @@ class Client:
                 game_name=game_name,
                 score=score,
                 leaderboard=leaderboard,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1244,7 +1213,6 @@ class Client:
 
         # Group call started/ended
         elif delta_type == "rtc_call_log":
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             call_status = delta["untypedData"]["event"]
             call_duration = _util.seconds_to_timedelta(
                 int(delta["untypedData"]["call_duration"])
@@ -1255,8 +1223,7 @@ class Client:
                     mid=mid,
                     caller_id=author_id,
                     is_video_call=is_video_call,
-                    thread_id=thread_id,
-                    thread_type=thread_type,
+                    thread=get_thread(metadata),
                     at=at,
                     metadata=metadata,
                     msg=m,
@@ -1267,8 +1234,7 @@ class Client:
                     caller_id=author_id,
                     is_video_call=is_video_call,
                     call_duration=call_duration,
-                    thread_id=thread_id,
-                    thread_type=thread_type,
+                    thread=get_thread(metadata),
                     at=at,
                     metadata=metadata,
                     msg=m,
@@ -1276,14 +1242,12 @@ class Client:
 
         # User joined to group call
         elif delta_type == "participant_joined_group_call":
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             is_video_call = bool(int(delta["untypedData"]["group_call_type"]))
             self.on_user_joined_call(
                 mid=mid,
                 joined_id=author_id,
                 is_video_call=is_video_call,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1291,7 +1255,6 @@ class Client:
 
         # Group poll event
         elif delta_type == "group_poll":
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             event_type = delta["untypedData"]["event_type"]
             poll_json = json.loads(delta["untypedData"]["question_json"])
             poll = Poll._from_graphql(poll_json)
@@ -1301,8 +1264,7 @@ class Client:
                     mid=mid,
                     poll=poll,
                     author_id=author_id,
-                    thread_id=thread_id,
-                    thread_type=thread_type,
+                    thread=get_thread(metadata),
                     at=at,
                     metadata=metadata,
                     msg=m,
@@ -1317,8 +1279,7 @@ class Client:
                     added_options=added_options,
                     removed_options=removed_options,
                     author_id=author_id,
-                    thread_id=thread_id,
-                    thread_type=thread_type,
+                    thread=get_thread(metadata),
                     at=at,
                     metadata=metadata,
                     msg=m,
@@ -1326,13 +1287,11 @@ class Client:
 
         # Plan created
         elif delta_type == "lightweight_event_create":
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             self.on_plan_created(
                 mid=mid,
                 plan=Plan._from_pull(delta["untypedData"]),
                 author_id=author_id,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1340,12 +1299,10 @@ class Client:
 
         # Plan ended
         elif delta_type == "lightweight_event_notify":
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             self.on_plan_ended(
                 mid=mid,
                 plan=Plan._from_pull(delta["untypedData"]),
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1353,13 +1310,11 @@ class Client:
 
         # Plan edited
         elif delta_type == "lightweight_event_update":
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             self.on_plan_edited(
                 mid=mid,
                 plan=Plan._from_pull(delta["untypedData"]),
                 author_id=author_id,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1367,13 +1322,11 @@ class Client:
 
         # Plan deleted
         elif delta_type == "lightweight_event_delete":
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             self.on_plan_deleted(
                 mid=mid,
                 plan=Plan._from_pull(delta["untypedData"]),
                 author_id=author_id,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1381,15 +1334,13 @@ class Client:
 
         # Plan participation change
         elif delta_type == "lightweight_event_rsvp":
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             take_part = delta["untypedData"]["guest_status"] == "GOING"
             self.on_plan_participation(
                 mid=mid,
                 plan=Plan._from_pull(delta["untypedData"]),
                 take_part=take_part,
                 author_id=author_id,
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1404,7 +1355,6 @@ class Client:
                 # Message reaction
                 if d.get("deltaMessageReaction"):
                     i = d["deltaMessageReaction"]
-                    thread_id, thread_type = get_thread_id_and_thread_type(i)
                     mid = i["messageId"]
                     author_id = str(i["userId"])
                     reaction = (
@@ -1416,8 +1366,7 @@ class Client:
                             mid=mid,
                             reaction=reaction,
                             author_id=author_id,
-                            thread_id=thread_id,
-                            thread_type=thread_type,
+                            thread=get_thread(metadata),
                             at=at,
                             msg=m,
                         )
@@ -1425,8 +1374,7 @@ class Client:
                         self.on_reaction_removed(
                             mid=mid,
                             author_id=author_id,
-                            thread_id=thread_id,
-                            thread_type=thread_type,
+                            thread=get_thread(metadata),
                             at=at,
                             msg=m,
                         )
@@ -1434,7 +1382,6 @@ class Client:
                 # Viewer status change
                 elif d.get("deltaChangeViewerStatus"):
                     i = d["deltaChangeViewerStatus"]
-                    thread_id, thread_type = get_thread_id_and_thread_type(i)
                     author_id = str(i["actorFbid"])
                     reason = i["reason"]
                     can_reply = i["canViewerReply"]
@@ -1442,16 +1389,14 @@ class Client:
                         if can_reply:
                             self.on_unblock(
                                 author_id=author_id,
-                                thread_id=thread_id,
-                                thread_type=thread_type,
+                                thread=get_thread(metadata),
                                 at=at,
                                 msg=m,
                             )
                         else:
                             self.on_block(
                                 author_id=author_id,
-                                thread_id=thread_id,
-                                thread_type=thread_type,
+                                thread=get_thread(metadata),
                                 at=at,
                                 msg=m,
                             )
@@ -1459,7 +1404,6 @@ class Client:
                 # Live location info
                 elif d.get("liveLocationData"):
                     i = d["liveLocationData"]
-                    thread_id, thread_type = get_thread_id_and_thread_type(i)
                     for l in i["messageLiveLocations"]:
                         mid = l["messageId"]
                         author_id = str(l["senderId"])
@@ -1468,8 +1412,7 @@ class Client:
                             mid=mid,
                             location=location,
                             author_id=author_id,
-                            thread_id=thread_id,
-                            thread_type=thread_type,
+                            thread=get_thread(metadata),
                             at=at,
                             msg=m,
                         )
@@ -1477,15 +1420,13 @@ class Client:
                 # Message deletion
                 elif d.get("deltaRecallMessageData"):
                     i = d["deltaRecallMessageData"]
-                    thread_id, thread_type = get_thread_id_and_thread_type(i)
                     mid = i["messageID"]
                     at = _util.millis_to_datetime(i["deletionTimestamp"])
                     author_id = str(i["senderID"])
                     self.on_message_unsent(
                         mid=mid,
                         author_id=author_id,
-                        thread_id=thread_id,
-                        thread_type=thread_type,
+                        thread=get_thread(metadata),
                         at=at,
                         msg=m,
                     )
@@ -1493,7 +1434,6 @@ class Client:
                 elif d.get("deltaMessageReply"):
                     i = d["deltaMessageReply"]
                     metadata = i["message"]["messageMetadata"]
-                    thread_id, thread_type = get_thread_id_and_thread_type(metadata)
                     replied_to = Message._from_reply(
                         self.session, i["repliedToMessage"]
                     )
@@ -1504,8 +1444,7 @@ class Client:
                         mid=message.id,
                         author_id=message.author,
                         message_object=message,
-                        thread_id=thread_id,
-                        thread_type=thread_type,
+                        thread=get_thread(metadata),
                         at=message.created_at,
                         metadata=metadata,
                         msg=m,
@@ -1513,7 +1452,6 @@ class Client:
 
         # New message
         elif delta.get("class") == "NewMessage":
-            thread_id, thread_type = get_thread_id_and_thread_type(metadata)
             self.on_message(
                 mid=mid,
                 author_id=author_id,
@@ -1525,8 +1463,7 @@ class Client:
                     author=author_id,
                     created_at=at,
                 ),
-                thread_id=thread_id,
-                thread_type=thread_type,
+                thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
                 msg=m,
@@ -1574,21 +1511,16 @@ class Client:
                     author_id = str(m.get("from"))
                     thread_id = m.get("thread_fbid")
                     if thread_id:
-                        thread_type = ThreadType.GROUP
-                        thread_id = str(thread_id)
+                        thread = Group(session=self.session, id=str(thread_id))
                     else:
-                        thread_type = ThreadType.USER
-                        if author_id == self._session.user_id:
+                        if author_id == self.session.user_id:
                             thread_id = m.get("to")
                         else:
                             thread_id = author_id
+                        thread = User(session=self.session, id=thread_id)
                     typing_status = TypingStatus(m.get("st"))
                     self.on_typing(
-                        author_id=author_id,
-                        status=typing_status,
-                        thread_id=thread_id,
-                        thread_type=thread_type,
-                        msg=m,
+                        author_id=author_id, status=typing_status, thread=thread, msg=m,
                     )
 
                 # Delivered
@@ -1742,8 +1674,7 @@ class Client:
         mid=None,
         author_id=None,
         message_object=None,
-        thread_id=None,
-        thread_type=ThreadType.USER,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -1754,21 +1685,19 @@ class Client:
             mid: The message ID
             author_id: The ID of the author
             message_object (Message): The message (As a `Message` object)
-            thread_id: Thread ID that the message was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the message was sent to. See :ref:`intro_threads`
+            thread: Thread that the message was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the message was sent
             metadata: Extra metadata about the message
             msg: A full set of the data received
         """
-        log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
+        log.info("{} from {} in {}".format(message_object, author_id, thread))
 
     def on_color_change(
         self,
         mid=None,
         author_id=None,
         new_color=None,
-        thread_id=None,
-        thread_type=ThreadType.USER,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -1779,25 +1708,19 @@ class Client:
             mid: The action ID
             author_id: The ID of the person who changed the color
             new_color (ThreadColor): The new color
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "Color change from {} in {} ({}): {}".format(
-                author_id, thread_id, thread_type.name, new_color
-            )
-        )
+        log.info("Color change from {} in {}: {}".format(author_id, thread, new_color))
 
     def on_emoji_change(
         self,
         mid=None,
         author_id=None,
         new_emoji=None,
-        thread_id=None,
-        thread_type=ThreadType.USER,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -1808,25 +1731,19 @@ class Client:
             mid: The action ID
             author_id: The ID of the person who changed the emoji
             new_emoji: The new emoji
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "Emoji change from {} in {} ({}): {}".format(
-                author_id, thread_id, thread_type.name, new_emoji
-            )
-        )
+        log.info("Emoji change from {} in {}: {}".format(author_id, thread, new_emoji))
 
     def on_title_change(
         self,
         mid=None,
         author_id=None,
         new_title=None,
-        thread_id=None,
-        thread_type=ThreadType.USER,
+        group=None,
         at=None,
         metadata=None,
         msg=None,
@@ -1837,27 +1754,15 @@ class Client:
             mid: The action ID
             author_id: The ID of the person who changed the title
             new_title: The new title
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            group: Group that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "Title change from {} in {} ({}): {}".format(
-                author_id, thread_id, thread_type.name, new_title
-            )
-        )
+        log.info("Title change from {} in {}: {}".format(author_id, group, new_title))
 
     def on_image_change(
-        self,
-        mid=None,
-        author_id=None,
-        new_image=None,
-        thread_id=None,
-        thread_type=ThreadType.GROUP,
-        at=None,
-        msg=None,
+        self, mid=None, author_id=None, new_image=None, group=None, at=None, msg=None,
     ):
         """Called when the client is listening, and somebody changes a thread's image.
 
@@ -1865,12 +1770,11 @@ class Client:
             mid: The action ID
             author_id: The ID of the person who changed the image
             new_image: The ID of the new image
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            group: Group that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
-        log.info("{} changed thread image in {}".format(author_id, thread_id))
+        log.info("{} changed group image in {}".format(author_id, group))
 
     def on_nickname_change(
         self,
@@ -1878,8 +1782,7 @@ class Client:
         author_id=None,
         changed_for=None,
         new_nickname=None,
-        thread_id=None,
-        thread_type=ThreadType.USER,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -1891,27 +1794,19 @@ class Client:
             author_id: The ID of the person who changed the nickname
             changed_for: The ID of the person whom got their nickname changed
             new_nickname: The new nickname
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
         log.info(
-            "Nickname change from {} in {} ({}) for {}: {}".format(
-                author_id, thread_id, thread_type.name, changed_for, new_nickname
+            "Nickname change from {} in {} for {}: {}".format(
+                author_id, thread, changed_for, new_nickname
             )
         )
 
     def on_admin_added(
-        self,
-        mid=None,
-        added_id=None,
-        author_id=None,
-        thread_id=None,
-        thread_type=ThreadType.GROUP,
-        at=None,
-        msg=None,
+        self, mid=None, added_id=None, author_id=None, group=None, at=None, msg=None,
     ):
         """Called when the client is listening, and somebody adds an admin to a group.
 
@@ -1919,21 +1814,14 @@ class Client:
             mid: The action ID
             added_id: The ID of the admin who got added
             author_id: The ID of the person who added the admins
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+            group: Group that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
-        log.info("{} added admin: {} in {}".format(author_id, added_id, thread_id))
+        log.info("{} added admin: {} in {}".format(author_id, added_id, group))
 
     def on_admin_removed(
-        self,
-        mid=None,
-        removed_id=None,
-        author_id=None,
-        thread_id=None,
-        thread_type=ThreadType.GROUP,
-        at=None,
-        msg=None,
+        self, mid=None, removed_id=None, author_id=None, group=None, at=None, msg=None,
     ):
         """Called when the client is listening, and somebody is removed as an admin in a group.
 
@@ -1941,19 +1829,18 @@ class Client:
             mid: The action ID
             removed_id: The ID of the admin who got removed
             author_id: The ID of the person who removed the admins
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+            group: Group that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
-        log.info("{} removed admin: {} in {}".format(author_id, removed_id, thread_id))
+        log.info("{} removed admin: {} in {}".format(author_id, removed_id, group))
 
     def on_approval_mode_change(
         self,
         mid=None,
         approval_mode=None,
         author_id=None,
-        thread_id=None,
-        thread_type=ThreadType.GROUP,
+        group=None,
         at=None,
         msg=None,
     ):
@@ -1963,48 +1850,35 @@ class Client:
             mid: The action ID
             approval_mode: True if approval mode is activated
             author_id: The ID of the person who changed approval mode
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+            group: Group that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         if approval_mode:
-            log.info("{} activated approval mode in {}".format(author_id, thread_id))
+            log.info("{} activated approval mode in {}".format(author_id, group))
         else:
-            log.info("{} disabled approval mode in {}".format(author_id, thread_id))
+            log.info("{} disabled approval mode in {}".format(author_id, group))
 
     def on_message_seen(
-        self,
-        seen_by=None,
-        thread_id=None,
-        thread_type=ThreadType.USER,
-        seen_at=None,
-        at=None,
-        metadata=None,
-        msg=None,
+        self, seen_by=None, thread=None, seen_at=None, at=None, metadata=None, msg=None,
     ):
         """Called when the client is listening, and somebody marks a message as seen.
 
         Args:
             seen_by: The ID of the person who marked the message as seen
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             seen_at (datetime.datetime): When the person saw the message
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "Messages seen by {} in {} ({}) at {}".format(
-                seen_by, thread_id, thread_type.name, seen_at
-            )
-        )
+        log.info("Messages seen by {} in {} at {}".format(seen_by, thread, seen_at))
 
     def on_message_delivered(
         self,
         msg_ids=None,
         delivered_for=None,
-        thread_id=None,
-        thread_type=ThreadType.USER,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -2014,15 +1888,14 @@ class Client:
         Args:
             msg_ids: The messages that are marked as delivered
             delivered_for: The person that marked the messages as delivered
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
         log.info(
-            "Messages {} delivered to {} in {} ({}) at {}".format(
-                msg_ids, delivered_for, thread_id, thread_type.name, at
+            "Messages {} delivered to {} in {} at {}".format(
+                msg_ids, delivered_for, thread, at
             )
         )
 
@@ -2039,45 +1912,28 @@ class Client:
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "Marked messages as seen in threads {} at {}".format(
-                [(x[0], x[1].name) for x in threads], seen_at
-            )
-        )
+        log.info("Marked messages as seen in threads {} at {}".format(threads, seen_at))
 
     def on_message_unsent(
-        self,
-        mid=None,
-        author_id=None,
-        thread_id=None,
-        thread_type=None,
-        at=None,
-        msg=None,
+        self, mid=None, author_id=None, thread=None, at=None, msg=None,
     ):
         """Called when the client is listening, and someone unsends (deletes for everyone) a message.
 
         Args:
             mid: ID of the unsent message
             author_id: The ID of the person who unsent the message
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info(
-            "{} unsent the message {} in {} ({}) at {}".format(
-                author_id, repr(mid), thread_id, thread_type.name, at
+            "{} unsent the message {} in {} at {}".format(
+                author_id, repr(mid), thread, at
             )
         )
 
     def on_people_added(
-        self,
-        mid=None,
-        added_ids=None,
-        author_id=None,
-        thread_id=None,
-        at=None,
-        msg=None,
+        self, mid=None, added_ids=None, author_id=None, group=None, at=None, msg=None,
     ):
         """Called when the client is listening, and somebody adds people to a group thread.
 
@@ -2085,22 +1941,14 @@ class Client:
             mid: The action ID
             added_ids: The IDs of the people who got added
             author_id: The ID of the person who added the people
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+            group: Group that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
-        log.info(
-            "{} added: {} in {}".format(author_id, ", ".join(added_ids), thread_id)
-        )
+        log.info("{} added: {} in {}".format(author_id, ", ".join(added_ids), group))
 
     def on_person_removed(
-        self,
-        mid=None,
-        removed_id=None,
-        author_id=None,
-        thread_id=None,
-        at=None,
-        msg=None,
+        self, mid=None, removed_id=None, author_id=None, group=None, at=None, msg=None,
     ):
         """Called when the client is listening, and somebody removes a person from a group thread.
 
@@ -2108,11 +1956,11 @@ class Client:
             mid: The action ID
             removed_id: The ID of the person who got removed
             author_id: The ID of the person who removed the person
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
+            group: Group that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
-        log.info("{} removed: {} in {}".format(author_id, removed_id, thread_id))
+        log.info("{} removed: {} in {}".format(author_id, removed_id, group))
 
     def on_friend_request(self, from_id=None, msg=None):
         """Called when the client is listening, and somebody sends a friend request.
@@ -2136,16 +1984,13 @@ class Client:
         """
         log.info("Inbox event: {}, {}, {}".format(unseen, unread, recent_unread))
 
-    def on_typing(
-        self, author_id=None, status=None, thread_id=None, thread_type=None, msg=None
-    ):
+    def on_typing(self, author_id=None, status=None, thread=None, msg=None):
         """Called when the client is listening, and somebody starts or stops typing into a chat.
 
         Args:
             author_id: The ID of the person who sent the action
             status (TypingStatus): The typing status
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             msg: A full set of the data received
         """
         pass
@@ -2158,8 +2003,7 @@ class Client:
         game_name=None,
         score=None,
         leaderboard=None,
-        thread_id=None,
-        thread_type=None,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -2173,27 +2017,15 @@ class Client:
             game_name: Name of the game
             score: Score obtained in the game
             leaderboard: Actual leader board of the game in the thread
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            '{} played "{}" in {} ({})'.format(
-                author_id, game_name, thread_id, thread_type.name
-            )
-        )
+        log.info('{} played "{}" in {}'.format(author_id, game_name, thread))
 
     def on_reaction_added(
-        self,
-        mid=None,
-        reaction=None,
-        author_id=None,
-        thread_id=None,
-        thread_type=None,
-        at=None,
-        msg=None,
+        self, mid=None, reaction=None, author_id=None, thread=None, at=None, msg=None,
     ):
         """Called when the client is listening, and somebody reacts to a message.
 
@@ -2202,83 +2034,56 @@ class Client:
             reaction (MessageReaction): Reaction
             add_reaction: Whether user added or removed reaction
             author_id: The ID of the person who reacted to the message
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info(
-            "{} reacted to message {} with {} in {} ({})".format(
-                author_id, mid, reaction.name, thread_id, thread_type.name
+            "{} reacted to message {} with {} in {}".format(
+                author_id, mid, reaction.name, thread
             )
         )
 
     def on_reaction_removed(
-        self,
-        mid=None,
-        author_id=None,
-        thread_id=None,
-        thread_type=None,
-        at=None,
-        msg=None,
+        self, mid=None, author_id=None, thread=None, at=None, msg=None,
     ):
         """Called when the client is listening, and somebody removes reaction from a message.
 
         Args:
             mid: Message ID, that user reacted to
             author_id: The ID of the person who removed reaction
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info(
-            "{} removed reaction from {} message in {} ({})".format(
-                author_id, mid, thread_id, thread_type
-            )
+            "{} removed reaction from {} message in {}".format(author_id, mid, thread)
         )
 
-    def on_block(
-        self, author_id=None, thread_id=None, thread_type=None, at=None, msg=None
-    ):
+    def on_block(self, author_id=None, thread=None, at=None, msg=None):
         """Called when the client is listening, and somebody blocks client.
 
         Args:
             author_id: The ID of the person who blocked
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
-        log.info(
-            "{} blocked {} ({}) thread".format(author_id, thread_id, thread_type.name)
-        )
+        log.info("{} blocked {}".format(author_id, thread))
 
-    def on_unblock(
-        self, author_id=None, thread_id=None, thread_type=None, at=None, msg=None
-    ):
+    def on_unblock(self, author_id=None, thread=None, at=None, msg=None):
         """Called when the client is listening, and somebody blocks client.
 
         Args:
             author_id: The ID of the person who unblocked
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
-        log.info(
-            "{} unblocked {} ({}) thread".format(author_id, thread_id, thread_type.name)
-        )
+        log.info("{} unblocked {}".format(author_id, thread))
 
     def on_live_location(
-        self,
-        mid=None,
-        location=None,
-        author_id=None,
-        thread_id=None,
-        thread_type=None,
-        at=None,
-        msg=None,
+        self, mid=None, location=None, author_id=None, thread=None, at=None, msg=None,
     ):
         """Called when the client is listening and somebody sends live location info.
 
@@ -2286,14 +2091,13 @@ class Client:
             mid: The action ID
             location (LiveLocationAttachment): Sent location info
             author_id: The ID of the person who sent location info
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             msg: A full set of the data received
         """
         log.info(
-            "{} sent live location info in {} ({}) with latitude {} and longitude {}".format(
-                author_id, thread_id, thread_type, location.latitude, location.longitude
+            "{} sent live location info in {} with latitude {} and longitude {}".format(
+                author_id, thread, location.latitude, location.longitude
             )
         )
 
@@ -2302,8 +2106,7 @@ class Client:
         mid=None,
         caller_id=None,
         is_video_call=None,
-        thread_id=None,
-        thread_type=None,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -2317,15 +2120,12 @@ class Client:
             mid: The action ID
             caller_id: The ID of the person who started the call
             is_video_call: True if it's video call
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "{} started call in {} ({})".format(caller_id, thread_id, thread_type.name)
-        )
+        log.info("{} started call in {}".format(caller_id, thread))
 
     def on_call_ended(
         self,
@@ -2333,8 +2133,7 @@ class Client:
         caller_id=None,
         is_video_call=None,
         call_duration=None,
-        thread_id=None,
-        thread_type=None,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -2349,23 +2148,19 @@ class Client:
             caller_id: The ID of the person who ended the call
             is_video_call: True if it was video call
             call_duration (datetime.timedelta): Call duration
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "{} ended call in {} ({})".format(caller_id, thread_id, thread_type.name)
-        )
+        log.info("{} ended call in {}".format(caller_id, thread))
 
     def on_user_joined_call(
         self,
         mid=None,
         joined_id=None,
         is_video_call=None,
-        thread_id=None,
-        thread_type=None,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -2376,23 +2171,19 @@ class Client:
             mid: The action ID
             joined_id: The ID of the person who joined the call
             is_video_call: True if it's video call
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "{} joined call in {} ({})".format(joined_id, thread_id, thread_type.name)
-        )
+        log.info("{} joined call in {}".format(joined_id, thread))
 
     def on_poll_created(
         self,
         mid=None,
         poll=None,
         author_id=None,
-        thread_id=None,
-        thread_type=None,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -2403,17 +2194,12 @@ class Client:
             mid: The action ID
             poll (Poll): Created poll
             author_id: The ID of the person who created the poll
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "{} created poll {} in {} ({})".format(
-                author_id, poll, thread_id, thread_type.name
-            )
-        )
+        log.info("{} created poll {} in {}".format(author_id, poll, thread))
 
     def on_poll_voted(
         self,
@@ -2422,8 +2208,7 @@ class Client:
         added_options=None,
         removed_options=None,
         author_id=None,
-        thread_id=None,
-        thread_type=None,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -2434,25 +2219,19 @@ class Client:
             mid: The action ID
             poll (Poll): Poll, that user voted in
             author_id: The ID of the person who voted in the poll
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "{} voted in poll {} in {} ({})".format(
-                author_id, poll, thread_id, thread_type.name
-            )
-        )
+        log.info("{} voted in poll {} in {}".format(author_id, poll, thread))
 
     def on_plan_created(
         self,
         mid=None,
         plan=None,
         author_id=None,
-        thread_id=None,
-        thread_type=None,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -2463,50 +2242,34 @@ class Client:
             mid: The action ID
             plan (Plan): Created plan
             author_id: The ID of the person who created the plan
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "{} created plan {} in {} ({})".format(
-                author_id, plan, thread_id, thread_type.name
-            )
-        )
+        log.info("{} created plan {} in {}".format(author_id, plan, thread))
 
     def on_plan_ended(
-        self,
-        mid=None,
-        plan=None,
-        thread_id=None,
-        thread_type=None,
-        at=None,
-        metadata=None,
-        msg=None,
+        self, mid=None, plan=None, thread=None, at=None, metadata=None, msg=None,
     ):
         """Called when the client is listening, and a plan ends.
 
         Args:
             mid: The action ID
             plan (Plan): Ended plan
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "Plan {} has ended in {} ({})".format(plan, thread_id, thread_type.name)
-        )
+        log.info("Plan {} has ended in {}".format(plan, thread))
 
     def on_plan_edited(
         self,
         mid=None,
         plan=None,
         author_id=None,
-        thread_id=None,
-        thread_type=None,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -2517,25 +2280,19 @@ class Client:
             mid: The action ID
             plan (Plan): Edited plan
             author_id: The ID of the person who edited the plan
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "{} edited plan {} in {} ({})".format(
-                author_id, plan, thread_id, thread_type.name
-            )
-        )
+        log.info("{} edited plan {} in {}".format(author_id, plan, thread))
 
     def on_plan_deleted(
         self,
         mid=None,
         plan=None,
         author_id=None,
-        thread_id=None,
-        thread_type=None,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -2546,17 +2303,12 @@ class Client:
             mid: The action ID
             plan (Plan): Deleted plan
             author_id: The ID of the person who deleted the plan
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
-        log.info(
-            "{} deleted plan {} in {} ({})".format(
-                author_id, plan, thread_id, thread_type.name
-            )
-        )
+        log.info("{} deleted plan {} in {}".format(author_id, plan, thread))
 
     def on_plan_participation(
         self,
@@ -2564,8 +2316,7 @@ class Client:
         plan=None,
         take_part=None,
         author_id=None,
-        thread_id=None,
-        thread_type=None,
+        thread=None,
         at=None,
         metadata=None,
         msg=None,
@@ -2577,23 +2328,18 @@ class Client:
             plan (Plan): Plan
             take_part (bool): Whether the person takes part in the plan or not
             author_id: The ID of the person who will participate in the plan or not
-            thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
-            thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
+            thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action
             msg: A full set of the data received
         """
         if take_part:
             log.info(
-                "{} will take part in {} in {} ({})".format(
-                    author_id, plan, thread_id, thread_type.name
-                )
+                "{} will take part in {} in {} ({})".format(author_id, plan, thread)
             )
         else:
             log.info(
-                "{} won't take part in {} in {} ({})".format(
-                    author_id, plan, thread_id, thread_type.name
-                )
+                "{} won't take part in {} in {} ({})".format(author_id, plan, thread)
             )
 
     def on_qprimer(self, at=None, msg=None):

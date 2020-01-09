@@ -6,27 +6,6 @@ from . import _util, _exception, _session
 from typing import MutableMapping, Any, Iterable, Tuple
 
 
-class ThreadType(Enum):
-    """Used to specify what type of Facebook thread is being used.
-
-    See :ref:`intro_threads` for more info.
-    """
-
-    USER = 1
-    GROUP = 2
-    PAGE = 3
-
-    def _to_class(self):
-        """Convert this enum value to the corresponding class."""
-        from . import _user, _group, _page
-
-        return {
-            ThreadType.USER: _user.User,
-            ThreadType.GROUP: _group.Group,
-            ThreadType.PAGE: _page.Page,
-        }[self]
-
-
 class ThreadLocation(Enum):
     """Used to specify where a thread is located (inbox, pending, archived, other)."""
 
@@ -106,7 +85,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         )
         data["lightweight_action_attachment[lwa_type]"] = "WAVE"
         # TODO: This!
-        # if thread_type == ThreadType.USER:
+        # if isinstance(self, _user.User):
         #     data["specific_to_list[0]"] = "fbid:{}".format(thread_id)
         message_id, thread_id = self.session._do_send_request(data)
         return message_id
@@ -372,7 +351,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
             "typ": "1" if typing else "0",
             "thread": self.id,
             # TODO: This
-            "to": self.id if thread_type == ThreadType.USER else "",
+            # "to": self.id if isinstance(self, _user.User) else "",
             "source": "mercury-chat",
         }
         j = self.session._payload_post("/ajax/messaging/typ.php", data)

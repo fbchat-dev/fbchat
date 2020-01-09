@@ -1,6 +1,6 @@
 import pytest
 
-from fbchat import Poll, PollOption, ThreadType
+from fbchat import Poll, PollOption
 from utils import random_hex, subset
 
 pytestmark = pytest.mark.online
@@ -49,12 +49,7 @@ def poll_data(request, client1, group, catch_event):
 
 def test_create_poll(client1, group, catch_event, poll_data):
     event, poll, _ = poll_data
-    assert subset(
-        event,
-        author_id=client1.id,
-        thread_id=group["id"],
-        thread_type=ThreadType.GROUP,
-    )
+    assert subset(event, author_id=client1.id, thread=group)
     assert subset(
         vars(event["poll"]), title=poll.title, options_count=len(poll.options)
     )
@@ -88,12 +83,7 @@ def test_update_poll_vote(client1, group, catch_event, poll_data):
             new_options=new_options,
         )
 
-    assert subset(
-        x.res,
-        author_id=client1.id,
-        thread_id=group["id"],
-        thread_type=ThreadType.GROUP,
-    )
+    assert subset(x.res, author_id=client1.id, thread=group)
     assert subset(
         vars(x.res["poll"]), title=poll.title, options_count=len(options + new_options)
     )

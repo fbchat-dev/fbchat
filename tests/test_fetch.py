@@ -1,7 +1,7 @@
 import pytest
 
 from os import path
-from fbchat import ThreadType, Message, Mention, EmojiSize, Sticker
+from fbchat import Message, Mention, EmojiSize, Sticker
 from utils import subset, STICKER_LIST, EMOJI_LIST
 
 pytestmark = pytest.mark.online

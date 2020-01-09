@@ -1,6 +1,6 @@
 import pytest
 
-from fbchat import Plan, FBchatFacebookError, ThreadType
+from fbchat import Plan, FBchatFacebookError
 from utils import random_hex, subset
 from time import time
 
@@ -93,7 +93,7 @@ def test_on_plan_ended(client, thread, catch_event, compare):
         x.wait(180)
     assert subset(
         x.res,
-        thread_id=client.id if thread["type"] == ThreadType.USER else thread["id"],
+        thread_id=client.id if thread["type"] is None else thread["id"],
         thread_type=thread["type"],
     )
 

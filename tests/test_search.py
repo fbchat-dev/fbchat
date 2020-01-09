@@ -1,5 +1,4 @@
 import pytest
-from fbchat import ThreadType
 
 pytestmark = pytest.mark.online
 

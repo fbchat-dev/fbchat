@@ -17,8 +17,6 @@ Threads
 -------
 
 .. autoclass:: Thread()
-.. autoclass:: ThreadType(Enum)
-    :undoc-members:
 .. autoclass:: Page()
 .. autoclass:: User()
 .. autoclass:: Group()

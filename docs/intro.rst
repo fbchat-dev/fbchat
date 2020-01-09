@@ -44,11 +44,7 @@ When you're done using the client, and want to securely logout, use `Client.logo
 Threads
 -------
 
-A thread can refer to two things: A Messenger group chat or a single Facebook user
-
-`ThreadType` is an enumerator with two values: ``USER`` and ``GROUP``.
-These will specify whether the thread is a single user chat or a group chat.
-This is required for many of ``fbchat``'s functions, since Facebook differentiates between these two internally
+A thread can refer to two things: A Messenger group chat (`Group`) or a single Facebook user (`User`).
 
 Searching for group chats and finding their ID can be done via. `Client.search_for_groups`,
 and searching for users is possible via. `Client.search_for_users`. See :ref:`intro_fetching`
@@ -68,13 +64,14 @@ The same method can be applied to some user accounts, though if they've set a cu
 Here's an snippet showing the usage of thread IDs and thread types, where ``<user id>`` and ``<group id>``
 corresponds to the ID of a single user, and the ID of a group respectively::
 
-    client.send(Message(text='<message>'), thread_id='<user id>', thread_type=ThreadType.USER)
-    client.send(Message(text='<message>'), thread_id='<group id>', thread_type=ThreadType.GROUP)
+    user.send(Message(text='<message>'))
+    group.send(Message(text='<message>'))
 
-Some functions (e.g. `Client.change_thread_color`) don't require a thread type, so in these cases you just provide the thread ID::
+Some functions don't require a thread type, so in these cases you just provide the thread ID::
 
-    client.change_thread_color(ThreadColor.BILOBA_FLOWER, thread_id='<user id>')
-    client.change_thread_color(ThreadColor.MESSENGER_BLUE, thread_id='<group id>')
+    thread = fbchat.Thread(session=session, id="<user-or-group-id>")
+    thread.set_color(ThreadColor.BILOBA_FLOWER)
+    thread.set_color(ThreadColor.MESSENGER_BLUE)
 
 
 .. _intro_message_ids:
@@ -89,7 +86,7 @@ Some of ``fbchat``'s functions require these ID's, like `Client.react_to_message
 and some of then provide this ID, like `Client.send`.
 This snippet shows how to send a message, and then use the returned ID to react to that message with a 😍 emoji::
 
-    message_id = client.send(Message(text='message'), thread_id=thread_id, thread_type=thread_type)
+    message_id = thread.send(Message(text='message'))
     client.react_to_message(message_id, MessageReaction.LOVE)
 
 
@@ -106,7 +103,8 @@ like adding users to and removing users from a group chat, logically only works 
 The simplest way of using ``fbchat`` is to send a message.
 The following snippet will, as you've probably already figured out, send the message ``test message`` to your account::
 
-    message_id = client.send(Message(text='test message'), thread_id=session.user_id, thread_type=ThreadType.USER)
+    user = User(session=session, id=session.user_id)
+    message_id = user.send(Message(text='test message'))
 
 You can see a full example showing all the possible thread interactions with ``fbchat`` by going to :ref:`examples`
 
@@ -173,7 +171,7 @@ meaning it will simply print information to the console when an event happens
 The event actions can be changed by subclassing the `Client`, and then overwriting the event methods::
 
     class CustomClient(Client):
-        def on_message(self, mid, author_id, message_object, thread_id, thread_type, ts, metadata, msg, **kwargs):
+        def on_message(self, mid, author_id, message_object, thread, ts, metadata, msg, **kwargs):
             # Do something with message_object here
             pass
 
@@ -182,7 +180,7 @@ The event actions can be changed by subclassing the `Client`, and then overwriti
 **Notice:** The following snippet is as equally valid as the previous one::
 
     class CustomClient(Client):
-        def on_message(self, message_object, author_id, thread_id, thread_type, **kwargs):
+        def on_message(self, message_object, author_id, thread, **kwargs):
             # Do something with message_object here
             pass
 

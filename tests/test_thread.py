@@ -1,12 +1,6 @@
 import pytest
 import fbchat
-from fbchat import ThreadType, ThreadColor, ThreadABC, Thread
-
-
-def test_thread_type_to_class():
-    assert fbchat.User == ThreadType.USER._to_class()
-    assert fbchat.Group == ThreadType.GROUP._to_class()
-    assert fbchat.Page == ThreadType.PAGE._to_class()
+from fbchat import ThreadColor, ThreadABC, Thread
 
 
 def test_thread_color_from_graphql():
