@@ -6,7 +6,7 @@ from ._core import log
 from . import _util, _graphql, _session
 
 from ._exception import FBchatException, FBchatFacebookError
-from ._thread import ThreadLocation, ThreadColor
+from ._thread import ThreadLocation
 from ._user import TypingStatus, User, UserData, ActiveStatus
 from ._group import Group, GroupData
 from ._page import Page, PageData
@@ -947,12 +947,11 @@ class Client:
 
         # Color change
         elif delta_type == "change_thread_theme":
-            new_color = ThreadColor._from_graphql(delta["untypedData"]["theme_color"])
             thread = get_thread(metadata)
             self.on_color_change(
                 mid=mid,
                 author_id=author_id,
-                new_color=new_color,
+                new_color=ThreadABC._parse_color(delta["untypedData"]["theme_color"]),
                 thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
@@ -1566,7 +1565,7 @@ class Client:
         Args:
             mid: The action ID
             author_id: The ID of the person who changed the color
-            new_color (ThreadColor): The new color
+            new_color: The new color. Not limited to the ones in `ThreadABC.set_color`
             thread: Thread that the action was sent to. See :ref:`intro_threads`
             at (datetime.datetime): When the action was executed
             metadata: Extra metadata about the action

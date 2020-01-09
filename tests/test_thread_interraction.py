@@ -1,6 +1,6 @@
 import pytest
 
-from fbchat import Message, FBchatFacebookError, TypingStatus, ThreadColor
+from fbchat import Message, FBchatFacebookError, TypingStatus
 from utils import random_hex, subset
 from os import path
 
@@ -91,14 +91,10 @@ def test_change_image_remote(client1, group, catch_event):
     )
 
 
-@pytest.mark.parametrize(
-    "color",
-    [x for x in ThreadColor if x in [ThreadColor.MESSENGER_BLUE, ThreadColor.PUMPKIN]],
-)
-def test_change_color(client, catch_event, compare, color):
+def test_change_color(client, catch_event, compare):
     with catch_event("on_color_change") as x:
-        client.change_thread_color(color)
-    assert compare(x, new_color=color)
+        client.change_thread_color("#44bec7")
+    assert compare(x, new_color="#44bec7")
 
 
 @pytest.mark.xfail(raises=FBchatFacebookError, reason="Should fail, but doesn't")

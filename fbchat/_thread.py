@@ -4,7 +4,7 @@ import collections
 import datetime
 from ._core import attrs_default, Enum, Image
 from . import _util, _exception, _session, _graphql, _attachment, _file, _plan
-from typing import MutableMapping, Any, Iterable, Tuple
+from typing import MutableMapping, Any, Iterable, Tuple, Optional
 
 
 class ThreadLocation(Enum):
@@ -16,39 +16,29 @@ class ThreadLocation(Enum):
     OTHER = "OTHER"
 
 
-class ThreadColor(Enum):
-    """Used to specify a thread colors."""
-
-    MESSENGER_BLUE = "#0084ff"
-    VIKING = "#44bec7"
-    GOLDEN_POPPY = "#ffc300"
-    RADICAL_RED = "#fa3c4c"
-    SHOCKING = "#d696bb"
-    PICTON_BLUE = "#6699cc"
-    FREE_SPEECH_GREEN = "#13cf13"
-    PUMPKIN = "#ff7e29"
-    LIGHT_CORAL = "#e68585"
-    MEDIUM_SLATE_BLUE = "#7646ff"
-    DEEP_SKY_BLUE = "#20cef5"
-    FERN = "#67b868"
-    CAMEO = "#d4a88c"
-    BRILLIANT_ROSE = "#ff5ca1"
-    BILOBA_FLOWER = "#a695c7"
-    TICKLE_ME_PINK = "#ff7ca8"
-    MALACHITE = "#1adb5b"
-    RUBY = "#f01d6a"
-    DARK_TANGERINE = "#ff9c19"
-    BRIGHT_TURQUOISE = "#0edcde"
-
-    @classmethod
-    def _from_graphql(cls, color):
-        if color is None:
-            return None
-        if not color:
-            return cls.MESSENGER_BLUE
-        color = color[2:]  # Strip the alpha value
-        value = "#{}".format(color.lower())
-        return cls._extend_if_invalid(value)
+DEFAULT_COLOR = "#0084ff"
+SETABLE_COLORS = (
+    DEFAULT_COLOR,
+    "#44bec7",
+    "#ffc300",
+    "#fa3c4c",
+    "#d696bb",
+    "#6699cc",
+    "#13cf13",
+    "#ff7e29",
+    "#e68585",
+    "#7646ff",
+    "#20cef5",
+    "#67b868",
+    "#d4a88c",
+    "#ff5ca1",
+    "#a695c7",
+    "#ff7ca8",
+    "#1adb5b",
+    "#f01d6a",
+    "#ff9c19",
+    "#0edcde",
+)
 
 
 class ThreadABC(metaclass=abc.ABCMeta):
@@ -375,22 +365,50 @@ class ThreadABC(metaclass=abc.ABCMeta):
             "/messaging/save_thread_nickname/?source=thread_settings&dpr=1", data
         )
 
-    def set_color(self, color: ThreadColor):
+    def set_color(self, color: str):
         """Change thread color.
+
+        The new color must be one of the following:
+
+            "#0084ff", "#44bec7", "#ffc300", "#fa3c4c", "#d696bb", "#6699cc", "#13cf13",
+            "#ff7e29", "#e68585", "#7646ff", "#20cef5", "#67b868", "#d4a88c", "#ff5ca1",
+            "#a695c7", "#ff7ca8", "#1adb5b", "#f01d6a", "#ff9c19" or "#0edcde".
+
+        The default is "#0084ff".
+
+        This list is subject to change in the future!
 
         Args:
             color: New thread color
         """
-        data = {
-            "color_choice": color.value if color != ThreadColor.MESSENGER_BLUE else "",
-            "thread_or_other_fbid": self.id,
-        }
+        if color not in SETABLE_COLORS:
+            raise ValueError(
+                "Invalid color! Please use one of: {}".format(SETABLE_COLORS)
+            )
+
+        # Set color to "" if DEFAULT_COLOR. Just how the endpoint works...
+        if color == DEFAULT_COLOR:
+            color = ""
+
+        data = {"color_choice": color, "thread_or_other_fbid": self.id}
         j = self.session._payload_post(
             "/messaging/save_thread_color/?source=thread_settings&dpr=1", data
         )
 
+    # def set_theme(self, theme_id: str):
+    #     data = {
+    #         "client_mutation_id": "0",
+    #         "actor_id": self.session.user_id,
+    #         "thread_id": self.id,
+    #         "theme_id": theme_id,
+    #         "source": "SETTINGS",
+    #     }
+    #     j = self.session._graphql_requests(
+    #         _graphql.from_doc_id("1768656253222505", {"data": data})
+    #     )
+
     def set_emoji(self, emoji: str):
-        """Change thread color.
+        """Change thread emoji.
 
         Args:
             emoji: New thread emoji
@@ -542,14 +560,21 @@ class ThreadABC(metaclass=abc.ABCMeta):
         return j
 
     @staticmethod
+    def _parse_color(inp: Optional[str]) -> str:
+        if not inp:
+            return DEFAULT_COLOR
+        # Strip the alpha value, and lower the string
+        return "#{}".format(inp[2:].lower())
+
+    @staticmethod
     def _parse_customization_info(data: Any) -> MutableMapping[str, Any]:
-        if data is None or data.get("customization_info") is None:
-            return {}
+        if not data or not data.get("customization_info"):
+            return {"emoji": None, "color": DEFAULT_COLOR}
         info = data["customization_info"]
 
         rtn = {
             "emoji": info.get("emoji"),
-            "color": ThreadColor._from_graphql(info.get("outgoing_bubble_color")),
+            "color": ThreadABC._parse_color(info.get("outgoing_bubble_color")),
         }
         if (
             data.get("thread_type") == "GROUP"

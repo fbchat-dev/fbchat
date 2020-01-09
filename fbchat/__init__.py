@@ -14,7 +14,7 @@ from . import _core, _util
 from ._core import Image
 from ._exception import FBchatException, FBchatFacebookError
 from ._session import Session
-from ._thread import ThreadLocation, ThreadColor, ThreadABC, Thread
+from ._thread import ThreadLocation, ThreadABC, Thread
 from ._user import TypingStatus, User, UserData, ActiveStatus
 from ._group import Group, GroupData
 from ._page import Page, PageData

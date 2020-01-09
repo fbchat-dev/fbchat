@@ -70,8 +70,8 @@ corresponds to the ID of a single user, and the ID of a group respectively::
 Some functions don't require a thread type, so in these cases you just provide the thread ID::
 
     thread = fbchat.Thread(session=session, id="<user-or-group-id>")
-    thread.set_color(ThreadColor.BILOBA_FLOWER)
-    thread.set_color(ThreadColor.MESSENGER_BLUE)
+    thread.set_color("#a695c7")
+    thread.set_color("#67b868")
 
 
 .. _intro_message_ids:

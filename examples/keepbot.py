@@ -4,7 +4,7 @@ import fbchat
 old_thread_id = "1234567890"
 
 # Change these to match your liking
-old_color = fbchat.ThreadColor.MESSENGER_BLUE
+old_color = "#0084ff"
 old_emoji = "👍"
 old_title = "Old group chat name"
 old_nicknames = {

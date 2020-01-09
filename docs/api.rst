@@ -54,8 +54,6 @@ Miscellaneous
 
 .. autoclass:: ThreadLocation(Enum)
     :undoc-members:
-.. autoclass:: ThreadColor(Enum)
-    :undoc-members:
 .. autoclass:: ActiveStatus()
 .. autoclass:: TypingStatus(Enum)
     :undoc-members:

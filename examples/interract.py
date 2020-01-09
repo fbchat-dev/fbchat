@@ -54,8 +54,8 @@ thread.set_nickname(fbchat.User(session=session, id="<user id>"), "<new nickname
 # Will set the typing status of the thread
 thread.start_typing()
 
-# Will change the thread color to `MESSENGER_BLUE`
-thread.set_color(fbchat.ThreadColor.MESSENGER_BLUE)
+# Will change the thread color to #0084ff
+thread.set_color("#0084ff")
 
 # Will change the thread emoji to `👍`
 thread.set_emoji("👍")
