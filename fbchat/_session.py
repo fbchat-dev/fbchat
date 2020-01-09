@@ -98,6 +98,19 @@ def _2fa_helper(session, code, r):
     return r
 
 
+def get_error_data(html, url):
+    """Get error code and message from a request."""
+    try:
+        code = _util.get_url_parameter(url, "e")
+    except IndexError:
+        code = None
+
+    soup = bs4.BeautifulSoup(
+        html, "html.parser", parse_only=bs4.SoupStrainer("div", id="login_error"),
+    )
+    return code, soup.get_text() or None
+
+
 @attr.s(slots=True, kw_only=kw_only, repr=False)
 class Session:
     """Stores and manages state required for most Facebook requests.
@@ -174,9 +187,11 @@ class Session:
         if is_home(r.url):
             return cls._from_session(session=session)
         else:
-            raise _exception.FBchatException(
-                "Login failed. Check email/password. "
-                "(Failed on url: {})".format(r.url)
+            code, msg = get_error_data(r.text, r.url)
+            raise _exception.FBchatFacebookError(
+                "Login failed (Failed on url: {})".format(r.url),
+                fb_error_code=code,
+                fb_error_message=msg,
             )
 
     def is_logged_in(self):
@@ -225,7 +240,12 @@ class Session:
             fb_dtsg = fb_dtsg_element["value"]
         else:
             # Fall back to searching with a regex
-            fb_dtsg = FB_DTSG_REGEX.search(r.text).group(1)
+            res = FB_DTSG_REGEX.search(r.text)
+            if not res:
+                raise _exception.FBchatException(
+                    "Failed loading session: Could not find fb_dtsg"
+                )
+            fb_dtsg = res.group(1)
 
         revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])
 
