@@ -24,7 +24,7 @@ from ._quick_reply import (
     QuickReplyEmail,
 )
 from ._poll import Poll, PollOption
-from ._plan import ACONTEXT, Plan
+from ._plan import ACONTEXT, PlanData
 
 
 class Client:
@@ -646,7 +646,7 @@ class Client:
         """
         data = {"event_reminder_id": plan_id}
         j = self._payload_post("/ajax/eventreminder", data)
-        return Plan._from_fetch(j)
+        return PlanData._from_fetch(self.session, j)
 
     def _get_private_data(self):
         (j,) = self.graphql_requests(_graphql.from_doc_id("1868889766468115", {}))
@@ -1284,7 +1284,7 @@ class Client:
         elif delta_type == "lightweight_event_create":
             self.on_plan_created(
                 mid=mid,
-                plan=Plan._from_pull(delta["untypedData"]),
+                plan=PlanData._from_pull(self.session, delta["untypedData"]),
                 author_id=author_id,
                 thread=get_thread(metadata),
                 at=at,
@@ -1296,7 +1296,7 @@ class Client:
         elif delta_type == "lightweight_event_notify":
             self.on_plan_ended(
                 mid=mid,
-                plan=Plan._from_pull(delta["untypedData"]),
+                plan=PlanData._from_pull(self.session, delta["untypedData"]),
                 thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
@@ -1307,7 +1307,7 @@ class Client:
         elif delta_type == "lightweight_event_update":
             self.on_plan_edited(
                 mid=mid,
-                plan=Plan._from_pull(delta["untypedData"]),
+                plan=PlanData._from_pull(self.session, delta["untypedData"]),
                 author_id=author_id,
                 thread=get_thread(metadata),
                 at=at,
@@ -1319,7 +1319,7 @@ class Client:
         elif delta_type == "lightweight_event_delete":
             self.on_plan_deleted(
                 mid=mid,
-                plan=Plan._from_pull(delta["untypedData"]),
+                plan=PlanData._from_pull(self.session, delta["untypedData"]),
                 author_id=author_id,
                 thread=get_thread(metadata),
                 at=at,
@@ -1332,7 +1332,7 @@ class Client:
             take_part = delta["untypedData"]["guest_status"] == "GOING"
             self.on_plan_participation(
                 mid=mid,
-                plan=Plan._from_pull(delta["untypedData"]),
+                plan=PlanData._from_pull(self.session, delta["untypedData"]),
                 take_part=take_part,
                 author_id=author_id,
                 thread=get_thread(metadata),

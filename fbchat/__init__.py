@@ -31,7 +31,7 @@ from ._quick_reply import (
     QuickReplyEmail,
 )
 from ._poll import Poll, PollOption
-from ._plan import GuestStatus, Plan
+from ._plan import GuestStatus, Plan, PlanData
 
 from ._client import Client
 

@@ -1,7 +1,7 @@
 import attr
 import json
 from ._core import attrs_default, Enum
-from . import _util
+from . import _util, _session
 
 
 class GuestStatus(Enum):
@@ -19,14 +19,22 @@ ACONTEXT = {
 
 @attrs_default
 class Plan:
-    """Represents a plan."""
+    """Base model for plans."""
+
+    #: The session to use when making requests.
+    session = attr.ib(type=_session.Session)
+    #: The plan's unique identifier.
+    id = attr.ib(converter=str)
+
+
+@attrs_default
+class PlanData(Plan):
+    """Represents data about a plan."""
 
     #: Plan time (datetime), only precise down to the minute
     time = attr.ib()
     #: Plan title
     title = attr.ib()
-    #: ID of the plan
-    id = attr.ib(None)
     #: Plan location name
     location = attr.ib(None, converter=lambda x: x or "")
     #: Plan location ID
@@ -64,8 +72,9 @@ class Plan:
         ]
 
     @classmethod
-    def _from_pull(cls, data):
+    def _from_pull(cls, session, data):
         return cls(
+            session=session,
             id=data.get("event_id"),
             time=_util.seconds_to_datetime(int(data.get("event_time"))),
             title=data.get("event_title"),
@@ -79,8 +88,9 @@ class Plan:
         )
 
     @classmethod
-    def _from_fetch(cls, data):
+    def _from_fetch(cls, session, data):
         return cls(
+            session=session,
             id=data.get("oid"),
             time=_util.seconds_to_datetime(data.get("event_time")),
             title=data.get("title"),
@@ -91,8 +101,9 @@ class Plan:
         )
 
     @classmethod
-    def _from_graphql(cls, data):
+    def _from_graphql(cls, session, data):
         return cls(
+            session=session,
             id=data.get("id"),
             time=_util.seconds_to_datetime(data.get("time")),
             title=data.get("event_title"),

@@ -118,7 +118,9 @@ class UserData(User):
         c_info = cls._parse_customization_info(data)
         plan = None
         if data.get("event_reminders") and data["event_reminders"].get("nodes"):
-            plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
+            plan = _plan.PlanData._from_graphql(
+                session, data["event_reminders"]["nodes"][0]
+            )
 
         return cls(
             session=session,
@@ -166,7 +168,9 @@ class UserData(User):
 
         plan = None
         if data.get("event_reminders") and data["event_reminders"].get("nodes"):
-            plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
+            plan = _plan.PlanData._from_graphql(
+                session, data["event_reminders"]["nodes"][0]
+            )
 
         return cls(
             session=session,

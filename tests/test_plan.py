@@ -1,9 +1,11 @@
 import datetime
-from fbchat._plan import GuestStatus, Plan
+from fbchat._plan import GuestStatus, PlanData
 
 
-def test_plan_properties():
-    plan = Plan(
+def test_plan_properties(session):
+    plan = PlanData(
+        session=session,
+        id="1234567890",
         time=...,
         title=...,
         guests={
@@ -18,7 +20,7 @@ def test_plan_properties():
     assert plan.declined == ["4567"]
 
 
-def test_plan_from_pull():
+def test_plan_from_pull(session):
     data = {
         "event_timezone": "",
         "event_creator_id": "1234",
@@ -35,7 +37,8 @@ def test_plan_from_pull():
             '{"guest_list_state":"GOING","node":{"id":"4567"}}]'
         ),
     }
-    assert Plan(
+    assert PlanData(
+        session=session,
         id="1111",
         time=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
         title="abc",
@@ -46,10 +49,10 @@ def test_plan_from_pull():
             "3456": GuestStatus.DECLINED,
             "4567": GuestStatus.GOING,
         },
-    ) == Plan._from_pull(data)
+    ) == PlanData._from_pull(session, data)
 
 
-def test_plan_from_fetch():
+def test_plan_from_fetch(session):
     data = {
         "message_thread_id": 123456789,
         "event_time": 1500000000,
@@ -92,7 +95,8 @@ def test_plan_from_fetch():
             "4567": "GOING",
         },
     }
-    assert Plan(
+    assert PlanData(
+        session=session,
         id=1111,
         time=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
         title="abc",
@@ -105,10 +109,10 @@ def test_plan_from_fetch():
             "3456": GuestStatus.DECLINED,
             "4567": GuestStatus.GOING,
         },
-    ) == Plan._from_fetch(data)
+    ) == PlanData._from_fetch(session, data)
 
 
-def test_plan_from_graphql():
+def test_plan_from_graphql(session):
     data = {
         "id": "1111",
         "lightweight_event_creator": {"id": "1234"},
@@ -134,7 +138,8 @@ def test_plan_from_graphql():
             ]
         },
     }
-    assert Plan(
+    assert PlanData(
+        session=session,
         time=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
         title="abc",
         location="",
@@ -147,4 +152,4 @@ def test_plan_from_graphql():
             "3456": GuestStatus.DECLINED,
             "4567": GuestStatus.GOING,
         },
-    ) == Plan._from_graphql(data)
+    ) == PlanData._from_graphql(session, data)
