@@ -4,9 +4,9 @@ session = fbchat.Session.login("<email>", "<password>")
 
 client = fbchat.Client(session)
 
-thread = User(session=session, id=session.user_id)
-# thread = User(session=session, id="0987654321")
-# thread = Group(session=session, id="1234567890")
+thread = fbchat.User(session=session, id=session.user_id)
+# thread = fbchat.User(session=session, id="0987654321")
+# thread = fbchat.Group(session=session, id="1234567890")
 
 # Will send a message to the thread
 thread.send(fbchat.Message(text="<message>"))
@@ -24,7 +24,7 @@ thread.send(fbchat.Message(sticker=fbchat.Sticker("767334476626295")))
 thread.send(
     fbchat.Message(
         text="This is a @mention",
-        mentions=[fbchat.Mention(thread_id, offset=10, length=8)],
+        mentions=[fbchat.Mention(thread.id, offset=10, length=8)],
     )
 )
 
