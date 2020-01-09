@@ -1362,18 +1362,15 @@ class Client:
 
                 elif d.get("deltaMessageReply"):
                     i = d["deltaMessageReply"]
+                    thread = get_thread(metadata)
                     metadata = i["message"]["messageMetadata"]
-                    replied_to = Message._from_reply(
-                        self.session, i["repliedToMessage"]
-                    )
-                    message = Message._from_reply(
-                        self.session, i["message"], replied_to
-                    )
+                    replied_to = MessageData._from_reply(thread, i["repliedToMessage"])
+                    message = MessageData._from_reply(thread, i["message"], replied_to)
                     self.on_message(
                         mid=message.id,
                         author_id=message.author,
                         message_object=message,
-                        thread=get_thread(metadata),
+                        thread=thread,
                         at=message.created_at,
                         metadata=metadata,
                         msg=m,
@@ -1381,18 +1378,19 @@ class Client:
 
         # New message
         elif delta.get("class") == "NewMessage":
+            thread = get_thread(metadata)
             self.on_message(
                 mid=mid,
                 author_id=author_id,
-                message_object=Message._from_pull(
-                    self.session,
+                message_object=MessageData._from_pull(
+                    thread,
                     delta,
                     mid=mid,
                     tags=metadata.get("tags"),
                     author=author_id,
                     created_at=at,
                 ),
-                thread=get_thread(metadata),
+                thread=thread,
                 at=at,
                 metadata=metadata,
                 msg=m,

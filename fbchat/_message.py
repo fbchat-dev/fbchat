@@ -79,42 +79,15 @@ class Mention:
 class Message:
     """Represents a Facebook message."""
 
-    # TODO: Make these fields required!
-    #: The session to use when making requests.
-    session = attr.ib(None, type=_session.Session)
-    #: The message ID
-    id = attr.ib(None, converter=str)
+    #: The thread that this message belongs to.
+    thread = attr.ib(type="_thread.ThreadABC")
+    #: The message ID.
+    id = attr.ib(converter=str)
 
-    #: The actual message
-    text = attr.ib(None)
-    #: A list of `Mention` objects
-    mentions = attr.ib(factory=list)
-    #: A `EmojiSize`. Size of a sent emoji
-    emoji_size = attr.ib(None)
-    #: ID of the sender
-    author = attr.ib(None)
-    #: Datetime of when the message was sent
-    created_at = attr.ib(None)
-    #: Whether the message is read
-    is_read = attr.ib(None)
-    #: A list of people IDs who read the message, works only with `Client.fetch_thread_messages`
-    read_by = attr.ib(factory=list)
-    #: A dictionary with user's IDs as keys, and their `MessageReaction` as values
-    reactions = attr.ib(factory=dict)
-    #: A `Sticker`
-    sticker = attr.ib(None)
-    #: A list of attachments
-    attachments = attr.ib(factory=list)
-    #: A list of `QuickReply`
-    quick_replies = attr.ib(factory=list)
-    #: Whether the message is unsent (deleted for everyone)
-    unsent = attr.ib(False)
-    #: Message ID you want to reply to
-    reply_to_id = attr.ib(None)
-    #: Replied message
-    replied_to = attr.ib(None)
-    #: Whether the message was forwarded
-    forwarded = attr.ib(False)
+    @property
+    def session(self):
+        """The session to use when making requests."""
+        return self.thread.session
 
     def unsend(self):
         """Unsend the message (removes it for everyone)."""
@@ -125,7 +98,7 @@ class Message:
         """React to the message, or removes reaction.
 
         Args:
-            reaction: Reaction emoji to use, if None removes reaction
+            reaction: Reaction emoji to use, if ``None`` removes reaction
         """
         data = {
             "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
@@ -138,27 +111,22 @@ class Message:
         j = self.session._payload_post("/webgraphql/mutation", data)
         _util.handle_graphql_errors(j)
 
-    @classmethod
-    def from_fetch(cls, thread, message_id: str) -> "Message":
-        """Fetch `Message` object from the given message id.
+    def fetch(self) -> "MessageData":
+        """Fetch fresh `MessageData` object."""
+        message_info = self.thread._forced_fetch(self.id).get("message")
+        return MessageData._from_graphql(self.thread, message_info)
 
-        Args:
-            message_id: Message ID to fetch from
-        """
-        message_info = thread._forced_fetch(message_id).get("message")
-        return Message._from_graphql(thread.session, message_info)
-
-    @classmethod
-    def format_mentions(cls, text, *args, **kwargs):
+    @staticmethod
+    def format_mentions(text, *args, **kwargs):
         """Like `str.format`, but takes tuples with a thread id and text instead.
 
-        Return a `Message` object, with the formatted string and relevant mentions.
+        Return a tuple, with the formatted string and relevant mentions.
 
         >>> Message.format_mentions("Hey {!r}! My name is {}", ("1234", "Peter"), ("4321", "Michael"))
-        <Message (None): "Hey 'Peter'! My name is Michael", mentions=[<Mention 1234: offset=4 length=7>, <Mention 4321: offset=24 length=7>] emoji_size=None attachments=[]>
+        ("Hey 'Peter'! My name is Michael", [<Mention 1234: offset=4 length=7>, <Mention 4321: offset=24 length=7>])
 
         >>> Message.format_mentions("Hey {p}! My name is {}", ("1234", "Michael"), p=("4321", "Peter"))
-        <Message (None): 'Hey Peter! My name is Michael', mentions=[<Mention 4321: offset=4 length=5>, <Mention 1234: offset=22 length=7>] emoji_size=None attachments=[]>
+        ('Hey Peter! My name is Michael', [<Mention 4321: offset=4 length=5>, <Mention 1234: offset=22 length=7>])
         """
         result = ""
         mentions = list()
@@ -196,7 +164,46 @@ class Message:
             )
             offset += len(name)
 
-        return cls(text=result, mentions=mentions)
+        return result, mentions
+
+
+@attrs_default
+class MessageData(Message):
+    """Represents data in a Facebook message.
+
+    Inherits `Message`.
+    """
+
+    #: The actual message
+    text = attr.ib(None)
+    #: A list of `Mention` objects
+    mentions = attr.ib(factory=list)
+    #: A `EmojiSize`. Size of a sent emoji
+    emoji_size = attr.ib(None)
+    #: ID of the sender
+    author = attr.ib(None)
+    #: Datetime of when the message was sent
+    created_at = attr.ib(None)
+    #: Whether the message is read
+    is_read = attr.ib(None)
+    #: A list of people IDs who read the message, works only with `Client.fetch_thread_messages`
+    read_by = attr.ib(factory=list)
+    #: A dictionary with user's IDs as keys, and their `MessageReaction` as values
+    reactions = attr.ib(factory=dict)
+    #: A `Sticker`
+    sticker = attr.ib(None)
+    #: A list of attachments
+    attachments = attr.ib(factory=list)
+    #: A list of `QuickReply`
+    quick_replies = attr.ib(factory=list)
+    #: Whether the message is unsent (deleted for everyone)
+    unsent = attr.ib(False)
+    #: Message ID you want to reply to
+    reply_to_id = attr.ib(None)
+    #: Replied message
+    replied_to = attr.ib(None)
+    #: Whether the message was forwarded
+    forwarded = attr.ib(False)
 
     @staticmethod
     def _get_forwarded_from_tags(tags):
@@ -215,7 +222,7 @@ class Message:
         return []
 
     @classmethod
-    def _from_graphql(cls, session, data, read_receipts=None):
+    def _from_graphql(cls, thread, data, read_receipts=None):
         if data.get("message_sender") is None:
             data["message_sender"] = {}
         if data.get("message") is None:
@@ -241,7 +248,7 @@ class Message:
             replied_to = cls._from_graphql(data["replied_to_message"]["message"])
 
         return cls(
-            session=session,
+            thread=thread,
             id=str(data["message_id"]),
             text=data["message"].get("text"),
             mentions=[
@@ -270,7 +277,7 @@ class Message:
         )
 
     @classmethod
-    def _from_reply(cls, session, data, replied_to=None):
+    def _from_reply(cls, thread, data, replied_to=None):
         tags = data["messageMetadata"].get("tags")
         metadata = data.get("messageMetadata", {})
 
@@ -297,7 +304,7 @@ class Message:
                 )
 
         return cls(
-            session=session,
+            thread=thread,
             id=metadata.get("messageId"),
             text=data.get("body"),
             mentions=[
@@ -317,9 +324,7 @@ class Message:
         )
 
     @classmethod
-    def _from_pull(
-        cls, session, data, mid=None, tags=None, author=None, created_at=None
-    ):
+    def _from_pull(cls, thread, data, mid, tags, author, created_at):
         mentions = []
         if data.get("data") and data["data"].get("prng"):
             try:
@@ -366,7 +371,7 @@ class Message:
             )
 
         return cls(
-            session=session,
+            thread=thread,
             id=mid,
             text=data.get("body"),
             mentions=mentions,

@@ -318,8 +318,11 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
         read_receipts = j["message_thread"]["read_receipts"]["nodes"]
 
+        # TODO: May or may not be a good idea to attach the current thread?
+        # For now, we just create a new thread:
+        thread = self.__class__(session=self.session, id=self.id)
         messages = [
-            _message.Message._from_graphql(self.session, message, read_receipts)
+            _message.MessageData._from_graphql(thread, message, read_receipts)
             for message in j["message_thread"]["messages"]["nodes"]
         ]
         messages.reverse()

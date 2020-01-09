@@ -4,6 +4,7 @@ from fbchat._message import (
     EmojiSize,
     Mention,
     Message,
+    MessageData,
     graphql_to_extensible_attachment,
 )
 
@@ -62,9 +63,9 @@ def test_mention_to_send_data():
 
 
 def test_message_format_mentions():
-    expected = Message(
-        text="Hey 'Peter'! My name is Michael",
-        mentions=[
+    expected = (
+        "Hey 'Peter'! My name is Michael",
+        [
             Mention(thread_id="1234", offset=4, length=7),
             Mention(thread_id="4321", offset=24, length=7),
         ],
@@ -78,9 +79,9 @@ def test_message_format_mentions():
 
 
 def test_message_get_forwarded_from_tags():
-    assert not Message._get_forwarded_from_tags(None)
-    assert not Message._get_forwarded_from_tags(["hot_emoji_size:unknown"])
-    assert Message._get_forwarded_from_tags(
+    assert not MessageData._get_forwarded_from_tags(None)
+    assert not MessageData._get_forwarded_from_tags(["hot_emoji_size:unknown"])
+    assert MessageData._get_forwarded_from_tags(
         ["attachment:photo", "inbox", "sent", "source:chat:forward", "tq"]
     )
 
