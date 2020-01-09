@@ -174,16 +174,16 @@ class MessageData(Message):
     Inherits `Message`.
     """
 
+    #: ID of the sender
+    author = attr.ib()
+    #: Datetime of when the message was sent
+    created_at = attr.ib()
     #: The actual message
     text = attr.ib(None)
     #: A list of `Mention` objects
     mentions = attr.ib(factory=list)
     #: A `EmojiSize`. Size of a sent emoji
     emoji_size = attr.ib(None)
-    #: ID of the sender
-    author = attr.ib(None)
-    #: Datetime of when the message was sent
-    created_at = attr.ib(None)
     #: Whether the message is read
     is_read = attr.ib(None)
     #: A list of people IDs who read the message, works only with `Client.fetch_thread_messages`
@@ -250,13 +250,13 @@ class MessageData(Message):
         return cls(
             thread=thread,
             id=str(data["message_id"]),
+            author=str(data["message_sender"]["id"]),
+            created_at=created_at,
             text=data["message"].get("text"),
             mentions=[
                 Mention._from_range(m) for m in data["message"].get("ranges") or ()
             ],
             emoji_size=EmojiSize._from_tags(tags),
-            author=str(data["message_sender"]["id"]),
-            created_at=created_at,
             is_read=not data["unread"] if data.get("unread") is not None else None,
             read_by=[
                 receipt["actor"]["id"]
@@ -306,14 +306,14 @@ class MessageData(Message):
         return cls(
             thread=thread,
             id=metadata.get("messageId"),
+            author=str(metadata["actorFbId"]),
+            created_at=_util.millis_to_datetime(metadata["timestamp"]),
             text=data.get("body"),
             mentions=[
                 Mention._from_prng(m)
                 for m in _util.parse_json(data.get("data", {}).get("prng", "[]"))
             ],
             emoji_size=EmojiSize._from_tags(tags),
-            author=str(metadata.get("actorFbId")),
-            created_at=_util.millis_to_datetime(metadata.get("timestamp")),
             sticker=sticker,
             attachments=attachments,
             quick_replies=cls._parse_quick_replies(data.get("platform_xmd_encoded")),
@@ -373,11 +373,11 @@ class MessageData(Message):
         return cls(
             thread=thread,
             id=mid,
+            author=author,
+            created_at=created_at,
             text=data.get("body"),
             mentions=mentions,
             emoji_size=EmojiSize._from_tags(tags),
-            author=author,
-            created_at=created_at,
             sticker=sticker,
             attachments=attachments,
             unsent=unsent,
