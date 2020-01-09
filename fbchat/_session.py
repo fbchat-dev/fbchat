@@ -132,13 +132,14 @@ class Session:
         }
 
     @classmethod
-    def login(cls, email, password, on_2fa_callback):
+    def login(cls, email, password, on_2fa_callback=None):
         """Login the user, using ``email`` and ``password``.
 
         Args:
             email: Facebook ``email`` or ``id`` or ``phone number``
             password: Facebook account password
-            on_2fa_callback: Function that will be called, in case a 2FA code is needed
+            on_2fa_callback: Function that will be called, in case a 2FA code is needed.
+                This should return the requested 2FA code.
 
         Raises:
             FBchatException: On failed login
@@ -159,6 +160,10 @@ class Session:
 
         # Usually, 'Checkpoint' will refer to 2FA
         if "checkpoint" in r.url and ('id="approvals_code"' in r.text.lower()):
+            if not on_2fa_callback:
+                raise _exception.FBchatException(
+                    "2FA code required, please add `on_2fa_callback` to .login"
+                )
             code = on_2fa_callback()
             r = _2fa_helper(session, code, r)
 

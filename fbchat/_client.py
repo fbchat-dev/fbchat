@@ -2663,26 +2663,6 @@ class Client:
     EVENTS
     """
 
-    def on_logging_in(self, email=None):
-        """Called when the client is logging in.
-
-        Args:
-            email: The email of the client
-        """
-        log.info("Logging in {}...".format(email))
-
-    def on_2fa_code(self):
-        """Called when a 2FA code is needed to progress."""
-        return input("Please enter your 2FA code --> ")
-
-    def on_logged_in(self, email=None):
-        """Called when the client is successfully logged in.
-
-        Args:
-            email: The email of the client
-        """
-        log.info("Login of {} successful.".format(email))
-
     def on_listening(self):
         """Called when the client is listening."""
         log.info("Listening...")
