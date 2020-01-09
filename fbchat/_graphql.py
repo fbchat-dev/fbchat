@@ -106,6 +106,7 @@ QueryFragment Group: MessageThread {
     all_participants {
         nodes {
             messaging_actor {
+                __typename,
                 id
             }
         }

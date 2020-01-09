@@ -1,4 +1,4 @@
-from fbchat._group import GroupData
+from fbchat import GroupData, User
 
 
 def test_group_from_graphql(session):
@@ -9,9 +9,9 @@ def test_group_from_graphql(session):
         "is_group_thread": True,
         "all_participants": {
             "nodes": [
-                {"messaging_actor": {"id": "1234"}},
-                {"messaging_actor": {"id": "2345"}},
-                {"messaging_actor": {"id": "3456"}},
+                {"messaging_actor": {"__typename": "User", "id": "1234"}},
+                {"messaging_actor": {"__typename": "User", "id": "2345"}},
+                {"messaging_actor": {"__typename": "User", "id": "3456"}},
             ]
         },
         "customization_info": {
@@ -33,7 +33,11 @@ def test_group_from_graphql(session):
         last_active=None,
         message_count=None,
         plan=None,
-        participants={"1234", "2345", "3456"},
+        participants=[
+            User(session=session, id="1234"),
+            User(session=session, id="2345"),
+            User(session=session, id="3456"),
+        ],
         nicknames={},
         color="#0084ff",
         emoji="😀",

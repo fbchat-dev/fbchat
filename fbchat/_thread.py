@@ -3,7 +3,7 @@ import attr
 import collections
 import datetime
 import enum
-from ._core import attrs_default, Image
+from ._core import log, attrs_default, Image
 from . import _util, _exception, _session, _graphql, _attachment, _file, _plan
 from typing import MutableMapping, Mapping, Any, Iterable, Tuple, Optional
 
@@ -604,6 +604,27 @@ class ThreadABC(metaclass=abc.ABCMeta):
                 else:
                     rtn["own_nickname"] = pc[1].get("nickname")
         return rtn
+
+    @staticmethod
+    def _parse_participants(session, data) -> Iterable["ThreadABC"]:
+        from . import _user, _group, _page
+
+        for node in data["nodes"]:
+            actor = node["messaging_actor"]
+            typename = actor["__typename"]
+            thread_id = actor["id"]
+            if typename == "User":
+                yield _user.User(session=session, id=thread_id)
+            elif typename == "MessageThread":
+                # MessageThread => Group thread
+                yield _group.Group(session=session, id=thread_id)
+            elif typename == "Page":
+                yield _page.Page(session=session, id=thread_id)
+            elif typename == "Group":
+                # We don't handle Facebook "Groups"
+                pass
+            else:
+                log.warning("Unknown type %r in %s", typename, data)
 
 
 @attrs_default

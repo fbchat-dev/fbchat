@@ -182,11 +182,8 @@ class GroupData(Group):
         return cls(
             session=session,
             id=data["thread_key"]["thread_fbid"],
-            participants=set(
-                [
-                    node["messaging_actor"]["id"]
-                    for node in data["all_participants"]["nodes"]
-                ]
+            participants=list(
+                cls._parse_participants(session, data["all_participants"])
             ),
             nicknames=c_info.get("nicknames"),
             color=c_info["color"],

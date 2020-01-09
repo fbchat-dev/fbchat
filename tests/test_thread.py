@@ -1,6 +1,6 @@
 import pytest
 import fbchat
-from fbchat import ThreadABC, Thread
+from fbchat import ThreadABC, Thread, User, Group, Page
 
 
 def test_parse_color():
@@ -56,6 +56,22 @@ def test_thread_parse_customization_info_user():
     }
     expected = {"emoji": None, "color": "#0084ff", "own_nickname": "A", "nickname": "B"}
     assert expected == ThreadABC._parse_customization_info(data)
+
+
+def test_thread_parse_participants(session):
+    nodes = [
+        {"messaging_actor": {"__typename": "User", "id": "1234"}},
+        {"messaging_actor": {"__typename": "User", "id": "2345"}},
+        {"messaging_actor": {"__typename": "Page", "id": "3456"}},
+        {"messaging_actor": {"__typename": "MessageThread", "id": "4567"}},
+        {"messaging_actor": {"__typename": "UnavailableMessagingActor", "id": "5678"}},
+    ]
+    assert [
+        User(session=session, id="1234"),
+        User(session=session, id="2345"),
+        Page(session=session, id="3456"),
+        Group(session=session, id="4567"),
+    ] == list(ThreadABC._parse_participants(session, {"nodes": nodes}))
 
 
 def test_thread_create_and_implements_thread_abc(session):
