@@ -56,136 +56,6 @@ class Client:
     def __repr__(self):
         return "Client(session={!r})".format(self._session)
 
-    """
-    INTERNAL REQUEST METHODS
-    """
-
-    def _get(self, url, params):
-        return self._session._get(url, params)
-
-    def _post(self, url, params, files=None):
-        return self._session._post(url, params, files=files)
-
-    def _payload_post(self, url, data, files=None):
-        return self._session._payload_post(url, data, files=files)
-
-    def graphql_requests(self, *queries):
-        """Execute GraphQL queries.
-
-        Args:
-            queries (dict): Zero or more dictionaries
-
-        Returns:
-            tuple: A tuple containing JSON GraphQL queries
-
-        Raises:
-            FBchatException: If request failed
-        """
-        return tuple(self._session._graphql_requests(*queries))
-
-    def graphql_request(self, query):
-        """Shorthand for ``graphql_requests(query)[0]``.
-
-        Raises:
-            FBchatException: If request failed
-        """
-        return self.graphql_requests(query)[0]
-
-    """
-    END INTERNAL REQUEST METHODS
-    """
-
-    """
-    FETCH METHODS
-    """
-
-    def fetch_threads(self, thread_location, before=None, after=None, limit=None):
-        """Fetch all threads in ``thread_location``.
-
-        Threads will be sorted from newest to oldest.
-
-        Args:
-            thread_location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
-            before (datetime.datetime): Fetch only threads before this (default all
-                threads). Must be timezone-aware!
-            after (datetime.datetime): Fetch only threads after this (default all
-                threads). Must be timezone-aware!
-            limit: The max. amount of threads to fetch (default all threads)
-
-        Returns:
-            list: `Thread` objects
-
-        Raises:
-            FBchatException: If request failed
-        """
-        threads = []
-
-        last_thread_dt = None
-        while True:
-            # break if limit is exceeded
-            if limit and len(threads) >= limit:
-                break
-
-            # fetch_thread_list returns at max 20 threads before last_thread_dt (included)
-            candidates = self.fetch_thread_list(
-                before=last_thread_dt, thread_location=thread_location
-            )
-
-            if len(candidates) > 1:
-                threads += candidates[1:]
-            else:  # End of threads
-                break
-
-            last_thread_dt = threads[-1].last_active
-
-            # FB returns a sorted list of threads
-            if (before is not None and last_thread_dt > before) or (
-                after is not None and last_thread_dt < after
-            ):
-                break
-
-        # Return only threads between before and after (if set)
-        if before is not None or after is not None:
-            for t in threads:
-                if (before is not None and t.last_active > before) or (
-                    after is not None and t.last_active < after
-                ):
-                    threads.remove(t)
-
-        if limit and len(threads) > limit:
-            return threads[:limit]
-
-        return threads
-
-    def fetch_all_users_from_threads(self, threads):
-        """Fetch all users involved in given threads.
-
-        Args:
-            threads: Thread: List of threads to check for users
-
-        Returns:
-            list: `User` objects
-
-        Raises:
-            FBchatException: If request failed
-        """
-        users = []
-        users_to_fetch = []  # It's more efficient to fetch all users in one request
-        for thread in threads:
-            if isinstance(thread, User):
-                if thread.id not in [user.id for user in users]:
-                    users.append(thread)
-            elif isinstance(thread, Group):
-                for user_id in thread.participants:
-                    if (
-                        user_id not in [user.id for user in users]
-                        and user_id not in users_to_fetch
-                    ):
-                        users_to_fetch.append(user_id)
-        for user_id, user in self.fetch_user_info(*users_to_fetch).items():
-            users.append(user)
-        return users
-
     def fetch_users(self) -> Sequence[_user.UserData]:
         """Fetch users the client is currently chatting with.
 
@@ -222,7 +92,9 @@ class Client:
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        (j,) = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_USER, params))
+        (j,) = self.session._graphql_requests(
+            _graphql.from_query(_graphql.SEARCH_USER, params)
+        )
 
         return [
             UserData._from_graphql(self.session, node)
@@ -242,7 +114,9 @@ class Client:
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        (j,) = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_PAGE, params))
+        (j,) = self.session._graphql_requests(
+            _graphql.from_query(_graphql.SEARCH_PAGE, params)
+        )
 
         return [
             PageData._from_graphql(self.session, node)
@@ -263,7 +137,9 @@ class Client:
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        (j,) = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_GROUP, params))
+        (j,) = self.session._graphql_requests(
+            _graphql.from_query(_graphql.SEARCH_GROUP, params)
+        )
 
         return [
             GroupData._from_graphql(self.session, node)
@@ -284,7 +160,7 @@ class Client:
             FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
-        (j,) = self.graphql_requests(
+        (j,) = self.session._graphql_requests(
             _graphql.from_query(_graphql.SEARCH_THREAD, params)
         )
 
@@ -323,7 +199,7 @@ class Client:
             FBchatException: If request failed
         """
         data = {"query": query, "snippetLimit": thread_limit}
-        j = self._payload_post("/ajax/mercury/search_snippets.php?dpr=1", data)
+        j = self.session._payload_post("/ajax/mercury/search_snippets.php?dpr=1", data)
         result = j["search_snippets"][query]
 
         if not result:
@@ -341,7 +217,7 @@ class Client:
 
     def _fetch_info(self, *ids):
         data = {"ids[{}]".format(i): _id for i, _id in enumerate(ids)}
-        j = self._payload_post("/chat/user_info/", data)
+        j = self.session._payload_post("/chat/user_info/", data)
 
         if j.get("profiles") is None:
             raise FBchatException("No users/pages returned: {}".format(j))
@@ -374,78 +250,6 @@ class Client:
         log.debug(entries)
         return entries
 
-    def fetch_user_info(self, *user_ids):
-        """Fetch users' info from IDs, unordered.
-
-        Warning:
-            Sends two requests, to fetch all available info!
-
-        Args:
-            user_ids: One or more user ID(s) to query
-
-        Returns:
-            dict: `User` objects, labeled by their ID
-
-        Raises:
-            FBchatException: If request failed
-        """
-        threads = self.fetch_thread_info(*user_ids)
-        users = {}
-        for id_, thread in threads.items():
-            if isinstance(thread, User):
-                users[id_] = thread
-            else:
-                raise ValueError("Thread {} was not a user".format(thread))
-
-        return users
-
-    def fetch_page_info(self, *page_ids):
-        """Fetch pages' info from IDs, unordered.
-
-        Warning:
-            Sends two requests, to fetch all available info!
-
-        Args:
-            page_ids: One or more page ID(s) to query
-
-        Returns:
-            dict: `Page` objects, labeled by their ID
-
-        Raises:
-            FBchatException: If request failed
-        """
-        threads = self.fetch_thread_info(*page_ids)
-        pages = {}
-        for id_, thread in threads.items():
-            if isinstance(thread, Page):
-                pages[id_] = thread
-            else:
-                raise ValueError("Thread {} was not a page".format(thread))
-
-        return pages
-
-    def fetch_group_info(self, *group_ids):
-        """Fetch groups' info from IDs, unordered.
-
-        Args:
-            group_ids: One or more group ID(s) to query
-
-        Returns:
-            dict: `Group` objects, labeled by their ID
-
-        Raises:
-            FBchatException: If request failed
-        """
-        threads = self.fetch_thread_info(*group_ids)
-        groups = {}
-        for id_, thread in threads.items():
-            if isinstance(thread, Group):
-                groups[id_] = thread
-            else:
-                raise ValueError("Thread {} was not a group".format(thread))
-
-        return groups
-
     def fetch_thread_info(self, *thread_ids):
         """Fetch threads' info from IDs, unordered.
 
@@ -472,7 +276,7 @@ class Client:
             }
             queries.append(_graphql.from_doc_id("2147762685294928", params))
 
-        j = self.graphql_requests(*queries)
+        j = self.session._graphql_requests(*queries)
 
         for i, entry in enumerate(j):
             if entry.get("message_thread") is None:
@@ -544,7 +348,9 @@ class Client:
             "includeDeliveryReceipts": True,
             "includeSeqID": False,
         }
-        (j,) = self.graphql_requests(_graphql.from_doc_id("1349387578499440", params))
+        (j,) = self.session._graphql_requests(
+            _graphql.from_doc_id("1349387578499440", params)
+        )
 
         rtn = []
         for node in j["viewer"]["message_threads"]["nodes"]:
@@ -576,7 +382,7 @@ class Client:
             "last_action_timestamp": _util.now() - 60 * 1000
             # 'last_action_timestamp': 0
         }
-        j = self._payload_post("/ajax/mercury/unread_threads.php", form)
+        j = self.session._payload_post("/ajax/mercury/unread_threads.php", form)
 
         result = j["unread_thread_fbids"][0]
         return result["thread_fbids"] + result["other_user_fbids"]
@@ -590,7 +396,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        j = self._payload_post("/mercury/unseen_thread_ids/", {})
+        j = self.session._payload_post("/mercury/unseen_thread_ids/", {})
 
         result = j["unseen_thread_fbids"][0]
         return result["thread_fbids"] + result["other_user_fbids"]
@@ -609,7 +415,7 @@ class Client:
         """
         image_id = str(image_id)
         data = {"photo_id": str(image_id)}
-        j = self._post("/mercury/attachments/photo/", data)
+        j = self.session._post("/mercury/attachments/photo/", data)
         _util.handle_payload_error(j)
 
         url = _util.get_jsmods_require(j, 3)
@@ -618,7 +424,9 @@ class Client:
         return url
 
     def _get_private_data(self):
-        (j,) = self.graphql_requests(_graphql.from_doc_id("1868889766468115", {}))
+        (j,) = self.session._graphql_requests(
+            _graphql.from_doc_id("1868889766468115", {})
+        )
         return j["viewer"]
 
     def get_phone_numbers(self):
@@ -657,10 +465,6 @@ class Client:
         """
         return self._buddylist.get(str(user_id))
 
-    """
-    END FETCH METHODS
-    """
-
     def mark_as_delivered(self, thread_id, message_id):
         """Mark a message as delivered.
 
@@ -679,7 +483,7 @@ class Client:
             "thread_ids[%s][0]" % thread_id: message_id,
         }
 
-        j = self._payload_post("/ajax/mercury/delivery_receipts.php", data)
+        j = self.session._payload_post("/ajax/mercury/delivery_receipts.php", data)
         return True
 
     def _read_status(self, read, thread_ids, timestamp=None):
@@ -695,7 +499,7 @@ class Client:
         for thread_id in thread_ids:
             data["ids[{}]".format(thread_id)] = "true" if read else "false"
 
-        j = self._payload_post("/ajax/mercury/change_read_status.php", data)
+        j = self.session._payload_post("/ajax/mercury/change_read_status.php", data)
 
     def mark_as_read(self, thread_ids=None, timestamp=None):
         """Mark threads as read.
@@ -730,7 +534,7 @@ class Client:
         Todo:
             Documenting this
         """
-        j = self._payload_post(
+        j = self.session._payload_post(
             "/ajax/mercury/mark_seen.php", {"seen_timestamp": _util.now()}
         )
 
@@ -758,17 +562,17 @@ class Client:
             for thread_id in thread_ids:
                 data_archive["ids[{}]".format(thread_id)] = "true"
                 data_unpin["ids[{}]".format(thread_id)] = "false"
-            j_archive = self._payload_post(
+            j_archive = self.session._payload_post(
                 "/ajax/mercury/change_archived_status.php?dpr=1", data_archive
             )
-            j_unpin = self._payload_post(
+            j_unpin = self.session._payload_post(
                 "/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin
             )
         else:
             data = dict()
             for i, thread_id in enumerate(thread_ids):
                 data["{}[{}]".format(location.name.lower(), i)] = thread_id
-            j = self._payload_post("/ajax/mercury/move_thread.php", data)
+            j = self.session._payload_post("/ajax/mercury/move_thread.php", data)
         return True
 
     def delete_threads(self, thread_ids):
@@ -790,10 +594,10 @@ class Client:
         for i, thread_id in enumerate(thread_ids):
             data_unpin["ids[{}]".format(thread_id)] = "false"
             data_delete["ids[{}]".format(i)] = thread_id
-        j_unpin = self._payload_post(
+        j_unpin = self.session._payload_post(
             "/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin
         )
-        j_delete = self._payload_post(
+        j_delete = self.session._payload_post(
             "/ajax/mercury/delete_thread.php?dpr=1", data_delete
         )
         return True
@@ -814,7 +618,7 @@ class Client:
         data = dict()
         for i, message_id in enumerate(message_ids):
             data["message_ids[{}]".format(i)] = message_id
-        j = self._payload_post("/ajax/mercury/delete_messages.php?dpr=1", data)
+        j = self.session._payload_post("/ajax/mercury/delete_messages.php?dpr=1", data)
         return True
 
     """
@@ -824,17 +628,17 @@ class Client:
     def _ping(self):
         data = {
             "seq": self._seq,
-            "channel": "p_" + self._session.user_id,
-            "clientid": self._session._client_id,
+            "channel": "p_" + self.session.user_id,
+            "clientid": self.session._client_id,
             "partition": -2,
             "cap": 0,
-            "uid": self._session.user_id,
+            "uid": self.session.user_id,
             "sticky_token": self._sticky,
             "sticky_pool": self._pool,
-            "viewer_uid": self._session.user_id,
+            "viewer_uid": self.session.user_id,
             "state": "active",
         }
-        j = self._get(
+        j = self.session._get(
             "https://{}-edge-chat.facebook.com/active_ping".format(self._pull_channel),
             data,
         )
@@ -847,10 +651,10 @@ class Client:
             "msgs_recv": 0,
             "sticky_token": self._sticky,
             "sticky_pool": self._pool,
-            "clientid": self._session._client_id,
+            "clientid": self.session._client_id,
             "state": "active" if self._mark_alive else "offline",
         }
-        j = self._get(
+        j = self.session._get(
             "https://{}-edge-chat.facebook.com/pull".format(self._pull_channel), data
         )
         _util.handle_payload_error(j)
