@@ -3,6 +3,7 @@ import json
 from string import Formatter
 from ._core import log, attrs_default, Enum
 from . import _util, _session, _attachment, _location, _file, _quick_reply, _sticker
+from typing import Optional
 
 
 class EmojiSize(Enum):
@@ -82,7 +83,7 @@ class Message:
     #: The session to use when making requests.
     session = attr.ib(None, type=_session.Session)
     #: The message ID
-    id = attr.ib(None)
+    id = attr.ib(None, converter=str)
 
     #: The actual message
     text = attr.ib(None)
@@ -114,6 +115,28 @@ class Message:
     replied_to = attr.ib(None)
     #: Whether the message was forwarded
     forwarded = attr.ib(False)
+
+    def unsend(self):
+        """Unsend the message (removes it for everyone)."""
+        data = {"message_id": self.id}
+        j = self.session._payload_post("/messaging/unsend_message/?dpr=1", data)
+
+    def react(self, reaction: Optional[MessageReaction]):
+        """React to the message, or removes reaction.
+
+        Args:
+            reaction: Reaction emoji to use, if None removes reaction
+        """
+        data = {
+            "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
+            "client_mutation_id": "1",
+            "actor_id": self.session.user_id,
+            "message_id": self.id,
+            "reaction": reaction.value if reaction else None,
+        }
+        data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
+        j = self.session._payload_post("/webgraphql/mutation", data)
+        _util.handle_graphql_errors(j)
 
     @classmethod
     def from_fetch(cls, thread, message_id: str) -> "Message":

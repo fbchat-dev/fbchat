@@ -703,36 +703,6 @@ class Client:
     SEND METHODS
     """
 
-    def unsend(self, mid):
-        """Unsend message by it's ID (removes it for everyone).
-
-        Args:
-            mid: :ref:`Message ID <intro_message_ids>` of the message to unsend
-        """
-        data = {"message_id": mid}
-        j = self._payload_post("/messaging/unsend_message/?dpr=1", data)
-
-    def react_to_message(self, message_id, reaction):
-        """React to a message, or removes reaction.
-
-        Args:
-            message_id: :ref:`Message ID <intro_message_ids>` to react to
-            reaction (MessageReaction): Reaction emoji to use, if None removes reaction
-
-        Raises:
-            FBchatException: If request failed
-        """
-        data = {
-            "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
-            "client_mutation_id": "1",
-            "actor_id": self._session.user_id,
-            "message_id": str(message_id),
-            "reaction": reaction.value if reaction else None,
-        }
-        data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
-        j = self._payload_post("/webgraphql/mutation", data)
-        _util.handle_graphql_errors(j)
-
     def edit_plan(self, plan, new_plan):
         """Edit a plan.
 
