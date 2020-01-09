@@ -48,6 +48,38 @@ class User(_thread.ThreadABC):
     session = attr.ib(type=_session.Session)
     #: The user's unique identifier.
     id = attr.ib(converter=str)
+
+    def _to_send_data(self):
+        return {"other_user_fbid": self.id}
+
+    def confirm_friend_request(self):
+        """Confirm a friend request, adding the user to your friend list."""
+        data = {"to_friend": self.id, "action": "confirm"}
+        j = self.session._payload_post("/ajax/add_friend/action.php?dpr=1", data)
+
+    def remove_friend(self):
+        """Remove the user from the client's friend list."""
+        data = {"uid": self.id}
+        j = self.session._payload_post("/ajax/profile/removefriendconfirm.php", data)
+
+    def block(self):
+        """Block messages from the user."""
+        data = {"fbid": self.id}
+        j = self.session._payload_post("/messaging/block_messages/?dpr=1", data)
+
+    def unblock(self):
+        """Unblock a previously blocked user."""
+        data = {"fbid": self.id}
+        j = self.session._payload_post("/messaging/unblock_messages/?dpr=1", data)
+
+
+@attrs_default
+class UserData(User):
+    """Represents data about a Facebook user.
+
+    Inherits `User`, and implements `ThreadABC`.
+    """
+
     #: The user's picture
     photo = attr.ib(None)
     #: The name of the user
@@ -78,29 +110,6 @@ class User(_thread.ThreadABC):
     color = attr.ib(None)
     #: The default emoji
     emoji = attr.ib(None)
-
-    def _to_send_data(self):
-        return {"other_user_fbid": self.id}
-
-    def confirm_friend_request(self):
-        """Confirm a friend request, adding the user to your friend list."""
-        data = {"to_friend": self.id, "action": "confirm"}
-        j = self.session._payload_post("/ajax/add_friend/action.php?dpr=1", data)
-
-    def remove_friend(self):
-        """Remove the user from the client's friend list."""
-        data = {"uid": self.id}
-        j = self.session._payload_post("/ajax/profile/removefriendconfirm.php", data)
-
-    def block(self):
-        """Block messages from the user."""
-        data = {"fbid": self.id}
-        j = self.session._payload_post("/messaging/block_messages/?dpr=1", data)
-
-    def unblock(self):
-        """Unblock a previously blocked user."""
-        data = {"fbid": self.id}
-        j = self.session._payload_post("/messaging/unblock_messages/?dpr=1", data)
 
     @classmethod
     def _from_graphql(cls, session, data):
