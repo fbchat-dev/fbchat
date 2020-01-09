@@ -5,7 +5,7 @@ import requests
 import random
 import urllib.parse
 
-from ._core import log, attrs_default
+from ._core import log, kw_only
 from . import _graphql, _util, _exception
 
 FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
@@ -98,7 +98,7 @@ def _2fa_helper(session, code, r):
     return r
 
 
-@attrs_default
+@attr.s(slots=True, kw_only=kw_only, repr=False)
 class Session:
     """Stores and manages state required for most Facebook requests.
 
@@ -117,6 +117,10 @@ class Session:
     def user_id(self):
         """The logged in user's ID."""
         return self._user_id
+
+    def __repr__(self):
+        # An alternative repr, to illustrate that you can't create the class directly
+        return "<fbchat.Session user_id={}>".format(self._user_id)
 
     def _get_params(self):
         self._counter += 1  # TODO: Make this operation atomic / thread-safe

@@ -70,6 +70,9 @@ class Client:
         self._session = session
         self._uid = session.user_id
 
+    def __repr__(self):
+        return "Client(session={!r})".format(self._session)
+
     """
     INTERNAL REQUEST METHODS
     """
