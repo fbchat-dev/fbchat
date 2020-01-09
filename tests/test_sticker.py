@@ -18,6 +18,7 @@ def test_from_graphql_normal():
         is_animated=False,
         frames_per_row=1,
         frames_per_col=1,
+        frame_count=1,
         frame_rate=83,
         image=fbchat.Image(
             url="https://scontent-arn2-1.xx.fbcdn.net/v/redacted.png",
@@ -54,6 +55,7 @@ def test_from_graphql_animated():
         large_sprite_image="https://scontent-arn2-1.fbcdn.net/v/redacted3.png",
         frames_per_row=2,
         frames_per_col=2,
+        frame_count=4,
         frame_rate=142,
         image=fbchat.Image(
             url="https://scontent-arn2-1.fbcdn.net/v/redacted1.png",
