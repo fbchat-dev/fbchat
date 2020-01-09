@@ -1,5 +1,4 @@
 import attr
-import json
 from string import Formatter
 from ._core import log, attrs_default, Enum
 from . import _util, _session, _attachment, _location, _file, _quick_reply, _sticker
@@ -107,7 +106,10 @@ class Message:
             "message_id": self.id,
             "reaction": reaction.value if reaction else None,
         }
-        data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
+        data = {
+            "doc_id": 1491398900900362,
+            "variables": _util.json_minimal({"data": data}),
+        }
         j = self.session._payload_post("/webgraphql/mutation", data)
         _util.handle_graphql_errors(j)
 
@@ -214,7 +216,7 @@ class MessageData(Message):
     @staticmethod
     def _parse_quick_replies(data):
         if data:
-            data = json.loads(data).get("quick_replies")
+            data = _util.parse_json(data).get("quick_replies")
             if isinstance(data, list):
                 return [_quick_reply.graphql_to_quick_reply(q) for q in data]
             elif isinstance(data, dict):
@@ -285,7 +287,7 @@ class MessageData(Message):
         unsent = False
         sticker = None
         for attachment in data.get("attachments") or ():
-            attachment = json.loads(attachment["mercuryJSON"])
+            attachment = _util.parse_json(attachment["mercuryJSON"])
             if attachment.get("blob_attachment"):
                 attachments.append(
                     _file.graphql_to_attachment(attachment["blob_attachment"])

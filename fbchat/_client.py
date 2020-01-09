@@ -1,6 +1,5 @@
 import datetime
 import time
-import json
 import requests
 
 from ._core import log
@@ -1126,7 +1125,7 @@ class Client:
                 score = int(score)
             leaderboard = delta["untypedData"].get("leaderboard")
             if leaderboard is not None:
-                leaderboard = json.loads(leaderboard)["scores"]
+                leaderboard = _util.parse_json(leaderboard)["scores"]
             self.on_game_played(
                 mid=mid,
                 author_id=author_id,
@@ -1185,7 +1184,7 @@ class Client:
         # Group poll event
         elif delta_type == "group_poll":
             event_type = delta["untypedData"]["event_type"]
-            poll_json = json.loads(delta["untypedData"]["question_json"])
+            poll_json = _util.parse_json(delta["untypedData"]["question_json"])
             poll = Poll._from_graphql(poll_json)
             if event_type == "question_creation":
                 # User created group poll
@@ -1200,13 +1199,13 @@ class Client:
                 )
             elif event_type == "update_vote":
                 # User voted on group poll
-                added_options = json.loads(delta["untypedData"]["added_option_ids"])
-                removed_options = json.loads(delta["untypedData"]["removed_option_ids"])
+                added = _util.parse_json(delta["untypedData"]["added_option_ids"])
+                removed = _util.parse_json(delta["untypedData"]["removed_option_ids"])
                 self.on_poll_voted(
                     mid=mid,
                     poll=poll,
-                    added_options=added_options,
-                    removed_options=removed_options,
+                    added_options=added,
+                    removed_options=removed,
                     author_id=author_id,
                     thread=get_thread(metadata),
                     at=at,
@@ -1277,7 +1276,7 @@ class Client:
 
         # Client payload (that weird numbers)
         elif delta_class == "ClientPayload":
-            payload = json.loads("".join(chr(z) for z in delta["payload"]))
+            payload = _util.parse_json("".join(chr(z) for z in delta["payload"]))
             at = _util.millis_to_datetime(m.get("ofd_ts"))
             for d in payload.get("deltas", []):
 

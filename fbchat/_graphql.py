@@ -31,7 +31,7 @@ def queries_to_json(*queries):
     rtn = {}
     for i, query in enumerate(queries):
         rtn["q{}".format(i)] = query
-    return json.dumps(rtn)
+    return _util.json_minimal(rtn)
 
 
 def response_to_json(content):

@@ -216,7 +216,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
     #     xmd["quick_replies"].append(q)
     # if len(quick_replies) == 1 and quick_replies[0].is_response:
     #     xmd["quick_replies"] = xmd["quick_replies"][0]
-    # data["platform_xmd"] = json.dumps(xmd)
+    # data["platform_xmd"] = _util.json_minimal(xmd)
 
     # TODO: This!
     # def quick_reply(self, quick_reply, payload=None):

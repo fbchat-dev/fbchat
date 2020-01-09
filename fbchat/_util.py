@@ -28,6 +28,11 @@ def now():
     return int(time.time() * 1000)
 
 
+def json_minimal(data):
+    """Get JSON data in minimal form."""
+    return json.dumps(data, separators=(",", ":"))
+
+
 def strip_json_cruft(text):
     """Removes `for(;;);` (and other cruft) that preceeds JSON responses."""
     try:

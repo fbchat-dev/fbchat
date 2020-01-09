@@ -1,6 +1,5 @@
 import attr
 import datetime
-import json
 from ._core import attrs_default, Enum
 from . import _exception, _util, _session
 
@@ -158,7 +157,7 @@ class PlanData(Plan):
             author_id=data.get("event_creator_id"),
             guests={
                 x["node"]["id"]: GuestStatus[x["guest_list_state"]]
-                for x in json.loads(data["guest_state_list"])
+                for x in _util.parse_json(data["guest_state_list"])
             },
         )
 
