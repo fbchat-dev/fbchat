@@ -82,12 +82,10 @@ Message IDs
 Every message you send on Facebook has a unique ID, and every action you do in a thread,
 like changing a nickname or adding a person, has a unique ID too.
 
-Some of ``fbchat``'s functions require these ID's, like `Client.react_to_message`,
-and some of then provide this ID, like `Client.send`.
 This snippet shows how to send a message, and then use the returned ID to react to that message with a 😍 emoji::
 
-    message_id = thread.send(Message(text='message'))
-    client.react_to_message(message_id, MessageReaction.LOVE)
+    message = thread.send_text("A message!")
+    message.react("😍")
 
 
 .. _intro_interacting:

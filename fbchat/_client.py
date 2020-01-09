@@ -10,7 +10,7 @@ from ._thread import ThreadLocation, ThreadColor
 from ._user import TypingStatus, User, UserData, ActiveStatus
 from ._group import Group, GroupData
 from ._page import Page, PageData
-from ._message import EmojiSize, MessageReaction, Mention, Message
+from ._message import EmojiSize, Mention, Message
 from ._attachment import Attachment
 from ._sticker import Sticker
 from ._location import LocationAttachment, LiveLocationAttachment
@@ -1259,14 +1259,11 @@ class Client:
                     i = d["deltaMessageReaction"]
                     mid = i["messageId"]
                     author_id = str(i["userId"])
-                    reaction = (
-                        MessageReaction(i["reaction"]) if i.get("reaction") else None
-                    )
                     add_reaction = not bool(i["action"])
                     if add_reaction:
                         self.on_reaction_added(
                             mid=mid,
-                            reaction=reaction,
+                            reaction=i.get("reaction"),
                             author_id=author_id,
                             thread=get_thread(metadata),
                             at=at,
@@ -1855,7 +1852,7 @@ class Client:
 
         Args:
             mid: Message ID, that user reacted to
-            reaction (MessageReaction): Reaction
+            reaction: The added reaction. Not limited to the ones in `Message.react`
             add_reaction: Whether user added or removed reaction
             author_id: The ID of the person who reacted to the message
             thread: Thread that the action was sent to. See :ref:`intro_threads`
@@ -1863,7 +1860,7 @@ class Client:
         """
         log.info(
             "{} reacted to message {} with {} in {}".format(
-                author_id, mid, reaction.name, thread
+                author_id, mid, reaction, thread
             )
         )
 

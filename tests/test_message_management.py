@@ -1,14 +1,9 @@
 import pytest
 
-from fbchat import Message, MessageReaction
+from fbchat import Message
 from utils import subset
 
 pytestmark = pytest.mark.online
-
-
-def test_set_reaction(client):
-    mid = client.send(Message(text="This message will be reacted to"))
-    client.react_to_message(mid, MessageReaction.LOVE)
 
 
 def test_delete_messages(client):

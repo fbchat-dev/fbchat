@@ -63,4 +63,4 @@ thread.set_emoji("👍")
 message = fbchat.Message(session=session, id="<message id>")
 
 # Will react to a message with a 😍 emoji
-message.react(fbchat.MessageReaction.LOVE)
+message.react("😍")

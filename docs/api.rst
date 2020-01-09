@@ -28,8 +28,6 @@ Messages
 .. autoclass:: Mention
 .. autoclass:: EmojiSize(Enum)
     :undoc-members:
-.. autoclass:: MessageReaction(Enum)
-    :undoc-members:
 
 Exceptions
 ----------
