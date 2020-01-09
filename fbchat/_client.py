@@ -2,7 +2,6 @@ import datetime
 import time
 import json
 import requests
-from collections import OrderedDict
 
 from ._core import log
 from . import _util, _graphql, _session
@@ -25,14 +24,7 @@ from ._quick_reply import (
     QuickReplyEmail,
 )
 from ._poll import Poll, PollOption
-from ._plan import Plan
-
-
-ACONTEXT = {
-    "action_history": [
-        {"surface": "messenger_chat_tab", "mechanism": "messenger_composer"}
-    ]
-}
+from ._plan import ACONTEXT, Plan
 
 
 class Client:

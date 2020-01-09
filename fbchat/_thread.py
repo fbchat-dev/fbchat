@@ -1,8 +1,9 @@
 import abc
 import attr
+import collections
 import datetime
 from ._core import attrs_default, Enum, Image
-from . import _util, _exception, _session
+from . import _util, _exception, _session, _graphql, _attachment, _file, _plan
 from typing import MutableMapping, Any, Iterable, Tuple
 
 
@@ -231,6 +232,8 @@ class ThreadABC(metaclass=abc.ABCMeta):
         Returns:
             list: `Message` objects
         """
+        from . import _message
+
         # TODO: Return proper searchable iterator
         params = {
             "id": self.id,
@@ -244,12 +247,14 @@ class ThreadABC(metaclass=abc.ABCMeta):
         )
 
         if j.get("message_thread") is None:
-            raise FBchatException("Could not fetch thread {}: {}".format(self.id, j))
+            raise _exception.FBchatException(
+                "Could not fetch thread {}: {}".format(self.id, j)
+            )
 
         read_receipts = j["message_thread"]["read_receipts"]["nodes"]
 
         messages = [
-            Message._from_graphql(self.session, message, read_receipts)
+            _message.Message._from_graphql(self.session, message, read_receipts)
             for message in j["message_thread"]["messages"]["nodes"]
         ]
         messages.reverse()
@@ -279,11 +284,11 @@ class ThreadABC(metaclass=abc.ABCMeta):
                     break
 
             if i["node"].get("__typename") == "MessageImage":
-                yield ImageAttachment._from_list(i)
+                yield _file.ImageAttachment._from_list(i)
             elif i["node"].get("__typename") == "MessageVideo":
-                yield VideoAttachment._from_list(i)
+                yield _file.VideoAttachment._from_list(i)
             else:
-                yield Attachment(id=i["node"].get("legacy_attachment_id"))
+                yield _attachment.Attachment(id=i["node"].get("legacy_attachment_id"))
             del j[self.id]["message_shared_media"]["edges"][0]
 
     def set_nickname(self, user_id: str, nickname: str):
@@ -385,8 +390,8 @@ class ThreadABC(metaclass=abc.ABCMeta):
             "title": name,
             "thread_id": self.id,
             "location_id": location_id or "",
-            "location_name": location or "",
-            "acontext": ACONTEXT,
+            "location_name": location_name or "",
+            "acontext": _plan.ACONTEXT,
         }
         j = self.session._payload_post("/ajax/eventreminder/create", data)
         if "error" in j:
@@ -404,7 +409,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
         # the POST parameters is badly implemented, and deals with ordering the options
         # wrongly. If you can find a way to fix this for the endpoint, or if you find
         # another endpoint, please do suggest it ;)
-        data = OrderedDict([("question_text", question), ("target_id", self.id)])
+        data = collections.OrderedDict(
+            [("question_text", question), ("target_id", self.id)]
+        )
 
         for i, (text, vote) in enumerate(options):
             data["option_text_array[{}]".format(i)] = text

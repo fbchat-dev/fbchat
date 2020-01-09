@@ -10,6 +10,13 @@ class GuestStatus(Enum):
     DECLINED = 3
 
 
+ACONTEXT = {
+    "action_history": [
+        {"surface": "messenger_chat_tab", "mechanism": "messenger_composer"}
+    ]
+}
+
+
 @attrs_default
 class Plan:
     """Represents a plan."""

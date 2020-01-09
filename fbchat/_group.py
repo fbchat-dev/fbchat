@@ -1,6 +1,6 @@
 import attr
 from ._core import attrs_default, Image
-from . import _util, _session, _plan, _thread, _user
+from . import _util, _session, _graphql, _plan, _thread, _user
 from typing import Sequence, Iterable
 
 
@@ -69,10 +69,10 @@ class Group(_thread.ThreadABC):
             user_id: User ID to remove
         """
         data = {"uid": user_id, "tid": self.id}
-        j = self._payload_post("/chat/remove_participants/", data)
+        j = self.session._payload_post("/chat/remove_participants/", data)
 
     def _admin_status(self, user_ids: Iterable[str], status: bool):
-        data = {"add": admin, "thread_fbid": self.id}
+        data = {"add": status, "thread_fbid": self.id}
 
         for i, user_id in enumerate(user_ids):
             data["admin_ids[{}]".format(i)] = str(user_id)
@@ -119,7 +119,7 @@ class Group(_thread.ThreadABC):
         Args:
             require_admin_approval: True or False
         """
-        data = {"set_mode": int(require_admin_approval), "thread_fbid": thread_id}
+        data = {"set_mode": int(require_admin_approval), "thread_fbid": self.id}
         j = self.session._payload_post("/messaging/set_approval_mode/?dpr=1", data)
 
     def _users_approval(self, user_ids: Iterable[str], approve: bool):
