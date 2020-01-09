@@ -10,7 +10,7 @@ from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadLocation, ThreadColor
 from ._user import TypingStatus, User, UserData, ActiveStatus
 from ._group import Group
-from ._page import Page
+from ._page import Page, PageData
 from ._message import EmojiSize, MessageReaction, Mention, Message
 from ._attachment import Attachment
 from ._sticker import Sticker
@@ -244,7 +244,8 @@ class Client:
         (j,) = self.graphql_requests(_graphql.from_query(_graphql.SEARCH_PAGE, params))
 
         return [
-            Page._from_graphql(self.session, node) for node in j[name]["pages"]["nodes"]
+            PageData._from_graphql(self.session, node)
+            for node in j[name]["pages"]["nodes"]
         ]
 
     def search_for_groups(self, name, limit=10):
@@ -294,7 +295,7 @@ class Client:
                 # MessageThread => Group thread
                 rtn.append(Group._from_graphql(self.session, node))
             elif node["__typename"] == "Page":
-                rtn.append(Page._from_graphql(self.session, node))
+                rtn.append(PageData._from_graphql(self.session, node))
             elif node["__typename"] == "Group":
                 # We don't handle Facebook "Groups"
                 pass
@@ -503,7 +504,7 @@ class Client:
                 if "first_name" in entry["type"]:
                     rtn[_id] = UserData._from_graphql(self.session, entry)
                 else:
-                    rtn[_id] = Page._from_graphql(self.session, entry)
+                    rtn[_id] = PageData._from_graphql(self.session, entry)
             else:
                 raise FBchatException(
                     "{} had an unknown thread type: {}".format(thread_ids[i], entry)

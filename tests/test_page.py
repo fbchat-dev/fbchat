@@ -1,5 +1,5 @@
 import fbchat
-from fbchat._page import Page
+from fbchat._page import PageData
 
 
 def test_page_from_graphql(session):
@@ -11,7 +11,7 @@ def test_page_from_graphql(session):
         "category_type": "SCHOOL",
         "city": None,
     }
-    assert Page(
+    assert PageData(
         session=session,
         id="123456",
         photo=fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/..."),
@@ -19,4 +19,4 @@ def test_page_from_graphql(session):
         url="https://www.facebook.com/some-school/",
         city=None,
         category="SCHOOL",
-    ) == Page._from_graphql(session, data)
+    ) == PageData._from_graphql(session, data)

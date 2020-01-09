@@ -11,6 +11,18 @@ class Page(_thread.ThreadABC):
     session = attr.ib(type=_session.Session)
     #: The unique identifier of the page.
     id = attr.ib(converter=str)
+
+    def _to_send_data(self):
+        return {"other_user_fbid": self.id}
+
+
+@attrs_default
+class PageData(Page):
+    """Represents data about a Facebook page.
+
+    Inherits `Page`, and implements `ThreadABC`.
+    """
+
     #: The page's picture
     photo = attr.ib(None)
     #: The name of the page
@@ -31,9 +43,6 @@ class Page(_thread.ThreadABC):
     sub_title = attr.ib(None)
     #: The page's category
     category = attr.ib(None)
-
-    def _to_send_data(self):
-        return {"other_user_fbid": self.id}
 
     @classmethod
     def _from_graphql(cls, session, data):
