@@ -26,7 +26,7 @@ def test_parse_unsent_message():
         "genie_attachment": {"genie_message": None},
     }
     assert UnsentMessage(
-        uid="ee.mid.$xyz"
+        id="ee.mid.$xyz"
     ) == fbchat._message.graphql_to_extensible_attachment(data)
 
 
@@ -75,7 +75,7 @@ def test_share_from_graphql_link():
         image=None,
         original_image_url=None,
         attachments=[],
-        uid="ee.mid.$xyz",
+        id="ee.mid.$xyz",
     ) == ShareAttachment._from_graphql(data)
 
 
@@ -128,7 +128,7 @@ def test_share_from_graphql_link_with_image():
         ),
         original_image_url="https://www.facebook.com/rsrc.php/v3/x.png",
         attachments=[],
-        uid="deadbeef123",
+        id="deadbeef123",
     ) == ShareAttachment._from_graphql(data)
 
 
@@ -194,7 +194,7 @@ def test_share_from_graphql_video():
         ),
         original_image_url="https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
         attachments=[],
-        uid="ee.mid.$gAAT4Sw1WSGhzQ9uRWVtEpZHZ8ZPV",
+        id="ee.mid.$gAAT4Sw1WSGhzQ9uRWVtEpZHZ8ZPV",
     ) == ShareAttachment._from_graphql(data)
 
 
@@ -315,7 +315,7 @@ def test_share_with_image_subattachment():
         ),
         original_image_url="https://scontent-arn2-1.xx.fbcdn.net/v/t1.0-9/1.jpg",
         attachments=[None],
-        uid="deadbeef123",
+        id="deadbeef123",
     ) == ShareAttachment._from_graphql(data)
 
 
@@ -444,7 +444,7 @@ def test_share_with_video_subattachment():
         original_image_url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
         attachments=[
             fbchat.VideoAttachment(
-                uid="2222",
+                id="2222",
                 duration=datetime.timedelta(seconds=24, microseconds=469000),
                 preview_url="https://video-arn2-1.xx.fbcdn.net/v/t42.9040-2/vid.mp4",
                 previews={
@@ -456,5 +456,5 @@ def test_share_with_video_subattachment():
                 },
             )
         ],
-        uid="deadbeef123",
+        id="deadbeef123",
     ) == ShareAttachment._from_graphql(data)

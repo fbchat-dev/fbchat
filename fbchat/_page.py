@@ -10,6 +10,16 @@ class Page(Thread):
 
     type = ThreadType.PAGE
 
+    #: The page's picture
+    photo = attr.ib(None)
+    #: The name of the page
+    name = attr.ib(None)
+    #: Datetime when the thread was last active / when the last message was sent
+    last_active = attr.ib(None)
+    #: Number of messages in the thread
+    message_count = attr.ib(None)
+    #: Set `Plan`
+    plan = attr.ib(None)
     #: The page's custom URL
     url = attr.ib(None)
     #: The name of the page's location city
@@ -32,7 +42,7 @@ class Page(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            uid=data["id"],
+            id=data["id"],
             url=data.get("url"),
             city=data.get("city").get("name"),
             category=data.get("category_type"),

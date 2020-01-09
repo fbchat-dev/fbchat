@@ -8,12 +8,12 @@ def test_from_graphql_none():
 
 
 def test_from_graphql_minimal():
-    assert Sticker(uid=1) == Sticker._from_graphql({"id": 1})
+    assert Sticker(id=1) == Sticker._from_graphql({"id": 1})
 
 
 def test_from_graphql_normal():
     assert Sticker(
-        uid="369239383222810",
+        id="369239383222810",
         pack="227877430692340",
         is_animated=False,
         frames_per_row=1,
@@ -47,7 +47,7 @@ def test_from_graphql_normal():
 
 def test_from_graphql_animated():
     assert Sticker(
-        uid="144885035685763",
+        id="144885035685763",
         pack="350357561732812",
         is_animated=True,
         medium_sprite_image="https://scontent-arn2-1.xx.fbcdn.net/v/redacted2.png",

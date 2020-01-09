@@ -8,7 +8,7 @@ client = fbchat.Client(session)
 # Fetches a list of all users you're currently chatting with, as `User` objects
 users = client.fetch_all_users()
 
-print("users' IDs: {}".format([user.uid for user in users]))
+print("users' IDs: {}".format([user.id for user in users]))
 print("users' names: {}".format([user.name for user in users]))
 
 
@@ -25,7 +25,7 @@ print("users' names: {}".format([users[k].name for k in users]))
 # and then we just take the first one, aka. the most likely one:
 user = client.search_for_users("<name of user>")[0]
 
-print("user ID: {}".format(user.uid))
+print("user ID: {}".format(user.id))
 print("user's name: {}".format(user.name))
 print("user's photo: {}".format(user.photo))
 print("Is user client's friend: {}".format(user.is_friend))

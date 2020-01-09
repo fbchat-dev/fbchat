@@ -43,24 +43,11 @@ class Client:
     useful while listening).
     """
 
-    @property
-    def uid(self):
-        """The ID of the client.
-
-        Can be used as ``thread_id``. See :ref:`intro_threads` for more info.
-        """
-        return self._uid
-
     def __init__(self, session):
-        """Initialize and log in the client.
+        """Initialize the client model.
 
         Args:
-            email: Facebook ``email``, ``id`` or ``phone number``
-            password: Facebook account password
-            session_cookies (dict): Cookies from a previous session (Will default to login if these are invalid)
-
-        Raises:
-            FBchatException: On failed login
+            session: The session to use when making requests.
         """
         self._sticky, self._pool = (None, None)
         self._seq = "0"
@@ -68,7 +55,11 @@ class Client:
         self._mark_alive = True
         self._buddylist = dict()
         self._session = session
-        self._uid = session.user_id
+
+    @property
+    def session(self):
+        """The session that's used when making requests."""
+        return self._session
 
     def __repr__(self):
         return "Client(session={!r})".format(self._session)
@@ -195,12 +186,12 @@ class Client:
         users_to_fetch = []  # It's more efficient to fetch all users in one request
         for thread in threads:
             if thread.type == ThreadType.USER:
-                if thread.uid not in [user.uid for user in users]:
+                if thread.id not in [user.id for user in users]:
                     users.append(thread)
             elif thread.type == ThreadType.GROUP:
                 for user_id in thread.participants:
                     if (
-                        user_id not in [user.uid for user in users]
+                        user_id not in [user.id for user in users]
                         and user_id not in users_to_fetch
                     ):
                         users_to_fetch.append(user_id)
@@ -217,7 +208,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        data = {"viewer": self._uid}
+        data = {"viewer": self._session.user_id}
         j = self._payload_post("/chat/user_info_all", data)
 
         users = []
@@ -840,7 +831,7 @@ class Client:
             elif i["node"].get("__typename") == "MessageVideo":
                 yield VideoAttachment._from_list(i)
             else:
-                yield Attachment(uid=i["node"].get("legacy_attachment_id"))
+                yield Attachment(id=i["node"].get("legacy_attachment_id"))
             del j[thread_id]["message_shared_media"]["edges"][0]
 
     """
@@ -876,7 +867,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread = thread_type._to_class()(uid=thread_id)
+        thread = thread_type._to_class()(id=thread_id)
         data = thread._to_send_data()
         data.update(message._to_send_data())
         return self._do_send_request(data)
@@ -895,7 +886,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread = thread_type._to_class()(uid=thread_id)
+        thread = thread_type._to_class()(id=thread_id)
         data = thread._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
         data["lightweight_action_attachment[lwa_state]"] = (
@@ -968,7 +959,7 @@ class Client:
     def _send_location(
         self, location, current=True, message=None, thread_id=None, thread_type=None
     ):
-        thread = thread_type._to_class()(uid=thread_id)
+        thread = thread_type._to_class()(id=thread_id)
         data = thread._to_send_data()
         if message is not None:
             data.update(message._to_send_data())
@@ -1036,7 +1027,7 @@ class Client:
 
         `files` should be a list of tuples, with a file's ID and mimetype.
         """
-        thread = thread_type._to_class()(uid=thread_id)
+        thread = thread_type._to_class()(id=thread_id)
         data = thread._to_send_data()
         data.update(self._old_message(message)._to_send_data())
         data["action_type"] = "ma-type:user-generated-message"
@@ -1182,7 +1173,7 @@ class Client:
         if len(user_ids) < 2:
             raise ValueError("Error when creating group: Not enough participants")
 
-        for i, user_id in enumerate(user_ids + [self._uid]):
+        for i, user_id in enumerate(user_ids + [self._session.user_id]):
             data["specific_to_list[{}]".format(i)] = "fbid:{}".format(user_id)
 
         message_id, thread_id = self._do_send_request(data, get_thread_id=True)
@@ -1202,7 +1193,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        data = Group(uid=thread_id)._to_send_data()
+        data = Group(id=thread_id)._to_send_data()
 
         data["action_type"] = "ma-type:log-message"
         data["log_message_type"] = "log:subscribe"
@@ -1210,7 +1201,7 @@ class Client:
         user_ids = _util.require_list(user_ids)
 
         for i, user_id in enumerate(user_ids):
-            if user_id == self._uid:
+            if user_id == self._session.user_id:
                 raise ValueError(
                     "Error when adding users: Cannot add self to group thread"
                 )
@@ -1286,7 +1277,7 @@ class Client:
 
         data = {
             "client_mutation_id": "0",
-            "actor_id": self._uid,
+            "actor_id": self._session.user_id,
             "thread_fbid": thread_id,
             "user_ids": user_ids,
             "response": "ACCEPT" if approve else "DENY",
@@ -1459,7 +1450,7 @@ class Client:
         data = {
             "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
             "client_mutation_id": "1",
-            "actor_id": self._uid,
+            "actor_id": self._session.user_id,
             "message_id": str(message_id),
             "reaction": reaction.value if reaction else None,
         }
@@ -1504,7 +1495,7 @@ class Client:
             FBchatException: If request failed
         """
         data = {
-            "event_reminder_id": plan.uid,
+            "event_reminder_id": plan.id,
             "delete": "false",
             "date": _util.datetime_to_seconds(new_plan.time),
             "location_name": new_plan.location or "",
@@ -1523,7 +1514,7 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        data = {"event_reminder_id": plan.uid, "delete": "true", "acontext": ACONTEXT}
+        data = {"event_reminder_id": plan.id, "delete": "true", "acontext": ACONTEXT}
         j = self._payload_post("/ajax/eventreminder/submit", data)
 
     def change_plan_participation(self, plan, take_part=True):
@@ -1537,7 +1528,7 @@ class Client:
             FBchatException: If request failed
         """
         data = {
-            "event_reminder_id": plan.uid,
+            "event_reminder_id": plan.id,
             "guest_state": "GOING" if take_part else "DECLINED",
             "acontext": ACONTEXT,
         }
@@ -1916,14 +1907,14 @@ class Client:
     def _ping(self):
         data = {
             "seq": self._seq,
-            "channel": "p_" + self._uid,
+            "channel": "p_" + self._session.user_id,
             "clientid": self._session._client_id,
             "partition": -2,
             "cap": 0,
-            "uid": self._uid,
+            "uid": self._session.user_id,
             "sticky_token": self._sticky,
             "sticky_pool": self._pool,
-            "viewer_uid": self._uid,
+            "viewer_uid": self._session.user_id,
             "state": "active",
         }
         j = self._get(
@@ -2464,7 +2455,7 @@ class Client:
                     replied_to = Message._from_reply(i["repliedToMessage"])
                     message = Message._from_reply(i["message"], replied_to)
                     self.on_message(
-                        mid=message.uid,
+                        mid=message.id,
                         author_id=message.author,
                         message_object=message,
                         thread_id=thread_id,
@@ -2540,7 +2531,7 @@ class Client:
                         thread_id = str(thread_id)
                     else:
                         thread_type = ThreadType.USER
-                        if author_id == self._uid:
+                        if author_id == self._session.user_id:
                             thread_id = m.get("to")
                         else:
                             thread_id = author_id

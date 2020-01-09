@@ -8,7 +8,7 @@ class Attachment:
     """Represents a Facebook attachment."""
 
     #: The attachment ID
-    uid = attr.ib(None)
+    id = attr.ib(None)
 
 
 @attrs_default
@@ -56,7 +56,7 @@ class ShareAttachment(Attachment):
 
         url = data.get("url")
         return cls(
-            uid=data.get("deduplication_key"),
+            id=data.get("deduplication_key"),
             author=data["target"]["actors"][0]["id"]
             if data["target"].get("actors")
             else None,

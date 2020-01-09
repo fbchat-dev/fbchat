@@ -26,7 +26,7 @@ def test_group_from_graphql():
         "event_reminders": {"nodes": []},
     }
     assert Group(
-        uid="11223344",
+        id="11223344",
         photo=None,
         name="Group ABC",
         last_active=None,

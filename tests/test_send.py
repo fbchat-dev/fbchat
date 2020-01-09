@@ -13,7 +13,7 @@ def test_send_text(client, catch_event, compare, text):
         mid = client.send(Message(text=text))
 
     assert compare(x, mid=mid, message=text)
-    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=text)
+    assert subset(vars(x.res["message_object"]), id=mid, author=client.id, text=text)
 
 
 @pytest.mark.parametrize("emoji, emoji_size", EMOJI_LIST)
@@ -24,8 +24,8 @@ def test_send_emoji(client, catch_event, compare, emoji, emoji_size):
     assert compare(x, mid=mid, message=emoji)
     assert subset(
         vars(x.res["message_object"]),
-        uid=mid,
-        author=client.uid,
+        id=mid,
+        author=client.id,
         text=emoji,
         emoji_size=emoji_size,
     )
@@ -38,8 +38,8 @@ def test_send_mentions(client, catch_event, compare, message_with_mentions):
     assert compare(x, mid=mid, message=message_with_mentions.text)
     assert subset(
         vars(x.res["message_object"]),
-        uid=mid,
-        author=client.uid,
+        id=mid,
+        author=client.id,
         text=message_with_mentions.text,
     )
     # The mentions are not ordered by offset
@@ -53,8 +53,8 @@ def test_send_sticker(client, catch_event, compare, sticker):
         mid = client.send(Message(sticker=sticker))
 
     assert compare(x, mid=mid)
-    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid)
-    assert subset(vars(x.res["message_object"].sticker), uid=sticker.uid)
+    assert subset(vars(x.res["message_object"]), id=mid, author=client.id)
+    assert subset(vars(x.res["message_object"].sticker), id=sticker.id)
 
 
 # Kept for backwards compatibility
@@ -74,7 +74,7 @@ def test_send_images(client, catch_event, compare, method_name, url):
         mid = getattr(client, method_name)(url, Message(text))
 
     assert compare(x, mid=mid, message=text)
-    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=text)
+    assert subset(vars(x.res["message_object"]), id=mid, author=client.id, text=text)
     assert x.res["message_object"].attachments[0]
 
 
@@ -96,7 +96,7 @@ def test_send_local_files(client, catch_event, compare):
         )
 
     assert compare(x, mid=mid, message=text)
-    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=text)
+    assert subset(vars(x.res["message_object"]), id=mid, author=client.id, text=text)
     assert len(x.res["message_object"].attachments) == len(files)
 
 
@@ -114,7 +114,7 @@ def test_send_remote_files(client, catch_event, compare):
         )
 
     assert compare(x, mid=mid, message=text)
-    assert subset(vars(x.res["message_object"]), uid=mid, author=client.uid, text=text)
+    assert subset(vars(x.res["message_object"]), id=mid, author=client.id, text=text)
     assert len(x.res["message_object"].attachments) == len(files)
 
 

@@ -10,6 +10,16 @@ class Group(Thread):
 
     type = ThreadType.GROUP
 
+    #: The group's picture
+    photo = attr.ib(None)
+    #: The name of the group
+    name = attr.ib(None)
+    #: Datetime when the group was last active / when the last message was sent
+    last_active = attr.ib(None)
+    #: Number of messages in the group
+    message_count = attr.ib(None)
+    #: Set `Plan`
+    plan = attr.ib(None)
     #: Unique list (set) of the group thread's participant user IDs
     participants = attr.ib(factory=set)
     #: A dictionary, containing user nicknames mapped to their IDs
@@ -42,7 +52,7 @@ class Group(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            uid=data["thread_key"]["thread_fbid"],
+            id=data["thread_key"]["thread_fbid"],
             participants=set(
                 [
                     node["messaging_actor"]["id"]
@@ -71,4 +81,4 @@ class Group(Thread):
         )
 
     def _to_send_data(self):
-        return {"thread_fbid": self.uid}
+        return {"thread_fbid": self.id}

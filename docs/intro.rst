@@ -53,7 +53,7 @@ This is required for many of ``fbchat``'s functions, since Facebook differentiat
 Searching for group chats and finding their ID can be done via. `Client.search_for_groups`,
 and searching for users is possible via. `Client.search_for_users`. See :ref:`intro_fetching`
 
-You can get your own user ID by using `Client.uid`
+You can get your own user ID by using `Session.user_id`
 
 Getting the ID of a group chat is fairly trivial otherwise, since you only need to navigate to `<https://www.facebook.com/messages/>`_,
 click on the group you want to find the ID of, and then read the id from the address bar.
@@ -106,7 +106,7 @@ like adding users to and removing users from a group chat, logically only works 
 The simplest way of using ``fbchat`` is to send a message.
 The following snippet will, as you've probably already figured out, send the message ``test message`` to your account::
 
-    message_id = client.send(Message(text='test message'), thread_id=client.uid, thread_type=ThreadType.USER)
+    message_id = client.send(Message(text='test message'), thread_id=session.user_id, thread_type=ThreadType.USER)
 
 You can see a full example showing all the possible thread interactions with ``fbchat`` by going to :ref:`examples`
 
@@ -123,7 +123,7 @@ The following snippet will search for users by their name, take the first (and m
 
     users = client.search_for_users('<name of user>')
     user = users[0]
-    print("User's ID: {}".format(user.uid))
+    print("User's ID: {}".format(user.id))
     print("User's name: {}".format(user.name))
     print("User's profile picture URL: {}".format(user.photo))
     print("User's main URL: {}".format(user.url))

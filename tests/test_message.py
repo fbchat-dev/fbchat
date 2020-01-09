@@ -99,7 +99,7 @@ def test_message_to_send_data_mentions():
 
 
 def test_message_to_send_data_sticker():
-    msg = Message(sticker=fbchat.Sticker(uid="123"))
+    msg = Message(sticker=fbchat.Sticker(id="123"))
     assert {
         "action_type": "ma-type:user-generated-message",
         "sticker_id": "123",

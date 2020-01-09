@@ -47,6 +47,16 @@ class User(Thread):
 
     type = ThreadType.USER
 
+    #: The user's picture
+    photo = attr.ib(None)
+    #: The name of the user
+    name = attr.ib(None)
+    #: Datetime when the thread was last active / when the last message was sent
+    last_active = attr.ib(None)
+    #: Number of messages in the thread
+    message_count = attr.ib(None)
+    #: Set `Plan`
+    plan = attr.ib(None)
     #: The profile URL
     url = attr.ib(None)
     #: The users first name
@@ -78,7 +88,7 @@ class User(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            uid=data["id"],
+            id=data["id"],
             url=data.get("url"),
             first_name=data.get("first_name"),
             last_name=data.get("last_name"),
@@ -123,7 +133,7 @@ class User(Thread):
             plan = _plan.Plan._from_graphql(data["event_reminders"]["nodes"][0])
 
         return cls(
-            uid=user["id"],
+            id=user["id"],
             url=user.get("url"),
             name=user.get("name"),
             first_name=first_name,
@@ -144,7 +154,7 @@ class User(Thread):
     @classmethod
     def _from_all_fetch(cls, data):
         return cls(
-            uid=data["id"],
+            id=data["id"],
             first_name=data.get("firstName"),
             url=data.get("uri"),
             photo=Image(url=data.get("thumbSrc")),

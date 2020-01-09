@@ -36,7 +36,7 @@ def test_plan_from_pull():
         ),
     }
     assert Plan(
-        uid="1111",
+        id="1111",
         time=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
         title="abc",
         author_id="1234",
@@ -93,7 +93,7 @@ def test_plan_from_fetch():
         },
     }
     assert Plan(
-        uid=1111,
+        id=1111,
         time=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
         title="abc",
         location="",
@@ -139,7 +139,7 @@ def test_plan_from_graphql():
         title="abc",
         location="",
         location_id="",
-        uid="1111",
+        id="1111",
         author_id="1234",
         guests={
             "1234": GuestStatus.INVITED,

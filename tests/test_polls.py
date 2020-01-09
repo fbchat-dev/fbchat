@@ -43,7 +43,7 @@ pytestmark = pytest.mark.online
 def poll_data(request, client1, group, catch_event):
     with catch_event("on_poll_created") as x:
         client1.create_poll(request.param, thread_id=group["id"])
-    options = client1.fetch_poll_options(x.res["poll"].uid)
+    options = client1.fetch_poll_options(x.res["poll"].id)
     return x.res, request.param, options
 
 
@@ -51,7 +51,7 @@ def test_create_poll(client1, group, catch_event, poll_data):
     event, poll, _ = poll_data
     assert subset(
         event,
-        author_id=client1.uid,
+        author_id=client1.id,
         thread_id=group["id"],
         thread_type=ThreadType.GROUP,
     )
@@ -62,7 +62,7 @@ def test_create_poll(client1, group, catch_event, poll_data):
         "poll"
     ].options:  # The recieved options may not be the full list
         (old_option,) = list(filter(lambda o: o.text == recv_option.text, poll.options))
-        voters = [client1.uid] if old_option.vote else []
+        voters = [client1.id] if old_option.vote else []
         assert subset(
             vars(recv_option), voters=voters, votes_count=len(voters), vote=False
         )
@@ -78,19 +78,19 @@ def test_fetch_poll_options(client1, group, catch_event, poll_data):
 @pytest.mark.trylast
 def test_update_poll_vote(client1, group, catch_event, poll_data):
     event, poll, options = poll_data
-    new_vote_ids = [o.uid for o in options[0 : len(options) : 2] if not o.vote]
-    re_vote_ids = [o.uid for o in options[0 : len(options) : 2] if o.vote]
+    new_vote_ids = [o.id for o in options[0 : len(options) : 2] if not o.vote]
+    re_vote_ids = [o.id for o in options[0 : len(options) : 2] if o.vote]
     new_options = [random_hex(), random_hex()]
     with catch_event("on_poll_voted") as x:
         client1.update_poll_vote(
-            event["poll"].uid,
+            event["poll"].id,
             option_ids=new_vote_ids + re_vote_ids,
             new_options=new_options,
         )
 
     assert subset(
         x.res,
-        author_id=client1.uid,
+        author_id=client1.id,
         thread_id=group["id"],
         thread_type=ThreadType.GROUP,
     )
@@ -101,5 +101,5 @@ def test_update_poll_vote(client1, group, catch_event, poll_data):
         assert o in x.res["added_options"]
     assert len(x.res["added_options"]) == len(new_vote_ids) + len(new_options)
     assert set(x.res["removed_options"]) == set(
-        o.uid for o in options if o.vote and o.uid not in re_vote_ids
+        o.id for o in options if o.vote and o.id not in re_vote_ids
     )

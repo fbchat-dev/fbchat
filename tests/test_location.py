@@ -35,7 +35,7 @@ def test_location_attachment_from_graphql():
         "subattachments": [],
     }
     assert LocationAttachment(
-        uid=400828513928715,
+        id=400828513928715,
         latitude=55.4,
         longitude=12.4322,
         image=fbchat.Image(
@@ -80,7 +80,7 @@ def test_live_location_from_graphql_expired():
         "subattachments": [],
     }
     assert LiveLocationAttachment(
-        uid=2254535444791641,
+        id=2254535444791641,
         name="Location-sharing ended",
         expires_at=datetime.datetime(
             2019, 1, 4, 18, 25, 45, tzinfo=datetime.timezone.utc

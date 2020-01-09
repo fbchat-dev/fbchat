@@ -30,7 +30,7 @@ def test_imageattachment_from_list():
         "photo_encodings": [],
     }
     assert ImageAttachment(
-        uid="1234",
+        id="1234",
         width=2833,
         height=1367,
         previews={
@@ -70,7 +70,7 @@ def test_videoattachment_from_list():
         "original_dimensions": {"x": 640, "y": 368},
     }
     assert VideoAttachment(
-        uid="1234",
+        id="1234",
         width=640,
         height=368,
         previews={
@@ -97,7 +97,7 @@ def test_graphql_to_attachment_empty():
 
 def test_graphql_to_attachment_simple():
     data = {"__typename": "Unknown", "legacy_attachment_id": "1234"}
-    assert fbchat.Attachment(uid="1234") == graphql_to_attachment(data)
+    assert fbchat.Attachment(id="1234") == graphql_to_attachment(data)
 
 
 def test_graphql_to_attachment_file():
@@ -114,7 +114,7 @@ def test_graphql_to_attachment_file():
         "url_skipshim": True,
     }
     assert FileAttachment(
-        uid="1234",
+        id="1234",
         url="https://l.facebook.com/l.php?u=https%3A%2F%2Fcdn.fbsbx.com%2Fv%2Ffile.txt&h=AT1...&s=1",
         size=None,
         name="file.txt",
@@ -136,7 +136,7 @@ def test_graphql_to_attachment_audio():
         "url_skipshim": True,
     }
     assert AudioAttachment(
-        uid=None,
+        id=None,
         filename="audio.mp3",
         url="https://cdn.fbsbx.com/v/audio.mp3?dl=1",
         duration=datetime.timedelta(seconds=27, microseconds=745000),
@@ -169,7 +169,7 @@ def test_graphql_to_attachment_image1():
         "blurred_image_uri": None,
     }
     assert ImageAttachment(
-        uid="1234",
+        id="1234",
         original_extension="png",
         width=None,
         height=None,
@@ -205,7 +205,7 @@ def test_graphql_to_attachment_image2():
         "original_dimensions": {"x": 128, "y": 128},
     }
     assert ImageAttachment(
-        uid="1234",
+        id="1234",
         original_extension="gif",
         width=None,
         height=None,
@@ -244,7 +244,7 @@ def test_graphql_to_attachment_video():
         },
     }
     assert VideoAttachment(
-        uid="1234",
+        id="1234",
         width=None,
         height=None,
         duration=datetime.timedelta(seconds=6),
@@ -347,7 +347,7 @@ def test_graphql_to_subattachment_video():
         },
     }
     assert VideoAttachment(
-        uid="1234",
+        id="1234",
         duration=datetime.timedelta(seconds=24, microseconds=469000),
         preview_url="https://video-arn2-1.xx.fbcdn.net/v/t42.9040-2/vid.mp4",
         previews={
