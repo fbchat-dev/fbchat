@@ -50,21 +50,21 @@ class Mention:
     #: The thread ID the mention is pointing at
     thread_id = attr.ib()
     #: The character where the mention starts
-    offset = attr.ib(0)
+    offset = attr.ib()
     #: The length of the mention
-    length = attr.ib(10)
+    length = attr.ib()
 
     @classmethod
     def _from_range(cls, data):
         return cls(
-            thread_id=data.get("entity", {}).get("id"),
-            offset=data.get("offset"),
-            length=data.get("length"),
+            thread_id=data["entity"]["id"],
+            offset=data["offset"],
+            length=data["length"],
         )
 
     @classmethod
     def _from_prng(cls, data):
-        return cls(thread_id=data.get("i"), offset=data.get("o"), length=data.get("l"))
+        return cls(thread_id=data["i"], offset=data["o"], length=data["l"])
 
     def _to_send_data(self, i):
         return {
