@@ -43,8 +43,10 @@ class Mention:
 
     @classmethod
     def _from_range(cls, data):
+        # TODO: Parse data["entity"]["__typename"]
         return cls(
-            thread_id=data["entity"]["id"],
+            # Can be missing
+            thread_id=data["entity"].get("id"),
             offset=data["offset"],
             length=data["length"],
         )
@@ -234,7 +236,7 @@ class MessageData(Message):
 
         attachments = [
             _file.graphql_to_attachment(attachment)
-            for attachment in data["blob_attachments"] or ()
+            for attachment in data.get("blob_attachments") or ()
         ]
         unsent = False
         if data.get("extensible_attachment") is not None:
@@ -245,8 +247,11 @@ class MessageData(Message):
                 attachments.append(attachment)
 
         replied_to = None
-        if data.get("replied_to_message"):
-            replied_to = cls._from_graphql(data["replied_to_message"]["message"])
+        if data.get("replied_to_message") and data["replied_to_message"]["message"]:
+            # data["replied_to_message"]["message"] is None if the message is deleted
+            replied_to = cls._from_graphql(
+                thread, data["replied_to_message"]["message"]
+            )
 
         return cls(
             thread=thread,

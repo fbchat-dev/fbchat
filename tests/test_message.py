@@ -47,6 +47,23 @@ def test_graphql_to_extensible_attachment_dispatch(monkeypatch, obj, type_):
     assert graphql_to_extensible_attachment(data)
 
 
+def test_mention_from_range():
+    data = {"length": 17, "offset": 0, "entity": {"__typename": "User", "id": "1234"}}
+    assert Mention(thread_id="1234", offset=0, length=17) == Mention._from_range(data)
+    data = {
+        "length": 2,
+        "offset": 10,
+        "entity": {"__typename": "MessengerViewer1To1Thread"},
+    }
+    assert Mention(thread_id=None, offset=10, length=2) == Mention._from_range(data)
+    data = {
+        "length": 5,
+        "offset": 21,
+        "entity": {"__typename": "MessengerViewerGroupThread"},
+    }
+    assert Mention(thread_id=None, offset=21, length=5) == Mention._from_range(data)
+
+
 def test_mention_to_send_data():
     assert {
         "profile_xmd[0][id]": "1234",
