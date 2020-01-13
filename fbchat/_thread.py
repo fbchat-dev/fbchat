@@ -110,7 +110,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         """
         data = self._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
-        if text is None:  # To support `send_files`
+        if text is not None:  # To support `send_files`
             data["body"] = text
 
         for i, mention in enumerate(mentions or ()):
