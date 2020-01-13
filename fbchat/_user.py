@@ -108,11 +108,19 @@ class UserData(User):
     #: The default emoji
     emoji = attr.ib(None)
 
+    @staticmethod
+    def _get_other_user(data):
+        (user,) = (
+            node["messaging_actor"]
+            for node in data["all_participants"]["nodes"]
+            if node["messaging_actor"]["id"] == data["thread_key"]["other_user_id"]
+        )
+        return user
+
     @classmethod
     def _from_graphql(cls, session, data):
-        if data.get("profile_picture") is None:
-            data["profile_picture"] = {}
         c_info = cls._parse_customization_info(data)
+
         plan = None
         if data.get("event_reminders") and data["event_reminders"].get("nodes"):
             plan = _plan.PlanData._from_graphql(
@@ -140,31 +148,16 @@ class UserData(User):
 
     @classmethod
     def _from_thread_fetch(cls, session, data):
-        if data.get("big_image_src") is None:
-            data["big_image_src"] = {}
-        c_info = cls._parse_customization_info(data)
-        participants = [
-            node["messaging_actor"] for node in data["all_participants"]["nodes"]
-        ]
-        user = next(
-            p for p in participants if p["id"] == data["thread_key"]["other_user_id"]
-        )
+        user = cls._get_other_user(data)
         if user["__typename"] != "User":
             # TODO: Add Page._from_thread_fetch, and parse it there
             log.warning("Tried to parse %s as a user.", user["__typename"])
             return None
 
-        last_active = None
-        if "last_message" in data:
-            last_active = _util.millis_to_datetime(
-                int(data["last_message"]["nodes"][0]["timestamp_precise"])
-            )
-
-        first_name = user["short_name"]
-        last_name = user.get("name").split(first_name, 1).pop().strip()
+        c_info = cls._parse_customization_info(data)
 
         plan = None
-        if data.get("event_reminders") and data["event_reminders"].get("nodes"):
+        if data["event_reminders"]["nodes"]:
             plan = _plan.PlanData._from_graphql(
                 session, data["event_reminders"]["nodes"][0]
             )
@@ -174,8 +167,7 @@ class UserData(User):
             id=user["id"],
             url=user["url"],
             name=user["name"],
-            first_name=first_name,
-            last_name=last_name,
+            first_name=user["short_name"],
             is_friend=user["is_viewer_friend"],
             gender=GENDERS.get(user["gender"]),
             nickname=c_info.get("nickname"),
@@ -184,7 +176,7 @@ class UserData(User):
             own_nickname=c_info.get("own_nickname"),
             photo=Image._from_uri(user["big_image_src"]),
             message_count=data["messages_count"],
-            last_active=last_active,
+            last_active=_util.millis_to_datetime(int(data["updated_time_precise"])),
             plan=plan,
         )
 

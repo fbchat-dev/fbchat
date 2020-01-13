@@ -148,7 +148,6 @@ def test_user_from_thread_fetch(session):
         message_count=1111,
         url="https://www.facebook.com/profile.php?id=1234",
         first_name="Abc",
-        last_name="Def Ghi",
         is_friend=True,
         gender="female_singular",
         nickname="A",
