@@ -171,6 +171,34 @@ class Message:
 
 
 @attrs_default
+class MessageSnippet(Message):
+    """Represents data in a Facebook message snippet.
+
+    Inherits `Message`.
+    """
+
+    #: ID of the sender
+    author = attr.ib()
+    #: Datetime of when the message was sent
+    created_at = attr.ib()
+    #: The actual message
+    text = attr.ib()
+    #: A dict with offsets, mapped to the matched text
+    matched_keywords = attr.ib()
+
+    @classmethod
+    def _parse(cls, thread, data):
+        return cls(
+            thread=thread,
+            id=data["message_id"],
+            author=data["author"].rstrip("fbid:"),
+            created_at=_util.millis_to_datetime(data["timestamp"]),
+            text=data["body"],
+            matched_keywords={int(k): v for k, v in data["matched_keywords"].items()},
+        )
+
+
+@attrs_default
 class MessageData(Message):
     """Represents data in a Facebook message.
 

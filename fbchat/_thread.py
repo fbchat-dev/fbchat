@@ -250,20 +250,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
     #         )
     #         return self.send(Message(text=payload, quick_replies=[new]))
 
-    def search_messages(
-        self, query: str, offset: int = 0, limit: int = 5
-    ) -> Iterable[str]:
-        """Find and get message IDs by query.
+    def _search_messages(self, query, offset, limit):
+        from . import _message
 
-        Args:
-            query: Text to search for
-            offset (int): Number of messages to skip
-            limit (int): Max. number of messages to retrieve
-
-        Returns:
-            typing.Iterable: Found Message IDs
-        """
-        # TODO: Return proper searchable iterator
         data = {
             "query": query,
             "snippetOffset": offset,
@@ -273,10 +262,39 @@ class ThreadABC(metaclass=abc.ABCMeta):
         }
         j = self.session._payload_post("/ajax/mercury/search_snippets.php?dpr=1", data)
 
-        result = j["search_snippets"][query]
-        snippets = result[self.id]["snippets"] if result.get(self.id) else []
-        for snippet in snippets:
-            yield snippet["message_id"]
+        result = j["search_snippets"][query].get(self.id)
+        if not result:
+            return (0, [])
+
+        # TODO: May or may not be a good idea to attach the current thread?
+        # For now, we just create a new thread:
+        thread = self.__class__(session=self.session, id=self.id)
+        snippets = [
+            _message.MessageSnippet._parse(thread, snippet)
+            for snippet in result["snippets"]
+        ]
+        return (result["num_total_snippets"], snippets)
+
+    def search_messages(self, query: str, limit: int) -> Iterable["MessageSnippet"]:
+        """Find and get message IDs by query.
+
+        Warning! If someone send a message to the thread that matches the query, while
+        we're searching, some snippets will get returned twice.
+
+        Not sure if we should handle it, Facebook's implementation doesn't...
+
+        Args:
+            query: Text to search for
+            limit: Max. number of message snippets to retrieve
+        """
+        offset = 0
+        # The max limit is measured empirically to 420, safe default chosen below
+        for limit in _util.get_limits(limit, max_limit=50):
+            _, snippets = self._search_messages(query, offset, limit)
+            yield from snippets
+            if len(snippets) < limit:
+                return  # No more data to fetch
+            offset += limit
 
     def fetch_messages(self, limit: int = 20, before: datetime.datetime = None):
         """Fetch messages in a thread, ordered by most recent.
