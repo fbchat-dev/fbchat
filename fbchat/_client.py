@@ -3,7 +3,7 @@ import time
 import requests
 
 from ._core import log
-from . import _util, _graphql, _session, _poll, _user
+from . import _util, _graphql, _session, _poll, _user, _thread, _message
 
 from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadLocation
@@ -24,7 +24,7 @@ from ._quick_reply import (
 )
 from ._plan import PlanData
 
-from typing import Sequence
+from typing import Sequence, Iterable, Tuple, Optional
 
 
 class Client:
@@ -183,37 +183,68 @@ class Client:
 
         return rtn
 
-    def search(self, query, fetch_messages=False, thread_limit=5, message_limit=5):
+    def _search_messages(self, query, offset, limit):
+        data = {"query": query, "offset": offset, "limit": limit}
+        j = self.session._payload_post("/ajax/mercury/search_snippets.php?dpr=1", data)
+
+        total_snippets = j["search_snippets"][query]
+
+        rtn = []
+        for node in j["graphql_payload"]["message_threads"]:
+            type_ = node["thread_type"]
+            if type_ == "GROUP":
+                thread = Group(
+                    session=self.session, id=node["thread_key"]["thread_fbid"]
+                )
+            elif type_ == "ONE_TO_ONE":
+                thread = _thread.Thread(
+                    session=self.session, id=node["thread_key"]["other_user_id"]
+                )
+                # if True:  # TODO: This check!
+                #     thread = UserData._from_graphql(self.session, node)
+                # else:
+                #     thread = PageData._from_graphql(self.session, node)
+            else:
+                thread = None
+                log.warning("Unknown thread type %s, data: %s", type_, node)
+
+            if thread:
+                rtn.append((thread, total_snippets[thread.id]["num_total_snippets"]))
+            else:
+                rtn.append((None, 0))
+
+        return rtn
+
+    def search_messages(
+        self, query: str, limit: Optional[int]
+    ) -> Iterable[Tuple[_thread.ThreadABC, int]]:
         """Search for messages in all threads.
+
+        Intended to be used alongside `ThreadABC.search_messages`
+
+        Warning! If someone send a message to a thread that matches the query, while
+        we're searching, some snippets will get returned twice.
+
+        Not sure if we should handle it, Facebook's implementation doesn't...
 
         Args:
             query: Text to search for
-            fetch_messages: Whether to fetch `Message` objects or IDs only
-            thread_limit (int): Max. number of threads to retrieve
-            message_limit (int): Max. number of messages to retrieve
+            limit: Max. number of threads to retrieve. If ``None``, all threads will be
+                retrieved.
 
         Returns:
-            typing.Dict[str, typing.Iterable]: Dictionary with thread IDs as keys and iterables to get messages as values
-
-        Raises:
-            FBchatException: If request failed
+            Iterable with tuples of threads, and the total amount of matches.
         """
-        data = {"query": query, "snippetLimit": thread_limit}
-        j = self.session._payload_post("/ajax/mercury/search_snippets.php?dpr=1", data)
-        result = j["search_snippets"][query]
-
-        if not result:
-            return {}
-
-        if fetch_messages:
-            search_method = self.search_for_messages
-        else:
-            search_method = self.search_for_message_ids
-
-        return {
-            thread_id: search_method(query, limit=message_limit, thread_id=thread_id)
-            for thread_id in result
-        }
+        offset = 0
+        # The max limit is measured empirically to ~500, safe default chosen below
+        for limit in _util.get_limits(limit, max_limit=100):
+            data = self._search_messages(query, offset, limit)
+            for thread, total_snippets in data:
+                if thread:
+                    yield (thread, total_snippets)
+            if len(data) < limit:
+                return  # No more data to fetch
+            offset += limit
 
     def _fetch_info(self, *ids):
         data = {"ids[{}]".format(i): _id for i, _id in enumerate(ids)}
