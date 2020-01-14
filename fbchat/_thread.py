@@ -296,28 +296,20 @@ class ThreadABC(metaclass=abc.ABCMeta):
                 return  # No more data to fetch
             offset += limit
 
-    def fetch_messages(self, limit: int = 20, before: datetime.datetime = None):
-        """Fetch messages in a thread, ordered by most recent.
-
-        Args:
-            limit: Max. number of messages to retrieve
-            before: The point from which to retrieve messages
-
-        Returns:
-            list: `Message` objects
-        """
+    def _fetch_messages(self, limit, before):
         from . import _message
 
-        # TODO: Return proper searchable iterator
         params = {
             "id": self.id,
             "message_limit": limit,
             "load_messages": True,
             "load_read_receipts": True,
+            # "load_delivery_receipts": False,
+            # "is_work_teamwork_not_putting_muted_in_unreads": False,
             "before": _util.datetime_to_millis(before) if before else None,
         }
         (j,) = self.session._graphql_requests(
-            _graphql.from_doc_id("1860982147341344", params)
+            _graphql.from_doc_id("1860982147341344", params)  # 2696825200377124
         )
 
         if j.get("message_thread") is None:
@@ -325,18 +317,43 @@ class ThreadABC(metaclass=abc.ABCMeta):
                 "Could not fetch thread {}: {}".format(self.id, j)
             )
 
+        # TODO: Should we parse the returned thread data, too?
+
         read_receipts = j["message_thread"]["read_receipts"]["nodes"]
 
         # TODO: May or may not be a good idea to attach the current thread?
         # For now, we just create a new thread:
         thread = self.__class__(session=self.session, id=self.id)
-        messages = [
+        return [
             _message.MessageData._from_graphql(thread, message, read_receipts)
             for message in j["message_thread"]["messages"]["nodes"]
         ]
-        messages.reverse()
 
-        return messages
+    def fetch_messages(self, limit: Optional[int]) -> Iterable["_message.Message"]:
+        """Fetch messages in a thread, with most recent messages first.
+
+        Args:
+            limit: Max. number of threads to retrieve. If ``None``, all threads will be
+                retrieved.
+        """
+        # This is measured empirically as 210 in extreme cases, fairly safe default
+        # chosen below
+        MAX_BATCH_LIMIT = 100
+
+        before = None
+        for limit in _util.get_limits(limit, MAX_BATCH_LIMIT):
+            messages = self._fetch_messages(limit, before)
+
+            if before:
+                # Strip the first thread
+                yield from messages[1:]
+            else:
+                yield from messages
+
+            if len(messages) < MAX_BATCH_LIMIT:
+                return  # No more data to fetch
+
+            before = messages[-1].created_at
 
     def _fetch_images(self, limit, after):
         data = {"id": self.id, "first": limit, "after": after}
