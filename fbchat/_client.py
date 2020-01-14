@@ -3,7 +3,7 @@ import time
 import requests
 
 from ._core import log
-from . import _util, _graphql, _session, _poll, _user, _thread, _message
+from . import _util, _graphql, _session, _poll, _user, _page, _group, _thread, _message
 
 from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadLocation
@@ -78,7 +78,7 @@ class Client:
             users.append(_user.UserData._from_all_fetch(self.session, data))
         return users
 
-    def search_for_users(self, name, limit=10):
+    def search_for_users(self, name: str, limit: int) -> Iterable[_user.UserData]:
         """Find and get users by their name.
 
         Args:
@@ -87,92 +87,71 @@ class Client:
 
         Returns:
             list: `User` objects, ordered by relevance
-
-        Raises:
-            FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
             _graphql.from_query(_graphql.SEARCH_USER, params)
         )
 
-        return [
+        return (
             UserData._from_graphql(self.session, node)
             for node in j[name]["users"]["nodes"]
-        ]
+        )
 
-    def search_for_pages(self, name, limit=10):
+    def search_for_pages(self, name: str, limit: int) -> Iterable[_page.PageData]:
         """Find and get pages by their name.
 
         Args:
             name: Name of the page
-
-        Returns:
-            list: `Page` objects, ordered by relevance
-
-        Raises:
-            FBchatException: If request failed
+            limit: The max. amount of pages to fetch
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
             _graphql.from_query(_graphql.SEARCH_PAGE, params)
         )
 
-        return [
+        return (
             PageData._from_graphql(self.session, node)
             for node in j[name]["pages"]["nodes"]
-        ]
+        )
 
-    def search_for_groups(self, name, limit=10):
+    def search_for_groups(self, name: str, limit: int) -> Iterable[_group.GroupData]:
         """Find and get group threads by their name.
 
         Args:
             name: Name of the group thread
             limit: The max. amount of groups to fetch
-
-        Returns:
-            list: `Group` objects, ordered by relevance
-
-        Raises:
-            FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
             _graphql.from_query(_graphql.SEARCH_GROUP, params)
         )
 
-        return [
+        return (
             GroupData._from_graphql(self.session, node)
             for node in j["viewer"]["groups"]["nodes"]
-        ]
+        )
 
-    def search_for_threads(self, name, limit=10):
+    def search_for_threads(self, name: str, limit: int) -> Iterable[_thread.ThreadABC]:
         """Find and get threads by their name.
 
         Args:
             name: Name of the thread
-            limit: The max. amount of groups to fetch
-
-        Returns:
-            list: `User`, `Group` and `Page` objects, ordered by relevance
-
-        Raises:
-            FBchatException: If request failed
+            limit: The max. amount of threads to fetch
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
             _graphql.from_query(_graphql.SEARCH_THREAD, params)
         )
 
-        rtn = []
         for node in j[name]["threads"]["nodes"]:
             if node["__typename"] == "User":
-                rtn.append(UserData._from_graphql(self.session, node))
+                yield UserData._from_graphql(self.session, node)
             elif node["__typename"] == "MessageThread":
                 # MessageThread => Group thread
-                rtn.append(GroupData._from_graphql(self.session, node))
+                yield GroupData._from_graphql(self.session, node)
             elif node["__typename"] == "Page":
-                rtn.append(PageData._from_graphql(self.session, node))
+                yield PageData._from_graphql(self.session, node)
             elif node["__typename"] == "Group":
                 # We don't handle Facebook "Groups"
                 pass
@@ -180,8 +159,6 @@ class Client:
                 log.warning(
                     "Unknown type {} in {}".format(repr(node["__typename"]), node)
                 )
-
-        return rtn
 
     def _search_messages(self, query, offset, limit):
         data = {"query": query, "offset": offset, "limit": limit}
