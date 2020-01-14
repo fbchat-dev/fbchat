@@ -348,33 +348,10 @@ class Client:
 
         return rtn
 
-    def fetch_thread_list(
-        self, limit=20, thread_location=ThreadLocation.INBOX, before=None
-    ):
-        """Fetch the client's thread list.
-
-        Args:
-            limit (int): Max. number of threads to retrieve. Capped at 20
-            thread_location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
-            before (datetime.datetime): The point from which to retrieve threads
-
-        Returns:
-            list: `Thread` objects
-
-        Raises:
-            FBchatException: If request failed
-        """
-        if limit > 20 or limit < 1:
-            raise ValueError("`limit` should be between 1 and 20")
-
-        if thread_location in ThreadLocation:
-            loc_str = thread_location.value
-        else:
-            raise TypeError('"thread_location" must be a value of ThreadLocation')
-
+    def _fetch_threads(self, limit, before, folders):
         params = {
             "limit": limit,
-            "tags": [loc_str],
+            "tags": folders,
             "before": _util.datetime_to_millis(before) if before else None,
             "includeDeliveryReceipts": True,
             "includeSeqID": False,
@@ -389,14 +366,46 @@ class Client:
             if _type == "GROUP":
                 rtn.append(GroupData._from_graphql(self.session, node))
             elif _type == "ONE_TO_ONE":
-                user = UserData._from_thread_fetch(self.session, node)
-                if user:
-                    rtn.append(user)
+                rtn.append(UserData._from_thread_fetch(self.session, node))
             else:
-                raise FBchatException(
-                    "Unknown thread type: {}, with data: {}".format(_type, node)
-                )
+                rtn.append(None)
+                log.warning("Unknown thread type: %s, data: %s", _type, node)
         return rtn
+
+    def fetch_threads(
+        self, limit: Optional[int], location: ThreadLocation = ThreadLocation.INBOX,
+    ) -> Iterable[_thread.ThreadABC]:
+        """Fetch the client's thread list.
+
+        Args:
+            limit: Max. number of threads to retrieve. If ``None``, all threads will be
+                retrieved.
+            location: INBOX, PENDING, ARCHIVED or OTHER
+        """
+        # This is measured empirically as 837, safe default chosen below
+        MAX_BATCH_LIMIT = 100
+
+        # TODO: Clean this up after implementing support for more threads types
+        seen_ids = set()
+        before = None
+        for limit in _util.get_limits(limit, MAX_BATCH_LIMIT):
+            threads = self._fetch_threads(limit, before, [location.value])
+
+            before = None
+            for thread in threads:
+                # Don't return seen and unknown threads
+                if thread and thread.id not in seen_ids:
+                    seen_ids.add(thread.id)
+                    # TODO: Ensure type-wise that .last_active is available
+                    before = thread.last_active
+                    yield thread
+
+            if len(threads) < MAX_BATCH_LIMIT:
+                return  # No more data to fetch
+
+            # We check this here in case _fetch_threads only returned `None` threads
+            if not before:
+                raise ValueError("Too many unknown threads.")
 
     def fetch_unread(self):
         """Fetch unread threads.
