@@ -2768,9 +2768,15 @@ class Client(object):
                 msg=m,
             )
 
-        elif topic == "jewel_requests_add":
-            from_id = m["from"]
-            self.onFriendRequest(from_id=from_id, msg=m)
+        # Other notifications
+        elif topic == "/legacy_web":
+            # Friend request
+            if m["type"] == "jewel_requests_add":
+                from_id = m["from"]
+                # TODO: from_id = str(from_id)
+                self.onFriendRequest(from_id=from_id, msg=m)
+            else:
+                self.onUnknownMesssageType(msg=m)
 
         # Chat timestamp / Buddylist overlay
         elif topic == "/orca_presence":
