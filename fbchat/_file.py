@@ -91,8 +91,6 @@ class ImageAttachment(Attachment):
 
     @classmethod
     def _from_list(cls, data):
-        data = data["node"]
-
         previews = {
             Image._from_uri_or_none(data["image"]),
             Image._from_uri(data["image1"]),
@@ -156,7 +154,6 @@ class VideoAttachment(Attachment):
 
     @classmethod
     def _from_list(cls, data):
-        data = data["node"]
         previews = {
             Image._from_uri(data["image"]),
             Image._from_uri(data["image1"]),

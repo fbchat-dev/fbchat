@@ -338,35 +338,48 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
         return messages
 
-    def fetch_images(self):
-        """Fetch images/videos posted in the thread."""
-        # TODO: Return proper searchable iterator
-        data = {"id": self.id, "first": 48}
+    def _fetch_images(self, limit, after):
+        data = {"id": self.id, "first": limit, "after": after}
         (j,) = self.session._graphql_requests(
             _graphql.from_query_id("515216185516880", data)
         )
-        while True:
-            try:
-                i = j[self.id]["message_shared_media"]["edges"][0]
-            except IndexError:
-                if j[self.id]["message_shared_media"]["page_info"].get("has_next_page"):
-                    data["after"] = j[self.id]["message_shared_media"]["page_info"].get(
-                        "end_cursor"
-                    )
-                    (j,) = self.session._graphql_requests(
-                        _graphql.from_query_id("515216185516880", data)
-                    )
-                    continue
-                else:
-                    break
 
-            if i["node"].get("__typename") == "MessageImage":
-                yield _file.ImageAttachment._from_list(i)
-            elif i["node"].get("__typename") == "MessageVideo":
-                yield _file.VideoAttachment._from_list(i)
+        result = j[self.id]["message_shared_media"]
+
+        print(len(result["edges"]))
+
+        rtn = []
+        for edge in result["edges"]:
+            node = edge["node"]
+            type_ = node["__typename"]
+            if type_ == "MessageImage":
+                rtn.append(_file.ImageAttachment._from_list(node))
+            elif type_ == "MessageVideo":
+                rtn.append(_file.VideoAttachment._from_list(node))
             else:
-                yield _attachment.Attachment(id=i["node"].get("legacy_attachment_id"))
-            del j[self.id]["message_shared_media"]["edges"][0]
+                log.warning("Unknown image type %s, data: %s", type_, edge)
+                rtn.append(None)
+
+        # result["page_info"]["has_next_page"] is not correct when limit > 12
+        return (result["page_info"]["end_cursor"], rtn)
+
+    def fetch_images(self, limit: int) -> Iterable[_attachment.Attachment]:
+        """Fetch images/videos posted in the thread.
+
+        Args:
+            limit: Max. number of images to retrieve. If ``None``, all images will be
+                retrieved.
+        """
+        cursor = None
+        # The max limit on this request is unknown, so we set it reasonably high
+        # This way `limit=None` also still works
+        for limit in _util.get_limits(limit, max_limit=1000):
+            cursor, images = self._fetch_images(limit, cursor)
+            if not images:
+                return  # No more data to fetch
+            for image in images:
+                if image:
+                    yield image
 
     def set_nickname(self, user_id: str, nickname: str):
         """Change the nickname of a user in the thread.

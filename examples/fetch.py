@@ -1,4 +1,3 @@
-import itertools
 import fbchat
 
 session = fbchat.Session.login("<email>", "<password>")
@@ -62,7 +61,9 @@ print("thread's name: {}".format(thread.name))
 # Here should be an example of `getUnread`
 
 
-# Print image url for 20 last images from thread.
-images = thread.fetch_images()
-for image in itertools.islice(image, 20):
-    print(image.large_preview_url)
+# Print image url for up to 20 last images from thread.
+images = list(thread.fetch_images(limit=20))
+for image in images:
+    if isinstance(image, fbchat.ImageAttachment):
+        url = c.fetch_image_url(image.id)
+        print(url)
