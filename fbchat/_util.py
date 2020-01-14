@@ -13,6 +13,8 @@ from ._exception import (
     FBchatPleaseRefresh,
 )
 
+from typing import Iterable, Optional
+
 #: Default list of user agents
 USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36",
@@ -22,6 +24,24 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11",
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6",
 ]
+
+
+def get_limits(limit: Optional[int], max_limit: int) -> Iterable[int]:
+    """Helper that generates limits based on a max limit."""
+    if limit is None:
+        # Generate infinite items
+        while True:
+            yield max_limit
+
+    if limit < 0:
+        raise ValueError("Limit cannot be negative")
+
+    # Generate n items
+    yield from [max_limit] * (limit // max_limit)
+
+    remainder = limit % max_limit
+    if remainder:
+        yield remainder
 
 
 def now():

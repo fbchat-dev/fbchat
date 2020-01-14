@@ -250,20 +250,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
     #         )
     #         return self.send(Message(text=payload, quick_replies=[new]))
 
-    def search_messages(
-        self, query: str, offset: int = 0, limit: int = 5
-    ) -> Iterable[str]:
-        """Find and get message IDs by query.
+    def _search_messages(self, query, offset, limit):
+        from . import _message
 
-        Args:
-            query: Text to search for
-            offset (int): Number of messages to skip
-            limit (int): Max. number of messages to retrieve
-
-        Returns:
-            typing.Iterable: Found Message IDs
-        """
-        # TODO: Return proper searchable iterator
         data = {
             "query": query,
             "snippetOffset": offset,
@@ -273,33 +262,54 @@ class ThreadABC(metaclass=abc.ABCMeta):
         }
         j = self.session._payload_post("/ajax/mercury/search_snippets.php?dpr=1", data)
 
-        result = j["search_snippets"][query]
-        snippets = result[self.id]["snippets"] if result.get(self.id) else []
-        for snippet in snippets:
-            yield snippet["message_id"]
+        result = j["search_snippets"][query].get(self.id)
+        if not result:
+            return (0, [])
 
-    def fetch_messages(self, limit: int = 20, before: datetime.datetime = None):
-        """Fetch messages in a thread, ordered by most recent.
+        # TODO: May or may not be a good idea to attach the current thread?
+        # For now, we just create a new thread:
+        thread = self.__class__(session=self.session, id=self.id)
+        snippets = [
+            _message.MessageSnippet._parse(thread, snippet)
+            for snippet in result["snippets"]
+        ]
+        return (result["num_total_snippets"], snippets)
+
+    def search_messages(self, query: str, limit: int) -> Iterable["MessageSnippet"]:
+        """Find and get message IDs by query.
+
+        Warning! If someone send a message to the thread that matches the query, while
+        we're searching, some snippets will get returned twice.
+
+        Not sure if we should handle it, Facebook's implementation doesn't...
 
         Args:
-            limit: Max. number of messages to retrieve
-            before: The point from which to retrieve messages
-
-        Returns:
-            list: `Message` objects
+            query: Text to search for
+            limit: Max. number of message snippets to retrieve
         """
+        offset = 0
+        # The max limit is measured empirically to 420, safe default chosen below
+        for limit in _util.get_limits(limit, max_limit=50):
+            _, snippets = self._search_messages(query, offset, limit)
+            yield from snippets
+            if len(snippets) < limit:
+                return  # No more data to fetch
+            offset += limit
+
+    def _fetch_messages(self, limit, before):
         from . import _message
 
-        # TODO: Return proper searchable iterator
         params = {
             "id": self.id,
             "message_limit": limit,
             "load_messages": True,
             "load_read_receipts": True,
+            # "load_delivery_receipts": False,
+            # "is_work_teamwork_not_putting_muted_in_unreads": False,
             "before": _util.datetime_to_millis(before) if before else None,
         }
         (j,) = self.session._graphql_requests(
-            _graphql.from_doc_id("1860982147341344", params)
+            _graphql.from_doc_id("1860982147341344", params)  # 2696825200377124
         )
 
         if j.get("message_thread") is None:
@@ -307,48 +317,86 @@ class ThreadABC(metaclass=abc.ABCMeta):
                 "Could not fetch thread {}: {}".format(self.id, j)
             )
 
+        # TODO: Should we parse the returned thread data, too?
+
         read_receipts = j["message_thread"]["read_receipts"]["nodes"]
 
         # TODO: May or may not be a good idea to attach the current thread?
         # For now, we just create a new thread:
         thread = self.__class__(session=self.session, id=self.id)
-        messages = [
+        return [
             _message.MessageData._from_graphql(thread, message, read_receipts)
             for message in j["message_thread"]["messages"]["nodes"]
         ]
-        messages.reverse()
 
-        return messages
+    def fetch_messages(self, limit: Optional[int]) -> Iterable["_message.Message"]:
+        """Fetch messages in a thread, with most recent messages first.
 
-    def fetch_images(self):
-        """Fetch images/videos posted in the thread."""
-        # TODO: Return proper searchable iterator
-        data = {"id": self.id, "first": 48}
+        Args:
+            limit: Max. number of threads to retrieve. If ``None``, all threads will be
+                retrieved.
+        """
+        # This is measured empirically as 210 in extreme cases, fairly safe default
+        # chosen below
+        MAX_BATCH_LIMIT = 100
+
+        before = None
+        for limit in _util.get_limits(limit, MAX_BATCH_LIMIT):
+            messages = self._fetch_messages(limit, before)
+
+            if before:
+                # Strip the first thread
+                yield from messages[1:]
+            else:
+                yield from messages
+
+            if len(messages) < MAX_BATCH_LIMIT:
+                return  # No more data to fetch
+
+            before = messages[-1].created_at
+
+    def _fetch_images(self, limit, after):
+        data = {"id": self.id, "first": limit, "after": after}
         (j,) = self.session._graphql_requests(
             _graphql.from_query_id("515216185516880", data)
         )
-        while True:
-            try:
-                i = j[self.id]["message_shared_media"]["edges"][0]
-            except IndexError:
-                if j[self.id]["message_shared_media"]["page_info"].get("has_next_page"):
-                    data["after"] = j[self.id]["message_shared_media"]["page_info"].get(
-                        "end_cursor"
-                    )
-                    (j,) = self.session._graphql_requests(
-                        _graphql.from_query_id("515216185516880", data)
-                    )
-                    continue
-                else:
-                    break
 
-            if i["node"].get("__typename") == "MessageImage":
-                yield _file.ImageAttachment._from_list(i)
-            elif i["node"].get("__typename") == "MessageVideo":
-                yield _file.VideoAttachment._from_list(i)
+        result = j[self.id]["message_shared_media"]
+
+        print(len(result["edges"]))
+
+        rtn = []
+        for edge in result["edges"]:
+            node = edge["node"]
+            type_ = node["__typename"]
+            if type_ == "MessageImage":
+                rtn.append(_file.ImageAttachment._from_list(node))
+            elif type_ == "MessageVideo":
+                rtn.append(_file.VideoAttachment._from_list(node))
             else:
-                yield _attachment.Attachment(id=i["node"].get("legacy_attachment_id"))
-            del j[self.id]["message_shared_media"]["edges"][0]
+                log.warning("Unknown image type %s, data: %s", type_, edge)
+                rtn.append(None)
+
+        # result["page_info"]["has_next_page"] is not correct when limit > 12
+        return (result["page_info"]["end_cursor"], rtn)
+
+    def fetch_images(self, limit: int) -> Iterable[_attachment.Attachment]:
+        """Fetch images/videos posted in the thread.
+
+        Args:
+            limit: Max. number of images to retrieve. If ``None``, all images will be
+                retrieved.
+        """
+        cursor = None
+        # The max limit on this request is unknown, so we set it reasonably high
+        # This way `limit=None` also still works
+        for limit in _util.get_limits(limit, max_limit=1000):
+            cursor, images = self._fetch_images(limit, cursor)
+            if not images:
+                return  # No more data to fetch
+            for image in images:
+                if image:
+                    yield image
 
     def set_nickname(self, user_id: str, nickname: str):
         """Change the nickname of a user in the thread.

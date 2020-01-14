@@ -46,7 +46,7 @@ def test_imageattachment_from_list():
                 height=988,
             ),
         },
-    ) == ImageAttachment._from_list({"node": data})
+    ) == ImageAttachment._from_list(data)
 
 
 def test_videoattachment_from_list():
@@ -88,7 +88,7 @@ def test_videoattachment_from_list():
                 height=368,
             ),
         },
-    ) == VideoAttachment._from_list({"node": data})
+    ) == VideoAttachment._from_list(data)
 
 
 def test_graphql_to_attachment_empty():

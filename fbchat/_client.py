@@ -3,7 +3,7 @@ import time
 import requests
 
 from ._core import log
-from . import _util, _graphql, _session, _poll, _user
+from . import _util, _graphql, _session, _poll, _user, _page, _group, _thread, _message
 
 from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadLocation
@@ -24,7 +24,7 @@ from ._quick_reply import (
 )
 from ._plan import PlanData
 
-from typing import Sequence
+from typing import Sequence, Iterable, Tuple, Optional
 
 
 class Client:
@@ -78,7 +78,7 @@ class Client:
             users.append(_user.UserData._from_all_fetch(self.session, data))
         return users
 
-    def search_for_users(self, name, limit=10):
+    def search_for_users(self, name: str, limit: int) -> Iterable[_user.UserData]:
         """Find and get users by their name.
 
         Args:
@@ -87,92 +87,71 @@ class Client:
 
         Returns:
             list: `User` objects, ordered by relevance
-
-        Raises:
-            FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
             _graphql.from_query(_graphql.SEARCH_USER, params)
         )
 
-        return [
+        return (
             UserData._from_graphql(self.session, node)
             for node in j[name]["users"]["nodes"]
-        ]
+        )
 
-    def search_for_pages(self, name, limit=10):
+    def search_for_pages(self, name: str, limit: int) -> Iterable[_page.PageData]:
         """Find and get pages by their name.
 
         Args:
             name: Name of the page
-
-        Returns:
-            list: `Page` objects, ordered by relevance
-
-        Raises:
-            FBchatException: If request failed
+            limit: The max. amount of pages to fetch
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
             _graphql.from_query(_graphql.SEARCH_PAGE, params)
         )
 
-        return [
+        return (
             PageData._from_graphql(self.session, node)
             for node in j[name]["pages"]["nodes"]
-        ]
+        )
 
-    def search_for_groups(self, name, limit=10):
+    def search_for_groups(self, name: str, limit: int) -> Iterable[_group.GroupData]:
         """Find and get group threads by their name.
 
         Args:
             name: Name of the group thread
             limit: The max. amount of groups to fetch
-
-        Returns:
-            list: `Group` objects, ordered by relevance
-
-        Raises:
-            FBchatException: If request failed
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
             _graphql.from_query(_graphql.SEARCH_GROUP, params)
         )
 
-        return [
+        return (
             GroupData._from_graphql(self.session, node)
             for node in j["viewer"]["groups"]["nodes"]
-        ]
+        )
 
-    def search_for_threads(self, name, limit=10):
+    def search_for_threads(self, name: str, limit: int) -> Iterable[_thread.ThreadABC]:
         """Find and get threads by their name.
 
         Args:
             name: Name of the thread
-            limit: The max. amount of groups to fetch
-
-        Returns:
-            list: `User`, `Group` and `Page` objects, ordered by relevance
-
-        Raises:
-            FBchatException: If request failed
+            limit: The max. amount of threads to fetch
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
             _graphql.from_query(_graphql.SEARCH_THREAD, params)
         )
 
-        rtn = []
         for node in j[name]["threads"]["nodes"]:
             if node["__typename"] == "User":
-                rtn.append(UserData._from_graphql(self.session, node))
+                yield UserData._from_graphql(self.session, node)
             elif node["__typename"] == "MessageThread":
                 # MessageThread => Group thread
-                rtn.append(GroupData._from_graphql(self.session, node))
+                yield GroupData._from_graphql(self.session, node)
             elif node["__typename"] == "Page":
-                rtn.append(PageData._from_graphql(self.session, node))
+                yield PageData._from_graphql(self.session, node)
             elif node["__typename"] == "Group":
                 # We don't handle Facebook "Groups"
                 pass
@@ -181,39 +160,68 @@ class Client:
                     "Unknown type {} in {}".format(repr(node["__typename"]), node)
                 )
 
+    def _search_messages(self, query, offset, limit):
+        data = {"query": query, "offset": offset, "limit": limit}
+        j = self.session._payload_post("/ajax/mercury/search_snippets.php?dpr=1", data)
+
+        total_snippets = j["search_snippets"][query]
+
+        rtn = []
+        for node in j["graphql_payload"]["message_threads"]:
+            type_ = node["thread_type"]
+            if type_ == "GROUP":
+                thread = Group(
+                    session=self.session, id=node["thread_key"]["thread_fbid"]
+                )
+            elif type_ == "ONE_TO_ONE":
+                thread = _thread.Thread(
+                    session=self.session, id=node["thread_key"]["other_user_id"]
+                )
+                # if True:  # TODO: This check!
+                #     thread = UserData._from_graphql(self.session, node)
+                # else:
+                #     thread = PageData._from_graphql(self.session, node)
+            else:
+                thread = None
+                log.warning("Unknown thread type %s, data: %s", type_, node)
+
+            if thread:
+                rtn.append((thread, total_snippets[thread.id]["num_total_snippets"]))
+            else:
+                rtn.append((None, 0))
+
         return rtn
 
-    def search(self, query, fetch_messages=False, thread_limit=5, message_limit=5):
+    def search_messages(
+        self, query: str, limit: Optional[int]
+    ) -> Iterable[Tuple[_thread.ThreadABC, int]]:
         """Search for messages in all threads.
+
+        Intended to be used alongside `ThreadABC.search_messages`
+
+        Warning! If someone send a message to a thread that matches the query, while
+        we're searching, some snippets will get returned twice.
+
+        Not sure if we should handle it, Facebook's implementation doesn't...
 
         Args:
             query: Text to search for
-            fetch_messages: Whether to fetch `Message` objects or IDs only
-            thread_limit (int): Max. number of threads to retrieve
-            message_limit (int): Max. number of messages to retrieve
+            limit: Max. number of threads to retrieve. If ``None``, all threads will be
+                retrieved.
 
         Returns:
-            typing.Dict[str, typing.Iterable]: Dictionary with thread IDs as keys and iterables to get messages as values
-
-        Raises:
-            FBchatException: If request failed
+            Iterable with tuples of threads, and the total amount of matches.
         """
-        data = {"query": query, "snippetLimit": thread_limit}
-        j = self.session._payload_post("/ajax/mercury/search_snippets.php?dpr=1", data)
-        result = j["search_snippets"][query]
-
-        if not result:
-            return {}
-
-        if fetch_messages:
-            search_method = self.search_for_messages
-        else:
-            search_method = self.search_for_message_ids
-
-        return {
-            thread_id: search_method(query, limit=message_limit, thread_id=thread_id)
-            for thread_id in result
-        }
+        offset = 0
+        # The max limit is measured empirically to ~500, safe default chosen below
+        for limit in _util.get_limits(limit, max_limit=100):
+            data = self._search_messages(query, offset, limit)
+            for thread, total_snippets in data:
+                if thread:
+                    yield (thread, total_snippets)
+            if len(data) < limit:
+                return  # No more data to fetch
+            offset += limit
 
     def _fetch_info(self, *ids):
         data = {"ids[{}]".format(i): _id for i, _id in enumerate(ids)}
@@ -317,33 +325,10 @@ class Client:
 
         return rtn
 
-    def fetch_thread_list(
-        self, limit=20, thread_location=ThreadLocation.INBOX, before=None
-    ):
-        """Fetch the client's thread list.
-
-        Args:
-            limit (int): Max. number of threads to retrieve. Capped at 20
-            thread_location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
-            before (datetime.datetime): The point from which to retrieve threads
-
-        Returns:
-            list: `Thread` objects
-
-        Raises:
-            FBchatException: If request failed
-        """
-        if limit > 20 or limit < 1:
-            raise ValueError("`limit` should be between 1 and 20")
-
-        if thread_location in ThreadLocation:
-            loc_str = thread_location.value
-        else:
-            raise TypeError('"thread_location" must be a value of ThreadLocation')
-
+    def _fetch_threads(self, limit, before, folders):
         params = {
             "limit": limit,
-            "tags": [loc_str],
+            "tags": folders,
             "before": _util.datetime_to_millis(before) if before else None,
             "includeDeliveryReceipts": True,
             "includeSeqID": False,
@@ -358,14 +343,46 @@ class Client:
             if _type == "GROUP":
                 rtn.append(GroupData._from_graphql(self.session, node))
             elif _type == "ONE_TO_ONE":
-                user = UserData._from_thread_fetch(self.session, node)
-                if user:
-                    rtn.append(user)
+                rtn.append(UserData._from_thread_fetch(self.session, node))
             else:
-                raise FBchatException(
-                    "Unknown thread type: {}, with data: {}".format(_type, node)
-                )
+                rtn.append(None)
+                log.warning("Unknown thread type: %s, data: %s", _type, node)
         return rtn
+
+    def fetch_threads(
+        self, limit: Optional[int], location: ThreadLocation = ThreadLocation.INBOX,
+    ) -> Iterable[_thread.ThreadABC]:
+        """Fetch the client's thread list.
+
+        Args:
+            limit: Max. number of threads to retrieve. If ``None``, all threads will be
+                retrieved.
+            location: INBOX, PENDING, ARCHIVED or OTHER
+        """
+        # This is measured empirically as 837, safe default chosen below
+        MAX_BATCH_LIMIT = 100
+
+        # TODO: Clean this up after implementing support for more threads types
+        seen_ids = set()
+        before = None
+        for limit in _util.get_limits(limit, MAX_BATCH_LIMIT):
+            threads = self._fetch_threads(limit, before, [location.value])
+
+            before = None
+            for thread in threads:
+                # Don't return seen and unknown threads
+                if thread and thread.id not in seen_ids:
+                    seen_ids.add(thread.id)
+                    # TODO: Ensure type-wise that .last_active is available
+                    before = thread.last_active
+                    yield thread
+
+            if len(threads) < MAX_BATCH_LIMIT:
+                return  # No more data to fetch
+
+            # We check this here in case _fetch_threads only returned `None` threads
+            if not before:
+                raise ValueError("Too many unknown threads.")
 
     def fetch_unread(self):
         """Fetch unread threads.
