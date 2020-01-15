@@ -5,29 +5,57 @@ attrs_exception = attr.s(slots=True, auto_exc=True)
 
 
 @attrs_exception
-class FBchatException(Exception):
-    """Custom exception thrown by ``fbchat``.
+class FacebookError(Exception):
+    """Base class for all custom exceptions raised by ``fbchat``.
 
-    All exceptions in the module inherits this.
+    All exceptions in the module inherit this.
     """
 
-    message = attr.ib()
+    message = attr.ib(type=str)
 
 
 @attrs_exception
-class FBchatFacebookError(FBchatException):
-    """Raised when Facebook returns an error."""
+class HTTPError(FacebookError):
+    """Base class for errors with the HTTP(s) connection to Facebook."""
 
-    #: The error code that Facebook returned
-    fb_error_code = attr.ib(None)
+    status_code = attr.ib(None, type=int)
+
+
+@attrs_exception
+class ParseError(FacebookError):
+    """Raised when we fail parsing a response from Facebook.
+
+    This may contain sensitive data, so should not be logged to file.
+    """
+
+    data = attr.ib()
+    """The data that triggered the error.
+
+    The format of this cannot be relied on, it's only for debugging purposes.
+    """
+
+    def __str__(self):
+        msg = "{}. Please report this, and the associated data: {}"
+        return msg.format(self.message, self.data)
+
+
+@attrs_exception
+class ExternalError(FacebookError):
+    """Base class for errors that Facebook return."""
+
     #: The error message that Facebook returned (In the user's own language)
-    fb_error_message = attr.ib(None)
-    #: The status code that was sent in the HTTP response (e.g. 404) (Usually only set if not successful, aka. not 200)
-    request_status_code = attr.ib(None)
+    message = attr.ib(type=str)
+    #: The error code that Facebook returned
+    code = attr.ib(None, type=int)
+
+    def __str__(self):
+        if self.code:
+            return "#{}: {}".format(self.code, self.message)
+        return self.message
 
 
 @attrs_exception
-class FBchatInvalidParameters(FBchatFacebookError):
+class InvalidParameters(ExternalError):
     """Raised by Facebook if:
 
     - Some function supplied invalid parameters.
@@ -37,18 +65,18 @@ class FBchatInvalidParameters(FBchatFacebookError):
 
 
 @attrs_exception
-class FBchatNotLoggedIn(FBchatFacebookError):
+class NotLoggedIn(ExternalError):
     """Raised by Facebook if the client has been logged out."""
 
-    fb_error_code = attr.ib("1357001")
+    code = attr.ib(1357001)
 
 
 @attrs_exception
-class FBchatPleaseRefresh(FBchatFacebookError):
+class PleaseRefresh(ExternalError):
     """Raised by Facebook if the client has been inactive for too long.
 
     This error usually happens after 1-2 days of inactivity.
     """
 
-    fb_error_code = attr.ib("1357004")
-    fb_error_message = attr.ib("Please try closing and re-opening your browser window.")
+    code = attr.ib(1357004)
+    message = attr.ib("Please try closing and re-opening your browser window.")

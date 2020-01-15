@@ -101,7 +101,8 @@ class Poll:
             "/messaging/group_polling/update_vote/?dpr=1", data
         )
         if j.get("status") != "success":
-            raise _exception.FBchatFacebookError(
-                "Failed updating poll vote: {}".format(j.get("errorTitle")),
-                fb_error_message=j.get("errorMessage"),
+            raise _exception.ExternalError(
+                "Failed updating poll vote: {}: {}".format(
+                    j.get("errorTitle"), j.get("errorMessage")
+                )
             )

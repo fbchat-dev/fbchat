@@ -13,9 +13,10 @@ FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
 
 def get_user_id(session):
     # TODO: Optimize this `.get_dict()` call!
-    rtn = session.cookies.get_dict().get("c_user")
+    cookies = session.cookies.get_dict()
+    rtn = cookies.get("c_user")
     if rtn is None:
-        raise _exception.FBchatException("Could not find user id")
+        raise _exception.ParseError("Could not find user id", data=cookies)
     return str(rtn)
 
 
@@ -153,9 +154,6 @@ class Session:
             password: Facebook account password
             on_2fa_callback: Function that will be called, in case a 2FA code is needed.
                 This should return the requested 2FA code.
-
-        Raises:
-            FBchatException: On failed login
         """
         session = session_factory()
 
@@ -174,7 +172,7 @@ class Session:
         # Usually, 'Checkpoint' will refer to 2FA
         if "checkpoint" in r.url and ('id="approvals_code"' in r.text.lower()):
             if not on_2fa_callback:
-                raise _exception.FBchatException(
+                raise ValueError(
                     "2FA code required, please add `on_2fa_callback` to .login"
                 )
             code = on_2fa_callback()
@@ -188,10 +186,8 @@ class Session:
             return cls._from_session(session=session)
         else:
             code, msg = get_error_data(r.text, r.url)
-            raise _exception.FBchatFacebookError(
-                "Login failed (Failed on url: {})".format(r.url),
-                fb_error_code=code,
-                fb_error_message=msg,
+            raise _exception.ExternalError(
+                "Login failed. {}, url: {}".format(msg, r.url), code=code
             )
 
     def is_logged_in(self):
@@ -242,9 +238,7 @@ class Session:
             # Fall back to searching with a regex
             res = FB_DTSG_REGEX.search(r.text)
             if not res:
-                raise _exception.FBchatException(
-                    "Failed loading session: Could not find fb_dtsg"
-                )
+                raise ValueError("Failed loading session, could not find fb_dtsg")
             fb_dtsg = res.group(1)
 
         revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])
@@ -302,8 +296,8 @@ class Session:
         _util.handle_payload_error(j)
         try:
             return j["payload"]
-        except (KeyError, TypeError):
-            raise _exception.FBchatException("Missing payload: {}".format(j))
+        except (KeyError, TypeError) as e:
+            raise _exception.ParseError("Missing payload", data=j) from e
 
     def _graphql_requests(self, *queries):
         data = {
@@ -330,9 +324,7 @@ class Session:
         )
 
         if len(j["metadata"]) != len(files):
-            raise _exception.FBchatException(
-                "Some files could not be uploaded: {}, {}".format(j, files)
-            )
+            raise _exception.ParseError("Some files could not be uploaded", data=j)
 
         return [
             (data[_util.mimetype_to_key(data["filetype"])], data["filetype"])
@@ -366,7 +358,4 @@ class Session:
                 log.warning("Got multiple message ids' back: {}".format(message_ids))
             return message_ids[0]
         except (KeyError, IndexError, TypeError) as e:
-            raise _exception.FBchatException(
-                "Error when sending message: "
-                "No message IDs could be found: {}".format(j)
-            )
+            raise _exception.ParseError("No message IDs could be found", data=j) from e

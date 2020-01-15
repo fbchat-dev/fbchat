@@ -38,10 +38,8 @@ def response_to_json(content):
     content = _util.strip_json_cruft(content)  # Usually only needed in some error cases
     try:
         j = json.loads(content, cls=ConcatJSONDecoder)
-    except Exception:
-        raise _exception.FBchatException(
-            "Error while parsing JSON: {!r}".format(content)
-        )
+    except Exception as e:
+        raise _exception.ParseError("Error while parsing JSON", data=content) from e
 
     rtn = [None] * (len(j))
     for x in j:

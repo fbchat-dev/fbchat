@@ -12,7 +12,15 @@ _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 # The order of these is somewhat significant, e.g. User has to be imported after Thread!
 from . import _core, _util
 from ._core import Image
-from ._exception import FBchatException, FBchatFacebookError
+from ._exception import (
+    FacebookError,
+    HTTPError,
+    ParseError,
+    ExternalError,
+    InvalidParameters,
+    NotLoggedIn,
+    PleaseRefresh,
+)
 from ._session import Session
 from ._thread import ThreadLocation, ThreadABC, Thread
 from ._user import User, UserData, ActiveStatus
