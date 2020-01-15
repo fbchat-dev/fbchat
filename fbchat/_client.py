@@ -2727,6 +2727,18 @@ class Client(object):
                 msg=delta,
             )
 
+        # New pending message
+        elif delta_class == "ThreadFolder" and delta.get("folder") == "FOLDER_PENDING":
+            threadId = delta["threadKey"]["otherUserFbId"]
+            self.onPendingMessage(
+                author_id=threadId,
+                thread_id=threadId,
+                ts=now(),  # Also h4ck3r
+                metadata=metadata,
+                msg=delta
+            )
+
+
         # Unknown message type
         else:
             self.onUnknownMesssageType(msg=delta)
