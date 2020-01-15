@@ -5,7 +5,7 @@ import pytest
 from os import environ
 from random import randrange
 from contextlib import contextmanager
-from fbchat import EmojiSize, FBchatFacebookError, Sticker, Client
+from fbchat import EmojiSize, FacebookError, Sticker, Client
 
 log = logging.getLogger("fbchat.tests").addHandler(logging.NullHandler())
 
@@ -23,12 +23,8 @@ EMOJI_LIST = [
 
 STICKER_LIST = [
     Sticker(id="767334476626295"),
-    pytest.param(
-        Sticker(id="0"), marks=[pytest.mark.xfail(raises=FBchatFacebookError)]
-    ),
-    pytest.param(
-        Sticker(id=None), marks=[pytest.mark.xfail(raises=FBchatFacebookError)]
-    ),
+    pytest.param(Sticker(id="0"), marks=[pytest.mark.xfail(raises=FacebookError)]),
+    pytest.param(Sticker(id=None), marks=[pytest.mark.xfail(raises=FacebookError)]),
 ]
 
 TEXT_LIST = [
@@ -37,8 +33,8 @@ TEXT_LIST = [
     "\\\n\t%?&'\"",
     "ˁҭʚ¹Ʋջوװ՞ޱɣࠚԹБɑȑңКએ֭ʗыԈٌʼőԈ×௴nચϚࠖణٔє܅Ԇޑط",
     "a" * 20000,  # Maximum amount of characters you can send
-    pytest.param("a" * 20001, marks=[pytest.mark.xfail(raises=FBchatFacebookError)]),
-    pytest.param(None, marks=[pytest.mark.xfail(raises=FBchatFacebookError)]),
+    pytest.param("a" * 20001, marks=[pytest.mark.xfail(raises=FacebookError)]),
+    pytest.param(None, marks=[pytest.mark.xfail(raises=FacebookError)]),
 ]
 
 

@@ -17,6 +17,7 @@ from ._exception import (
     HTTPError,
     ParseError,
     ExternalError,
+    GraphQLError,
     InvalidParameters,
     NotLoggedIn,
     PleaseRefresh,

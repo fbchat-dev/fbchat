@@ -1,6 +1,6 @@
 import pytest
 
-from fbchat import Message, FBchatFacebookError
+from fbchat import Message, FacebookError
 from utils import random_hex, subset
 from os import path
 
@@ -60,10 +60,8 @@ def test_change_nickname(client, client_all, catch_event, compare):
         "😂",
         "😕",
         "😍",
-        pytest.param("🙃", marks=[pytest.mark.xfail(raises=FBchatFacebookError)]),
-        pytest.param(
-            "not an emoji", marks=[pytest.mark.xfail(raises=FBchatFacebookError)]
-        ),
+        pytest.param("🙃", marks=[pytest.mark.xfail(raises=FacebookError)]),
+        pytest.param("not an emoji", marks=[pytest.mark.xfail(raises=FacebookError)]),
     ],
 )
 def test_change_emoji(client, catch_event, compare, emoji):
@@ -97,7 +95,7 @@ def test_change_color(client, catch_event, compare):
     assert compare(x, new_color="#44bec7")
 
 
-@pytest.mark.xfail(raises=FBchatFacebookError, reason="Should fail, but doesn't")
+@pytest.mark.xfail(raises=FacebookError, reason="Should fail, but doesn't")
 def test_change_color_invalid(client):
     class InvalidColor:
         value = "#0077ff"

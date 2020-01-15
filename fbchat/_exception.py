@@ -118,15 +118,13 @@ def handle_graphql_errors(j):
         error = errors[0]  # TODO: Handle multiple errors
         # TODO: Use `summary`, `severity` and `description`
         raise GraphQLError(
-            "GraphQL error: {} / {!r}".format(
-                error.get("message"), error.get("debug_info")
-            ),
+            "{} / {!r}".format(error.get("message"), error.get("debug_info")),
             code=error.get("code"),
         )
 
 
 def handle_http_error(code):
-    msg = "Error when sending request: Got {} response.".format(code)
+    msg = "Error sending request: Got {} response.".format(code)
     if code == 404:
         raise HTTPError(
             msg + " This is either because you specified an invalid URL, or because"

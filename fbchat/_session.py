@@ -205,9 +205,6 @@ class Session:
         """Safely log out the user.
 
         The session object must not be used after this action has been performed!
-
-        Raises:
-            FBchatException: On failed logout
         """
         logout_h = self._logout_h
         if not logout_h:
@@ -218,9 +215,7 @@ class Session:
         url = _util.prefix_url("/logout.php")
         r = self._session.get(url, params={"ref": "mb", "h": logout_h})
         if not r.ok:
-            raise exception.FBchatException(
-                "Failed logging out: {}".format(r.status_code)
-            )
+            raise exception.HTTPError("Failed logging out", status_code=r.status_code)
 
     @classmethod
     def _from_session(cls, session):
@@ -268,9 +263,6 @@ class Session:
 
         Args:
             cookies (dict): A dictionary containing session cookies
-
-        Raises:
-            FBchatException: If given invalid cookies
         """
         session = session_factory()
         session.cookies = requests.cookies.merge_cookies(session.cookies, cookies)

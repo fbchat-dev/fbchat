@@ -3,7 +3,7 @@ import py_compile
 
 from glob import glob
 from os import path, environ
-from fbchat import FBchatException, Message, Client
+from fbchat import FacebookError, Message, Client
 
 
 def test_examples():
@@ -23,7 +23,7 @@ def test_login(client1):
 
     assert not client1.is_logged_in()
 
-    with pytest.raises(FBchatException):
+    with pytest.raises(FacebookError):
         client1.login("<invalid email>", "<invalid password>", max_tries=1)
 
     client1.login(email, password)

@@ -7,9 +7,6 @@ from fbchat._util import (
     str_base,
     generate_message_id,
     get_signature_id,
-    handle_payload_error,
-    handle_graphql_errors,
-    check_http_code,
     get_jsmods_require,
     require_list,
     mimetype_to_key,
@@ -33,7 +30,7 @@ def test_strip_json_cruft():
 def test_strip_json_cruft_invalid():
     with pytest.raises(AttributeError):
         strip_json_cruft(None)
-    with pytest.raises(fbchat.FBchatException, match="No JSON object found"):
+    with pytest.raises(fbchat.ParseError, match="No JSON object found"):
         strip_json_cruft("No JSON object here!")
 
 
@@ -42,7 +39,7 @@ def test_parse_json():
 
 
 def test_parse_json_invalid():
-    with pytest.raises(fbchat.FBchatFacebookError, match="Error while parsing JSON"):
+    with pytest.raises(fbchat.ParseError, match="Error while parsing JSON"):
         parse_json("No JSON object here!")
 
 
@@ -69,125 +66,6 @@ def test_generate_message_id():
 def test_get_signature_id():
     # Returns random output, so hard to test more thoroughly
     get_signature_id()
-
-
-ERROR_DATA = [
-    (
-        fbchat._exception.FBchatNotLoggedIn,
-        1357001,
-        "Not logged in",
-        "Please log in to continue.",
-    ),
-    (
-        fbchat._exception.FBchatPleaseRefresh,
-        1357004,
-        "Sorry, something went wrong",
-        "Please try closing and re-opening your browser window.",
-    ),
-    (
-        fbchat._exception.FBchatInvalidParameters,
-        1357031,
-        "This content is no longer available",
-        (
-            "The content you requested cannot be displayed at the moment. It may be"
-            " temporarily unavailable, the link you clicked on may have expired or you"
-            " may not have permission to view this page."
-        ),
-    ),
-    (
-        fbchat._exception.FBchatInvalidParameters,
-        1545010,
-        "Messages Unavailable",
-        (
-            "Sorry, messages are temporarily unavailable."
-            " Please try again in a few minutes."
-        ),
-    ),
-    (
-        fbchat.FBchatFacebookError,
-        1545026,
-        "Unable to Attach File",
-        (
-            "The type of file you're trying to attach isn't allowed."
-            " Please try again with a different format."
-        ),
-    ),
-    (
-        fbchat._exception.FBchatInvalidParameters,
-        1545003,
-        "Invalid action",
-        "You cannot perform that action.",
-    ),
-    (
-        fbchat.FBchatFacebookError,
-        1545012,
-        "Temporary Failure",
-        "There was a temporary error, please try again.",
-    ),
-]
-
-
-@pytest.mark.parametrize("exception,code,description,summary", ERROR_DATA)
-def test_handle_payload_error(exception, code, summary, description):
-    data = {"error": code, "errorSummary": summary, "errorDescription": description}
-    with pytest.raises(exception, match=r"Error #\d+ when sending request"):
-        handle_payload_error(data)
-
-
-def test_handle_payload_error_no_error():
-    assert handle_payload_error({}) is None
-    assert handle_payload_error({"payload": {"abc": ["Something", "else"]}}) is None
-
-
-def test_handle_graphql_errors():
-    error = {
-        "allow_user_retry": False,
-        "api_error_code": -1,
-        "code": 1675030,
-        "debug_info": None,
-        "description": "Error performing query.",
-        "fbtrace_id": "CLkuLR752sB",
-        "is_silent": False,
-        "is_transient": False,
-        "message": (
-            'Errors while executing operation "MessengerThreadSharedLinks":'
-            " At Query.message_thread: Field implementation threw an exception."
-            " Check your server logs for more information."
-        ),
-        "path": ["message_thread"],
-        "query_path": None,
-        "requires_reauth": False,
-        "severity": "CRITICAL",
-        "summary": "Query error",
-    }
-    with pytest.raises(fbchat.FBchatFacebookError, match="GraphQL error"):
-        handle_graphql_errors({"data": {"message_thread": None}, "errors": [error]})
-
-
-def test_handle_graphql_errors_singular_error_key():
-    with pytest.raises(fbchat.FBchatFacebookError, match="GraphQL error #123"):
-        handle_graphql_errors({"error": {"code": 123}})
-
-
-def test_handle_graphql_errors_no_error():
-    assert handle_graphql_errors({"data": {"message_thread": None}}) is None
-
-
-def test_check_http_code():
-    with pytest.raises(fbchat.FBchatFacebookError):
-        check_http_code(400)
-    with pytest.raises(fbchat.FBchatFacebookError):
-        check_http_code(500)
-
-
-def test_check_http_code_404_handling():
-    with pytest.raises(fbchat.FBchatFacebookError, match="invalid id"):
-        check_http_code(404)
-
-
-def test_check_http_code_no_error():
-    assert check_http_code(200) is None
-    assert check_http_code(302) is None
 
 
 def test_get_jsmods_require_get_image_url():
