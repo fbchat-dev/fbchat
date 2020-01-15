@@ -2949,6 +2949,34 @@ class Client(object):
         """
         log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
 
+    def onPendingMessage(
+        self,
+        mid=None,
+        author_id=None,
+        message=None,
+        message_object=None,
+        thread_id=None,
+        thread_type=ThreadType.USER,
+        ts=None,
+        metadata=None,
+        msg=None,
+    ):
+        """Called when the client is listening, and somebody that isn't
+         connected with you on either Facebook or Messenger sends a message.
+
+         Args:
+            mid: The message ID
+            author_id: The ID of the author
+            message: (deprecated. Use ``message_object.text`` instead)
+            message_object (Message): The message (As a `Message` object)
+            thread_id: Thread ID that the message was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the message was sent to. See :ref:`intro_threads`
+            ts: The timestamp of the message
+            metadata: Extra metadata about the message
+            msg: A full set of the data received
+        """
+        log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
+
     def onColorChange(
         self,
         mid=None,
