@@ -46,9 +46,9 @@ def response_to_json(content):
         if "error_results" in x:
             del rtn[-1]
             continue
-        _util.handle_payload_error(x)
+        _exception.handle_payload_error(x)
         [(key, value)] = x.items()
-        _util.handle_graphql_errors(value)
+        _exception.handle_graphql_errors(value)
         if "response" in value:
             rtn[int(key[1:])] = value["response"]
         else:

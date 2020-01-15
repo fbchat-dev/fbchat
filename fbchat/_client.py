@@ -429,7 +429,7 @@ class Client:
         image_id = str(image_id)
         data = {"photo_id": str(image_id)}
         j = self.session._post("/mercury/attachments/photo/", data)
-        _util.handle_payload_error(j)
+        _exception.handle_payload_error(j)
 
         url = _util.get_jsmods_require(j, 3)
         if url is None:
@@ -625,7 +625,7 @@ class Client:
             "https://{}-edge-chat.facebook.com/active_ping".format(self._pull_channel),
             data,
         )
-        _util.handle_payload_error(j)
+        _exception.handle_payload_error(j)
 
     def _pull_message(self):
         """Call pull api to fetch message data."""
@@ -640,7 +640,7 @@ class Client:
         j = self.session._get(
             "https://{}-edge-chat.facebook.com/pull".format(self._pull_channel), data
         )
-        _util.handle_payload_error(j)
+        _exception.handle_payload_error(j)
         return j
 
     def _parse_delta(self, delta):

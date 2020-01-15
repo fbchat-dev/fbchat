@@ -293,7 +293,7 @@ class Session:
 
     def _payload_post(self, url, data, files=None):
         j = self._post(url, data, files=files)
-        _util.handle_payload_error(j)
+        _exception.handle_payload_error(j)
         try:
             return j["payload"]
         except (KeyError, TypeError) as e:
