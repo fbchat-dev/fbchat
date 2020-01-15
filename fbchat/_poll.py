@@ -102,7 +102,6 @@ class Poll:
         )
         if j.get("status") != "success":
             raise _exception.ExternalError(
-                "Failed updating poll vote: {}: {}".format(
-                    j.get("errorTitle"), j.get("errorMessage")
-                )
+                "Failed updating poll vote: {}".format(j.get("errorTitle")),
+                j.get("errorMessage"),
             )

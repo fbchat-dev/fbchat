@@ -12,6 +12,7 @@ class FacebookError(Exception):
     All exceptions in the module inherit this.
     """
 
+    #: A message describing the error
     message = attr.ib(type=str)
 
 
@@ -19,7 +20,13 @@ class FacebookError(Exception):
 class HTTPError(FacebookError):
     """Base class for errors with the HTTP(s) connection to Facebook."""
 
+    #: The returned HTTP status code, if relevant
     status_code = attr.ib(None, type=int)
+
+    def __str__(self):
+        if not self.status_code:
+            return self.message
+        return "#{}: {}".format(self.status_code, self.message)
 
 
 @attrs_exception
@@ -44,23 +51,30 @@ class ParseError(FacebookError):
 class ExternalError(FacebookError):
     """Base class for errors that Facebook return."""
 
-    #: The error message that Facebook returned (In the user's own language)
-    message = attr.ib(type=str)
+    #: The error message that Facebook returned (Possibly in the user's own language)
+    description = attr.ib(type=str)
     #: The error code that Facebook returned
     code = attr.ib(None, type=int)
 
     def __str__(self):
         if self.code:
-            return "#{}: {}".format(self.code, self.message)
-        return self.message
+            return "{}: #{}, {}".format(self.message, self.code, self.description)
+        return "{}: {}".format(self.message, self.description)
 
 
 @attrs_exception
 class GraphQLError(ExternalError):
     """Raised by Facebook if there was an error in the GraphQL query."""
 
-    # TODO: Add `summary`, `severity` and `description`
     # TODO: Handle multiple errors
+
+    #: Query debug information
+    debug_info = attr.ib(None, type=str)
+
+    def __str__(self):
+        if self.debug_info:
+            return "{}, {}".format(super().__str__(), self.debug_info)
+        return super().__str__()
 
 
 @attrs_exception
@@ -103,10 +117,7 @@ def handle_payload_error(j):
     else:
         error_cls = ExternalError
     # TODO: Use j["errorSummary"]
-    # "errorDescription" is in the users own language!
-    raise error_cls(
-        "Error sending request: {}".format(j["errorDescription"]), code=code
-    )
+    raise error_cls("Error sending request", j["errorDescription"], code=code)
 
 
 def handle_graphql_errors(j):
@@ -117,10 +128,13 @@ def handle_graphql_errors(j):
         errors = j["errors"]
     if errors:
         error = errors[0]  # TODO: Handle multiple errors
-        # TODO: Use `summary`, `severity` and `description`
+        # TODO: Use `severity` and `description`
         raise GraphQLError(
-            "{} / {!r}".format(error.get("message"), error.get("debug_info")),
+            # TODO: What data is always available?
+            error.get("summary", "Unknown error"),
+            error.get("message", ""),
             code=error.get("code"),
+            debug_info=error.get("debug_info"),
         )
 
 

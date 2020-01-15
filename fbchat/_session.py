@@ -202,7 +202,7 @@ class Session:
         else:
             code, msg = get_error_data(r.text, r.url)
             raise _exception.ExternalError(
-                "Login failed. {}, url: {}".format(msg, r.url), code=code
+                "Login failed at url {}".format(r.url), msg, code=code
             )
 
     def is_logged_in(self):

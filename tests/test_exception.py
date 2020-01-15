@@ -67,7 +67,7 @@ ERROR_DATA = [
 @pytest.mark.parametrize("exception,code,description,summary", ERROR_DATA)
 def test_handle_payload_error(exception, code, summary, description):
     data = {"error": code, "errorSummary": summary, "errorDescription": description}
-    with pytest.raises(exception, match=r"#\d+: Error sending request"):
+    with pytest.raises(exception, match=r"Error sending request: #\d+"):
         handle_payload_error(data)
 
 
@@ -97,7 +97,9 @@ def test_handle_graphql_errors():
         "severity": "CRITICAL",
         "summary": "Query error",
     }
-    with pytest.raises(GraphQLError, match="#1675030: Errors while executing"):
+    with pytest.raises(
+        GraphQLError, match="Query error: #1675030, Errors while executing"
+    ):
         handle_graphql_errors({"data": {"message_thread": None}, "errors": [error]})
 
 

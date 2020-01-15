@@ -479,9 +479,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         }
         j = self.session._payload_post("/mercury/attachments/forward/", data)
         if not j.get("success"):
-            raise _exception.ExternalError(
-                "Failed forwarding attachment: {}".format(j["error"])
-            )
+            raise _exception.ExternalError("Failed forwarding attachment", j["error"])
 
     def _set_typing(self, typing):
         data = {
@@ -545,9 +543,8 @@ class ThreadABC(metaclass=abc.ABCMeta):
         )
         if j.get("status") != "success":
             raise _exception.ExternalError(
-                "Failed creating poll: {}, {}".format(
-                    j.get("errorTitle"), j.get("errorMessage")
-                )
+                "Failed creating poll: {}".format(j.get("errorTitle")),
+                j.get("errorMessage"),
             )
 
     def mute(self, duration: datetime.timedelta = None):
