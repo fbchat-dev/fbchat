@@ -7,6 +7,7 @@ from . import (
     _exception,
     _util,
     _graphql,
+    _mqtt,
     _session,
     _poll,
     _user,
@@ -51,12 +52,10 @@ class Client:
         Args:
             session: The session to use when making requests.
         """
-        self._sticky, self._pool = (None, None)
-        self._seq = "0"
-        self._pull_channel = 0
         self._mark_alive = True
         self._buddylist = dict()
         self._session = session
+        self._mqtt = None
 
     @property
     def session(self):
@@ -608,41 +607,6 @@ class Client:
     LISTEN METHODS
     """
 
-    def _ping(self):
-        data = {
-            "seq": self._seq,
-            "channel": "p_" + self.session.user_id,
-            "clientid": self.session._client_id,
-            "partition": -2,
-            "cap": 0,
-            "uid": self.session.user_id,
-            "sticky_token": self._sticky,
-            "sticky_pool": self._pool,
-            "viewer_uid": self.session.user_id,
-            "state": "active",
-        }
-        j = self.session._get(
-            "https://{}-edge-chat.facebook.com/active_ping".format(self._pull_channel),
-            data,
-        )
-        _exception.handle_payload_error(j)
-
-    def _pull_message(self):
-        """Call pull api to fetch message data."""
-        data = {
-            "seq": self._seq,
-            "msgs_recv": 0,
-            "sticky_token": self._sticky,
-            "sticky_pool": self._pool,
-            "clientid": self.session._client_id,
-            "state": "active" if self._mark_alive else "offline",
-        }
-        j = self.session._get(
-            "https://{}-edge-chat.facebook.com/pull".format(self._pull_channel), data
-        )
-        _exception.handle_payload_error(j)
-        return j
-
     def _parse_delta(self, delta):
         def get_thread(data):
             if "threadFbId" in data["threadKey"]:
@@ -695,6 +659,12 @@ class Client:
                 at=at,
                 metadata=metadata,
             )
+
+        elif delta_class == "MarkFolderSeen":
+            locations = [
+                ThreadLocation(folder.lstrip("FOLDER_")) for folder in delta["folders"]
+            ]
+            self._on_seen(locations=locations, at=at)
 
         # Emoji change
         elif delta_type == "change_thread_icon":
@@ -861,6 +831,10 @@ class Client:
                 metadata=metadata,
             )
 
+        # Skip "no operation" events
+        elif delta_class == "NoOp":
+            pass
+
         # Group call started/ended
         elif delta_type == "rtc_call_log":
             call_status = delta["untypedData"]["event"]
@@ -989,7 +963,8 @@ class Client:
         # Client payload (that weird numbers)
         elif delta_class == "ClientPayload":
             payload = _util.parse_json("".join(chr(z) for z in delta["payload"]))
-            at = _util.millis_to_datetime(m.get("ofd_ts"))
+            # Hack
+            at = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
             for d in payload.get("deltas", []):
 
                 # Message reaction
@@ -1096,132 +1071,106 @@ class Client:
         else:
             self.on_unknown_messsage_type(msg=delta)
 
-    def _parse_message(self, content):
-        """Get message and author name from content.
+    def _parse_payload(self, topic, m):
+        # Things that directly change chat
+        if topic == "/t_ms":
+            if "deltas" not in m:
+                return
+            for delta in m["deltas"]:
+                self._parse_delta(delta)
 
-        May contain multiple messages in the content.
+        # TODO: Remove old parsing below
+
+        # Inbox
+        elif topic == "inbox":
+            self.on_inbox(
+                unseen=m["unseen"],
+                unread=m["unread"],
+                recent_unread=m["recent_unread"],
+            )
+
+        # Typing
+        # /thread_typing {'sender_fbid': X, 'state': 1, 'type': 'typ', 'thread': 'Y'}
+        # /orca_typing_notifications {'type': 'typ', 'sender_fbid': X, 'state': 0}
+        elif topic in ("/thread_typing", "/orca_typing_notifications"):
+            author_id = str(m["sender_fbid"])
+            thread_id = m.get("thread")
+            if thread_id:
+                thread = _group.Group(session=self.session, id=str(thread_id))
+            else:
+                thread = _user.User(session=self.session, id=author_id)
+            typing_status = TypingStatus(m.get("state"))
+            self.on_typing(
+                author_id=author_id,
+                status=typing_status,
+                thread=thread,
+            )
+
+        # Other notifications
+        elif topic == "/legacy_web":
+            # Friend request
+            if m["type"] == "jewel_requests_add":
+                self.on_friend_request(from_id=str(m["from"]))
+            else:
+                self.on_unknown_messsage_type(msg=m)
+
+        # Chat timestamp / Buddylist overlay
+        elif topic == "/orca_presence":
+            if m["list_type"] == "full":
+                self._buddylist = {}  # Refresh internal list
+
+            statuses = dict()
+            for data in m["list"]:
+                user_id = str(data["u"])
+                statuses[user_id] = ActiveStatus._from_orca_presence(data)
+                self._buddylist[user_id] = statuses[user_id]
+
+            # TODO: Which one should we call?
+            self.on_chat_timestamp(buddylist=statuses)
+            self.on_buddylist_overlay(statuses=statuses)
+
+        # Unknown message type
+        else:
+            self.on_unknown_messsage_type(msg=m)
+
+    def _parse_message(self, topic, data):
+        try:
+            self._parse_payload(topic, data)
+        except Exception as e:
+            self.on_message_error(exception=e, msg=data)
+
+    def startListening(self):
+        """Start listening from an external event loop.
+
+        Raises:
+            FBchatException: If request failed
         """
-        self._seq = content.get("seq", "0")
-
-        if "lb_info" in content:
-            self._sticky = content["lb_info"]["sticky"]
-            self._pool = content["lb_info"]["pool"]
-
-        if "batches" in content:
-            for batch in content["batches"]:
-                self._parse_message(batch)
-
-        if "ms" not in content:
-            return
-
-        for m in content["ms"]:
-            mtype = m.get("type")
-            try:
-                # Things that directly change chat
-                if mtype == "delta":
-                    self._parse_delta(m)
-                # Inbox
-                elif mtype == "inbox":
-                    self.on_inbox(
-                        unseen=m["unseen"],
-                        unread=m["unread"],
-                        recent_unread=m["recent_unread"],
-                    )
-
-                # Typing
-                elif mtype == "typ" or mtype == "ttyp":
-                    author_id = str(m.get("from"))
-                    thread_id = m.get("thread_fbid")
-                    if thread_id:
-                        thread = Group(session=self.session, id=str(thread_id))
-                    else:
-                        if author_id == self.session.user_id:
-                            thread_id = m.get("to")
-                        else:
-                            thread_id = author_id
-                        thread = User(session=self.session, id=thread_id)
-                    self.on_typing(
-                        author_id=author_id, status=m["st"] == 1, thread=thread
-                    )
-
-                # Delivered
-
-                # Seen
-                # elif mtype == "m_read_receipt":
-                #
-                #     self.on_seen(m.get('realtime_viewer_fbid'), m.get('reader'), m.get('time'))
-
-                elif mtype in ["jewel_requests_add"]:
-                    from_id = m["from"]
-                    self.on_friend_request(from_id=from_id)
-
-                # Happens on every login
-                elif mtype == "qprimer":
-                    self.on_qprimer(at=_util.millis_to_datetime(int(m.get("made"))))
-
-                # Is sent before any other message
-                elif mtype == "deltaflow":
-                    pass
-
-                # Chat timestamp
-                elif mtype == "chatproxy-presence":
-                    statuses = dict()
-                    for id_, data in m.get("buddyList", {}).items():
-                        statuses[id_] = ActiveStatus._from_chatproxy_presence(id_, data)
-                        self._buddylist[id_] = statuses[id_]
-
-                    self.on_chat_timestamp(buddylist=statuses)
-
-                # Buddylist overlay
-                elif mtype == "buddylist_overlay":
-                    statuses = dict()
-                    for id_, data in m.get("overlay", {}).items():
-                        old_in_game = None
-                        if id_ in self._buddylist:
-                            old_in_game = self._buddylist[id_].in_game
-
-                        statuses[id_] = ActiveStatus._from_buddylist_overlay(
-                            data, old_in_game
-                        )
-                        self._buddylist[id_] = statuses[id_]
-
-                    self.on_buddylist_overlay(statuses=statuses)
-
-                # Unknown message type
-                else:
-                    self.on_unknown_messsage_type(msg=m)
-
-            except Exception as e:
-                self.on_message_error(exception=e, msg=m)
+        if not self._mqtt:
+            self._mqtt = _mqtt.Mqtt.connect(
+                state=self.session,
+                on_message=self._parse_message,
+                chat_on=self._mark_alive,
+                foreground=True,
+            )
+            # Backwards compat
+            self.on_qprimer(ts=now(), msg=None)
 
     def _do_one_listen(self):
-        try:
-            if self._mark_alive:
-                self._ping()
-            content = self._pull_message()
-            if content:
-                self._parse_message(content)
-        except KeyboardInterrupt:
-            return False
-        except _exception.HTTPError as e:
-            cause = e.__cause__
+        # TODO: Remove this wierd check, and let the user handle the chat_on parameter
+        if self._mark_alive != self._mqtt._chat_on:
+            self._mqtt.set_chat_on(self._mark_alive)
 
-            # Fix 502 and 503 pull errors
-            if e.status_code in [502, 503]:
-                # Bump pull channel, while contraining withing 0-4
-                self._pull_channel = (self._pull_channel + 1) % 5
-            # TODO: Handle these exceptions better
-            elif isinstance(cause, requests.ReadTimeout):
-                pass  # Expected
-            elif isinstance(cause, (requests.ConnectTimeout, requests.ConnectionError)):
-                # If the client has lost their internet connection, keep trying every 30 seconds
-                time.sleep(30)
-            else:
-                raise e
-        except Exception as e:
-            return self.on_listen_error(exception=e)
+        # TODO: Remove on_error param
+        return self._mqtt.loop_once(on_error=lambda e: self.on_listen_error(exception=e))
 
-        return True
+    def stopListening(self):
+        """Stop the listening loop."""
+        if not self._mqtt:
+            return
+        self._mqtt.disconnect()
+        # TODO: Preserve the _mqtt object
+        # Currently, there's some issues when disconnecting
+        self._mqtt = None
 
     def listen(self, markAlive=None):
         """Initialize and runs the listening loop continually.
@@ -1535,6 +1484,16 @@ class Client:
             from_id: The ID of the person that sent the request
         """
         log.info("Friend request from {}".format(from_id))
+
+    def _on_seen(self, locations=None, at=None):
+        """
+        Todo:
+            Document this, and make it public
+
+        Args:
+            locations: ---
+            at: A timestamp of the action
+        """
 
     def on_inbox(self, unseen=None, unread=None, recent_unread=None):
         """
@@ -1873,7 +1832,6 @@ class Client:
         Args:
             statuses (dict): Dictionary with user IDs as keys and `ActiveStatus` as values
         """
-        log.debug("Buddylist overlay received: {}".format(statuses))
 
     def on_unknown_messsage_type(self, msg=None):
         """Called when the client is listening, and some unknown data was received.

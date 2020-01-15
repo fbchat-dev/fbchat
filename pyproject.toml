@@ -17,6 +17,7 @@ requires = [
     "attrs>=19.1",
     "requests~=2.19",
     "beautifulsoup4~=4.0",
+    "paho-mqtt~=1.5",
 ]
 description-file = "README.rst"
 classifiers = [

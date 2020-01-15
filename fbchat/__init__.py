@@ -45,7 +45,7 @@ from ._plan import GuestStatus, Plan, PlanData
 from ._client import Client
 
 __title__ = "fbchat"
-__version__ = "1.8.1"
+__version__ = "1.9.4"
 __description__ = "Facebook Chat (Messenger) for Python"
 
 __copyright__ = "Copyright 2015 - 2019 by Taehoon Kim"
