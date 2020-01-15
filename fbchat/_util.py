@@ -55,14 +55,6 @@ def strip_json_cruft(text):
         raise _exception.ParseError("No JSON object found", data=text) from e
 
 
-def get_cookie_header(session, url):
-    """Extract a cookie header from a requests session."""
-    # The cookies are extracted this way to make sure they're escaped correctly
-    return requests.cookies.get_cookie_header(
-        session.cookies, requests.Request("GET", url),
-    )
-
-
 def get_decoded_r(r):
     return get_decoded(r._content)
 

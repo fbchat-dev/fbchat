@@ -1,6 +1,4 @@
 import datetime
-import time
-import requests
 
 from ._core import log
 from . import (
@@ -654,7 +652,9 @@ class Client:
             self.on_color_change(
                 mid=mid,
                 author_id=author_id,
-                new_color=ThreadABC._parse_color(delta["untypedData"]["theme_color"]),
+                new_color=_thread.ThreadABC._parse_color(
+                    delta["untypedData"]["theme_color"]
+                ),
                 thread=get_thread(metadata),
                 at=at,
                 metadata=metadata,
@@ -664,6 +664,7 @@ class Client:
             locations = [
                 ThreadLocation(folder.lstrip("FOLDER_")) for folder in delta["folders"]
             ]
+            at = _util.millis_to_datetime(int(delta["timestamp"]))
             self._on_seen(locations=locations, at=at)
 
         # Emoji change
@@ -685,7 +686,7 @@ class Client:
                 mid=mid,
                 author_id=author_id,
                 new_title=new_title,
-                thread=get_thread(metadata),
+                group=get_thread(metadata),
                 at=at,
                 metadata=metadata,
             )
@@ -696,7 +697,7 @@ class Client:
             if mid is None:
                 self.on_unknown_messsage_type(msg=delta)
             else:
-                group = get_thread(metadata)
+                group = get_thread(delta)
                 fetch_info = group._forced_fetch(mid)
                 fetch_data = fetch_info["message"]
                 author_id = fetch_data["message_sender"]["id"]
@@ -740,7 +741,7 @@ class Client:
                     mid=mid,
                     added_id=target_id,
                     author_id=author_id,
-                    thread=get_thread(metadata),
+                    group=get_thread(metadata),
                     at=at,
                 )
             elif admin_event == "remove_admin":
@@ -748,7 +749,7 @@ class Client:
                     mid=mid,
                     removed_id=target_id,
                     author_id=author_id,
-                    thread=get_thread(metadata),
+                    group=get_thread(metadata),
                     at=at,
                 )
 
@@ -759,7 +760,7 @@ class Client:
                 mid=mid,
                 approval_mode=approval_mode,
                 author_id=author_id,
-                thread=get_thread(metadata),
+                group=get_thread(metadata),
                 at=at,
             )
 
@@ -773,7 +774,7 @@ class Client:
             self.on_message_delivered(
                 msg_ids=message_ids,
                 delivered_for=delivered_for,
-                thread=get_thread(metadata),
+                thread=get_thread(delta),
                 at=at,
                 metadata=metadata,
             )
@@ -785,7 +786,7 @@ class Client:
             at = _util.millis_to_datetime(int(delta["watermarkTimestampMs"]))
             self.on_message_seen(
                 seen_by=seen_by,
-                thread=get_thread(metadata),
+                thread=get_thread(delta),
                 seen_at=seen_at,
                 at=at,
                 metadata=metadata,
@@ -978,15 +979,12 @@ class Client:
                             mid=mid,
                             reaction=i.get("reaction"),
                             author_id=author_id,
-                            thread=get_thread(metadata),
+                            thread=get_thread(i),
                             at=at,
                         )
                     else:
                         self.on_reaction_removed(
-                            mid=mid,
-                            author_id=author_id,
-                            thread=get_thread(metadata),
-                            at=at,
+                            mid=mid, author_id=author_id, thread=get_thread(i), at=at,
                         )
 
                 # Viewer status change
@@ -998,11 +996,11 @@ class Client:
                     if reason == 2:
                         if can_reply:
                             self.on_unblock(
-                                author_id=author_id, thread=get_thread(metadata), at=at,
+                                author_id=author_id, thread=get_thread(i), at=at
                             )
                         else:
                             self.on_block(
-                                author_id=author_id, thread=get_thread(metadata), at=at,
+                                author_id=author_id, thread=get_thread(i), at=at
                             )
 
                 # Live location info
@@ -1016,7 +1014,7 @@ class Client:
                             mid=mid,
                             location=location,
                             author_id=author_id,
-                            thread=get_thread(metadata),
+                            thread=get_thread(i),
                             at=at,
                         )
 
@@ -1027,18 +1025,19 @@ class Client:
                     at = _util.millis_to_datetime(i["deletionTimestamp"])
                     author_id = str(i["senderID"])
                     self.on_message_unsent(
-                        mid=mid,
-                        author_id=author_id,
-                        thread=get_thread(metadata),
-                        at=at,
+                        mid=mid, author_id=author_id, thread=get_thread(i), at=at
                     )
 
                 elif d.get("deltaMessageReply"):
                     i = d["deltaMessageReply"]
-                    thread = get_thread(metadata)
                     metadata = i["message"]["messageMetadata"]
-                    replied_to = MessageData._from_reply(thread, i["repliedToMessage"])
-                    message = MessageData._from_reply(thread, i["message"], replied_to)
+                    thread = get_thread(metadata)
+                    replied_to = _message.MessageData._from_reply(
+                        thread, i["repliedToMessage"]
+                    )
+                    message = _message.MessageData._from_reply(
+                        thread, i["message"], replied_to
+                    )
                     self.on_message(
                         mid=message.id,
                         author_id=message.author,
@@ -1048,13 +1047,16 @@ class Client:
                         metadata=metadata,
                     )
 
+                else:
+                    self.on_unknown_messsage_type(msg=d)
+
         # New message
         elif delta.get("class") == "NewMessage":
             thread = get_thread(metadata)
             self.on_message(
                 mid=mid,
                 author_id=author_id,
-                message_object=MessageData._from_pull(
+                message_object=_message.MessageData._from_pull(
                     thread,
                     delta,
                     mid=mid,
@@ -1099,11 +1101,8 @@ class Client:
                 thread = _group.Group(session=self.session, id=str(thread_id))
             else:
                 thread = _user.User(session=self.session, id=author_id)
-            typing_status = TypingStatus(m.get("state"))
             self.on_typing(
-                author_id=author_id,
-                status=typing_status,
-                thread=thread,
+                author_id=author_id, status=m["state"] == 1, thread=thread,
             )
 
         # Other notifications
@@ -1139,32 +1138,23 @@ class Client:
         except Exception as e:
             self.on_message_error(exception=e, msg=data)
 
-    def startListening(self):
-        """Start listening from an external event loop.
-
-        Raises:
-            FBchatException: If request failed
-        """
+    def _start_listening(self):
         if not self._mqtt:
             self._mqtt = _mqtt.Mqtt.connect(
-                state=self.session,
+                session=self.session,
                 on_message=self._parse_message,
                 chat_on=self._mark_alive,
                 foreground=True,
             )
-            # Backwards compat
-            self.on_qprimer(ts=now(), msg=None)
 
     def _do_one_listen(self):
         # TODO: Remove this wierd check, and let the user handle the chat_on parameter
         if self._mark_alive != self._mqtt._chat_on:
             self._mqtt.set_chat_on(self._mark_alive)
 
-        # TODO: Remove on_error param
-        return self._mqtt.loop_once(on_error=lambda e: self.on_listen_error(exception=e))
+        return self._mqtt.loop_once()
 
-    def stopListening(self):
-        """Stop the listening loop."""
+    def _stop_listening(self):
         if not self._mqtt:
             return
         self._mqtt.disconnect()
@@ -1181,12 +1171,12 @@ class Client:
         if markAlive is not None:
             self.set_active_status(markAlive)
 
-        self.on_listening()
+        self._start_listening()
 
         while self._do_one_listen():
             pass
 
-        self._sticky, self._pool = (None, None)
+        self._stop_listening()
 
     def set_active_status(self, markAlive):
         """Change active status while listening.
@@ -1203,22 +1193,6 @@ class Client:
     """
     EVENTS
     """
-
-    def on_listening(self):
-        """Called when the client is listening."""
-        log.info("Listening...")
-
-    def on_listen_error(self, exception=None):
-        """Called when an error was encountered while listening.
-
-        Args:
-            exception: The exception that was encountered
-
-        Returns:
-            Whether the loop should keep running
-        """
-        log.exception("Got exception while listening")
-        return True
 
     def on_message(
         self,
@@ -1809,14 +1783,6 @@ class Client:
             log.info(
                 "{} won't take part in {} in {} ({})".format(author_id, plan, thread)
             )
-
-    def on_qprimer(self, at=None):
-        """Called when the client just started listening.
-
-        Args:
-            at (datetime.datetime): When the action was executed
-        """
-        pass
 
     def on_chat_timestamp(self, buddylist=None):
         """Called when the client receives chat online presence update.

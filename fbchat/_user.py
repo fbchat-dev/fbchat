@@ -206,4 +206,8 @@ class ActiveStatus:
     @classmethod
     def _from_orca_presence(cls, data):
         # TODO: Handle `c` and `vc` keys (Probably some binary data)
-        return cls(active=data["p"] in [2, 3], last_active=_util.millis_to_datetime(data["l"]), in_game=None)
+        return cls(
+            active=data["p"] in [2, 3],
+            last_active=_util.seconds_to_datetime(data["l"]) if "l" in data else None,
+            in_game=None,
+        )

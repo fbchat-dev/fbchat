@@ -387,7 +387,7 @@ class MessageData(Message):
                     image_metadata = a.get("imageMetadata", {})
                     attach_type = mercury["blob_attachment"]["__typename"]
                     attachment = _file.graphql_to_attachment(
-                        mercury["blob_attachment"], a["fileSize"]
+                        mercury["blob_attachment"], a.get("fileSize")
                     )
                     attachments.append(attachment)
 

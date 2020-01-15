@@ -1,8 +1,17 @@
 import attr
 import random
 import paho.mqtt.client
+import requests
 from ._core import log
 from . import _util, _exception, _graphql
+
+
+def get_cookie_header(session, url):
+    """Extract a cookie header from a requests session."""
+    # The cookies are extracted this way to make sure they're escaped correctly
+    return requests.cookies.get_cookie_header(
+        session.cookies, requests.Request("GET", url),
+    )
 
 
 def generate_session_id():
@@ -12,7 +21,7 @@ def generate_session_id():
 
 @attr.s(slots=True)
 class Mqtt(object):
-    _state = attr.ib()
+    _session = attr.ib()
     _mqtt = attr.ib()
     _on_message = attr.ib()
     _chat_on = attr.ib()
@@ -23,7 +32,7 @@ class Mqtt(object):
     _HOST = "edge-chat.facebook.com"
 
     @classmethod
-    def connect(cls, state, on_message, chat_on, foreground):
+    def connect(cls, session, on_message, chat_on, foreground):
         mqtt = paho.mqtt.client.Client(
             client_id="mqttwsclient",
             clean_session=True,
@@ -39,12 +48,12 @@ class Mqtt(object):
         mqtt.tls_set()
 
         self = cls(
-            state=state,
+            session=session,
             mqtt=mqtt,
             on_message=on_message,
             chat_on=chat_on,
             foreground=foreground,
-            sequence_id=cls._fetch_sequence_id(state),
+            sequence_id=cls._fetch_sequence_id(session),
         )
 
         # Configure callbacks
@@ -103,7 +112,7 @@ class Mqtt(object):
         self._on_message(message.topic, j)
 
     @staticmethod
-    def _fetch_sequence_id(state):
+    def _fetch_sequence_id(session):
         """Fetch sequence ID."""
         params = {
             "limit": 1,
@@ -114,7 +123,9 @@ class Mqtt(object):
         }
         log.debug("Fetching MQTT sequence ID")
         # Same request as in `Client.fetchThreadList`
-        (j,) = state._graphql_requests(_graphql.from_doc_id("1349387578499440", params))
+        (j,) = session._graphql_requests(
+            _graphql.from_doc_id("1349387578499440", params)
+        )
         try:
             return int(j["viewer"]["message_threads"]["sync_sequence_id"])
         except (KeyError, ValueError):
@@ -135,7 +146,7 @@ class Mqtt(object):
             "max_deltas_able_to_process": 1000,
             "delta_batch_size": 500,
             "encoding": "JSON",
-            "entity_fbid": self._state.user_id,
+            "entity_fbid": self._session.user_id,
         }
 
         # If we don't have a sync_token, create a new messenger queue
@@ -192,7 +203,7 @@ class Mqtt(object):
 
         username = {
             # The user ID
-            "u": self._state.user_id,
+            "u": self._session.user_id,
             # Session ID
             "s": session_id,
             # Active status setting
@@ -200,7 +211,7 @@ class Mqtt(object):
             # foreground_state - Whether the window is focused
             "fg": self._foreground,
             # Can be any random ID
-            "d": self._state._client_id,
+            "d": self._session._client_id,
             # Application ID, taken from facebook.com
             "aid": 219994525426954,
             # MQTT extension by FB, allows making a SUBSCRIBE while CONNECTing
@@ -235,10 +246,10 @@ class Mqtt(object):
 
         headers = {
             # TODO: Make this access thread safe
-            "Cookie": _util.get_cookie_header(
-                self._state._session, "https://edge-chat.facebook.com/chat"
+            "Cookie": get_cookie_header(
+                self._session._session, "https://edge-chat.facebook.com/chat"
             ),
-            "User-Agent": self._state._session.headers["User-Agent"],
+            "User-Agent": self._session._session.headers["User-Agent"],
             "Origin": "https://www.facebook.com",
             "Host": self._HOST,
         }
@@ -247,7 +258,7 @@ class Mqtt(object):
             path="/chat?sid={}".format(session_id), headers=headers
         )
 
-    def loop_once(self, on_error=None):
+    def loop_once(self):
         """Run the listening loop once.
 
         Returns whether to keep listening or not.
@@ -269,9 +280,6 @@ class Mqtt(object):
             else:
                 err = paho.mqtt.client.error_string(rc)
                 log.error("MQTT Error: %s", err)
-                # For backwards compatibility
-                if on_error:
-                    on_error(_exception.FBchatException("MQTT Error {}".format(err)))
 
             # Wait before reconnecting
             self._mqtt._reconnect_wait()
