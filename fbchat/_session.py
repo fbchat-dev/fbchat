@@ -157,7 +157,12 @@ class Session:
         """
         session = session_factory()
 
-        soup = find_input_fields(session.get("https://m.facebook.com/").text)
+        try:
+            r = session.get("https://m.facebook.com/")
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
+        soup = find_input_fields(r.text)
+
         data = dict(
             (elem["name"], elem["value"])
             for elem in soup
@@ -167,7 +172,11 @@ class Session:
         data["pass"] = password
         data["login"] = "Log In"
 
-        r = session.post("https://m.facebook.com/login.php?login_attempt=1", data=data)
+        try:
+            url = "https://m.facebook.com/login.php?login_attempt=1"
+            r = session.post(url, data=data)
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
 
         # Usually, 'Checkpoint' will refer to 2FA
         if "checkpoint" in r.url and ('id="approvals_code"' in r.text.lower()):
@@ -176,11 +185,17 @@ class Session:
                     "2FA code required, please add `on_2fa_callback` to .login"
                 )
             code = on_2fa_callback()
-            r = _2fa_helper(session, code, r)
+            try:
+                r = _2fa_helper(session, code, r)
+            except requests.RequestException as e:
+                _exception.handle_requests_error(e)
 
         # Sometimes Facebook tries to show the user a "Save Device" dialog
         if "save-device" in r.url:
-            r = session.get("https://m.facebook.com/login/save-device/cancel/")
+            try:
+                r = session.get("https://m.facebook.com/login/save-device/cancel/")
+            except requests.RequestException as e:
+                _exception.handle_requests_error(e)
 
         if is_home(r.url):
             return cls._from_session(session=session)
@@ -198,7 +213,10 @@ class Session:
         """
         # Send a request to the login url, to see if we're directed to the home page
         url = "https://m.facebook.com/login.php?login_attempt=1"
-        r = self._session.get(url, allow_redirects=False)
+        try:
+            r = self._session.get(url, allow_redirects=False)
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
         return "Location" in r.headers and is_home(r.headers["Location"])
 
     def logout(self):
@@ -209,20 +227,28 @@ class Session:
         logout_h = self._logout_h
         if not logout_h:
             url = _util.prefix_url("/bluebar/modern_settings_menu/")
-            h_r = self._session.post(url, data={"pmid": "4"})
+            try:
+                h_r = self._session.post(url, data={"pmid": "4"})
+            except requests.RequestException as e:
+                _exception.handle_requests_error(e)
             logout_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
 
         url = _util.prefix_url("/logout.php")
-        r = self._session.get(url, params={"ref": "mb", "h": logout_h})
-        if not r.ok:
-            raise exception.HTTPError("Failed logging out", status_code=r.status_code)
+        try:
+            r = self._session.get(url, params={"ref": "mb", "h": logout_h})
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
+        handle_http_error(r.status_code)
 
     @classmethod
     def _from_session(cls, session):
         # TODO: Automatically set user_id when the cookie changes in the session
         user_id = get_user_id(session)
 
-        r = session.get(_util.prefix_url("/"))
+        try:
+            r = session.get(_util.prefix_url("/"))
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
 
         soup = find_input_fields(r.text)
 
@@ -270,13 +296,19 @@ class Session:
 
     def _get(self, url, params, error_retries=3):
         params.update(self._get_params())
-        r = self._session.get(_util.prefix_url(url), params=params)
+        try:
+            r = self._session.get(_util.prefix_url(url), params=params)
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
         content = _util.check_request(r)
         return _util.to_json(content)
 
     def _post(self, url, data, files=None, as_graphql=False):
         data.update(self._get_params())
-        r = self._session.post(_util.prefix_url(url), data=data, files=files)
+        try:
+            r = self._session.post(_util.prefix_url(url), data=data, files=files)
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
         content = _util.check_request(r)
         if as_graphql:
             return _graphql.response_to_json(content)

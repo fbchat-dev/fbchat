@@ -1,4 +1,5 @@
 import pytest
+import requests
 from fbchat import (
     FacebookError,
     HTTPError,
@@ -13,6 +14,7 @@ from fbchat._exception import (
     handle_payload_error,
     handle_graphql_errors,
     handle_http_error,
+    handle_requests_error,
 )
 
 
@@ -123,3 +125,10 @@ def test_handle_http_error_404_handling():
 def test_handle_http_error_no_error():
     assert handle_http_error(200) is None
     assert handle_http_error(302) is None
+
+
+def test_handle_requests_error():
+    with pytest.raises(HTTPError, match="Connection error"):
+        handle_requests_error(requests.ConnectionError())
+    with pytest.raises(HTTPError, match="Requests error"):
+        handle_requests_error(requests.RequestException())

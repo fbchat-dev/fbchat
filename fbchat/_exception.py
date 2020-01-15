@@ -1,4 +1,5 @@
 import attr
+import requests
 
 # Not frozen, since that doesn't work in PyPy
 attrs_exception = attr.s(slots=True, auto_exc=True)
@@ -133,3 +134,18 @@ def handle_http_error(code):
         )
     if 400 <= code < 600:
         raise HTTPError(msg, status_code=code)
+
+
+def handle_requests_error(e):
+    if isinstance(e, requests.ConnectionError):
+        raise HTTPError("Connection error") from e
+    if isinstance(e, requests.HTTPError):
+        pass  # Raised when using .raise_for_status, so should never happen
+    if isinstance(e, requests.URLRequired):
+        pass  # Should never happen, we always prove valid URLs
+    if isinstance(e, requests.TooManyRedirects):
+        pass  # TODO: Consider using allow_redirects=False to prevent this
+    if isinstance(e, requests.Timeout):
+        pass  # Should never happen, we don't set timeouts
+
+    raise HTTPError("Requests error") from e

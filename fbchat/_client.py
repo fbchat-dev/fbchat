@@ -1203,16 +1203,19 @@ class Client:
                 self._parse_message(content)
         except KeyboardInterrupt:
             return False
-        except requests.Timeout:
-            pass
-        except requests.ConnectionError:
-            # If the client has lost their internet connection, keep trying every 30 seconds
-            time.sleep(30)
         except _exception.HTTPError as e:
+            cause = e.__cause__
+
             # Fix 502 and 503 pull errors
             if e.status_code in [502, 503]:
                 # Bump pull channel, while contraining withing 0-4
                 self._pull_channel = (self._pull_channel + 1) % 5
+            # TODO: Handle these exceptions better
+            elif isinstance(cause, requests.ReadTimeout):
+                pass  # Expected
+            elif isinstance(cause, (requests.ConnectTimeout, requests.ConnectionError)):
+                # If the client has lost their internet connection, keep trying every 30 seconds
+                time.sleep(30)
             else:
                 raise e
         except Exception as e:
