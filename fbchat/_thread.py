@@ -359,6 +359,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
             _graphql.from_query_id("515216185516880", data)
         )
 
+        if not j[self.id]:
+            raise _exception.ParseError("Could not find images", data=j)
+
         result = j[self.id]["message_shared_media"]
 
         print(len(result["edges"]))

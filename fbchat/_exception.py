@@ -26,7 +26,7 @@ class HTTPError(FacebookError):
     def __str__(self):
         if not self.status_code:
             return self.message
-        return "#{}: {}".format(self.status_code, self.message)
+        return "Got {} response: {}".format(self.status_code, self.message)
 
 
 @attrs_exception
@@ -43,7 +43,7 @@ class ParseError(FacebookError):
     """
 
     def __str__(self):
-        msg = "{}. Please report this, and the associated data: {}"
+        msg = "{}. Please report this, along with the data below!\n{}"
         return msg.format(self.message, self.data)
 
 
@@ -58,7 +58,7 @@ class ExternalError(FacebookError):
 
     def __str__(self):
         if self.code:
-            return "{}: #{}, {}".format(self.message, self.code, self.description)
+            return "#{} {}: {}".format(self.code, self.message, self.description)
         return "{}: {}".format(self.message, self.description)
 
 
@@ -116,8 +116,7 @@ def handle_payload_error(j):
         error_cls = InvalidParameters
     else:
         error_cls = ExternalError
-    # TODO: Use j["errorSummary"]
-    raise error_cls("Error sending request", j["errorDescription"], code=code)
+    raise error_cls(j["errorSummary"], description=j["errorDescription"], code=code)
 
 
 def handle_graphql_errors(j):
@@ -131,23 +130,27 @@ def handle_graphql_errors(j):
         # TODO: Use `severity` and `description`
         raise GraphQLError(
             # TODO: What data is always available?
-            error.get("summary", "Unknown error"),
-            error.get("message", ""),
+            message=error.get("summary", "Unknown error"),
+            description=error.get("message", ""),
             code=error.get("code"),
             debug_info=error.get("debug_info"),
         )
 
 
 def handle_http_error(code):
-    msg = "Error sending request: Got {} response.".format(code)
     if code == 404:
         raise HTTPError(
-            msg + " This is either because you specified an invalid URL, or because"
-            " you provided an invalid id (Facebook usually require integer ids)",
+            "This might be because you provided an invalid id"
+            + " (Facebook usually require integer ids)",
+            status_code=code,
+        )
+    if code == 500:
+        raise HTTPError(
+            "There is probably an error on the endpoint, or it might be rate limited",
             status_code=code,
         )
     if 400 <= code < 600:
-        raise HTTPError(msg, status_code=code)
+        raise HTTPError("Failed sending request", status_code=code)
 
 
 def handle_requests_error(e):

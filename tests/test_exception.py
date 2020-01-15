@@ -64,10 +64,10 @@ ERROR_DATA = [
 ]
 
 
-@pytest.mark.parametrize("exception,code,description,summary", ERROR_DATA)
+@pytest.mark.parametrize("exception,code,summary,description", ERROR_DATA)
 def test_handle_payload_error(exception, code, summary, description):
     data = {"error": code, "errorSummary": summary, "errorDescription": description}
-    with pytest.raises(exception, match=r"Error sending request: #\d+"):
+    with pytest.raises(exception, match=r"#\d+ .+:"):
         handle_payload_error(data)
 
 
@@ -76,14 +76,14 @@ def test_handle_payload_error_no_error():
     assert handle_payload_error({"payload": {"abc": ["Something", "else"]}}) is None
 
 
-def test_handle_graphql_errors():
+def test_handle_graphql_crash():
     error = {
         "allow_user_retry": False,
         "api_error_code": -1,
         "code": 1675030,
         "debug_info": None,
         "description": "Error performing query.",
-        "fbtrace_id": "CLkuLR752sB",
+        "fbtrace_id": "ABCDEFG",
         "is_silent": False,
         "is_transient": False,
         "message": (
@@ -98,9 +98,101 @@ def test_handle_graphql_errors():
         "summary": "Query error",
     }
     with pytest.raises(
-        GraphQLError, match="Query error: #1675030, Errors while executing"
+        GraphQLError, match="#1675030 Query error: Errors while executing"
     ):
         handle_graphql_errors({"data": {"message_thread": None}, "errors": [error]})
+
+
+def test_handle_graphql_invalid_values():
+    error = {
+        "message": (
+            'Invalid values provided for variables of operation "MessengerThreadlist":'
+            ' Value ""as"" cannot be used for variable "$limit": Expected an integer'
+            ' value, got "as".'
+        ),
+        "severity": "CRITICAL",
+        "code": 1675012,
+        "api_error_code": None,
+        "summary": "Your request couldn't be processed",
+        "description": (
+            "There was a problem with this request."
+            " We're working on getting it fixed as soon as we can."
+        ),
+        "is_silent": False,
+        "is_transient": False,
+        "requires_reauth": False,
+        "allow_user_retry": False,
+        "debug_info": None,
+        "query_path": None,
+        "fbtrace_id": "ABCDEFG",
+        "www_request_id": "AABBCCDDEEFFGG",
+    }
+    msg = "#1675012 Your request couldn't be processed: Invalid values"
+    with pytest.raises(GraphQLError, match=msg):
+        handle_graphql_errors({"errors": [error]})
+
+
+def test_handle_graphql_no_message():
+    error = {
+        "code": 1675012,
+        "api_error_code": None,
+        "summary": "Your request couldn't be processed",
+        "description": (
+            "There was a problem with this request."
+            " We're working on getting it fixed as soon as we can."
+        ),
+        "is_silent": False,
+        "is_transient": False,
+        "requires_reauth": False,
+        "allow_user_retry": False,
+        "debug_info": None,
+        "query_path": None,
+        "fbtrace_id": "ABCDEFG",
+        "www_request_id": "AABBCCDDEEFFGG",
+        "sentry_block_user_info": None,
+        "help_center_id": None,
+    }
+    msg = "#1675012 Your request couldn't be processed: "
+    with pytest.raises(GraphQLError, match=msg):
+        handle_graphql_errors({"errors": [error]})
+
+
+def test_handle_graphql_no_summary():
+    error = {
+        "message": (
+            'Errors while executing operation "MessengerViewerContactMethods":'
+            " At Query.viewer:Viewer.all_emails: Field implementation threw an"
+            " exception. Check your server logs for more information."
+        ),
+        "severity": "ERROR",
+        "path": ["viewer", "all_emails"],
+    }
+    with pytest.raises(GraphQLError, match="Unknown error: Errors while executing"):
+        handle_graphql_errors(
+            {"data": {"viewer": {"user": None, "all_emails": []}}, "errors": [error]}
+        )
+
+
+def test_handle_graphql_syntax_error():
+    error = {
+        "code": 1675001,
+        "api_error_code": None,
+        "summary": "Query Syntax Error",
+        "description": "Syntax error.",
+        "is_silent": True,
+        "is_transient": False,
+        "requires_reauth": False,
+        "allow_user_retry": False,
+        "debug_info": 'Unexpected ">" at character 328: Expected ")".',
+        "query_path": None,
+        "fbtrace_id": "ABCDEFG",
+        "www_request_id": "AABBCCDDEEFFGG",
+        "sentry_block_user_info": None,
+        "help_center_id": None,
+    }
+    msg = "#1675001 Query Syntax Error: "
+    with pytest.raises(GraphQLError, match=msg):
+        handle_graphql_errors({"response": None, "error": error})
 
 
 def test_handle_graphql_errors_singular_error_key():

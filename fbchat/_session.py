@@ -202,7 +202,7 @@ class Session:
         else:
             code, msg = get_error_data(r.text, r.url)
             raise _exception.ExternalError(
-                "Login failed at url {}".format(r.url), msg, code=code
+                "Login failed at url {!r}".format(r.url), msg, code=code
             )
 
     def is_logged_in(self):
@@ -238,7 +238,7 @@ class Session:
             r = self._session.get(url, params={"ref": "mb", "h": logout_h})
         except requests.RequestException as e:
             _exception.handle_requests_error(e)
-        handle_http_error(r.status_code)
+        _exception.handle_http_error(r.status_code)
 
     @classmethod
     def _from_session(cls, session):
@@ -366,6 +366,8 @@ class Session:
         data["threading_id"] = _util.generate_message_id(self._client_id)
         data["ephemeral_ttl_mode:"] = "0"
         j = self._post("/messaging/send/", data)
+
+        _exception.handle_payload_error(j)
 
         # update JS token if received in response
         fb_dtsg = _util.get_jsmods_require(j, 2)
