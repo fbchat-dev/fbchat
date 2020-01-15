@@ -2971,6 +2971,7 @@ class Client(object):
     ):
         """Called when the client is listening, and somebody that isn't
          connected with you on either Facebook or Messenger sends a message.
+         After that, you need to use fetchThreadList to actually read the message.
 
          Args:
             author_id: The ID of the author
