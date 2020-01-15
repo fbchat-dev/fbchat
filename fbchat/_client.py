@@ -2735,9 +2735,8 @@ class Client(object):
                 thread_id=threadId,
                 ts=now(),  # Also h4ck3r
                 metadata=metadata,
-                msg=delta
+                msg=delta,
             )
-
 
         # Unknown message type
         else:
@@ -2962,12 +2961,7 @@ class Client(object):
         log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
 
     def onPendingMessage(
-        self,
-        author_id=None,
-        thread_id=None,
-        ts=None,
-        metadata=None,
-        msg=None,
+        self, author_id=None, thread_id=None, ts=None, metadata=None, msg=None
     ):
         """Called when the client is listening, and somebody that isn't
          connected with you on either Facebook or Messenger sends a message.
