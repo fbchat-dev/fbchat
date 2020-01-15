@@ -313,9 +313,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         )
 
         if j.get("message_thread") is None:
-            raise _exception.FBchatException(
-                "Could not fetch thread {}: {}".format(self.id, j)
-            )
+            raise _exception.ParseError("Could not fetch messages", data=j)
 
         # TODO: Should we parse the returned thread data, too?
 
@@ -360,6 +358,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
         (j,) = self.session._graphql_requests(
             _graphql.from_query_id("515216185516880", data)
         )
+
+        if not j[self.id]:
+            raise _exception.ParseError("Could not find images", data=j)
 
         result = j[self.id]["message_shared_media"]
 
@@ -481,10 +482,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         }
         j = self.session._payload_post("/mercury/attachments/forward/", data)
         if not j.get("success"):
-            raise _exception.FBchatFacebookError(
-                "Failed forwarding attachment: {}".format(j["error"]),
-                fb_error_message=j["error"],
-            )
+            raise _exception.ExternalError("Failed forwarding attachment", j["error"])
 
     def _set_typing(self, typing):
         data = {
@@ -547,9 +545,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
             "/messaging/group_polling/create_poll/?dpr=1", data
         )
         if j.get("status") != "success":
-            raise _exception.FBchatFacebookError(
+            raise _exception.ExternalError(
                 "Failed creating poll: {}".format(j.get("errorTitle")),
-                fb_error_message=j.get("errorMessage"),
+                j.get("errorMessage"),
             )
 
     def mute(self, duration: datetime.timedelta = None):

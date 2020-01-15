@@ -13,9 +13,10 @@ FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
 
 def get_user_id(session):
     # TODO: Optimize this `.get_dict()` call!
-    rtn = session.cookies.get_dict().get("c_user")
+    cookies = session.cookies.get_dict()
+    rtn = cookies.get("c_user")
     if rtn is None:
-        raise _exception.FBchatException("Could not find user id")
+        raise _exception.ParseError("Could not find user id", data=cookies)
     return str(rtn)
 
 
@@ -153,13 +154,15 @@ class Session:
             password: Facebook account password
             on_2fa_callback: Function that will be called, in case a 2FA code is needed.
                 This should return the requested 2FA code.
-
-        Raises:
-            FBchatException: On failed login
         """
         session = session_factory()
 
-        soup = find_input_fields(session.get("https://m.facebook.com/").text)
+        try:
+            r = session.get("https://m.facebook.com/")
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
+        soup = find_input_fields(r.text)
+
         data = dict(
             (elem["name"], elem["value"])
             for elem in soup
@@ -169,29 +172,37 @@ class Session:
         data["pass"] = password
         data["login"] = "Log In"
 
-        r = session.post("https://m.facebook.com/login.php?login_attempt=1", data=data)
+        try:
+            url = "https://m.facebook.com/login.php?login_attempt=1"
+            r = session.post(url, data=data)
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
 
         # Usually, 'Checkpoint' will refer to 2FA
         if "checkpoint" in r.url and ('id="approvals_code"' in r.text.lower()):
             if not on_2fa_callback:
-                raise _exception.FBchatException(
+                raise ValueError(
                     "2FA code required, please add `on_2fa_callback` to .login"
                 )
             code = on_2fa_callback()
-            r = _2fa_helper(session, code, r)
+            try:
+                r = _2fa_helper(session, code, r)
+            except requests.RequestException as e:
+                _exception.handle_requests_error(e)
 
         # Sometimes Facebook tries to show the user a "Save Device" dialog
         if "save-device" in r.url:
-            r = session.get("https://m.facebook.com/login/save-device/cancel/")
+            try:
+                r = session.get("https://m.facebook.com/login/save-device/cancel/")
+            except requests.RequestException as e:
+                _exception.handle_requests_error(e)
 
         if is_home(r.url):
             return cls._from_session(session=session)
         else:
             code, msg = get_error_data(r.text, r.url)
-            raise _exception.FBchatFacebookError(
-                "Login failed (Failed on url: {})".format(r.url),
-                fb_error_code=code,
-                fb_error_message=msg,
+            raise _exception.ExternalError(
+                "Login failed at url {!r}".format(r.url), msg, code=code
             )
 
     def is_logged_in(self):
@@ -202,36 +213,42 @@ class Session:
         """
         # Send a request to the login url, to see if we're directed to the home page
         url = "https://m.facebook.com/login.php?login_attempt=1"
-        r = self._session.get(url, allow_redirects=False)
+        try:
+            r = self._session.get(url, allow_redirects=False)
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
         return "Location" in r.headers and is_home(r.headers["Location"])
 
     def logout(self):
         """Safely log out the user.
 
         The session object must not be used after this action has been performed!
-
-        Raises:
-            FBchatException: On failed logout
         """
         logout_h = self._logout_h
         if not logout_h:
             url = _util.prefix_url("/bluebar/modern_settings_menu/")
-            h_r = self._session.post(url, data={"pmid": "4"})
+            try:
+                h_r = self._session.post(url, data={"pmid": "4"})
+            except requests.RequestException as e:
+                _exception.handle_requests_error(e)
             logout_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
 
         url = _util.prefix_url("/logout.php")
-        r = self._session.get(url, params={"ref": "mb", "h": logout_h})
-        if not r.ok:
-            raise exception.FBchatException(
-                "Failed logging out: {}".format(r.status_code)
-            )
+        try:
+            r = self._session.get(url, params={"ref": "mb", "h": logout_h})
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
+        _exception.handle_http_error(r.status_code)
 
     @classmethod
     def _from_session(cls, session):
         # TODO: Automatically set user_id when the cookie changes in the session
         user_id = get_user_id(session)
 
-        r = session.get(_util.prefix_url("/"))
+        try:
+            r = session.get(_util.prefix_url("/"))
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
 
         soup = find_input_fields(r.text)
 
@@ -242,9 +259,7 @@ class Session:
             # Fall back to searching with a regex
             res = FB_DTSG_REGEX.search(r.text)
             if not res:
-                raise _exception.FBchatException(
-                    "Failed loading session: Could not find fb_dtsg"
-                )
+                raise ValueError("Failed loading session, could not find fb_dtsg")
             fb_dtsg = res.group(1)
 
         revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])
@@ -274,9 +289,6 @@ class Session:
 
         Args:
             cookies (dict): A dictionary containing session cookies
-
-        Raises:
-            FBchatException: If given invalid cookies
         """
         session = session_factory()
         session.cookies = requests.cookies.merge_cookies(session.cookies, cookies)
@@ -284,13 +296,19 @@ class Session:
 
     def _get(self, url, params, error_retries=3):
         params.update(self._get_params())
-        r = self._session.get(_util.prefix_url(url), params=params)
+        try:
+            r = self._session.get(_util.prefix_url(url), params=params)
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
         content = _util.check_request(r)
         return _util.to_json(content)
 
     def _post(self, url, data, files=None, as_graphql=False):
         data.update(self._get_params())
-        r = self._session.post(_util.prefix_url(url), data=data, files=files)
+        try:
+            r = self._session.post(_util.prefix_url(url), data=data, files=files)
+        except requests.RequestException as e:
+            _exception.handle_requests_error(e)
         content = _util.check_request(r)
         if as_graphql:
             return _graphql.response_to_json(content)
@@ -299,11 +317,11 @@ class Session:
 
     def _payload_post(self, url, data, files=None):
         j = self._post(url, data, files=files)
-        _util.handle_payload_error(j)
+        _exception.handle_payload_error(j)
         try:
             return j["payload"]
-        except (KeyError, TypeError):
-            raise _exception.FBchatException("Missing payload: {}".format(j))
+        except (KeyError, TypeError) as e:
+            raise _exception.ParseError("Missing payload", data=j) from e
 
     def _graphql_requests(self, *queries):
         data = {
@@ -330,9 +348,7 @@ class Session:
         )
 
         if len(j["metadata"]) != len(files):
-            raise _exception.FBchatException(
-                "Some files could not be uploaded: {}, {}".format(j, files)
-            )
+            raise _exception.ParseError("Some files could not be uploaded", data=j)
 
         return [
             (data[_util.mimetype_to_key(data["filetype"])], data["filetype"])
@@ -351,6 +367,8 @@ class Session:
         data["ephemeral_ttl_mode:"] = "0"
         j = self._post("/messaging/send/", data)
 
+        _exception.handle_payload_error(j)
+
         # update JS token if received in response
         fb_dtsg = _util.get_jsmods_require(j, 2)
         if fb_dtsg is not None:
@@ -366,7 +384,4 @@ class Session:
                 log.warning("Got multiple message ids' back: {}".format(message_ids))
             return message_ids[0]
         except (KeyError, IndexError, TypeError) as e:
-            raise _exception.FBchatException(
-                "Error when sending message: "
-                "No message IDs could be found: {}".format(j)
-            )
+            raise _exception.ParseError("No message IDs could be found", data=j) from e

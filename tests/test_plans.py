@@ -1,6 +1,6 @@
 import pytest
 
-from fbchat import PlanData, FBchatFacebookError
+from fbchat import PlanData
 from utils import random_hex, subset
 from time import time
 

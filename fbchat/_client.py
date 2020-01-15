@@ -3,9 +3,19 @@ import time
 import requests
 
 from ._core import log
-from . import _util, _graphql, _session, _poll, _user, _page, _group, _thread, _message
+from . import (
+    _exception,
+    _util,
+    _graphql,
+    _session,
+    _poll,
+    _user,
+    _page,
+    _group,
+    _thread,
+    _message,
+)
 
-from ._exception import FBchatException, FBchatFacebookError
 from ._thread import ThreadLocation
 from ._user import User, UserData, ActiveStatus
 from ._group import Group, GroupData
@@ -228,7 +238,7 @@ class Client:
         j = self.session._payload_post("/chat/user_info/", data)
 
         if j.get("profiles") is None:
-            raise FBchatException("No users/pages returned: {}".format(j))
+            raise _exception.ParseError("No users/pages returned", data=j)
 
         entries = {}
         for _id in j["profiles"]:
@@ -251,9 +261,7 @@ class Client:
                     "name": k.get("name"),
                 }
             else:
-                raise FBchatException(
-                    "{} had an unknown thread type: {}".format(_id, k)
-                )
+                raise _exception.ParseError("Unknown thread type", data=k)
 
         log.debug(entries)
         return entries
@@ -269,9 +277,6 @@ class Client:
 
         Returns:
             dict: `Thread` objects, labeled by their ID
-
-        Raises:
-            FBchatException: If request failed
         """
         queries = []
         for thread_id in thread_ids:
@@ -312,16 +317,16 @@ class Client:
             elif entry.get("thread_type") == "ONE_TO_ONE":
                 _id = entry["thread_key"]["other_user_id"]
                 if pages_and_users.get(_id) is None:
-                    raise FBchatException("Could not fetch thread {}".format(_id))
+                    raise _exception.ParseError(
+                        "Could not fetch thread {}".format(_id), data=pages_and_users
+                    )
                 entry.update(pages_and_users[_id])
                 if "first_name" in entry:
                     rtn[_id] = UserData._from_graphql(self.session, entry)
                 else:
                     rtn[_id] = PageData._from_graphql(self.session, entry)
             else:
-                raise FBchatException(
-                    "{} had an unknown thread type: {}".format(thread_ids[i], entry)
-                )
+                raise _exception.ParseError("Unknown thread type", data=entry)
 
         return rtn
 
@@ -389,9 +394,6 @@ class Client:
 
         Returns:
             list: List of unread thread ids
-
-        Raises:
-            FBchatException: If request failed
         """
         form = {
             "folders[0]": "inbox",
@@ -409,9 +411,6 @@ class Client:
 
         Returns:
             list: List of unseen thread ids
-
-        Raises:
-            FBchatException: If request failed
         """
         j = self.session._payload_post("/mercury/unseen_thread_ids/", {})
 
@@ -426,18 +425,15 @@ class Client:
 
         Returns:
             str: An URL where you can download the original image
-
-        Raises:
-            FBchatException: If request failed
         """
         image_id = str(image_id)
         data = {"photo_id": str(image_id)}
         j = self.session._post("/mercury/attachments/photo/", data)
-        _util.handle_payload_error(j)
+        _exception.handle_payload_error(j)
 
         url = _util.get_jsmods_require(j, 3)
         if url is None:
-            raise FBchatException("Could not fetch image URL from: {}".format(j))
+            raise _exception.ParseError("Could not fetch image URL", data=j)
         return url
 
     def _get_private_data(self):
@@ -488,12 +484,6 @@ class Client:
         Args:
             thread_id: User/Group ID to which the message belongs. See :ref:`intro_threads`
             message_id: Message ID to set as delivered. See :ref:`intro_threads`
-
-        Returns:
-            True
-
-        Raises:
-            FBchatException: If request failed
         """
         data = {
             "message_ids[0]": message_id,
@@ -526,9 +516,6 @@ class Client:
         Args:
             thread_ids: User/Group IDs to set as read. See :ref:`intro_threads`
             timestamp: Timestamp (as a Datetime) to signal the read cursor at, default is the current time
-
-        Raises:
-            FBchatException: If request failed
         """
         self._read_status(True, thread_ids, timestamp)
 
@@ -540,9 +527,6 @@ class Client:
         Args:
             thread_ids: User/Group IDs to set as unread. See :ref:`intro_threads`
             timestamp: Timestamp (as a Datetime) to signal the read cursor at, default is the current time
-
-        Raises:
-            FBchatException: If request failed
         """
         self._read_status(False, thread_ids, timestamp)
 
@@ -561,12 +545,6 @@ class Client:
         Args:
             location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
             thread_ids: Thread IDs to move. See :ref:`intro_threads`
-
-        Returns:
-            True
-
-        Raises:
-            FBchatException: If request failed
         """
         thread_ids = _util.require_list(thread_ids)
 
@@ -597,12 +575,6 @@ class Client:
 
         Args:
             thread_ids: Thread IDs to delete. See :ref:`intro_threads`
-
-        Returns:
-            True
-
-        Raises:
-            FBchatException: If request failed
         """
         thread_ids = _util.require_list(thread_ids)
 
@@ -624,12 +596,6 @@ class Client:
 
         Args:
             message_ids: Message IDs to delete
-
-        Returns:
-            True
-
-        Raises:
-            FBchatException: If request failed
         """
         message_ids = _util.require_list(message_ids)
         data = dict()
@@ -659,7 +625,7 @@ class Client:
             "https://{}-edge-chat.facebook.com/active_ping".format(self._pull_channel),
             data,
         )
-        _util.handle_payload_error(j)
+        _exception.handle_payload_error(j)
 
     def _pull_message(self):
         """Call pull api to fetch message data."""
@@ -674,7 +640,7 @@ class Client:
         j = self.session._get(
             "https://{}-edge-chat.facebook.com/pull".format(self._pull_channel), data
         )
-        _util.handle_payload_error(j)
+        _exception.handle_payload_error(j)
         return j
 
     def _parse_delta(self, delta):
@@ -1237,16 +1203,19 @@ class Client:
                 self._parse_message(content)
         except KeyboardInterrupt:
             return False
-        except requests.Timeout:
-            pass
-        except requests.ConnectionError:
-            # If the client has lost their internet connection, keep trying every 30 seconds
-            time.sleep(30)
-        except FBchatFacebookError as e:
+        except _exception.HTTPError as e:
+            cause = e.__cause__
+
             # Fix 502 and 503 pull errors
-            if e.request_status_code in [502, 503]:
+            if e.status_code in [502, 503]:
                 # Bump pull channel, while contraining withing 0-4
                 self._pull_channel = (self._pull_channel + 1) % 5
+            # TODO: Handle these exceptions better
+            elif isinstance(cause, requests.ReadTimeout):
+                pass  # Expected
+            elif isinstance(cause, (requests.ConnectTimeout, requests.ConnectionError)):
+                # If the client has lost their internet connection, keep trying every 30 seconds
+                time.sleep(30)
             else:
                 raise e
         except Exception as e:

@@ -53,10 +53,7 @@ class Plan:
         }
         j = thread.session._payload_post("/ajax/eventreminder/create", data)
         if "error" in j:
-            raise _exception.FBchatFacebookError(
-                "Failed creating plan: {}".format(j["error"]),
-                fb_error_message=j["error"],
-            )
+            raise _exception.ExternalError("Failed creating plan", j["error"])
 
     def edit(
         self,

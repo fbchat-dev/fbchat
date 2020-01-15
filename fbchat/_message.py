@@ -2,7 +2,16 @@ import attr
 import enum
 from string import Formatter
 from ._core import log, attrs_default
-from . import _util, _session, _attachment, _location, _file, _quick_reply, _sticker
+from . import (
+    _exception,
+    _util,
+    _session,
+    _attachment,
+    _location,
+    _file,
+    _quick_reply,
+    _sticker,
+)
 from typing import Optional
 
 
@@ -112,7 +121,7 @@ class Message:
             "variables": _util.json_minimal({"data": data}),
         }
         j = self.session._payload_post("/webgraphql/mutation", data)
-        _util.handle_graphql_errors(j)
+        _exception.handle_graphql_errors(j)
 
     def fetch(self) -> "MessageData":
         """Fetch fresh `MessageData` object."""
