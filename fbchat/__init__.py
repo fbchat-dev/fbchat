@@ -42,6 +42,8 @@ from ._quick_reply import (
 from ._poll import Poll, PollOption
 from ._plan import GuestStatus, Plan, PlanData
 
+from ._event_common import Event, UnknownEvent, ThreadEvent
+
 from ._client import Client
 
 __title__ = "fbchat"

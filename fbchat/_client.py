@@ -13,6 +13,7 @@ from . import (
     _group,
     _thread,
     _message,
+    _event_common,
 )
 
 from ._thread import ThreadLocation
@@ -1193,6 +1194,10 @@ class Client:
     """
     EVENTS
     """
+
+    def on_event(self, event: _event_common.Event):
+        """Called when the client is listening, and an event happens."""
+        log.info("Got event: %s", event)
 
     def on_message(
         self,
