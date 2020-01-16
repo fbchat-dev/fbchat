@@ -2729,13 +2729,10 @@ class Client(object):
 
         # New pending message
         elif delta_class == "ThreadFolder" and delta.get("folder") == "FOLDER_PENDING":
-            threadId = delta["threadKey"]["otherUserFbId"]
+            # Looks like the whole delta is metadata in this case
+            thread_id, thread_type = getThreadIdAndThreadType(delta)
             self.onPendingMessage(
-                author_id=threadId,
-                thread_id=threadId,
-                ts=now(),  # Also h4ck3r
-                metadata=metadata,
-                msg=delta,
+                thread_id=thread_id, thread_type=thread_type, metadata=delta, msg=delta
             )
 
         # Unknown message type
@@ -2961,16 +2958,15 @@ class Client(object):
         log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
 
     def onPendingMessage(
-        self, author_id=None, thread_id=None, ts=None, metadata=None, msg=None
+        self, thread_id=None, thread_type=None, metadata=None, msg=None
     ):
         """Called when the client is listening, and somebody that isn't
          connected with you on either Facebook or Messenger sends a message.
          After that, you need to use fetchThreadList to actually read the message.
 
          Args:
-            author_id: The ID of the author
             thread_id: Thread ID that the message was sent to. See :ref:`intro_threads`
-            ts: The timestamp of the message
+            thread_type (ThreadType): Type of thread that the message was sent to. See :ref:`intro_threads`
             metadata: Extra metadata about the message
             msg: A full set of the data received
         """
