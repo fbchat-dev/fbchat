@@ -319,7 +319,7 @@ class MessageData(Message):
         )
 
     @classmethod
-    def _from_reply(cls, thread, data, replied_to=None):
+    def _from_reply(cls, thread, data):
         tags = data["messageMetadata"].get("tags")
         metadata = data.get("messageMetadata", {})
 
@@ -360,8 +360,9 @@ class MessageData(Message):
             attachments=attachments,
             quick_replies=cls._parse_quick_replies(data.get("platform_xmd_encoded")),
             unsent=unsent,
-            reply_to_id=replied_to.id if replied_to else None,
-            replied_to=replied_to,
+            reply_to_id=data["messageReply"]["replyToMessageId"]["id"]
+            if "messageReply" in data
+            else None,
             forwarded=cls._get_forwarded_from_tags(tags),
         )
 

@@ -14,6 +14,7 @@ from . import (
     _thread,
     _message,
     _event_common,
+    _client_payload,
 )
 
 from ._thread import ThreadLocation
@@ -964,92 +965,8 @@ class Client:
 
         # Client payload (that weird numbers)
         elif delta_class == "ClientPayload":
-            payload = _util.parse_json("".join(chr(z) for z in delta["payload"]))
-            # Hack
-            at = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
-            for d in payload.get("deltas", []):
-
-                # Message reaction
-                if d.get("deltaMessageReaction"):
-                    i = d["deltaMessageReaction"]
-                    mid = i["messageId"]
-                    author_id = str(i["userId"])
-                    add_reaction = not bool(i["action"])
-                    if add_reaction:
-                        self.on_reaction_added(
-                            mid=mid,
-                            reaction=i.get("reaction"),
-                            author_id=author_id,
-                            thread=get_thread(i),
-                            at=at,
-                        )
-                    else:
-                        self.on_reaction_removed(
-                            mid=mid, author_id=author_id, thread=get_thread(i), at=at,
-                        )
-
-                # Viewer status change
-                elif d.get("deltaChangeViewerStatus"):
-                    i = d["deltaChangeViewerStatus"]
-                    author_id = str(i["actorFbid"])
-                    reason = i["reason"]
-                    can_reply = i["canViewerReply"]
-                    if reason == 2:
-                        if can_reply:
-                            self.on_unblock(
-                                author_id=author_id, thread=get_thread(i), at=at
-                            )
-                        else:
-                            self.on_block(
-                                author_id=author_id, thread=get_thread(i), at=at
-                            )
-
-                # Live location info
-                elif d.get("liveLocationData"):
-                    i = d["liveLocationData"]
-                    for l in i["messageLiveLocations"]:
-                        mid = l["messageId"]
-                        author_id = str(l["senderId"])
-                        location = LiveLocationAttachment._from_pull(l)
-                        self.on_live_location(
-                            mid=mid,
-                            location=location,
-                            author_id=author_id,
-                            thread=get_thread(i),
-                            at=at,
-                        )
-
-                # Message deletion
-                elif d.get("deltaRecallMessageData"):
-                    i = d["deltaRecallMessageData"]
-                    mid = i["messageID"]
-                    at = _util.millis_to_datetime(i["deletionTimestamp"])
-                    author_id = str(i["senderID"])
-                    self.on_message_unsent(
-                        mid=mid, author_id=author_id, thread=get_thread(i), at=at
-                    )
-
-                elif d.get("deltaMessageReply"):
-                    i = d["deltaMessageReply"]
-                    metadata = i["message"]["messageMetadata"]
-                    thread = get_thread(metadata)
-                    replied_to = _message.MessageData._from_reply(
-                        thread, i["repliedToMessage"]
-                    )
-                    message = _message.MessageData._from_reply(
-                        thread, i["message"], replied_to
-                    )
-                    self.on_message(
-                        mid=message.id,
-                        author_id=message.author,
-                        message_object=message,
-                        thread=thread,
-                        at=message.created_at,
-                        metadata=metadata,
-                    )
-
-                else:
-                    self.on_unknown_messsage_type(msg=d)
+            for event in _client_payload.parse_client_payloads(self.session, delta):
+                self.on_event(event)
 
         # New message
         elif delta.get("class") == "NewMessage":
@@ -1413,21 +1330,6 @@ class Client:
         """
         log.info("Marked messages as seen in threads {} at {}".format(threads, seen_at))
 
-    def on_message_unsent(self, mid=None, author_id=None, thread=None, at=None):
-        """Called when the client is listening, and someone unsends (deletes for everyone) a message.
-
-        Args:
-            mid: ID of the unsent message
-            author_id: The ID of the person who unsent the message
-            thread: Thread that the action was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the action was executed
-        """
-        log.info(
-            "{} unsent the message {} in {} at {}".format(
-                author_id, repr(mid), thread, at
-            )
-        )
-
     def on_people_added(
         self, mid=None, added_ids=None, author_id=None, group=None, at=None
     ):
@@ -1522,76 +1424,6 @@ class Client:
             metadata: Extra metadata about the action
         """
         log.info('{} played "{}" in {}'.format(author_id, game_name, thread))
-
-    def on_reaction_added(
-        self, mid=None, reaction=None, author_id=None, thread=None, at=None
-    ):
-        """Called when the client is listening, and somebody reacts to a message.
-
-        Args:
-            mid: Message ID, that user reacted to
-            reaction: The added reaction. Not limited to the ones in `Message.react`
-            add_reaction: Whether user added or removed reaction
-            author_id: The ID of the person who reacted to the message
-            thread: Thread that the action was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the action was executed
-        """
-        log.info(
-            "{} reacted to message {} with {} in {}".format(
-                author_id, mid, reaction, thread
-            )
-        )
-
-    def on_reaction_removed(self, mid=None, author_id=None, thread=None, at=None):
-        """Called when the client is listening, and somebody removes reaction from a message.
-
-        Args:
-            mid: Message ID, that user reacted to
-            author_id: The ID of the person who removed reaction
-            thread: Thread that the action was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the action was executed
-        """
-        log.info(
-            "{} removed reaction from {} message in {}".format(author_id, mid, thread)
-        )
-
-    def on_block(self, author_id=None, thread=None, at=None):
-        """Called when the client is listening, and somebody blocks client.
-
-        Args:
-            author_id: The ID of the person who blocked
-            thread: Thread that the action was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the action was executed
-        """
-        log.info("{} blocked {}".format(author_id, thread))
-
-    def on_unblock(self, author_id=None, thread=None, at=None):
-        """Called when the client is listening, and somebody blocks client.
-
-        Args:
-            author_id: The ID of the person who unblocked
-            thread: Thread that the action was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the action was executed
-        """
-        log.info("{} unblocked {}".format(author_id, thread))
-
-    def on_live_location(
-        self, mid=None, location=None, author_id=None, thread=None, at=None
-    ):
-        """Called when the client is listening and somebody sends live location info.
-
-        Args:
-            mid: The action ID
-            location (LiveLocationAttachment): Sent location info
-            author_id: The ID of the person who sent location info
-            thread: Thread that the action was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the action was executed
-        """
-        log.info(
-            "{} sent live location info in {} with latitude {} and longitude {}".format(
-                author_id, thread, location.latitude, location.longitude
-            )
-        )
 
     def on_call_started(
         self,

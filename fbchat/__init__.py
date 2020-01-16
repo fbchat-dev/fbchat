@@ -43,6 +43,13 @@ from ._poll import Poll, PollOption
 from ._plan import GuestStatus, Plan, PlanData
 
 from ._event_common import Event, UnknownEvent, ThreadEvent
+from ._client_payload import (
+    ReactionEvent,
+    UserStatusEvent,
+    LiveLocationEvent,
+    UnsendEvent,
+    MessageReplyEvent,
+)
 
 from ._client import Client
 
