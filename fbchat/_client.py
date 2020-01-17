@@ -2271,7 +2271,17 @@ class Client(object):
         elif delta_class == "ForcedFetch":
             mid = delta.get("messageId")
             if mid is None:
-                self.onUnknownMesssageType(msg=delta)
+                if delta["threadKey"] is not None:
+                    # Looks like the whole delta is metadata in this case
+                    thread_id, thread_type = getThreadIdAndThreadType(delta)
+                    self.onPendingMessage(
+                        thread_id=thread_id,
+                        thread_type=thread_type,
+                        metadata=delta,
+                        msg=delta,
+                    )
+                else:
+                    self.onUnknownMesssageType(msg=delta)
             else:
                 thread_id = str(delta["threadKey"]["threadFbId"])
                 fetch_info = self._forcedFetch(thread_id, mid)
