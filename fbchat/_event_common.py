@@ -1,7 +1,7 @@
 import attr
 import abc
 from ._core import kw_only
-from . import _exception, _thread, _group, _user, _message
+from . import _exception, _util, _thread, _group, _user, _message
 
 #: Default attrs settings for events
 attrs_event = attr.s(slots=True, kw_only=kw_only, frozen=True)
@@ -48,3 +48,11 @@ class ThreadEvent(Event):
         elif "otherUserFbId" in key:
             return _user.User(session=session, id=str(key["otherUserFbId"]))
         raise _exception.ParseError("Could not find thread data", data=data)
+
+    @staticmethod
+    def _parse_metadata(session, data):
+        metadata = data["messageMetadata"]
+        author = _user.User(session=session, id=metadata["actorFbId"])
+        thread = ThreadEvent._get_thread(session, metadata)
+        at = _util.millis_to_datetime(int(metadata["timestamp"]))
+        return author, thread, at

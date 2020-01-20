@@ -50,6 +50,15 @@ from ._client_payload import (
     UnsendEvent,
     MessageReplyEvent,
 )
+from ._delta_class import (
+    PeopleAdded,
+    PersonRemoved,
+    TitleSet,
+    UnfetchedThreadEvent,
+    MessagesDelivered,
+    ThreadsRead,
+    MessageEvent,
+)
 
 from ._client import Client
 

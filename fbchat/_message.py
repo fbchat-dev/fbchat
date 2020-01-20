@@ -367,7 +367,11 @@ class MessageData(Message):
         )
 
     @classmethod
-    def _from_pull(cls, thread, data, mid, tags, author, created_at):
+    def _from_pull(cls, thread, data, author, created_at):
+        metadata = data["messageMetadata"]
+
+        tags = metadata.get("tags")
+
         mentions = []
         if data.get("data") and data["data"].get("prng"):
             try:
@@ -415,7 +419,7 @@ class MessageData(Message):
 
         return cls(
             thread=thread,
-            id=mid,
+            id=metadata["messageId"],
             author=author,
             created_at=created_at,
             text=data.get("body"),

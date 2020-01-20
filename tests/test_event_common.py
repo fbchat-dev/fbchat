@@ -1,4 +1,5 @@
 import pytest
+import datetime
 from fbchat import Group, User, ParseError, ThreadEvent
 
 
@@ -55,3 +56,23 @@ def test_thread_event_get_thread_unknown(session):
     data = {"threadKey": {"abc": "1234"}}
     with pytest.raises(ParseError, match="Could not find thread data"):
         ThreadEvent._get_thread(session, data)
+
+
+def test_thread_event_parse_metadata(session):
+    data = {
+        "actorFbId": "4321",
+        "folderId": {"systemFolderId": "INBOX"},
+        "messageId": "mid.$XYZ",
+        "offlineThreadingId": "112233445566",
+        "skipBumpThread": False,
+        "skipSnippetUpdate": False,
+        "tags": ["source:messenger:web"],
+        "threadKey": {"otherUserFbId": "1234"},
+        "threadReadStateEffect": "KEEP_AS_IS",
+        "timestamp": "1500000000000",
+    }
+    assert (
+        User(session=session, id="4321"),
+        User(session=session, id="1234"),
+        datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
+    ) == ThreadEvent._parse_metadata(session, {"messageMetadata": data})

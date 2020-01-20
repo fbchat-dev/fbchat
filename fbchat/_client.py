@@ -15,6 +15,7 @@ from . import (
     _message,
     _event_common,
     _client_payload,
+    _delta_class,
 )
 
 from ._thread import ThreadLocation
@@ -618,7 +619,6 @@ class Client:
             return None
 
         delta_type = delta.get("type")
-        delta_class = delta.get("class")
         metadata = delta.get("messageMetadata")
 
         if metadata:
@@ -626,30 +626,8 @@ class Client:
             author_id = str(metadata["actorFbId"])
             at = _util.millis_to_datetime(int(metadata.get("timestamp")))
 
-        # Added participants
-        if "addedParticipants" in delta:
-            added_ids = [str(x["userFbId"]) for x in delta["addedParticipants"]]
-            self.on_people_added(
-                mid=mid,
-                added_ids=added_ids,
-                author_id=author_id,
-                group=get_thread(metadata),
-                at=at,
-            )
-
-        # Left/removed participants
-        elif "leftParticipantFbId" in delta:
-            removed_id = str(delta["leftParticipantFbId"])
-            self.on_person_removed(
-                mid=mid,
-                removed_id=removed_id,
-                author_id=author_id,
-                group=get_thread(metadata),
-                at=at,
-            )
-
         # Color change
-        elif delta_type == "change_thread_theme":
+        if delta_type == "change_thread_theme":
             thread = get_thread(metadata)
             self.on_color_change(
                 mid=mid,
@@ -662,13 +640,6 @@ class Client:
                 metadata=metadata,
             )
 
-        elif delta_class == "MarkFolderSeen":
-            locations = [
-                ThreadLocation(folder.lstrip("FOLDER_")) for folder in delta["folders"]
-            ]
-            at = _util.millis_to_datetime(int(delta["timestamp"]))
-            self._on_seen(locations=locations, at=at)
-
         # Emoji change
         elif delta_type == "change_thread_icon":
             new_emoji = delta["untypedData"]["thread_icon"]
@@ -680,45 +651,6 @@ class Client:
                 at=at,
                 metadata=metadata,
             )
-
-        # Thread title change
-        elif delta_class == "ThreadName":
-            new_title = delta["name"]
-            self.on_title_change(
-                mid=mid,
-                author_id=author_id,
-                new_title=new_title,
-                group=get_thread(metadata),
-                at=at,
-                metadata=metadata,
-            )
-
-        # Forced fetch
-        elif delta_class == "ForcedFetch":
-            mid = delta.get("messageId")
-            if mid is None:
-                self.on_unknown_messsage_type(msg=delta)
-            else:
-                group = get_thread(delta)
-                fetch_info = group._forced_fetch(mid)
-                fetch_data = fetch_info["message"]
-                author_id = fetch_data["message_sender"]["id"]
-                at = _util.millis_to_datetime(int(fetch_data["timestamp_precise"]))
-                if fetch_data.get("__typename") == "ThreadImageMessage":
-                    # Thread image change
-                    image_metadata = fetch_data.get("image_with_metadata")
-                    image_id = (
-                        int(image_metadata["legacy_attachment_id"])
-                        if image_metadata
-                        else None
-                    )
-                    self.on_image_change(
-                        mid=mid,
-                        author_id=author_id,
-                        new_image=image_id,
-                        group=group,
-                        at=at,
-                    )
 
         # Nickname change
         elif delta_type == "change_thread_nickname":
@@ -766,52 +698,6 @@ class Client:
                 at=at,
             )
 
-        # Message delivered
-        elif delta_class == "DeliveryReceipt":
-            message_ids = delta["messageIds"]
-            delivered_for = str(
-                delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"]
-            )
-            at = _util.millis_to_datetime(int(delta["deliveredWatermarkTimestampMs"]))
-            self.on_message_delivered(
-                msg_ids=message_ids,
-                delivered_for=delivered_for,
-                thread=get_thread(delta),
-                at=at,
-                metadata=metadata,
-            )
-
-        # Message seen
-        elif delta_class == "ReadReceipt":
-            seen_by = str(delta.get("actorFbId") or delta["threadKey"]["otherUserFbId"])
-            seen_at = _util.millis_to_datetime(int(delta["actionTimestampMs"]))
-            at = _util.millis_to_datetime(int(delta["watermarkTimestampMs"]))
-            self.on_message_seen(
-                seen_by=seen_by,
-                thread=get_thread(delta),
-                seen_at=seen_at,
-                at=at,
-                metadata=metadata,
-            )
-
-        # Messages marked as seen
-        elif delta_class == "MarkRead":
-            seen_at = _util.millis_to_datetime(
-                int(delta.get("actionTimestampMs") or delta.get("actionTimestamp"))
-            )
-            watermark_ts = delta.get("watermarkTimestampMs") or delta.get(
-                "watermarkTimestamp"
-            )
-            at = _util.millis_to_datetime(int(watermark_ts))
-
-            threads = []
-            if "folders" not in delta:
-                threads = [
-                    get_thread({"threadKey": thr}) for thr in delta.get("threadKeys")
-                ]
-
-            self.on_marked_seen(threads=threads, seen_at=seen_at, at=at, metadata=delta)
-
         # Game played
         elif delta_type == "instant_game_update":
             game_id = delta["untypedData"]["game_id"]
@@ -833,10 +719,6 @@ class Client:
                 at=at,
                 metadata=metadata,
             )
-
-        # Skip "no operation" events
-        elif delta_class == "NoOp":
-            pass
 
         # Group call started/ended
         elif delta_type == "rtc_call_log":
@@ -964,28 +846,14 @@ class Client:
             )
 
         # Client payload (that weird numbers)
-        elif delta_class == "ClientPayload":
+        elif delta.get("class") == "ClientPayload":
             for event in _client_payload.parse_client_payloads(self.session, delta):
                 self.on_event(event)
 
-        # New message
-        elif delta.get("class") == "NewMessage":
-            thread = get_thread(metadata)
-            self.on_message(
-                mid=mid,
-                author_id=author_id,
-                message_object=_message.MessageData._from_pull(
-                    thread,
-                    delta,
-                    mid=mid,
-                    tags=metadata.get("tags"),
-                    author=author_id,
-                    created_at=at,
-                ),
-                thread=thread,
-                at=at,
-                metadata=metadata,
-            )
+        elif delta.get("class"):
+            event = _delta_class.parse_delta(self.session, delta)
+            if event:
+                self.on_event(event)
 
         # Unknown message type
         else:
@@ -1116,27 +984,6 @@ class Client:
         """Called when the client is listening, and an event happens."""
         log.info("Got event: %s", event)
 
-    def on_message(
-        self,
-        mid=None,
-        author_id=None,
-        message_object=None,
-        thread=None,
-        at=None,
-        metadata=None,
-    ):
-        """Called when the client is listening, and somebody sends a message.
-
-        Args:
-            mid: The message ID
-            author_id: The ID of the author
-            message_object (Message): The message (As a `Message` object)
-            thread: Thread that the message was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the message was sent
-            metadata: Extra metadata about the message
-        """
-        log.info("{} from {} in {}".format(message_object, author_id, thread))
-
     def on_color_change(
         self,
         mid=None,
@@ -1178,41 +1025,6 @@ class Client:
             metadata: Extra metadata about the action
         """
         log.info("Emoji change from {} in {}: {}".format(author_id, thread, new_emoji))
-
-    def on_title_change(
-        self,
-        mid=None,
-        author_id=None,
-        new_title=None,
-        group=None,
-        at=None,
-        metadata=None,
-    ):
-        """Called when the client is listening, and somebody changes a thread's title.
-
-        Args:
-            mid: The action ID
-            author_id: The ID of the person who changed the title
-            new_title: The new title
-            group: Group that the action was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the action was executed
-            metadata: Extra metadata about the action
-        """
-        log.info("Title change from {} in {}: {}".format(author_id, group, new_title))
-
-    def on_image_change(
-        self, mid=None, author_id=None, new_image=None, group=None, at=None
-    ):
-        """Called when the client is listening, and somebody changes a thread's image.
-
-        Args:
-            mid: The action ID
-            author_id: The ID of the person who changed the image
-            new_image: The ID of the new image
-            group: Group that the action was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the action was executed
-        """
-        log.info("{} changed group image in {}".format(author_id, group))
 
     def on_nickname_change(
         self,
@@ -1286,78 +1098,6 @@ class Client:
         else:
             log.info("{} disabled approval mode in {}".format(author_id, group))
 
-    def on_message_seen(
-        self, seen_by=None, thread=None, seen_at=None, at=None, metadata=None
-    ):
-        """Called when the client is listening, and somebody marks a message as seen.
-
-        Args:
-            seen_by: The ID of the person who marked the message as seen
-            thread: Thread that the action was sent to. See :ref:`intro_threads`
-            seen_at (datetime.datetime): When the person saw the message
-            at (datetime.datetime): When the action was executed
-            metadata: Extra metadata about the action
-        """
-        log.info("Messages seen by {} in {} at {}".format(seen_by, thread, seen_at))
-
-    def on_message_delivered(
-        self, msg_ids=None, delivered_for=None, thread=None, at=None, metadata=None,
-    ):
-        """Called when the client is listening, and somebody marks messages as delivered.
-
-        Args:
-            msg_ids: The messages that are marked as delivered
-            delivered_for: The person that marked the messages as delivered
-            thread: Thread that the action was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the action was executed
-            metadata: Extra metadata about the action
-        """
-        log.info(
-            "Messages {} delivered to {} in {} at {}".format(
-                msg_ids, delivered_for, thread, at
-            )
-        )
-
-    def on_marked_seen(self, threads=None, seen_at=None, at=None, metadata=None):
-        """Called when the client is listening, and the client has successfully marked threads as seen.
-
-        Args:
-            threads: The threads that were marked
-            author_id: The ID of the person who changed the emoji
-            seen_at (datetime.datetime): When the threads were seen
-            at (datetime.datetime): When the action was executed
-            metadata: Extra metadata about the action
-        """
-        log.info("Marked messages as seen in threads {} at {}".format(threads, seen_at))
-
-    def on_people_added(
-        self, mid=None, added_ids=None, author_id=None, group=None, at=None
-    ):
-        """Called when the client is listening, and somebody adds people to a group thread.
-
-        Args:
-            mid: The action ID
-            added_ids: The IDs of the people who got added
-            author_id: The ID of the person who added the people
-            group: Group that the action was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the action was executed
-        """
-        log.info("{} added: {} in {}".format(author_id, ", ".join(added_ids), group))
-
-    def on_person_removed(
-        self, mid=None, removed_id=None, author_id=None, group=None, at=None
-    ):
-        """Called when the client is listening, and somebody removes a person from a group thread.
-
-        Args:
-            mid: The action ID
-            removed_id: The ID of the person who got removed
-            author_id: The ID of the person who removed the person
-            group: Group that the action was sent to. See :ref:`intro_threads`
-            at (datetime.datetime): When the action was executed
-        """
-        log.info("{} removed: {} in {}".format(author_id, removed_id, group))
-
     def on_friend_request(self, from_id=None):
         """Called when the client is listening, and somebody sends a friend request.
 
@@ -1365,16 +1105,6 @@ class Client:
             from_id: The ID of the person that sent the request
         """
         log.info("Friend request from {}".format(from_id))
-
-    def _on_seen(self, locations=None, at=None):
-        """
-        Todo:
-            Document this, and make it public
-
-        Args:
-            locations: ---
-            at: A timestamp of the action
-        """
 
     def on_inbox(self, unseen=None, unread=None, recent_unread=None):
         """
