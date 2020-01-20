@@ -184,4 +184,4 @@ def parse_delta(session, data):
         return X._parse(session, data)
     elif class_ == "NewMessage":
         return MessageEvent._parse(session, data)
-    return UnknownEvent(data=data)
+    return UnknownEvent(source="Delta class", data=data)

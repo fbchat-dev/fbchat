@@ -42,6 +42,7 @@ from ._quick_reply import (
 from ._poll import Poll, PollOption
 from ._plan import GuestStatus, Plan, PlanData
 
+# Listen events
 from ._event_common import Event, UnknownEvent, ThreadEvent
 from ._client_payload import (
     ReactionEvent,
@@ -77,6 +78,7 @@ from ._delta_type import (
     PlanDeleted,
     PlanResponded,
 )
+from ._event import Typing, FriendRequest, Presence
 
 from ._client import Client
 

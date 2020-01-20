@@ -14,9 +14,7 @@ from . import (
     _thread,
     _message,
     _event_common,
-    _client_payload,
-    _delta_class,
-    _delta_type,
+    _event,
 )
 
 from ._thread import ThreadLocation
@@ -55,7 +53,6 @@ class Client:
             session: The session to use when making requests.
         """
         self._mark_alive = True
-        self._buddylist = dict()
         self._session = session
         self._mqtt = None
 
@@ -463,22 +460,6 @@ class Client:
         data = self._get_private_data()
         return [j["display_email"] for j in data["all_emails"]]
 
-    def get_user_active_status(self, user_id):
-        """Fetch friend active status as an `ActiveStatus` object.
-
-        Return ``None`` if status isn't known.
-
-        Warning:
-            Only works when listening.
-
-        Args:
-            user_id: ID of the user
-
-        Returns:
-            ActiveStatus: Given user active status
-        """
-        return self._buddylist.get(str(user_id))
-
     def mark_as_delivered(self, thread_id, message_id):
         """Mark a message as delivered.
 
@@ -609,88 +590,12 @@ class Client:
     LISTEN METHODS
     """
 
-    def _parse_delta(self, delta):
-        # Client payload (that weird numbers)
-        if delta.get("class") == "ClientPayload":
-            for event in _client_payload.parse_client_payloads(self.session, delta):
-                self.on_event(event)
-
-        elif delta.get("class"):
-            event = _delta_class.parse_delta(self.session, delta)
-            if event:
-                self.on_event(event)
-
-        elif delta.get("type"):
-            self.on_event(_delta_type.parse_delta(self.session, delta))
-
-        # Unknown message type
-        else:
-            self.on_unknown_messsage_type(msg=delta)
-
-    def _parse_payload(self, topic, m):
-        # Things that directly change chat
-        if topic == "/t_ms":
-            if "deltas" not in m:
-                return
-            for delta in m["deltas"]:
-                self._parse_delta(delta)
-
-        # TODO: Remove old parsing below
-
-        # Inbox
-        elif topic == "inbox":
-            self.on_inbox(
-                unseen=m["unseen"],
-                unread=m["unread"],
-                recent_unread=m["recent_unread"],
-            )
-
-        # Typing
-        # /thread_typing {'sender_fbid': X, 'state': 1, 'type': 'typ', 'thread': 'Y'}
-        # /orca_typing_notifications {'type': 'typ', 'sender_fbid': X, 'state': 0}
-        elif topic in ("/thread_typing", "/orca_typing_notifications"):
-            author_id = str(m["sender_fbid"])
-            thread_id = m.get("thread")
-            if thread_id:
-                thread = _group.Group(session=self.session, id=str(thread_id))
-            else:
-                thread = _user.User(session=self.session, id=author_id)
-            self.on_typing(
-                author_id=author_id, status=m["state"] == 1, thread=thread,
-            )
-
-        # Other notifications
-        elif topic == "/legacy_web":
-            # Friend request
-            if m["type"] == "jewel_requests_add":
-                self.on_friend_request(from_id=str(m["from"]))
-            else:
-                self.on_unknown_messsage_type(msg=m)
-
-        # Chat timestamp / Buddylist overlay
-        elif topic == "/orca_presence":
-            if m["list_type"] == "full":
-                self._buddylist = {}  # Refresh internal list
-
-            statuses = dict()
-            for data in m["list"]:
-                user_id = str(data["u"])
-                statuses[user_id] = ActiveStatus._from_orca_presence(data)
-                self._buddylist[user_id] = statuses[user_id]
-
-            # TODO: Which one should we call?
-            self.on_chat_timestamp(buddylist=statuses)
-            self.on_buddylist_overlay(statuses=statuses)
-
-        # Unknown message type
-        else:
-            self.on_unknown_messsage_type(msg=m)
-
     def _parse_message(self, topic, data):
         try:
-            self._parse_payload(topic, data)
-        except Exception as e:
-            self.on_message_error(exception=e, msg=data)
+            for event in _event.parse_events(self.session, topic, data):
+                self.on_event(event)
+        except _exception.ParseError:
+            log.exception("Failed parsing MQTT data")
 
     def _start_listening(self):
         if not self._mqtt:
@@ -740,78 +645,6 @@ class Client:
         """
         self._mark_alive = markAlive
 
-    """
-    END LISTEN METHODS
-    """
-
-    """
-    EVENTS
-    """
-
     def on_event(self, event: _event_common.Event):
         """Called when the client is listening, and an event happens."""
         log.info("Got event: %s", event)
-
-    def on_friend_request(self, from_id=None):
-        """Called when the client is listening, and somebody sends a friend request.
-
-        Args:
-            from_id: The ID of the person that sent the request
-        """
-        log.info("Friend request from {}".format(from_id))
-
-    def on_inbox(self, unseen=None, unread=None, recent_unread=None):
-        """
-        Todo:
-            Documenting this
-
-        Args:
-            unseen: --
-            unread: --
-            recent_unread: --
-        """
-        log.info("Inbox event: {}, {}, {}".format(unseen, unread, recent_unread))
-
-    def on_typing(self, author_id=None, status=None, thread=None):
-        """Called when the client is listening, and somebody starts or stops typing into a chat.
-
-        Args:
-            author_id: The ID of the person who sent the action
-            is_typing: ``True`` if the user started typing, ``False`` if they stopped.
-            thread: Thread that the action was sent to. See :ref:`intro_threads`
-        """
-        pass
-
-    def on_chat_timestamp(self, buddylist=None):
-        """Called when the client receives chat online presence update.
-
-        Args:
-            buddylist: A list of dictionaries with friend id and last seen timestamp
-        """
-        log.debug("Chat Timestamps received: {}".format(buddylist))
-
-    def on_buddylist_overlay(self, statuses=None):
-        """Called when the client is listening and client receives information about friend active status.
-
-        Args:
-            statuses (dict): Dictionary with user IDs as keys and `ActiveStatus` as values
-        """
-
-    def on_unknown_messsage_type(self, msg=None):
-        """Called when the client is listening, and some unknown data was received.
-
-        Args:
-        """
-        log.debug("Unknown message received: {}".format(msg))
-
-    def on_message_error(self, exception=None, msg=None):
-        """Called when an error was encountered while parsing received data.
-
-        Args:
-            exception: The exception that was encountered
-        """
-        log.exception("Exception in parsing of {}".format(msg))
-
-    """
-    END EVENTS
-    """

@@ -21,6 +21,8 @@ class Event(metaclass=abc.ABCMeta):
 class UnknownEvent(Event):
     """Represent an unknown event."""
 
+    #: Some data describing the unknown event's origin
+    source = attr.ib()
     #: The unknown data. This cannot be relied on, it's only for debugging purposes.
     data = attr.ib()
 

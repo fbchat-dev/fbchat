@@ -153,7 +153,9 @@ def test_message_reply(session):
 
 
 def test_parse_client_delta_unknown(session):
-    assert UnknownEvent(data={"abc": 10}) == parse_client_delta(session, {"abc": 10})
+    assert UnknownEvent(
+        source="client payload", data={"abc": 10}
+    ) == parse_client_delta(session, {"abc": 10})
 
 
 def test_parse_client_payloads_empty(session):

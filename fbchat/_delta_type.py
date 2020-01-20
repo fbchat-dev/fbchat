@@ -326,4 +326,4 @@ def parse_delta(session, data):
         return PlanDeleted._parse(session, data)
     elif type_ == "lightweight_event_rsvp":
         return PlanResponded._parse(session, data)
-    return UnknownEvent(data=data)
+    return UnknownEvent(source="Delta type", data=data)

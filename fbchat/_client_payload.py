@@ -121,7 +121,7 @@ def parse_client_delta(session, data):
         return UnsendEvent._parse(session, data["deltaRecallMessageData"])
     elif "deltaMessageReply" in data:
         return MessageReplyEvent._parse(session, data["deltaMessageReply"])
-    return UnknownEvent(data=data)
+    return UnknownEvent(source="client payload", data=data)
 
 
 def parse_client_payloads(session, data):
