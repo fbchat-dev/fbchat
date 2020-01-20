@@ -171,6 +171,10 @@ class Mqtt(object):
             "/br_sr",
             # Response to /br_sr
             "/sr_res",
+            # Data about user-to-user calls
+            # TODO: Investigate the response from this! (A bunch of binary data)
+            # "/t_rtc",
+            # TODO: Find out what this does!
             # TODO: Investigate the response from this! (A bunch of binary data)
             # "/t_p",
             # TODO: Find out what this does!
@@ -186,7 +190,6 @@ class Mqtt(object):
             "/messaging_events",
             "/orca_message_notifications",
             "/pp",
-            "/t_rtc",
             "/webrtc_response",
         ]
 
