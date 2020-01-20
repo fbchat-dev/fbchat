@@ -2271,7 +2271,17 @@ class Client(object):
         elif delta_class == "ForcedFetch":
             mid = delta.get("messageId")
             if mid is None:
-                self.onUnknownMesssageType(msg=delta)
+                if delta["threadKey"] is not None:
+                    # Looks like the whole delta is metadata in this case
+                    thread_id, thread_type = getThreadIdAndThreadType(delta)
+                    self.onPendingMessage(
+                        thread_id=thread_id,
+                        thread_type=thread_type,
+                        metadata=delta,
+                        msg=delta,
+                    )
+                else:
+                    self.onUnknownMesssageType(msg=delta)
             else:
                 thread_id = str(delta["threadKey"]["threadFbId"])
                 fetch_info = self._forcedFetch(thread_id, mid)
@@ -2727,6 +2737,14 @@ class Client(object):
                 msg=delta,
             )
 
+        # New pending message
+        elif delta_class == "ThreadFolder" and delta.get("folder") == "FOLDER_PENDING":
+            # Looks like the whole delta is metadata in this case
+            thread_id, thread_type = getThreadIdAndThreadType(delta)
+            self.onPendingMessage(
+                thread_id=thread_id, thread_type=thread_type, metadata=delta, msg=delta
+            )
+
         # Unknown message type
         else:
             self.onUnknownMesssageType(msg=delta)
@@ -2948,6 +2966,21 @@ class Client(object):
             msg: A full set of the data received
         """
         log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
+
+    def onPendingMessage(
+        self, thread_id=None, thread_type=None, metadata=None, msg=None
+    ):
+        """Called when the client is listening, and somebody that isn't
+         connected with you on either Facebook or Messenger sends a message.
+         After that, you need to use fetchThreadList to actually read the message.
+
+         Args:
+            thread_id: Thread ID that the message was sent to. See :ref:`intro_threads`
+            thread_type (ThreadType): Type of thread that the message was sent to. See :ref:`intro_threads`
+            metadata: Extra metadata about the message
+            msg: A full set of the data received
+        """
+        log.info("New pending message from {}".format(thread_id))
 
     def onColorChange(
         self,
