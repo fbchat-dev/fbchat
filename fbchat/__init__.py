@@ -13,7 +13,7 @@ from ._client import Client
 from ._util import log  # TODO: Remove this (from examples too)
 
 __title__ = "fbchat"
-__version__ = "1.9.4"
+__version__ = "1.9.5"
 __description__ = "Facebook Chat (Messenger) for Python"
 
 __copyright__ = "Copyright 2015 - 2019 by Taehoon Kim"
