@@ -71,12 +71,12 @@ class Mqtt(object):
             OSError,
             paho.mqtt.client.WebsocketConnectionError,
         ) as e:
-            raise _exception.FBchatException("MQTT connection failed")
+            raise _exception.FacebookError("MQTT connection failed") from e
 
         # Raise error if connecting failed
         if rc != paho.mqtt.client.MQTT_ERR_SUCCESS:
             err = paho.mqtt.client.error_string(rc)
-            raise _exception.FBchatException("MQTT connection failed: {}".format(err))
+            raise _exception.FacebookError("MQTT connection failed: {}".format(err))
 
         return self
 
@@ -84,7 +84,8 @@ class Mqtt(object):
         # Parse payload JSON
         try:
             j = _util.parse_json(message.payload.decode("utf-8"))
-        except (_exception.FBchatFacebookError, UnicodeDecodeError):
+        except (_exception.FacebookError, UnicodeDecodeError):
+            log.debug(message.payload)
             log.exception("Failed parsing MQTT data on %s as JSON", message.topic)
             return
 
@@ -122,19 +123,18 @@ class Mqtt(object):
             "includeSeqID": True,
         }
         log.debug("Fetching MQTT sequence ID")
-        # Same request as in `Client.fetchThreadList`
+        # Same request as in `Client.fetch_threads`
         (j,) = session._graphql_requests(
             _graphql.from_doc_id("1349387578499440", params)
         )
         try:
             return int(j["viewer"]["message_threads"]["sync_sequence_id"])
-        except (KeyError, ValueError):
-            # TODO: Proper exceptions
-            raise
+        except (KeyError, ValueError) as e:
+            raise _exception.ParseError("Could not find sequence id", data=j) from e
 
     def _on_connect_handler(self, client, userdata, flags, rc):
         if rc == 21:
-            raise _exception.FBchatException(
+            raise _exception.FacebookError(
                 "Failed connecting. Maybe your cookies are wrong?"
             )
         if rc != 0:
