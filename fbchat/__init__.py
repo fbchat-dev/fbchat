@@ -59,6 +59,24 @@ from ._delta_class import (
     ThreadsRead,
     MessageEvent,
 )
+from ._delta_type import (
+    ColorSet,
+    EmojiSet,
+    NicknameSet,
+    AdminsAdded,
+    AdminsRemoved,
+    ApprovalModeSet,
+    CallStarted,
+    CallEnded,
+    CallJoined,
+    PollCreated,
+    PollVoted,
+    PlanCreated,
+    PlanEnded,
+    PlanEdited,
+    PlanDeleted,
+    PlanResponded,
+)
 
 from ._client import Client
 
