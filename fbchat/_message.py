@@ -73,6 +73,8 @@ class Mention:
         }
 
 
+# Exaustively searched for options by using the list in:
+# https://unicode.org/emoji/charts/full-emoji-list.html
 SENDABLE_REACTIONS = ("❤", "😍", "😆", "😮", "😢", "😠", "👍", "👎")
 
 
