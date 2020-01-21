@@ -74,7 +74,7 @@ class Presence(Event):
 
 def parse_delta(session, data):
     try:
-        class_ = data.get("class")
+        class_ = data["class"]
         if class_ == "ClientPayload":
             yield from _client_payload.parse_client_payloads(session, data)
         elif class_ == "AdminTextMessage":
@@ -93,8 +93,8 @@ def parse_events(session, topic, data):
     # See Mqtt._configure_connect_options for information about these topics
     try:
         if topic == "/t_ms":
-            if "deltas" not in data:
-                return
+            # `deltas` will always be available, since we're filtering out the things
+            # that don't have it earlier in the MQTT listener
             for delta in data["deltas"]:
                 yield from parse_delta(session, delta)
 
@@ -105,7 +105,7 @@ def parse_events(session, topic, data):
             yield Typing._parse_orca(session, data)
 
         elif topic == "/legacy_web":
-            if data.get("type") == "jewel_requests_add":
+            if data["type"] == "jewel_requests_add":
                 yield FriendRequest._parse(session, data)
             else:
                 yield UnknownEvent(source="/legacy_web", data=data)

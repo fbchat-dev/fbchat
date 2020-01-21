@@ -181,7 +181,7 @@ class ThreadFolder(Event):
 
 
 def parse_delta(session, data):
-    class_ = data.get("class")
+    class_ = data["class"]
     if class_ == "ParticipantsAddedToGroupThread":
         return PeopleAdded._parse(session, data)
     elif class_ == "ParticipantLeftGroupThread":

@@ -279,7 +279,7 @@ class PlanResponded(ThreadEvent):
 
 
 def parse_delta(session, data):
-    type_ = data.get("type")
+    type_ = data["type"]
     if type_ == "change_thread_theme":
         return ColorSet._parse(session, data)
     elif type_ == "change_thread_icon":
