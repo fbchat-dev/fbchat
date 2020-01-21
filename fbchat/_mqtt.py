@@ -99,6 +99,8 @@ class Listener:
             log.exception("Failed parsing MQTT data on %s as JSON", message.topic)
             return
 
+        log.debug("MQTT payload: %s, %s", message.topic, j)
+
         if message.topic == "/t_ms":
             # Update sync_token when received
             # This is received in the first message after we've created a messenger
@@ -106,18 +108,33 @@ class Listener:
             if "syncToken" in j and "firstDeltaSeqId" in j:
                 self._sync_token = j["syncToken"]
                 self._sequence_id = j["firstDeltaSeqId"]
+                return
+
+            if "errorCode" in j:
+                error = j["errorCode"]
+                # TODO: 'F\xfa\x84\x8c\x85\xf8\xbc-\x88 FB_PAGES_INSUFFICIENT_PERMISSION\x00'
+                if error in ("ERROR_QUEUE_NOT_FOUND", "ERROR_QUEUE_OVERFLOW"):
+                    # ERROR_QUEUE_NOT_FOUND means that the queue was deleted, since too
+                    # much time passed, or that it was simply missing
+                    # ERROR_QUEUE_OVERFLOW means that the sequence id was too small, so
+                    # the desired events could not be retrieved
+                    log.error(
+                        "The MQTT listener was disconnected for too long,"
+                        " events may have been lost"
+                    )
+                    self._sync_token = None
+                    self._sequence_id = self._fetch_sequence_id(self._session)
+                    self._messenger_queue_publish()
+                    # TODO: Signal to the user that they should reload their data!
+                    return
+                log.error("MQTT error code %s received", error)
+                return
 
             # Update last sequence id when received
             if "lastIssuedSeqId" in j:
                 self._sequence_id = j["lastIssuedSeqId"]
-
-            if "errorCode" in j:
-                # Known types: ERROR_QUEUE_OVERFLOW | ERROR_QUEUE_NOT_FOUND
-                # 'F\xfa\x84\x8c\x85\xf8\xbc-\x88 FB_PAGES_INSUFFICIENT_PERMISSION\x00'
-                log.error("MQTT error code %s received", j["errorCode"])
-                # TODO: Consider resetting the sync_token and sequence ID here?
-
-        log.debug("MQTT payload: %s, %s", message.topic, j)
+            else:
+                log.error("Missing last sequence id: %s", j)
 
         try:
             # TODO: Don't handle this in a callback
@@ -153,6 +170,9 @@ class Listener:
         if rc != 0:
             return  # Don't try to send publish if the connection failed
 
+        self._messenger_queue_publish()
+
+    def _messenger_queue_publish(self):
         # configure receiving messages.
         payload = {
             "sync_api_version": 10,
@@ -195,6 +215,10 @@ class Listener:
             "/br_sr",
             # Response to /br_sr
             "/sr_res",
+            # Data about user-to-user calls
+            # TODO: Investigate the response from this! (A bunch of binary data)
+            # "/t_rtc",
+            # TODO: Find out what this does!
             # TODO: Investigate the response from this! (A bunch of binary data)
             # "/t_p",
             # TODO: Find out what this does!
@@ -210,7 +234,6 @@ class Listener:
             "/messaging_events",
             "/orca_message_notifications",
             "/pp",
-            "/t_rtc",
             "/webrtc_response",
         ]
 

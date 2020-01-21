@@ -16,6 +16,10 @@ class ThreadLocation(enum.Enum):
     ARCHIVED = "ARCHIVED"
     OTHER = "OTHER"
 
+    @classmethod
+    def _parse(cls, value: str):
+        return cls(value.lstrip("FOLDER_"))
+
 
 DEFAULT_COLOR = "#0084ff"
 SETABLE_COLORS = (

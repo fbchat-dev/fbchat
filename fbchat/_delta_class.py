@@ -3,7 +3,7 @@ import datetime
 from ._event_common import attrs_event, Event, UnknownEvent, ThreadEvent
 from . import _util, _user, _group, _thread, _message
 
-from typing import Sequence
+from typing import Sequence, Optional
 
 
 @attrs_event
@@ -79,12 +79,14 @@ class UnfetchedThreadEvent(Event):
     #: The thread the message was sent to
     thread = attr.ib(type=_thread.ThreadABC)
     #: The message
-    message = attr.ib(type=_message.Message)
+    message = attr.ib(type=Optional[_message.Message])
 
     @classmethod
     def _parse(cls, session, data):
         thread = ThreadEvent._get_thread(session, data)
-        message = _message.Message(thread=thread, id=data["messageId"])
+        message = None
+        if "messageId" in data:
+            message = _message.Message(thread=thread, id=data["messageId"])
         return cls(thread=thread, message=message)
 
 
@@ -156,6 +158,28 @@ class MessageEvent(ThreadEvent):
         return cls(author=author, thread=thread, message=message, at=at)
 
 
+@attrs_event
+class ThreadFolder(Event):
+    """A thread was created in a folder.
+
+    Somebody that isn't connected with you on either Facebook or Messenger sends a
+    message. After that, you need to use `ThreadABC.fetch_messages` to actually read it.
+    """
+
+    # TODO: Finish this
+
+    #: The created thread
+    thread = attr.ib(type=_thread.ThreadABC)
+    #: The folder/location
+    folder = attr.ib(type=_thread.ThreadLocation)
+
+    @classmethod
+    def _parse(cls, session, data):
+        thread = ThreadEvent._get_thread(session, data)
+        folder = _thread.ThreadLocation._parse(data["folder"])
+        return cls(thread=thread, folder=folder)
+
+
 def parse_delta(session, data):
     class_ = data.get("class")
     if class_ == "ParticipantsAddedToGroupThread":
@@ -164,10 +188,7 @@ def parse_delta(session, data):
         return PersonRemoved._parse(session, data)
     elif class_ == "MarkFolderSeen":
         # TODO: Finish this
-        folders = [
-            _thread.ThreadLocation(folder.lstrip("FOLDER_"))
-            for folder in data["folders"]
-        ]
+        folders = [_thread.ThreadLocation._parse(folder) for folder in data["folders"]]
         at = _util.millis_to_datetime(int(data["timestamp"]))
         return None
     elif class_ == "ThreadName":
@@ -187,4 +208,6 @@ def parse_delta(session, data):
         return X._parse(session, data)
     elif class_ == "NewMessage":
         return MessageEvent._parse(session, data)
+    elif class_ == "ThreadFolder":
+        return ThreadFolder._parse(session, data)
     return UnknownEvent(source="Delta class", data=data)

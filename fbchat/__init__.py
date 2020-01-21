@@ -59,6 +59,7 @@ from ._delta_class import (
     MessagesDelivered,
     ThreadsRead,
     MessageEvent,
+    ThreadFolder,
 )
 from ._delta_type import (
     ColorSet,
@@ -84,7 +85,7 @@ from ._mqtt import Listener
 from ._client import Client
 
 __title__ = "fbchat"
-__version__ = "1.9.4"
+__version__ = "1.9.6"
 __description__ = "Facebook Chat (Messenger) for Python"
 
 __copyright__ = "Copyright 2015 - 2019 by Taehoon Kim"

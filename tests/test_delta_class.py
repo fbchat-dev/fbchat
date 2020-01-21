@@ -4,6 +4,7 @@ from fbchat import (
     ParseError,
     User,
     Group,
+    ThreadLocation,
     UnknownEvent,
     PeopleAdded,
     PersonRemoved,
@@ -12,6 +13,7 @@ from fbchat import (
     MessagesDelivered,
     ThreadsRead,
     MessageEvent,
+    ThreadFolder,
 )
 from fbchat._message import Message, MessageData
 from fbchat._delta_class import parse_delta
@@ -130,6 +132,19 @@ def test_forced_fetch(session):
     thread = Group(session=session, id="1234")
     assert UnfetchedThreadEvent(
         thread=thread, message=Message(thread=thread, id="mid.$XYZ")
+    ) == parse_delta(session, data)
+
+
+def test_forced_fetch_pending(session):
+    data = {
+        "forceInsert": False,
+        "irisSeqId": "1111",
+        "isLazy": False,
+        "threadKey": {"threadFbId": "1234"},
+        "class": "ForcedFetch",
+    }
+    assert UnfetchedThreadEvent(
+        thread=Group(session=session, id="1234"), message=None
     ) == parse_delta(session, data)
 
 
@@ -286,6 +301,20 @@ def test_new_message_group(session):
             ),
         ),
         at=datetime.datetime(2020, 9, 13, 12, 26, 40, tzinfo=datetime.timezone.utc),
+    ) == parse_delta(session, data)
+
+
+def test_thread_folder(session):
+    data = {
+        "class": "ThreadFolder",
+        "folder": "FOLDER_PENDING",
+        "irisSeqId": "1111",
+        "irisTags": ["DeltaThreadFolder", "is_from_iris_fanout"],
+        "requestContext": {"apiArgs": {}},
+        "threadKey": {"otherUserFbId": "1234"},
+    }
+    assert ThreadFolder(
+        thread=User(session=session, id="1234"), folder=ThreadLocation.PENDING
     ) == parse_delta(session, data)
 
 
