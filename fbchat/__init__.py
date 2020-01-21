@@ -79,6 +79,7 @@ from ._delta_type import (
     PlanResponded,
 )
 from ._event import Typing, FriendRequest, Presence
+from ._mqtt import Listener
 
 from ._client import Client
 
@@ -92,7 +93,7 @@ __license__ = "BSD 3-Clause"
 __author__ = "Taehoon Kim; Moreels Pieter-Jan; Mads Marquart"
 __email__ = "carpedm20@gmail.com"
 
-__all__ = ("Session", "Client")
+__all__ = ("Session", "Listener", "Client")
 
 # Everything below is taken from the excellent trio project:
 

@@ -1,43 +1,27 @@
+import attr
 import datetime
 
-from ._core import log
+from ._core import log, attrs_default
 from . import (
     _exception,
     _util,
     _graphql,
-    _mqtt,
     _session,
-    _poll,
     _user,
     _page,
     _group,
     _thread,
-    _message,
-    _event_common,
-    _event,
 )
 
 from ._thread import ThreadLocation
-from ._user import User, UserData, ActiveStatus
+from ._user import User, UserData
 from ._group import Group, GroupData
 from ._page import Page, PageData
-from ._message import EmojiSize, Mention, Message
-from ._attachment import Attachment
-from ._sticker import Sticker
-from ._location import LocationAttachment, LiveLocationAttachment
-from ._file import ImageAttachment, VideoAttachment
-from ._quick_reply import (
-    QuickReply,
-    QuickReplyText,
-    QuickReplyLocation,
-    QuickReplyPhoneNumber,
-    QuickReplyEmail,
-)
-from ._plan import PlanData
 
 from typing import Sequence, Iterable, Tuple, Optional
 
 
+@attrs_default
 class Client:
     """A client for the Facebook Chat (Messenger).
 
@@ -46,23 +30,13 @@ class Client:
     useful while listening).
     """
 
-    def __init__(self, session):
-        """Initialize the client model.
-
-        Args:
-            session: The session to use when making requests.
-        """
-        self._mark_alive = True
-        self._session = session
-        self._mqtt = None
+    #: The session to use when making requests.
+    _session = attr.ib(type=_session.Session)
 
     @property
     def session(self):
         """The session that's used when making requests."""
         return self._session
-
-    def __repr__(self):
-        return "Client(session={!r})".format(self._session)
 
     def fetch_users(self) -> Sequence[_user.UserData]:
         """Fetch users the client is currently chatting with.
@@ -585,66 +559,3 @@ class Client:
             data["message_ids[{}]".format(i)] = message_id
         j = self.session._payload_post("/ajax/mercury/delete_messages.php?dpr=1", data)
         return True
-
-    """
-    LISTEN METHODS
-    """
-
-    def _parse_message(self, topic, data):
-        try:
-            for event in _event.parse_events(self.session, topic, data):
-                self.on_event(event)
-        except _exception.ParseError:
-            log.exception("Failed parsing MQTT data")
-
-    def _start_listening(self):
-        if not self._mqtt:
-            self._mqtt = _mqtt.Mqtt.connect(
-                session=self.session,
-                on_message=self._parse_message,
-                chat_on=self._mark_alive,
-                foreground=True,
-            )
-
-    def _do_one_listen(self):
-        # TODO: Remove this wierd check, and let the user handle the chat_on parameter
-        if self._mark_alive != self._mqtt._chat_on:
-            self._mqtt.set_chat_on(self._mark_alive)
-
-        return self._mqtt.loop_once()
-
-    def _stop_listening(self):
-        if not self._mqtt:
-            return
-        self._mqtt.disconnect()
-        # TODO: Preserve the _mqtt object
-        # Currently, there's some issues when disconnecting
-        self._mqtt = None
-
-    def listen(self, markAlive=None):
-        """Initialize and runs the listening loop continually.
-
-        Args:
-            markAlive (bool): Whether this should ping the Facebook server each time the loop runs
-        """
-        if markAlive is not None:
-            self.set_active_status(markAlive)
-
-        self._start_listening()
-
-        while self._do_one_listen():
-            pass
-
-        self._stop_listening()
-
-    def set_active_status(self, markAlive):
-        """Change active status while listening.
-
-        Args:
-            markAlive (bool): Whether to show if client is active
-        """
-        self._mark_alive = markAlive
-
-    def on_event(self, event: _event_common.Event):
-        """Called when the client is listening, and an event happens."""
-        log.info("Got event: %s", event)
