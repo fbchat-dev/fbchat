@@ -133,7 +133,7 @@ def test_forced_fetch(session):
     ) == parse_delta(session, data)
 
 
-def test_delivery_receipt(session):
+def test_delivery_receipt_group(session):
     data = {
         "actorFbId": "1234",
         "deliveredWatermarkTimestampMs": "1500000000000",
@@ -147,6 +147,28 @@ def test_delivery_receipt(session):
     thread = Group(session=session, id="4321")
     assert MessagesDelivered(
         author=User(session=session, id="1234"),
+        thread=thread,
+        messages=[
+            Message(thread=thread, id="mid.$XYZ"),
+            Message(thread=thread, id="mid.$ABC"),
+        ],
+        at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
+    ) == parse_delta(session, data)
+
+
+def test_delivery_receipt_user(session):
+    data = {
+        "deliveredWatermarkTimestampMs": "1500000000000",
+        "irisSeqId": "1111111",
+        "irisTags": ["DeltaDeliveryReceipt", "is_from_iris_fanout"],
+        "messageIds": ["mid.$XYZ", "mid.$ABC"],
+        "requestContext": {"apiArgs": {}},
+        "threadKey": {"otherUserFbId": "1234"},
+        "class": "DeliveryReceipt",
+    }
+    thread = User(session=session, id="1234")
+    assert MessagesDelivered(
+        author=thread,
         thread=thread,
         messages=[
             Message(thread=thread, id="mid.$XYZ"),

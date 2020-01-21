@@ -99,8 +99,11 @@ class MessagesDelivered(ThreadEvent):
 
     @classmethod
     def _parse(cls, session, data):
-        author = _user.User(session=session, id=data["actorFbId"])
         thread = cls._get_thread(session, data)
+        if "actorFbId" in data:
+            author = _user.User(session=session, id=data["actorFbId"])
+        else:
+            author = thread
         messages = [_message.Message(thread=thread, id=x) for x in data["messageIds"]]
         at = _util.millis_to_datetime(int(data["deliveredWatermarkTimestampMs"]))
         return cls(author=author, thread=thread, messages=messages, at=at)
