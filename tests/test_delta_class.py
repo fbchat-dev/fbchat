@@ -323,6 +323,5 @@ def test_noop(session):
 
 
 def test_parse_delta_unknown(session):
-    assert UnknownEvent(source="Delta class", data={"abc": 10}) == parse_delta(
-        session, {"abc": 10}
-    )
+    data = {"class": "Abc"}
+    assert UnknownEvent(source="Delta class", data=data) == parse_delta(session, data)

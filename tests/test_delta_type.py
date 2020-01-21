@@ -951,6 +951,5 @@ def test_plan_participation(session):
 
 
 def test_parse_delta_unknown(session):
-    assert UnknownEvent(source="Delta type", data={"abc": 10}) == parse_delta(
-        session, {"abc": 10}
-    )
+    data = {"class": "AdminTextMessage", "type": "abc"}
+    assert UnknownEvent(source="Delta type", data=data) == parse_delta(session, data)
