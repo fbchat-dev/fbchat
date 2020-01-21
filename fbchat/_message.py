@@ -319,7 +319,7 @@ class MessageData(Message):
         )
 
     @classmethod
-    def _from_reply(cls, thread, data, replied_to=None):
+    def _from_reply(cls, thread, data):
         tags = data["messageMetadata"].get("tags")
         metadata = data.get("messageMetadata", {})
 
@@ -360,13 +360,18 @@ class MessageData(Message):
             attachments=attachments,
             quick_replies=cls._parse_quick_replies(data.get("platform_xmd_encoded")),
             unsent=unsent,
-            reply_to_id=replied_to.id if replied_to else None,
-            replied_to=replied_to,
+            reply_to_id=data["messageReply"]["replyToMessageId"]["id"]
+            if "messageReply" in data
+            else None,
             forwarded=cls._get_forwarded_from_tags(tags),
         )
 
     @classmethod
-    def _from_pull(cls, thread, data, mid, tags, author, created_at):
+    def _from_pull(cls, thread, data, author, created_at):
+        metadata = data["messageMetadata"]
+
+        tags = metadata.get("tags")
+
         mentions = []
         if data.get("data") and data["data"].get("prng"):
             try:
@@ -414,7 +419,7 @@ class MessageData(Message):
 
         return cls(
             thread=thread,
-            id=mid,
+            id=metadata["messageId"],
             author=author,
             created_at=created_at,
             text=data.get("body"),

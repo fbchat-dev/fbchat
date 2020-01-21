@@ -1,19 +1,17 @@
 import fbchat
 
-# Subclass fbchat.Client and override required methods
-class EchoBot(fbchat.Client):
-    def on_message(self, author_id, message_object, thread, **kwargs):
-        self.mark_as_delivered(thread.id, message_object.id)
-        self.mark_as_read(thread.id)
-
-        print("{} from {} in {}".format(message_object, thread))
-
-        # If you're not the author, echo
-        if author_id != self.session.user_id:
-            thread.send_text(message_object.text)
-
-
 session = fbchat.Session.login("<email>", "<password>")
 
-echo_bot = EchoBot(session)
-echo_bot.listen()
+listener = fbchat.Listener.connect(session, chat_on=False, foreground=False)
+
+
+def on_message(event):
+    print(f"{event.message.text} from {event.author.id} in {event.thread.id}")
+    # If you're not the author, echo
+    if event.author.id != session.user_id:
+        event.thread.send_text(event.message.text)
+
+
+for event in listener.listen():
+    if isinstance(event, fbchat.MessageEvent):
+        on_message(event)

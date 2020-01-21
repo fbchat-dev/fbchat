@@ -14,64 +14,77 @@ old_nicknames = {
     "12345678904": "User nr. 4's nickname",
 }
 
-
-class KeepBot(fbchat.Client):
-    def on_color_change(self, author_id, new_color, thread, **kwargs):
-        if old_thread_id == thread.id and old_color != new_color:
-            print(
-                "{} changed the thread color. It will be changed back".format(author_id)
-            )
-            thread.set_color(old_color)
-
-    def on_emoji_change(self, author_id, new_emoji, thread, **kwargs):
-        if old_thread_id == thread.id and new_emoji != old_emoji:
-            print(
-                "{} changed the thread emoji. It will be changed back".format(author_id)
-            )
-            thread.set_emoji(old_emoji)
-
-    def on_people_added(self, added_ids, author_id, thread, **kwargs):
-        if old_thread_id == thread.id and author_id != self.session.user_id:
-            print("{} got added. They will be removed".format(added_ids))
-            for added_id in added_ids:
-                thread.remove_participant(added_id)
-
-    def on_person_removed(self, removed_id, author_id, thread, **kwargs):
-        # No point in trying to add ourself
-        if (
-            old_thread_id == thread.id
-            and removed_id != self.session.user_id
-            and author_id != self.session.user_id
-        ):
-            print("{} got removed. They will be re-added".format(removed_id))
-            thread.add_participants(removed_id)
-
-    def on_title_change(self, author_id, new_title, thread, **kwargs):
-        if old_thread_id == thread.id and old_title != new_title:
-            print(
-                "{} changed the thread title. It will be changed back".format(author_id)
-            )
-            thread.set_title(old_title)
-
-    def on_nickname_change(
-        self, author_id, changed_for, new_nickname, thread, **kwargs
-    ):
-        if (
-            old_thread_id == thread.id
-            and changed_for in old_nicknames
-            and old_nicknames[changed_for] != new_nickname
-        ):
-            print(
-                "{} changed {}'s' nickname. It will be changed back".format(
-                    author_id, changed_for
-                )
-            )
-            thread.set_nickname(
-                changed_for, old_nicknames[changed_for],
-            )
-
-
 session = fbchat.Session.login("<email>", "<password>")
 
-keep_bot = KeepBot(session)
-keep_bot.listen()
+listener = fbchat.Listener.connect(session, chat_on=False, foreground=False)
+
+
+def on_color_set(event: fbchat.ColorSet):
+    if old_thread_id != event.thread.id:
+        return
+    if old_color != event.color:
+        print(f"{event.author.id} changed the thread color. It will be changed back")
+        event.thread.set_color(old_color)
+
+
+def on_emoji_set(event: fbchat.EmojiSet):
+    if old_thread_id != event.thread.id:
+        return
+    if old_emoji != event.emoji:
+        print(f"{event.author.id} changed the thread emoji. It will be changed back")
+        event.thread.set_emoji(old_emoji)
+
+
+def on_title_set(event: fbchat.TitleSet):
+    if old_thread_id != event.thread.id:
+        return
+    if old_title != event.title:
+        print(f"{event.author.id} changed the thread title. It will be changed back")
+        event.thread.set_title(old_title)
+
+
+def on_nickname_set(event: fbchat.NicknameSet):
+    if old_thread_id != event.thread.id:
+        return
+    old_nickname = old_nicknames.get(event.subject.id)
+    if old_nickname != event.nickname:
+        print(
+            f"{event.author.id} changed {event.subject.id}'s' nickname."
+            " It will be changed back"
+        )
+        event.thread.set_nickname(event.subject.id, old_nickname)
+
+
+def on_people_added(event: fbchat.PeopleAdded):
+    if old_thread_id != event.thread.id:
+        return
+    if event.author.id != session.user_id:
+        print(f"{', '.join(x.id for x in event.added)} got added. They will be removed")
+        for added in event.added:
+            event.thread.remove_participant(added.id)
+
+
+def on_person_removed(event: fbchat.PersonRemoved):
+    if old_thread_id != event.thread.id:
+        return
+    # No point in trying to add ourself
+    if event.removed.id == session.user_id:
+        return
+    if event.author.id != session.user_id:
+        print(f"{event.removed.id} got removed. They will be re-added")
+        event.thread.add_participants([removed.id])
+
+
+for event in listener.listen():
+    if isinstance(event, fbchat.ColorSet):
+        on_color_set(event)
+    elif isinstance(event, fbchat.EmojiSet):
+        on_emoji_set(event)
+    elif isinstance(event, fbchat.TitleSet):
+        on_title_set(event)
+    elif isinstance(event, fbchat.NicknameSet):
+        on_nickname_set(event)
+    elif isinstance(event, fbchat.PeopleAdded):
+        on_people_added(event)
+    elif isinstance(event, fbchat.PersonRemoved):
+        on_person_removed(event)
