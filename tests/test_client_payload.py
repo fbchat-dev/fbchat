@@ -4,6 +4,8 @@ from fbchat import (
     ParseError,
     User,
     Group,
+    Message,
+    MessageData,
     UnknownEvent,
     ReactionEvent,
     UserStatusEvent,
@@ -11,7 +13,6 @@ from fbchat import (
     UnsendEvent,
     MessageReplyEvent,
 )
-from fbchat._message import Message, MessageData
 from fbchat._client_payload import parse_client_delta, parse_client_payloads
 
 

@@ -27,7 +27,7 @@ from ._thread import ThreadLocation, ThreadABC, Thread
 from ._user import User, UserData, ActiveStatus
 from ._group import Group, GroupData
 from ._page import Page, PageData
-from ._message import EmojiSize, Mention, Message
+from ._message import EmojiSize, Mention, Message, MessageData
 from ._attachment import Attachment, UnsentMessage, ShareAttachment
 from ._sticker import Sticker
 from ._location import LocationAttachment, LiveLocationAttachment

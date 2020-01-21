@@ -4,6 +4,8 @@ from fbchat import (
     ParseError,
     User,
     Group,
+    Message,
+    MessageData,
     ThreadLocation,
     UnknownEvent,
     PeopleAdded,
@@ -15,7 +17,6 @@ from fbchat import (
     MessageEvent,
     ThreadFolder,
 )
-from fbchat._message import Message, MessageData
 from fbchat._delta_class import parse_delta
 
 

@@ -5,6 +5,8 @@ from fbchat import (
     ParseError,
     User,
     Group,
+    Message,
+    MessageData,
     Poll,
     PollOption,
     PlanData,
@@ -27,7 +29,6 @@ from fbchat import (
     PlanDeleted,
     PlanResponded,
 )
-from fbchat._message import Message, MessageData
 from fbchat._delta_type import parse_delta
 
 
