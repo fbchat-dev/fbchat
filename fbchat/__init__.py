@@ -1,4 +1,4 @@
-"""Facebook Chat (Messenger) for Python
+"""Facebook Messenger for Python.
 
 Copyright:
     (c) 2015 - 2018 by Taehoon Kim
