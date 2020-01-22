@@ -42,7 +42,6 @@ needs_sphinx = "2.0"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinxcontrib.spelling",
@@ -171,13 +170,6 @@ autodoc_default_options = {"members": True}
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"https://docs.python.org/": None}
-
-# -- Options for todo extension ----------------------------------------------
-
-# If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = True
-
-todo_link_only = True
 
 # -- Options for napoleon extension ----------------------------------------------
 

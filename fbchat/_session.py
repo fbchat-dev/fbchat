@@ -329,6 +329,8 @@ class Session:
             raise _exception.ParseError("Missing payload", data=j) from e
 
     def _graphql_requests(self, *queries):
+        # TODO: Explain usage of GraphQL, probably in the docs
+        # Perhaps provide this API as public?
         data = {
             "method": "GET",
             "response_format": "json",

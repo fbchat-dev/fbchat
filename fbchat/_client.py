@@ -482,10 +482,7 @@ class Client:
         return self._read_status(False, threads, at)
 
     def mark_as_seen(self):
-        """
-        Todo:
-            Documenting this
-        """
+        # TODO: Documenting this
         j = self.session._payload_post(
             "/ajax/mercury/mark_seen.php", {"seen_timestamp": _util.now()}
         )

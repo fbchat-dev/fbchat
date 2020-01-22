@@ -18,7 +18,5 @@ Documentation Overview
 
     intro
     examples
-    testing
-    api/index
-    todo
     faq
+    api/index

@@ -8,6 +8,8 @@ from . import _session, _plan, _thread
 class Page(_thread.ThreadABC):
     """Represents a Facebook page. Implements `ThreadABC`."""
 
+    # TODO: Implement pages properly, the implementation is lacking in a lot of places!
+
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
     #: The unique identifier of the page.
