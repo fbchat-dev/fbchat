@@ -420,7 +420,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
     def set_color(self, color: str):
         """Change thread color.
 
-        The new color must be one of the following:
+        The new color must be one of the following::
 
             "#0084ff", "#44bec7", "#ffc300", "#fa3c4c", "#d696bb", "#6699cc", "#13cf13",
             "#ff7e29", "#e68585", "#7646ff", "#20cef5", "#67b868", "#d4a88c", "#ff5ca1",

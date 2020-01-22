@@ -477,7 +477,7 @@ class Client:
 
         Args:
             threads: Threads to set as unread
-            at: Timestam to signal the read cursor at
+            at: Timestamp to signal the read cursor at
         """
         return self._read_status(False, threads, at)
 
