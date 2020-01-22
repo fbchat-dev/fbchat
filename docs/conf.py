@@ -11,7 +11,11 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
+os.environ["_FBCHAT_DISABLE_FIX_MODULE_METADATA"] = "1"
+
 import fbchat
+
+del os.environ["_FBCHAT_DISABLE_FIX_MODULE_METADATA"]
 
 # -- Project information -----------------------------------------------------
 
