@@ -146,7 +146,7 @@ class Listener:
     def _fetch_sequence_id(session: _session.Session) -> int:
         """Fetch sequence ID."""
         params = {
-            "limit": 1,
+            "limit": 0,
             "tags": ["INBOX"],
             "before": None,
             "includeDeliveryReceipts": False,

@@ -195,7 +195,7 @@ class UserData(User):
         )
 
 
-@attr.s
+@attrs_default
 class ActiveStatus:
     #: Whether the user is active now
     active = attr.ib(None, type=bool)
