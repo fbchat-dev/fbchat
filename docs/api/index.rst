@@ -1,5 +1,4 @@
 .. module:: fbchat
-.. _api:
 
 .. Note: we're using () to hide the __init__ method where relevant
 

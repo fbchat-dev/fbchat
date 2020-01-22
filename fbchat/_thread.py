@@ -110,7 +110,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
             reply_to_id: Optional message to reply to
 
         Returns:
-            :ref:`Message ID <intro_message_ids>` of the sent message
+            The sent message
         """
         data = self._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
@@ -139,7 +139,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
             size: The size of the emoji
 
         Returns:
-            :ref:`Message ID <intro_message_ids>` of the sent message
+            The sent message
         """
         data = self._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
@@ -154,7 +154,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
             sticker_id: ID of the sticker to send
 
         Returns:
-            :ref:`Message ID <intro_message_ids>` of the sent message
+            The sent message
         """
         data = self._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"

@@ -1,17 +1,17 @@
 ``fbchat`` - Facebook Messenger for Python
 ==========================================
 
-.. image:: https://badgen.net/pypi/license/fbchat
-    :target: https://github.com/carpedm20/fbchat/tree/master/LICENSE
-    :alt: License: BSD 3-Clause
+.. image:: https://badgen.net/pypi/v/fbchat
+    :target: https://pypi.python.org/pypi/fbchat
+    :alt: Project version
 
 .. image:: https://badgen.net/badge/python/3.5,3.6,3.7,3.8,pypy?list=|
     :target: https://pypi.python.org/pypi/fbchat
     :alt: Supported python versions: 3.5, 3.6, 3.7, 3.8 and pypy
 
-.. image:: https://badgen.net/pypi/v/fbchat
-    :target: https://pypi.python.org/pypi/fbchat
-    :alt: Project version
+.. image:: https://badgen.net/pypi/license/fbchat
+    :target: https://github.com/carpedm20/fbchat/tree/master/LICENSE
+    :alt: License: BSD 3-Clause
 
 .. image:: https://readthedocs.org/projects/fbchat/badge/?version=stable
     :target: https://fbchat.readthedocs.io
@@ -26,7 +26,7 @@
     :alt: Code style
 
 A powerful and efficient library to interact with
-`Facebook\'s Messenger <https://www.facebook.com/messages/>`__, using just your email and password.
+`Facebook's Messenger <https://www.facebook.com/messages/>`__, using just your email and password.
 
 This is *not* an official API, Facebook has that `over here <https://developers.facebook.com/docs/messenger-platform>`__ for chat bots. This library differs by using a normal Facebook account instead.
 
@@ -36,15 +36,15 @@ This is *not* an official API, Facebook has that `over here <https://developers.
 - Fetching all messages, threads and images in threads.
 - Searching for messages and threads.
 - Creating groups, setting the group emoji, changing nicknames, creating polls, etc.
-- Listening for, an reacting to events in real-time.
-- Type hints, and a modern codebase (e.g. only Python 3.5 and upwards).
+- Listening for, an reacting to messages and other events in real-time.
+- Type hints, and it has a modern codebase (e.g. only Python 3.5 and upwards).
 - ``async``/``await`` (COMING).
 
 Essentially, everything you need to make an amazing Facebook bot!
 
 
-Version warning:
-----------------
+Version Warning
+---------------
 ``v2`` is currently being developed at the ``master`` branch and it's highly unstable. If you want to view the old ``v1``, go `here <https://github.com/carpedm20/fbchat/tree/v1>`__.
 
 Additionally, you can view the project's progress `here <https://github.com/carpedm20/fbchat/projects/2>`__.
@@ -86,7 +86,7 @@ You can also install directly from source, provided you have ``pip>=19.0``:
 .. inclusion-marker-installation-end
 
 
-Example usage
+Example Usage
 -------------
 
 .. code-block::

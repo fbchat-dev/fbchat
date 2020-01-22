@@ -6,7 +6,7 @@ The new version broke my application
 
 ``fbchat`` follows `Scemantic Versioning <https://semver.org/>`__ quite rigorously!
 
-That means that breaking changes can *only* occur in major versions (e.g. `v1.9.6` -> `v2.0.0`).
+That means that breaking changes can *only* occur in major versions (e.g. ``v1.9.6`` -> ``v2.0.0``).
 
 If you find that something breaks, and you didn't update to a new major version, then it is a bug, and we would be grateful if you reported it!
 
