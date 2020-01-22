@@ -4,7 +4,7 @@ import collections
 import datetime
 import enum
 from ._core import log, attrs_default, Image
-from . import _util, _exception, _session, _graphql, _attachment, _file, _plan
+from . import _util, _exception, _session, _graphql, _attachment, _file, _plan, _message
 from typing import MutableMapping, Mapping, Any, Iterable, Tuple, Optional
 
 
@@ -161,7 +161,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         data["sticker_id"] = sticker_id
         return self.session._do_send_request(data)
 
-    def _send_location(self, current, latitude, longitude) -> str:
+    def _send_location(self, current, latitude, longitude):
         data = self._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
         data["location_attachment[coordinates][latitude]"] = latitude
@@ -214,11 +214,11 @@ class ThreadABC(metaclass=abc.ABCMeta):
     # data["platform_xmd"] = _util.json_minimal(xmd)
 
     # TODO: This!
-    # def quick_reply(self, quick_reply, payload=None):
+    # def quick_reply(self, quick_reply: QuickReply, payload=None):
     #     """Reply to chosen quick reply.
     #
     #     Args:
-    #         quick_reply (QuickReply): Quick reply to reply to
+    #         quick_reply: Quick reply to reply to
     #         payload: Optional answer to the quick reply
     #     """
     #     if isinstance(quick_reply, QuickReplyText):
@@ -255,8 +255,6 @@ class ThreadABC(metaclass=abc.ABCMeta):
     #         return self.send(Message(text=payload, quick_replies=[new]))
 
     def _search_messages(self, query, offset, limit):
-        from . import _message
-
         data = {
             "query": query,
             "snippetOffset": offset,
@@ -279,7 +277,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
         ]
         return (result["num_total_snippets"], snippets)
 
-    def search_messages(self, query: str, limit: int) -> Iterable["MessageSnippet"]:
+    def search_messages(
+        self, query: str, limit: int
+    ) -> Iterable["_message.MessageSnippet"]:
         """Find and get message IDs by query.
 
         Warning! If someone send a message to the thread that matches the query, while
@@ -301,8 +301,6 @@ class ThreadABC(metaclass=abc.ABCMeta):
             offset += limit
 
     def _fetch_messages(self, limit, before):
-        from . import _message
-
         params = {
             "id": self.id,
             "message_limit": limit,
@@ -385,7 +383,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         # result["page_info"]["has_next_page"] is not correct when limit > 12
         return (result["page_info"]["end_cursor"], rtn)
 
-    def fetch_images(self, limit: int) -> Iterable[_attachment.Attachment]:
+    def fetch_images(self, limit: Optional[int]) -> Iterable[_attachment.Attachment]:
         """Fetch images/videos posted in the thread.
 
         Args:
@@ -474,7 +472,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
             "/messaging/save_thread_emoji/?source=thread_settings&dpr=1", data
         )
 
-    def forward_attachment(self, attachment_id):
+    def forward_attachment(self, attachment_id: str):
         """Forward an attachment.
 
         Args:
@@ -690,7 +688,7 @@ class Thread(ThreadABC):
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
     #: The unique identifier of the thread.
-    id = attr.ib(converter=str)
+    id = attr.ib(converter=str, type=str)
 
     def _to_send_data(self):
         raise NotImplementedError(

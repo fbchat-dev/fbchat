@@ -7,7 +7,7 @@ import urllib.parse
 from ._core import log
 from . import _exception
 
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Any
 
 #: Default list of user agents
 USER_AGENTS = [
@@ -42,12 +42,12 @@ def now():
     return int(time.time() * 1000)
 
 
-def json_minimal(data):
+def json_minimal(data: Any) -> str:
     """Get JSON data in minimal form."""
     return json.dumps(data, separators=(",", ":"))
 
 
-def strip_json_cruft(text):
+def strip_json_cruft(text: str) -> str:
     """Removes `for(;;);` (and other cruft) that preceeds JSON responses."""
     try:
         return text[text.index("{") :]
@@ -63,7 +63,7 @@ def get_decoded(content):
     return content.decode("utf-8")
 
 
-def parse_json(content):
+def parse_json(content: str) -> Any:
     try:
         return json.loads(content)
     except ValueError as e:
@@ -134,14 +134,7 @@ def get_jsmods_require(j, index):
     return None
 
 
-def require_list(list_):
-    if isinstance(list_, list):
-        return set(list_)
-    else:
-        return set([list_])
-
-
-def mimetype_to_key(mimetype):
+def mimetype_to_key(mimetype: str) -> str:
     if not mimetype:
         return "file_id"
     if mimetype == "image/gif":
@@ -152,22 +145,22 @@ def mimetype_to_key(mimetype):
     return "file_id"
 
 
-def get_url_parameters(url, *args):
+def get_url_parameters(url: str, *args):
     params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
     return [params[arg][0] for arg in args if params.get(arg)]
 
 
-def get_url_parameter(url, param):
+def get_url_parameter(url: str, param: str) -> str:
     return get_url_parameters(url, param)[0]
 
 
-def prefix_url(url):
+def prefix_url(url: str) -> str:
     if url.startswith("/"):
         return "https://www.facebook.com" + url
     return url
 
 
-def seconds_to_datetime(timestamp_in_seconds):
+def seconds_to_datetime(timestamp_in_seconds: float) -> datetime.datetime:
     """Convert an UTC timestamp to a timezone-aware datetime object."""
     # `.utcfromtimestamp` will return a "naive" datetime object, which is why we use the
     # following:
@@ -176,12 +169,12 @@ def seconds_to_datetime(timestamp_in_seconds):
     )
 
 
-def millis_to_datetime(timestamp_in_milliseconds):
+def millis_to_datetime(timestamp_in_milliseconds: int) -> datetime.datetime:
     """Convert an UTC timestamp, in milliseconds, to a timezone-aware datetime."""
     return seconds_to_datetime(timestamp_in_milliseconds / 1000)
 
 
-def datetime_to_seconds(dt):
+def datetime_to_seconds(dt: datetime.datetime) -> int:
     """Convert a datetime to an UTC timestamp.
 
     Naive datetime objects are presumed to represent time in the system timezone.
@@ -193,7 +186,7 @@ def datetime_to_seconds(dt):
     return round(dt.timestamp())
 
 
-def datetime_to_millis(dt):
+def datetime_to_millis(dt: datetime.datetime) -> int:
     """Convert a datetime to an UTC timestamp, in milliseconds.
 
     Naive datetime objects are presumed to represent time in the system timezone.
@@ -203,17 +196,17 @@ def datetime_to_millis(dt):
     return round(dt.timestamp() * 1000)
 
 
-def seconds_to_timedelta(seconds):
+def seconds_to_timedelta(seconds: float) -> datetime.timedelta:
     """Convert seconds to a timedelta."""
     return datetime.timedelta(seconds=seconds)
 
 
-def millis_to_timedelta(milliseconds):
+def millis_to_timedelta(milliseconds: int) -> datetime.timedelta:
     """Convert a duration (in milliseconds) to a timedelta object."""
     return datetime.timedelta(milliseconds=milliseconds)
 
 
-def timedelta_to_seconds(td):
+def timedelta_to_seconds(td: datetime.timedelta) -> int:
     """Convert a timedelta to seconds.
 
     The returned seconds will be rounded to the nearest whole number.

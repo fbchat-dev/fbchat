@@ -3,6 +3,8 @@ import abc
 from ._core import kw_only
 from . import _exception, _util, _thread, _group, _user, _message
 
+from typing import Any
+
 #: Default attrs settings for events
 attrs_event = attr.s(slots=True, kw_only=kw_only, frozen=True)
 
@@ -22,9 +24,9 @@ class UnknownEvent(Event):
     """Represent an unknown event."""
 
     #: Some data describing the unknown event's origin
-    source = attr.ib()
+    source = attr.ib(type=str)
     #: The unknown data. This cannot be relied on, it's only for debugging purposes.
-    data = attr.ib()
+    data = attr.ib(type=Any)
 
     @classmethod
     def _parse(cls, session, data):

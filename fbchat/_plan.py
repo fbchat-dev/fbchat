@@ -4,6 +4,8 @@ import enum
 from ._core import attrs_default
 from . import _exception, _util, _session
 
+from typing import Mapping, Sequence
+
 
 class GuestStatus(enum.Enum):
     INVITED = 1
@@ -25,7 +27,7 @@ class Plan:
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
     #: The plan's unique identifier.
-    id = attr.ib(converter=str)
+    id = attr.ib(converter=str, type=str)
 
     def fetch(self) -> "PlanData":
         """Fetch fresh `PlanData` object."""
@@ -92,32 +94,32 @@ class Plan:
 
     def participate(self):
         """Set yourself as GOING/participating to the plan."""
-        self._change_participation(True)
+        return self._change_participation(True)
 
     def decline(self):
         """Set yourself as having DECLINED the plan."""
-        self._change_participation(False)
+        return self._change_participation(False)
 
 
 @attrs_default
 class PlanData(Plan):
     """Represents data about a plan."""
 
-    #: Plan time (datetime), only precise down to the minute
-    time = attr.ib()
+    #: Plan time, only precise down to the minute
+    time = attr.ib(type=datetime.datetime)
     #: Plan title
-    title = attr.ib()
+    title = attr.ib(type=str)
     #: Plan location name
-    location = attr.ib(None, converter=lambda x: x or "")
+    location = attr.ib(None, converter=lambda x: x or "", type=str)
     #: Plan location ID
-    location_id = attr.ib(None, converter=lambda x: x or "")
+    location_id = attr.ib(None, converter=lambda x: x or "", type=str)
     #: ID of the plan creator
-    author_id = attr.ib(None)
-    #: Dictionary of `User` IDs mapped to their `GuestStatus`
-    guests = attr.ib(None)
+    author_id = attr.ib(None, type=str)
+    #: `User` ids mapped to their `GuestStatus`
+    guests = attr.ib(None, type=Mapping[str, GuestStatus])
 
     @property
-    def going(self):
+    def going(self) -> Sequence[str]:
         """List of the `User` IDs who will take part in the plan."""
         return [
             id_
@@ -126,7 +128,7 @@ class PlanData(Plan):
         ]
 
     @property
-    def declined(self):
+    def declined(self) -> Sequence[str]:
         """List of the `User` IDs who won't take part in the plan."""
         return [
             id_
@@ -135,7 +137,7 @@ class PlanData(Plan):
         ]
 
     @property
-    def invited(self):
+    def invited(self) -> Sequence[str]:
         """List of the `User` IDs who are invited to the plan."""
         return [
             id_

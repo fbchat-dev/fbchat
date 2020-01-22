@@ -5,7 +5,7 @@ import requests
 from ._core import log, attrs_default
 from . import _util, _exception, _session, _graphql, _event_common, _event
 
-from typing import Iterable
+from typing import Iterable, Optional
 
 
 def get_cookie_header(session: requests.Session, url: str) -> str:
@@ -25,18 +25,18 @@ def generate_session_id() -> int:
 class Listener:
     """Helper, to listen for incoming Facebook events."""
 
-    _session = attr.ib(type=_session.Session)
+    session = attr.ib(type=_session.Session)
     _mqtt = attr.ib(type=paho.mqtt.client.Client)
     _chat_on = attr.ib(type=bool)
     _foreground = attr.ib(type=bool)
     _sequence_id = attr.ib(type=int)
     _sync_token = attr.ib(None, type=str)
-    _events = attr.ib(None, type=Iterable[_event_common.Event])
+    _events = attr.ib(None, type=Optional[Iterable[_event_common.Event]])
 
     _HOST = "edge-chat.facebook.com"
 
     @classmethod
-    def connect(cls, session, chat_on: bool, foreground: bool):
+    def connect(cls, session: _session.Session, chat_on: bool, foreground: bool):
         """Initialize a connection to the Facebook MQTT service.
 
         Args:
@@ -123,7 +123,7 @@ class Listener:
                         " events may have been lost"
                     )
                     self._sync_token = None
-                    self._sequence_id = self._fetch_sequence_id(self._session)
+                    self._sequence_id = self._fetch_sequence_id(self.session)
                     self._messenger_queue_publish()
                     # TODO: Signal to the user that they should reload their data!
                     return
@@ -138,12 +138,12 @@ class Listener:
 
         try:
             # TODO: Don't handle this in a callback
-            self._events = list(_event.parse_events(self._session, message.topic, j))
+            self._events = list(_event.parse_events(self.session, message.topic, j))
         except _exception.ParseError:
             log.exception("Failed parsing MQTT data")
 
     @staticmethod
-    def _fetch_sequence_id(session) -> int:
+    def _fetch_sequence_id(session: _session.Session) -> int:
         """Fetch sequence ID."""
         params = {
             "limit": 1,
@@ -179,7 +179,7 @@ class Listener:
             "max_deltas_able_to_process": 1000,
             "delta_batch_size": 500,
             "encoding": "JSON",
-            "entity_fbid": self._session.user_id,
+            "entity_fbid": self.session.user_id,
         }
 
         # If we don't have a sync_token, create a new messenger queue
@@ -239,7 +239,7 @@ class Listener:
 
         username = {
             # The user ID
-            "u": self._session.user_id,
+            "u": self.session.user_id,
             # Session ID
             "s": session_id,
             # Active status setting
@@ -247,7 +247,7 @@ class Listener:
             # foreground_state - Whether the window is focused
             "fg": self._foreground,
             # Can be any random ID
-            "d": self._session._client_id,
+            "d": self.session._client_id,
             # Application ID, taken from facebook.com
             "aid": 219994525426954,
             # MQTT extension by FB, allows making a SUBSCRIBE while CONNECTing
@@ -283,9 +283,9 @@ class Listener:
         headers = {
             # TODO: Make this access thread safe
             "Cookie": get_cookie_header(
-                self._session._session, "https://edge-chat.facebook.com/chat"
+                self.session._session, "https://edge-chat.facebook.com/chat"
             ),
-            "User-Agent": self._session._session.headers["User-Agent"],
+            "User-Agent": self.session._session.headers["User-Agent"],
             "Origin": "https://www.facebook.com",
             "Host": self._HOST,
         }

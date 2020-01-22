@@ -1,7 +1,10 @@
 import attr
+import datetime
 from ._core import attrs_default, Image
 from . import _util
 from ._attachment import Attachment
+
+from typing import Set
 
 
 @attrs_default
@@ -9,13 +12,13 @@ class FileAttachment(Attachment):
     """Represents a file that has been sent as a Facebook attachment."""
 
     #: URL where you can download the file
-    url = attr.ib(None)
+    url = attr.ib(None, type=str)
     #: Size of the file in bytes
-    size = attr.ib(None)
+    size = attr.ib(None, type=int)
     #: Name of the file
-    name = attr.ib(None)
+    name = attr.ib(None, type=str)
     #: Whether Facebook determines that this file may be harmful
-    is_malicious = attr.ib(None)
+    is_malicious = attr.ib(None, type=bool)
 
     @classmethod
     def _from_graphql(cls, data, size=None):
@@ -33,13 +36,13 @@ class AudioAttachment(Attachment):
     """Represents an audio file that has been sent as a Facebook attachment."""
 
     #: Name of the file
-    filename = attr.ib(None)
+    filename = attr.ib(None, type=str)
     #: URL of the audio file
-    url = attr.ib(None)
+    url = attr.ib(None, type=str)
     #: Duration of the audio clip as a timedelta
-    duration = attr.ib(None)
+    duration = attr.ib(None, type=datetime.timedelta)
     #: Audio type
-    audio_type = attr.ib(None)
+    audio_type = attr.ib(None, type=str)
 
     @classmethod
     def _from_graphql(cls, data):
@@ -60,15 +63,15 @@ class ImageAttachment(Attachment):
     """
 
     #: The extension of the original image (e.g. ``png``)
-    original_extension = attr.ib(None)
+    original_extension = attr.ib(None, type=str)
     #: Width of original image
-    width = attr.ib(None, converter=lambda x: None if x is None else int(x))
+    width = attr.ib(None, converter=lambda x: None if x is None else int(x), type=int)
     #: Height of original image
-    height = attr.ib(None, converter=lambda x: None if x is None else int(x))
+    height = attr.ib(None, converter=lambda x: None if x is None else int(x), type=int)
     #: Whether the image is animated
-    is_animated = attr.ib(None)
+    is_animated = attr.ib(None, type=bool)
     #: A set, containing variously sized / various types of previews of the image
-    previews = attr.ib(factory=set)
+    previews = attr.ib(factory=set, type=Set[Image])
 
     @classmethod
     def _from_graphql(cls, data):
@@ -110,17 +113,17 @@ class VideoAttachment(Attachment):
     """Represents a video that has been sent as a Facebook attachment."""
 
     #: Size of the original video in bytes
-    size = attr.ib(None)
+    size = attr.ib(None, type=int)
     #: Width of original video
-    width = attr.ib(None)
+    width = attr.ib(None, type=int)
     #: Height of original video
-    height = attr.ib(None)
+    height = attr.ib(None, type=int)
     #: Length of video as a timedelta
-    duration = attr.ib(None)
+    duration = attr.ib(None, type=datetime.timedelta)
     #: URL to very compressed preview video
-    preview_url = attr.ib(None)
+    preview_url = attr.ib(None, type=str)
     #: A set, containing variously sized previews of the video
-    previews = attr.ib(factory=set)
+    previews = attr.ib(factory=set, type=Set[Image])
 
     @classmethod
     def _from_graphql(cls, data, size=None):

@@ -1,6 +1,8 @@
 import attr
 import requests
 
+from typing import Any
+
 # Not frozen, since that doesn't work in PyPy
 attrs_exception = attr.s(slots=True, auto_exc=True)
 
@@ -36,7 +38,7 @@ class ParseError(FacebookError):
     This may contain sensitive data, so should not be logged to file.
     """
 
-    data = attr.ib()
+    data = attr.ib(type=Any)
     """The data that triggered the error.
 
     The format of this cannot be relied on, it's only for debugging purposes.

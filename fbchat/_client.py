@@ -11,14 +11,10 @@ from . import (
     _page,
     _group,
     _thread,
+    _message,
 )
 
-from ._thread import ThreadLocation
-from ._user import User, UserData
-from ._group import Group, GroupData
-from ._page import Page, PageData
-
-from typing import Sequence, Iterable, Tuple, Optional
+from typing import Sequence, Iterable, Tuple, Optional, Set
 
 
 @attrs_default
@@ -68,7 +64,7 @@ class Client:
             limit: The max. amount of users to fetch
 
         Returns:
-            list: `User` objects, ordered by relevance
+            Users, ordered by relevance
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
@@ -76,7 +72,7 @@ class Client:
         )
 
         return (
-            UserData._from_graphql(self.session, node)
+            _user.UserData._from_graphql(self.session, node)
             for node in j[name]["users"]["nodes"]
         )
 
@@ -93,7 +89,7 @@ class Client:
         )
 
         return (
-            PageData._from_graphql(self.session, node)
+            _page.PageData._from_graphql(self.session, node)
             for node in j[name]["pages"]["nodes"]
         )
 
@@ -110,7 +106,7 @@ class Client:
         )
 
         return (
-            GroupData._from_graphql(self.session, node)
+            _group.GroupData._from_graphql(self.session, node)
             for node in j["viewer"]["groups"]["nodes"]
         )
 
@@ -128,12 +124,12 @@ class Client:
 
         for node in j[name]["threads"]["nodes"]:
             if node["__typename"] == "User":
-                yield UserData._from_graphql(self.session, node)
+                yield _user.UserData._from_graphql(self.session, node)
             elif node["__typename"] == "MessageThread":
                 # MessageThread => Group thread
-                yield GroupData._from_graphql(self.session, node)
+                yield _group.GroupData._from_graphql(self.session, node)
             elif node["__typename"] == "Page":
-                yield PageData._from_graphql(self.session, node)
+                yield _page.PageData._from_graphql(self.session, node)
             elif node["__typename"] == "Group":
                 # We don't handle Facebook "Groups"
                 pass
@@ -152,7 +148,7 @@ class Client:
         for node in j["graphql_payload"]["message_threads"]:
             type_ = node["thread_type"]
             if type_ == "GROUP":
-                thread = Group(
+                thread = _group.Group(
                     session=self.session, id=node["thread_key"]["thread_fbid"]
                 )
             elif type_ == "ONE_TO_ONE":
@@ -160,9 +156,9 @@ class Client:
                     session=self.session, id=node["thread_key"]["other_user_id"]
                 )
                 # if True:  # TODO: This check!
-                #     thread = UserData._from_graphql(self.session, node)
+                #     thread = _user.UserData._from_graphql(self.session, node)
                 # else:
-                #     thread = PageData._from_graphql(self.session, node)
+                #     thread = _page.PageData._from_graphql(self.session, node)
             else:
                 thread = None
                 log.warning("Unknown thread type %s, data: %s", type_, node)
@@ -238,20 +234,18 @@ class Client:
         log.debug(entries)
         return entries
 
-    def fetch_thread_info(self, *thread_ids):
+    def fetch_thread_info(self, ids: Iterable[str]) -> Iterable[_thread.ThreadABC]:
         """Fetch threads' info from IDs, unordered.
 
         Warning:
             Sends two requests if users or pages are present, to fetch all available info!
 
         Args:
-            thread_ids: One or more thread ID(s) to query
-
-        Returns:
-            dict: `Thread` objects, labeled by their ID
+            ids: Thread ids to query
         """
+        ids = list(ids)
         queries = []
-        for thread_id in thread_ids:
+        for thread_id in ids:
             params = {
                 "id": thread_id,
                 "message_limit": 0,
@@ -267,7 +261,7 @@ class Client:
             if entry.get("message_thread") is None:
                 # If you don't have an existing thread with this person, attempt to retrieve user data anyways
                 j[i]["message_thread"] = {
-                    "thread_key": {"other_user_id": thread_ids[i]},
+                    "thread_key": {"other_user_id": ids[i]},
                     "thread_type": "ONE_TO_ONE",
                 }
 
@@ -280,12 +274,11 @@ class Client:
         if len(pages_and_user_ids) != 0:
             pages_and_users = self._fetch_info(*pages_and_user_ids)
 
-        rtn = {}
         for i, entry in enumerate(j):
             entry = entry["message_thread"]
             if entry.get("thread_type") == "GROUP":
                 _id = entry["thread_key"]["thread_fbid"]
-                rtn[_id] = GroupData._from_graphql(self.session, entry)
+                yield _group.GroupData._from_graphql(self.session, entry)
             elif entry.get("thread_type") == "ONE_TO_ONE":
                 _id = entry["thread_key"]["other_user_id"]
                 if pages_and_users.get(_id) is None:
@@ -294,13 +287,11 @@ class Client:
                     )
                 entry.update(pages_and_users[_id])
                 if "first_name" in entry:
-                    rtn[_id] = UserData._from_graphql(self.session, entry)
+                    yield _user.UserData._from_graphql(self.session, entry)
                 else:
-                    rtn[_id] = PageData._from_graphql(self.session, entry)
+                    yield _page.PageData._from_graphql(self.session, entry)
             else:
                 raise _exception.ParseError("Unknown thread type", data=entry)
-
-        return rtn
 
     def _fetch_threads(self, limit, before, folders):
         params = {
@@ -318,16 +309,18 @@ class Client:
         for node in j["viewer"]["message_threads"]["nodes"]:
             _type = node.get("thread_type")
             if _type == "GROUP":
-                rtn.append(GroupData._from_graphql(self.session, node))
+                rtn.append(_group.GroupData._from_graphql(self.session, node))
             elif _type == "ONE_TO_ONE":
-                rtn.append(UserData._from_thread_fetch(self.session, node))
+                rtn.append(_user.UserData._from_thread_fetch(self.session, node))
             else:
                 rtn.append(None)
                 log.warning("Unknown thread type: %s, data: %s", _type, node)
         return rtn
 
     def fetch_threads(
-        self, limit: Optional[int], location: ThreadLocation = ThreadLocation.INBOX,
+        self,
+        limit: Optional[int],
+        location: _thread.ThreadLocation = _thread.ThreadLocation.INBOX,
     ) -> Iterable[_thread.ThreadABC]:
         """Fetch the client's thread list.
 
@@ -340,7 +333,7 @@ class Client:
         MAX_BATCH_LIMIT = 100
 
         # TODO: Clean this up after implementing support for more threads types
-        seen_ids = set()
+        seen_ids = set()  # type: Set[str]
         before = None
         for limit in _util.get_limits(limit, MAX_BATCH_LIMIT):
             threads = self._fetch_threads(limit, before, [location.value])
@@ -361,11 +354,11 @@ class Client:
             if not before:
                 raise ValueError("Too many unknown threads.")
 
-    def fetch_unread(self):
+    def fetch_unread(self) -> Sequence[_thread.ThreadABC]:
         """Fetch unread threads.
 
-        Returns:
-            list: List of unread thread ids
+        Warning:
+            This is not finished, and the API may change at any point!
         """
         form = {
             "folders[0]": "inbox",
@@ -376,27 +369,39 @@ class Client:
         j = self.session._payload_post("/ajax/mercury/unread_threads.php", form)
 
         result = j["unread_thread_fbids"][0]
-        return result["thread_fbids"] + result["other_user_fbids"]
+        # TODO: Parse Pages?
+        return [
+            _group.Group(session=self.session, id=id_) for id_ in result["thread_fbids"]
+        ] + [
+            _user.User(session=self.session, id=id_)
+            for id_ in result["other_user_fbids"]
+        ]
 
-    def fetch_unseen(self):
+    def fetch_unseen(self) -> Sequence[_thread.ThreadABC]:
         """Fetch unseen / new threads.
 
-        Returns:
-            list: List of unseen thread ids
+        Warning:
+            This is not finished, and the API may change at any point!
         """
         j = self.session._payload_post("/mercury/unseen_thread_ids/", {})
 
         result = j["unseen_thread_fbids"][0]
-        return result["thread_fbids"] + result["other_user_fbids"]
+        # TODO: Parse Pages?
+        return [
+            _group.Group(session=self.session, id=id_) for id_ in result["thread_fbids"]
+        ] + [
+            _user.User(session=self.session, id=id_)
+            for id_ in result["other_user_fbids"]
+        ]
 
-    def fetch_image_url(self, image_id):
+    def fetch_image_url(self, image_id: str) -> str:
         """Fetch URL to download the original image from an image attachment ID.
 
         Args:
-            image_id (str): The image you want to fetch
+            image_id: The image you want to fetch
 
         Returns:
-            str: An URL where you can download the original image
+            An URL where you can download the original image
         """
         image_id = str(image_id)
         data = {"photo_id": str(image_id)}
@@ -414,77 +419,67 @@ class Client:
         )
         return j["viewer"]
 
-    def get_phone_numbers(self):
-        """Fetch list of user's phone numbers.
-
-        Returns:
-            list: List of phone numbers
-        """
+    def get_phone_numbers(self) -> Sequence[str]:
+        """Fetch the user's phone numbers."""
         data = self._get_private_data()
         return [
             j["phone_number"]["universal_number"] for j in data["user"]["all_phones"]
         ]
 
-    def get_emails(self):
-        """Fetch list of user's emails.
-
-        Returns:
-            list: List of emails
-        """
+    def get_emails(self) -> Sequence[str]:
+        """Fetch the user's emails."""
         data = self._get_private_data()
         return [j["display_email"] for j in data["all_emails"]]
 
-    def mark_as_delivered(self, thread_id, message_id):
+    def mark_as_delivered(self, message: _message.Message):
         """Mark a message as delivered.
 
+        Warning:
+            This is not finished, and the API may change at any point!
+
         Args:
-            thread_id: User/Group ID to which the message belongs. See :ref:`intro_threads`
-            message_id: Message ID to set as delivered. See :ref:`intro_threads`
+            message: The message to set as delivered
         """
         data = {
-            "message_ids[0]": message_id,
-            "thread_ids[%s][0]" % thread_id: message_id,
+            "message_ids[0]": message.id,
+            "thread_ids[%s][0]" % message.thread.id: message.id,
         }
-
         j = self.session._payload_post("/ajax/mercury/delivery_receipts.php", data)
-        return True
 
-    def _read_status(self, read, thread_ids, timestamp=None):
-        thread_ids = _util.require_list(thread_ids)
-
+    def _read_status(self, read, threads, at):
         data = {
-            "watermarkTimestamp": _util.datetime_to_millis(timestamp)
-            if timestamp
-            else _util.now(),
+            "watermarkTimestamp": _util.datetime_to_millis(at),
             "shouldSendReadReceipt": "true",
         }
 
-        for thread_id in thread_ids:
-            data["ids[{}]".format(thread_id)] = "true" if read else "false"
+        for threads in threads:
+            data["ids[{}]".format(thread.id)] = "true" if read else "false"
 
         j = self.session._payload_post("/ajax/mercury/change_read_status.php", data)
 
-    def mark_as_read(self, thread_ids=None, timestamp=None):
+    def mark_as_read(self, threads: Iterable[_thread.ThreadABC], at: datetime.datetime):
         """Mark threads as read.
 
         All messages inside the specified threads will be marked as read.
 
         Args:
-            thread_ids: User/Group IDs to set as read. See :ref:`intro_threads`
-            timestamp: Timestamp (as a Datetime) to signal the read cursor at, default is the current time
+            threads: Threads to set as read
+            at: Timestamp to signal the read cursor at
         """
-        self._read_status(True, thread_ids, timestamp)
+        return self._read_status(True, threads, at)
 
-    def mark_as_unread(self, thread_ids=None, timestamp=None):
+    def mark_as_unread(
+        self, threads: Iterable[_thread.ThreadABC], at: datetime.datetime
+    ):
         """Mark threads as unread.
 
         All messages inside the specified threads will be marked as unread.
 
         Args:
-            thread_ids: User/Group IDs to set as unread. See :ref:`intro_threads`
-            timestamp: Timestamp (as a Datetime) to signal the read cursor at, default is the current time
+            threads: Threads to set as unread
+            at: Timestam to signal the read cursor at
         """
-        self._read_status(False, thread_ids, timestamp)
+        return self._read_status(False, threads, at)
 
     def mark_as_seen(self):
         """
@@ -495,24 +490,24 @@ class Client:
             "/ajax/mercury/mark_seen.php", {"seen_timestamp": _util.now()}
         )
 
-    def move_threads(self, location, thread_ids):
+    def move_threads(
+        self, location: _thread.ThreadLocation, threads: Iterable[_thread.ThreadABC]
+    ):
         """Move threads to specified location.
 
         Args:
-            location (ThreadLocation): INBOX, PENDING, ARCHIVED or OTHER
-            thread_ids: Thread IDs to move. See :ref:`intro_threads`
+            location: INBOX, PENDING, ARCHIVED or OTHER
+            threads: Threads to move
         """
-        thread_ids = _util.require_list(thread_ids)
+        if location == _thread.ThreadLocation.PENDING:
+            location = _thread.ThreadLocation.OTHER
 
-        if location == ThreadLocation.PENDING:
-            location = ThreadLocation.OTHER
-
-        if location == ThreadLocation.ARCHIVED:
-            data_archive = dict()
-            data_unpin = dict()
-            for thread_id in thread_ids:
-                data_archive["ids[{}]".format(thread_id)] = "true"
-                data_unpin["ids[{}]".format(thread_id)] = "false"
+        if location == _thread.ThreadLocation.ARCHIVED:
+            data_archive = {}
+            data_unpin = {}
+            for thread in threads:
+                data_archive["ids[{}]".format(thread.id)] = "true"
+                data_unpin["ids[{}]".format(thread.id)] = "false"
             j_archive = self.session._payload_post(
                 "/ajax/mercury/change_archived_status.php?dpr=1", data_archive
             )
@@ -520,42 +515,32 @@ class Client:
                 "/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin
             )
         else:
-            data = dict()
-            for i, thread_id in enumerate(thread_ids):
-                data["{}[{}]".format(location.name.lower(), i)] = thread_id
+            data = {}
+            for i, thread in enumerate(threads):
+                data["{}[{}]".format(location.name.lower(), i)] = thread.id
             j = self.session._payload_post("/ajax/mercury/move_thread.php", data)
-        return True
 
-    def delete_threads(self, thread_ids):
-        """Delete threads.
-
-        Args:
-            thread_ids: Thread IDs to delete. See :ref:`intro_threads`
-        """
-        thread_ids = _util.require_list(thread_ids)
-
-        data_unpin = dict()
-        data_delete = dict()
-        for i, thread_id in enumerate(thread_ids):
-            data_unpin["ids[{}]".format(thread_id)] = "false"
-            data_delete["ids[{}]".format(i)] = thread_id
+    def delete_threads(self, threads: Iterable[_thread.ThreadABC]):
+        """Delete threads."""
+        data_unpin = {}
+        data_delete = {}
+        for i, thread in enumerate(threads):
+            data_unpin["ids[{}]".format(thread.id)] = "false"
+            data_delete["ids[{}]".format(i)] = thread.id
         j_unpin = self.session._payload_post(
             "/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin
         )
         j_delete = self.session._payload_post(
             "/ajax/mercury/delete_thread.php?dpr=1", data_delete
         )
-        return True
 
-    def delete_messages(self, message_ids):
+    def delete_messages(self, messages: Iterable[_message.Message]):
         """Delete specified messages.
 
         Args:
-            message_ids: Message IDs to delete
+            messages: Messages to delete
         """
-        message_ids = _util.require_list(message_ids)
-        data = dict()
-        for i, message_id in enumerate(message_ids):
-            data["message_ids[{}]".format(i)] = message_id
+        data = {}
+        for i, message in enumerate(messages):
+            data["message_ids[{}]".format(i)] = message.id
         j = self.session._payload_post("/ajax/mercury/delete_messages.php?dpr=1", data)
-        return True

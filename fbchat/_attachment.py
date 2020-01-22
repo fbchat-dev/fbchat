@@ -2,13 +2,15 @@ import attr
 from ._core import attrs_default, Image
 from . import _util
 
+from typing import Sequence
+
 
 @attrs_default
 class Attachment:
     """Represents a Facebook attachment."""
 
     #: The attachment ID
-    id = attr.ib(None)
+    id = attr.ib(None, type=str)
 
 
 @attrs_default
@@ -21,23 +23,23 @@ class ShareAttachment(Attachment):
     """Represents a shared item (e.g. URL) attachment."""
 
     #: ID of the author of the shared post
-    author = attr.ib(None)
+    author = attr.ib(None, type=str)
     #: Target URL
-    url = attr.ib(None)
+    url = attr.ib(None, type=str)
     #: Original URL if Facebook redirects the URL
-    original_url = attr.ib(None)
+    original_url = attr.ib(None, type=str)
     #: Title of the attachment
-    title = attr.ib(None)
+    title = attr.ib(None, type=str)
     #: Description of the attachment
-    description = attr.ib(None)
+    description = attr.ib(None, type=str)
     #: Name of the source
-    source = attr.ib(None)
+    source = attr.ib(None, type=str)
     #: The attached image
-    image = attr.ib(None)
+    image = attr.ib(None, type=Image)
     #: URL of the original image if Facebook uses ``safe_image``
-    original_image_url = attr.ib(None)
+    original_image_url = attr.ib(None, type=str)
     #: List of additional attachments
-    attachments = attr.ib(factory=list)
+    attachments = attr.ib(factory=list, type=Sequence[Attachment])
 
     @classmethod
     def _from_graphql(cls, data):

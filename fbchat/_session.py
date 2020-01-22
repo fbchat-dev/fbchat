@@ -8,10 +8,12 @@ import urllib.parse
 from ._core import log, kw_only
 from . import _graphql, _util, _exception
 
+from typing import Optional, Tuple, Mapping, BinaryIO, Sequence, Iterable, Callable
+
 FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
 
 
-def get_user_id(session):
+def get_user_id(session: requests.Session) -> str:
     # TODO: Optimize this `.get_dict()` call!
     cookies = session.cookies.get_dict()
     rtn = cookies.get("c_user")
@@ -20,11 +22,11 @@ def get_user_id(session):
     return str(rtn)
 
 
-def find_input_fields(html):
+def find_input_fields(html: str):
     return bs4.BeautifulSoup(html, "html.parser", parse_only=bs4.SoupStrainer("input"))
 
 
-def session_factory():
+def session_factory() -> requests.Session:
     session = requests.session()
     session.headers["Referer"] = "https://www.facebook.com"
     # TODO: Deprecate setting the user agent manually
@@ -32,27 +34,27 @@ def session_factory():
     return session
 
 
-def client_id_factory():
+def client_id_factory() -> str:
     return hex(int(random.random() * 2 ** 31))[2:]
 
 
-def is_home(url):
+def is_home(url: str) -> bool:
     parts = urllib.parse.urlparse(url)
     # Check the urls `/home.php` and `/`
     return "home" in parts.path or "/" == parts.path
 
 
-def _2fa_helper(session, code, r):
+def _2fa_helper(session: requests.Session, code: int, r):
     soup = find_input_fields(r.text)
     data = dict()
 
     url = "https://m.facebook.com/login/checkpoint/"
 
-    data["approvals_code"] = code
+    data["approvals_code"] = str(code)
     data["fb_dtsg"] = soup.find("input", {"name": "fb_dtsg"})["value"]
     data["nh"] = soup.find("input", {"name": "nh"})["value"]
     data["submit[Submit Code]"] = "Submit Code"
-    data["codes_submitted"] = 0
+    data["codes_submitted"] = "0"
     log.info("Submitting 2FA code.")
 
     r = session.post(url, data=data)
@@ -99,15 +101,16 @@ def _2fa_helper(session, code, r):
     return r
 
 
-def get_error_data(html, url):
+def get_error_data(html: str, url: str) -> Tuple[Optional[int], Optional[str]]:
     """Get error code and message from a request."""
+    code = None
     try:
-        code = _util.get_url_parameter(url, "e")
-    except IndexError:
-        code = None
+        code = int(_util.get_url_parameter(url, "e"))
+    except (IndexError, ValueError):
+        pass
 
     soup = bs4.BeautifulSoup(
-        html, "html.parser", parse_only=bs4.SoupStrainer("div", id="login_error"),
+        html, "html.parser", parse_only=bs4.SoupStrainer("div", id="login_error")
     )
     return code, soup.get_text() or None
 
@@ -119,20 +122,20 @@ class Session:
     This is the main class, which is used to login to Facebook.
     """
 
-    _user_id = attr.ib()
-    _fb_dtsg = attr.ib()
-    _revision = attr.ib()
-    _session = attr.ib(factory=session_factory)
-    _counter = attr.ib(0)
-    _client_id = attr.ib(factory=client_id_factory)
-    _logout_h = attr.ib(None)
+    _user_id = attr.ib(type=str)
+    _fb_dtsg = attr.ib(type=str)
+    _revision = attr.ib(type=int)
+    _session = attr.ib(factory=session_factory, type=requests.Session)
+    _counter = attr.ib(0, type=int)
+    _client_id = attr.ib(factory=client_id_factory, type=str)
+    _logout_h = attr.ib(None, type=str)
 
     @property
-    def user_id(self):
+    def user_id(self) -> str:
         """The logged in user's ID."""
         return self._user_id
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         # An alternative repr, to illustrate that you can't create the class directly
         return "<fbchat.Session user_id={}>".format(self._user_id)
 
@@ -146,7 +149,9 @@ class Session:
         }
 
     @classmethod
-    def login(cls, email, password, on_2fa_callback=None):
+    def login(
+        cls, email: str, password: str, on_2fa_callback: Callable[[], int] = None
+    ):
         """Login the user, using ``email`` and ``password``.
 
         Args:
@@ -205,11 +210,11 @@ class Session:
                 "Login failed at url {!r}".format(r.url), msg, code=code
             )
 
-    def is_logged_in(self):
+    def is_logged_in(self) -> bool:
         """Send a request to Facebook to check the login status.
 
         Returns:
-            bool: Whether the user is still logged in
+            Whether the user is still logged in
         """
         # Send a request to the login url, to see if we're directed to the home page
         url = "https://m.facebook.com/login.php?login_attempt=1"
@@ -219,7 +224,7 @@ class Session:
             _exception.handle_requests_error(e)
         return "Location" in r.headers and is_home(r.headers["Location"])
 
-    def logout(self):
+    def logout(self) -> None:
         """Safely log out the user.
 
         The session object must not be used after this action has been performed!
@@ -275,20 +280,20 @@ class Session:
             logout_h=logout_h,
         )
 
-    def get_cookies(self):
+    def get_cookies(self) -> Mapping[str, str]:
         """Retrieve session cookies, that can later be used in `from_cookies`.
 
         Returns:
-            dict: A dictionary containing session cookies
+            A dictionary containing session cookies
         """
         return self._session.cookies.get_dict()
 
     @classmethod
-    def from_cookies(cls, cookies):
+    def from_cookies(cls, cookies: Mapping[str, str]):
         """Load a session from session cookies.
 
         Args:
-            cookies (dict): A dictionary containing session cookies
+            cookies: A dictionary containing session cookies
         """
         session = session_factory()
         session.cookies = requests.cookies.merge_cookies(session.cookies, cookies)
@@ -331,7 +336,9 @@ class Session:
         }
         return self._post("/api/graphqlbatch/", data, as_graphql=True)
 
-    def _upload(self, files, voice_clip=False):
+    def _upload(
+        self, files: Iterable[Tuple[str, BinaryIO, str]], voice_clip: bool = False
+    ) -> Sequence[Tuple[str, str]]:
         """Upload files to Facebook.
 
         `files` should be a list of files that requests can upload, see
@@ -347,7 +354,7 @@ class Session:
             "https://upload.facebook.com/ajax/mercury/upload.php", data, files=file_dict
         )
 
-        if len(j["metadata"]) != len(files):
+        if len(j["metadata"]) != len(file_dict):
             raise _exception.ParseError("Some files could not be uploaded", data=j)
 
         return [

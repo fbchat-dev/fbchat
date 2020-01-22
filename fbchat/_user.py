@@ -1,4 +1,5 @@
 import attr
+import datetime
 from ._core import log, attrs_default, Image
 from . import _util, _session, _plan, _thread
 
@@ -40,7 +41,7 @@ class User(_thread.ThreadABC):
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
     #: The user's unique identifier.
-    id = attr.ib(converter=str)
+    id = attr.ib(converter=str, type=str)
 
     def _to_send_data(self):
         return {
@@ -78,35 +79,35 @@ class UserData(User):
     """
 
     #: The user's picture
-    photo = attr.ib()
+    photo = attr.ib(type=Image)
     #: The name of the user
-    name = attr.ib()
+    name = attr.ib(type=str)
     #: Whether the user and the client are friends
-    is_friend = attr.ib()
+    is_friend = attr.ib(type=bool)
     #: The users first name
-    first_name = attr.ib()
+    first_name = attr.ib(type=str)
     #: The users last name
-    last_name = attr.ib(None)
+    last_name = attr.ib(None, type=str)
     #: Datetime when the thread was last active / when the last message was sent
-    last_active = attr.ib(None)
+    last_active = attr.ib(None, type=datetime.datetime)
     #: Number of messages in the thread
-    message_count = attr.ib(None)
+    message_count = attr.ib(None, type=int)
     #: Set `Plan`
-    plan = attr.ib(None)
+    plan = attr.ib(None, type=_plan.PlanData)
     #: The profile URL. ``None`` for Messenger-only users
-    url = attr.ib(None)
+    url = attr.ib(None, type=str)
     #: The user's gender
-    gender = attr.ib(None)
+    gender = attr.ib(None, type=str)
     #: From 0 to 1. How close the client is to the user
-    affinity = attr.ib(None)
+    affinity = attr.ib(None, type=float)
     #: The user's nickname
-    nickname = attr.ib(None)
+    nickname = attr.ib(None, type=str)
     #: The clients nickname, as seen by the user
-    own_nickname = attr.ib(None)
+    own_nickname = attr.ib(None, type=str)
     #: The message color
-    color = attr.ib(None)
+    color = attr.ib(None, type=str)
     #: The default emoji
-    emoji = attr.ib(None)
+    emoji = attr.ib(None, type=str)
 
     @staticmethod
     def _get_other_user(data):
@@ -197,11 +198,11 @@ class UserData(User):
 @attr.s
 class ActiveStatus:
     #: Whether the user is active now
-    active = attr.ib(None)
+    active = attr.ib(None, type=bool)
     #: Datetime when the user was last active
-    last_active = attr.ib(None)
+    last_active = attr.ib(None, type=datetime.datetime)
     #: Whether the user is playing Messenger game now
-    in_game = attr.ib(None)
+    in_game = attr.ib(None, type=bool)
 
     @classmethod
     def _from_orca_presence(cls, data):

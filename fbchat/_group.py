@@ -1,7 +1,8 @@
 import attr
+import datetime
 from ._core import attrs_default, Image
 from . import _util, _session, _graphql, _plan, _thread, _user
-from typing import Sequence, Iterable
+from typing import Sequence, Iterable, Set, Mapping
 
 
 @attrs_default
@@ -11,7 +12,7 @@ class Group(_thread.ThreadABC):
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
     #: The group's unique identifier.
-    id = attr.ib(converter=str)
+    id = attr.ib(converter=str, type=str)
 
     def _to_send_data(self):
         return {"thread_fbid": self.id}
@@ -137,31 +138,31 @@ class GroupData(Group):
     """
 
     #: The group's picture
-    photo = attr.ib(None)
+    photo = attr.ib(None, type=Image)
     #: The name of the group
-    name = attr.ib(None)
-    #: Datetime when the group was last active / when the last message was sent
-    last_active = attr.ib(None)
+    name = attr.ib(None, type=str)
+    #: When the group was last active / when the last message was sent
+    last_active = attr.ib(None, type=datetime.datetime)
     #: Number of messages in the group
-    message_count = attr.ib(None)
+    message_count = attr.ib(None, type=int)
     #: Set `Plan`
-    plan = attr.ib(None)
-    #: Unique list (set) of the group thread's participant user IDs
-    participants = attr.ib(factory=set)
+    plan = attr.ib(None, type=_plan.PlanData)
+    #: The group thread's participant user ids
+    participants = attr.ib(factory=set, type=Set[str])
     #: A dictionary, containing user nicknames mapped to their IDs
-    nicknames = attr.ib(factory=dict)
+    nicknames = attr.ib(factory=dict, type=Mapping[str, str])
     #: The groups's message color
-    color = attr.ib(None)
+    color = attr.ib(None, type=str)
     #: The groups's default emoji
-    emoji = attr.ib(None)
-    # Set containing user IDs of thread admins
-    admins = attr.ib(factory=set)
+    emoji = attr.ib(None, type=str)
+    # User ids of thread admins
+    admins = attr.ib(factory=set, type=Set[str])
     # True if users need approval to join
-    approval_mode = attr.ib(None)
+    approval_mode = attr.ib(None, type=bool)
     # Set containing user IDs requesting to join
-    approval_requests = attr.ib(factory=set)
+    approval_requests = attr.ib(factory=set, type=Set[str])
     # Link for joining group
-    join_link = attr.ib(None)
+    join_link = attr.ib(None, type=str)
 
     @classmethod
     def _from_graphql(cls, session, data):

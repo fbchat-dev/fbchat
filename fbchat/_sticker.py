@@ -8,28 +8,28 @@ class Sticker(Attachment):
     """Represents a Facebook sticker that has been sent to a thread as an attachment."""
 
     #: The sticker-pack's ID
-    pack = attr.ib(None)
+    pack = attr.ib(None, type=str)
     #: Whether the sticker is animated
-    is_animated = attr.ib(False)
+    is_animated = attr.ib(False, type=bool)
 
     # If the sticker is animated, the following should be present
     #: URL to a medium spritemap
-    medium_sprite_image = attr.ib(None)
+    medium_sprite_image = attr.ib(None, type=str)
     #: URL to a large spritemap
-    large_sprite_image = attr.ib(None)
+    large_sprite_image = attr.ib(None, type=str)
     #: The amount of frames present in the spritemap pr. row
-    frames_per_row = attr.ib(None)
+    frames_per_row = attr.ib(None, type=int)
     #: The amount of frames present in the spritemap pr. column
-    frames_per_col = attr.ib(None)
+    frames_per_col = attr.ib(None, type=int)
     #: The total amount of frames in the spritemap
-    frame_count = attr.ib(None)
+    frame_count = attr.ib(None, type=int)
     #: The frame rate the spritemap is intended to be played in
-    frame_rate = attr.ib(None)
+    frame_rate = attr.ib(None, type=int)
 
     #: The sticker's image
-    image = attr.ib(None)
+    image = attr.ib(None, type=Image)
     #: The sticker's label/name
-    label = attr.ib(None)
+    label = attr.ib(None, type=str)
 
     @classmethod
     def _from_graphql(cls, data):

@@ -1,4 +1,5 @@
 import attr
+import datetime
 import enum
 from string import Formatter
 from ._core import log, attrs_default
@@ -11,8 +12,9 @@ from . import (
     _file,
     _quick_reply,
     _sticker,
+    _thread,
 )
-from typing import Optional
+from typing import Optional, Mapping, Sequence
 
 
 class EmojiSize(enum.Enum):
@@ -44,11 +46,11 @@ class Mention:
     """Represents a ``@mention``."""
 
     #: The thread ID the mention is pointing at
-    thread_id = attr.ib()
+    thread_id = attr.ib(type=str)
     #: The character where the mention starts
-    offset = attr.ib()
+    offset = attr.ib(type=int)
     #: The length of the mention
-    length = attr.ib()
+    length = attr.ib(type=int)
 
     @classmethod
     def _from_range(cls, data):
@@ -85,7 +87,7 @@ class Message:
     #: The thread that this message belongs to.
     thread = attr.ib(type="_thread.ThreadABC")
     #: The message ID.
-    id = attr.ib(converter=str)
+    id = attr.ib(converter=str, type=str)
 
     @property
     def session(self):
@@ -189,13 +191,13 @@ class MessageSnippet(Message):
     """
 
     #: ID of the sender
-    author = attr.ib()
+    author = attr.ib(type=str)
     #: Datetime of when the message was sent
-    created_at = attr.ib()
+    created_at = attr.ib(type=datetime.datetime)
     #: The actual message
-    text = attr.ib()
+    text = attr.ib(type=str)
     #: A dict with offsets, mapped to the matched text
-    matched_keywords = attr.ib()
+    matched_keywords = attr.ib(type=Mapping[int, str])
 
     @classmethod
     def _parse(cls, thread, data):
@@ -217,35 +219,35 @@ class MessageData(Message):
     """
 
     #: ID of the sender
-    author = attr.ib()
+    author = attr.ib(type=str)
     #: Datetime of when the message was sent
-    created_at = attr.ib()
+    created_at = attr.ib(type=datetime.datetime)
     #: The actual message
-    text = attr.ib(None)
+    text = attr.ib(None, type=str)
     #: A list of `Mention` objects
-    mentions = attr.ib(factory=list)
-    #: A `EmojiSize`. Size of a sent emoji
-    emoji_size = attr.ib(None)
+    mentions = attr.ib(factory=list, type=Sequence[Mention])
+    #: Size of a sent emoji
+    emoji_size = attr.ib(None, type=EmojiSize)
     #: Whether the message is read
-    is_read = attr.ib(None)
+    is_read = attr.ib(None, type=bool)
     #: A list of people IDs who read the message, works only with `Client.fetch_thread_messages`
-    read_by = attr.ib(factory=list)
+    read_by = attr.ib(factory=list, type=bool)
     #: A dictionary with user's IDs as keys, and their reaction as values
-    reactions = attr.ib(factory=dict)
+    reactions = attr.ib(factory=dict, type=Mapping[str, str])
     #: A `Sticker`
-    sticker = attr.ib(None)
+    sticker = attr.ib(None, type=_sticker.Sticker)
     #: A list of attachments
-    attachments = attr.ib(factory=list)
+    attachments = attr.ib(factory=list, type=Sequence[_attachment.Attachment])
     #: A list of `QuickReply`
-    quick_replies = attr.ib(factory=list)
+    quick_replies = attr.ib(factory=list, type=Sequence[_quick_reply.QuickReply])
     #: Whether the message is unsent (deleted for everyone)
-    unsent = attr.ib(False)
+    unsent = attr.ib(False, type=bool)
     #: Message ID you want to reply to
-    reply_to_id = attr.ib(None)
+    reply_to_id = attr.ib(None, type=str)
     #: Replied message
-    replied_to = attr.ib(None)
+    replied_to = attr.ib(None, type="MessageData")
     #: Whether the message was forwarded
-    forwarded = attr.ib(False)
+    forwarded = attr.ib(False, type=bool)
 
     @staticmethod
     def _get_forwarded_from_tags(tags):

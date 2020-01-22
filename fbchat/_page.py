@@ -1,4 +1,5 @@
 import attr
+import datetime
 from ._core import attrs_default, Image
 from . import _session, _plan, _thread
 
@@ -10,7 +11,7 @@ class Page(_thread.ThreadABC):
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
     #: The unique identifier of the page.
-    id = attr.ib(converter=str)
+    id = attr.ib(converter=str, type=str)
 
     def _to_send_data(self):
         return {"other_user_fbid": self.id}
@@ -24,25 +25,25 @@ class PageData(Page):
     """
 
     #: The page's picture
-    photo = attr.ib()
+    photo = attr.ib(type=Image)
     #: The name of the page
-    name = attr.ib()
-    #: Datetime when the thread was last active / when the last message was sent
-    last_active = attr.ib(None)
+    name = attr.ib(type=str)
+    #: When the thread was last active / when the last message was sent
+    last_active = attr.ib(None, type=datetime.datetime)
     #: Number of messages in the thread
-    message_count = attr.ib(None)
+    message_count = attr.ib(None, type=int)
     #: Set `Plan`
-    plan = attr.ib(None)
+    plan = attr.ib(None, type=_plan.PlanData)
     #: The page's custom URL
-    url = attr.ib(None)
+    url = attr.ib(None, type=str)
     #: The name of the page's location city
-    city = attr.ib(None)
+    city = attr.ib(None, type=str)
     #: Amount of likes the page has
-    likes = attr.ib(None)
+    likes = attr.ib(None, type=int)
     #: Some extra information about the page
-    sub_title = attr.ib(None)
+    sub_title = attr.ib(None, type=str)
     #: The page's category
-    category = attr.ib(None)
+    category = attr.ib(None, type=str)
 
     @classmethod
     def _from_graphql(cls, session, data):

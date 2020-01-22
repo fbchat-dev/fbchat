@@ -8,7 +8,6 @@ from fbchat._util import (
     generate_message_id,
     get_signature_id,
     get_jsmods_require,
-    require_list,
     mimetype_to_key,
     get_url_parameter,
     prefix_url,
@@ -103,13 +102,6 @@ def test_get_jsmods_require_get_image_url():
     }
     url = "https://scontent-arn2-1.xx.fbcdn.net/v/image.png&dl=1"
     assert get_jsmods_require(data, 3) == url
-
-
-def test_require_list():
-    assert require_list([]) == set()
-    assert require_list([1, 2, 2]) == {1, 2}
-    assert require_list(1) == {1}
-    assert require_list("abc") == {"abc"}
 
 
 def test_mimetype_to_key():

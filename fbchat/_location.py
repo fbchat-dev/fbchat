@@ -12,15 +12,15 @@ class LocationAttachment(Attachment):
     """
 
     #: Latitude of the location
-    latitude = attr.ib(None)
+    latitude = attr.ib(None, type=float)
     #: Longitude of the location
-    longitude = attr.ib(None)
+    longitude = attr.ib(None, type=float)
     #: Image showing the map of the location
-    image = attr.ib(None)
+    image = attr.ib(None, type=Image)
     #: URL to Bing maps with the location
-    url = attr.ib(None)
+    url = attr.ib(None, type=str)
     # Address of the location
-    address = attr.ib(None)
+    address = attr.ib(None, type=str)
 
     @classmethod
     def _from_graphql(cls, data):
