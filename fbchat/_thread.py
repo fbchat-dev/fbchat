@@ -110,7 +110,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
             reply_to_id: Optional message to reply to
 
         Returns:
-            :ref:`Message ID <intro_message_ids>` of the sent message
+            The sent message
         """
         data = self._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
@@ -139,7 +139,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
             size: The size of the emoji
 
         Returns:
-            :ref:`Message ID <intro_message_ids>` of the sent message
+            The sent message
         """
         data = self._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
@@ -154,7 +154,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
             sticker_id: ID of the sticker to send
 
         Returns:
-            :ref:`Message ID <intro_message_ids>` of the sent message
+            The sent message
         """
         data = self._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
@@ -420,7 +420,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
     def set_color(self, color: str):
         """Change thread color.
 
-        The new color must be one of the following:
+        The new color must be one of the following::
 
             "#0084ff", "#44bec7", "#ffc300", "#fa3c4c", "#d696bb", "#6699cc", "#13cf13",
             "#ff7e29", "#e68585", "#7646ff", "#20cef5", "#67b868", "#d4a88c", "#ff5ca1",

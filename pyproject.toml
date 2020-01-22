@@ -56,7 +56,8 @@ test = [
 ]
 docs = [
     "sphinx~=2.0",
-    "sphinxcontrib-spelling~=4.0"
+    "sphinxcontrib-spelling~=4.0",
+    "sphinx-autodoc-typehints~=1.10",
 ]
 lint = [
     "black",

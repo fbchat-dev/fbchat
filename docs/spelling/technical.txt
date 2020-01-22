@@ -1,4 +1,6 @@
 iterables
+iterable
+mimetype
 timestamp
 metadata
 spam
@@ -12,3 +14,4 @@ spritemap
 online
 inbox
 subclassing
+codebase

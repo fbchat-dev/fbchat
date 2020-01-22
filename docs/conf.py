@@ -11,13 +11,18 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
+os.environ["_FBCHAT_DISABLE_FIX_MODULE_METADATA"] = "1"
+
 import fbchat
+
+del os.environ["_FBCHAT_DISABLE_FIX_MODULE_METADATA"]
 
 # -- Project information -----------------------------------------------------
 
 project = fbchat.__name__
-copyright = fbchat.__copyright__
-author = fbchat.__author__
+copyright = "Copyright 2015 - 2018 by Taehoon Kim and 2018 - 2020 by Mads Marquart"
+author = "Taehoon Kim; Moreels Pieter-Jan; Mads Marquart"
+description = fbchat.__doc__.split("\n")[0]
 
 # The short X.Y version
 version = fbchat.__version__
@@ -37,10 +42,10 @@ needs_sphinx = "2.0"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinxcontrib.spelling",
+    "sphinx_autodoc_typehints",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -113,7 +118,7 @@ html_show_sourcelink = False
 
 # A shorter title for the navigation bar. Default is the same as html_title.
 #
-html_short_title = fbchat.__description__
+html_short_title = description
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
@@ -127,16 +132,14 @@ htmlhelp_basename = project + "doc"
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [(master_doc, project + ".tex", fbchat.__title__, author, "manual")]
+latex_documents = [(master_doc, project + ".tex", project, author, "manual")]
 
 
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, project, fbchat.__title__, [x.strip() for x in author.split(";")], 1)
-]
+man_pages = [(master_doc, project, project, [x.strip() for x in author.split(";")], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -145,15 +148,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (
-        master_doc,
-        project,
-        fbchat.__title__,
-        author,
-        project,
-        fbchat.__description__,
-        "Miscellaneous",
-    )
+    (master_doc, project, project, author, project, description, "Miscellaneous",)
 ]
 
 
@@ -167,7 +162,7 @@ epub_exclude_files = ["search.html"]
 
 # -- Options for autodoc extension ---------------------------------------
 
-autoclass_content = "both"
+autoclass_content = "class"
 autodoc_member_order = "bysource"
 autodoc_default_options = {"members": True}
 
@@ -175,13 +170,6 @@ autodoc_default_options = {"members": True}
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"https://docs.python.org/": None}
-
-# -- Options for todo extension ----------------------------------------------
-
-# If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = True
-
-todo_link_only = True
 
 # -- Options for napoleon extension ----------------------------------------------
 
