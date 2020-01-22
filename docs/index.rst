@@ -47,6 +47,6 @@ Overview
     intro
     examples
     testing
-    api
+    api/index
     todo
     faq
