@@ -71,7 +71,7 @@ With that out of the way, you may go to `Read The Docs <https://fbchat.readthedo
 Installation
 ------------
 
-.. code-block:: sh
+.. code-block::
 
     $ pip install fbchat
 
@@ -79,7 +79,7 @@ If you don't have `pip <https://pip.pypa.io/>`_, `this guide <http://docs.python
 
 You can also install directly from source, provided you have ``pip>=19.0``:
 
-.. code-block:: sh
+.. code-block::
 
     $ pip install git+https://github.com/carpedm20/fbchat.git
 
@@ -89,7 +89,7 @@ You can also install directly from source, provided you have ``pip>=19.0``:
 Example usage
 -------------
 
-.. code-block:: python
+.. code-block::
 
     import getpass
     import fbchat
