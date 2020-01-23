@@ -1,5 +1,6 @@
 import attr
 import bs4
+import datetime
 import re
 import requests
 import random
@@ -11,6 +12,32 @@ from . import _graphql, _util, _exception
 from typing import Optional, Tuple, Mapping, BinaryIO, Sequence, Iterable, Callable
 
 FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
+
+
+def base36encode(number: int) -> str:
+    """Convert from Base10 to Base36."""
+    # Taken from https://en.wikipedia.org/wiki/Base36#Python_implementation
+    chars = "0123456789abcdefghijklmnopqrstuvwxyz"
+
+    sign = "-" if number < 0 else ""
+    number = abs(number)
+    result = ""
+
+    while number > 0:
+        number, remainder = divmod(number, 36)
+        result = chars[remainder] + result
+
+    return sign + result
+
+
+def prefix_url(url: str) -> str:
+    return "https://www.facebook.com" + url
+
+
+def generate_message_id(now: datetime.datetime, client_id: str) -> str:
+    k = _util.datetime_to_millis(now)
+    l = int(random.random() * 4294967295)
+    return "<{}:{}-{}@mail.projektitan.com>".format(k, l, client_id)
 
 
 def get_user_id(session: requests.Session) -> str:
@@ -106,7 +133,7 @@ def get_error_data(html: str, url: str) -> Tuple[Optional[int], Optional[str]]:
     code = None
     try:
         code = int(_util.get_url_parameter(url, "e"))
-    except (IndexError, ValueError):
+    except (TypeError, ValueError):
         pass
 
     soup = bs4.BeautifulSoup(
@@ -143,7 +170,7 @@ class Session:
         self._counter += 1  # TODO: Make this operation atomic / thread-safe
         return {
             "__a": 1,
-            "__req": _util.str_base(self._counter, 36),
+            "__req": base36encode(self._counter),
             "__rev": self._revision,
             "fb_dtsg": self._fb_dtsg,
         }
@@ -244,14 +271,14 @@ class Session:
         """
         logout_h = self._logout_h
         if not logout_h:
-            url = _util.prefix_url("/bluebar/modern_settings_menu/")
+            url = prefix_url("/bluebar/modern_settings_menu/")
             try:
                 h_r = self._session.post(url, data={"pmid": "4"})
             except requests.RequestException as e:
                 _exception.handle_requests_error(e)
             logout_h = re.search(r'name=\\"h\\" value=\\"(.*?)\\"', h_r.text).group(1)
 
-        url = _util.prefix_url("/logout.php")
+        url = prefix_url("/logout.php")
         try:
             r = self._session.get(url, params={"ref": "mb", "h": logout_h})
         except requests.RequestException as e:
@@ -264,7 +291,7 @@ class Session:
         user_id = get_user_id(session)
 
         try:
-            r = session.get(_util.prefix_url("/"))
+            r = session.get(prefix_url("/"))
         except requests.RequestException as e:
             _exception.handle_requests_error(e)
 
@@ -320,26 +347,24 @@ class Session:
         session.cookies = requests.cookies.merge_cookies(session.cookies, cookies)
         return cls._from_session(session=session)
 
-    def _get(self, url, params, error_retries=3):
-        params.update(self._get_params())
-        try:
-            r = self._session.get(_util.prefix_url(url), params=params)
-        except requests.RequestException as e:
-            _exception.handle_requests_error(e)
-        content = _util.check_request(r)
-        return _util.to_json(content)
-
     def _post(self, url, data, files=None, as_graphql=False):
         data.update(self._get_params())
         try:
-            r = self._session.post(_util.prefix_url(url), data=data, files=files)
+            r = self._session.post(prefix_url(url), data=data, files=files)
         except requests.RequestException as e:
             _exception.handle_requests_error(e)
-        content = _util.check_request(r)
+        # Facebook's encoding is always UTF-8
+        r.encoding = "utf-8"
+        _exception.handle_http_error(r.status_code)
+        if r.text is None or len(r.text) == 0:
+            raise _exception.HTTPError("Error when sending request: Got empty response")
         if as_graphql:
-            return _graphql.response_to_json(content)
+            return _graphql.response_to_json(r.text)
         else:
-            return _util.to_json(content)
+            text = _util.strip_json_cruft(r.text)
+            j = parse_json(text)
+            log.debug(j)
+            return j
 
     def _payload_post(self, url, data, files=None):
         j = self._post(url, data, files=files)
@@ -393,14 +418,15 @@ class Session:
         ]
 
     def _do_send_request(self, data):
+        now = datetime.datetime.utcnow()
         offline_threading_id = _util.generate_offline_threading_id()
         data["client"] = "mercury"
         data["author"] = "fbid:{}".format(self._user_id)
-        data["timestamp"] = _util.now()
+        data["timestamp"] = _util.datetime_to_millis(now)
         data["source"] = "source:chat:web"
         data["offline_threading_id"] = offline_threading_id
         data["message_id"] = offline_threading_id
-        data["threading_id"] = _util.generate_message_id(self._client_id)
+        data["threading_id"] = generate_message_id(now, self._client_id)
         data["ephemeral_ttl_mode:"] = "0"
         j = self._post("/messaging/send/", data)
 

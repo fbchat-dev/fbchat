@@ -34,12 +34,12 @@ def queries_to_json(*queries):
     return _util.json_minimal(rtn)
 
 
-def response_to_json(content):
-    content = _util.strip_json_cruft(content)  # Usually only needed in some error cases
+def response_to_json(text):
+    text = _util.strip_json_cruft(text)  # Usually only needed in some error cases
     try:
-        j = json.loads(content, cls=ConcatJSONDecoder)
+        j = json.loads(text, cls=ConcatJSONDecoder)
     except Exception as e:
-        raise _exception.ParseError("Error while parsing JSON", data=content) from e
+        raise _exception.ParseError("Error while parsing JSON", data=text) from e
 
     rtn = [None] * (len(j))
     for x in j:

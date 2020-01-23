@@ -418,10 +418,11 @@ class Client:
         Warning:
             This is not finished, and the API may change at any point!
         """
+        at = datetime.datetime.utcnow()
         form = {
             "folders[0]": "inbox",
             "client": "mercury",
-            "last_action_timestamp": _util.now() - 60 * 1000
+            "last_action_timestamp": _util.datetime_to_millis(at),
             # 'last_action_timestamp': 0
         }
         j = self.session._payload_post("/ajax/mercury/unread_threads.php", form)
@@ -547,11 +548,10 @@ class Client:
         """
         return self._read_status(False, threads, at)
 
-    def mark_as_seen(self):
+    def mark_as_seen(self, at: datetime.datetime):
         # TODO: Documenting this
-        j = self.session._payload_post(
-            "/ajax/mercury/mark_seen.php", {"seen_timestamp": _util.now()}
-        )
+        data = {"seen_timestamp": _util.datetime_to_millis(at)}
+        j = self.session._payload_post("/ajax/mercury/mark_seen.php", data)
 
     def move_threads(
         self, location: _models.ThreadLocation, threads: Iterable[_threads.ThreadABC]

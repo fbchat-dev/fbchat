@@ -38,10 +38,6 @@ def get_limits(limit: Optional[int], max_limit: int) -> Iterable[int]:
         yield remainder
 
 
-def now():
-    return int(time.time() * 1000)
-
-
 def json_minimal(data: Any) -> str:
     """Get JSON data in minimal form."""
     return json.dumps(data, separators=(",", ":"))
@@ -55,71 +51,19 @@ def strip_json_cruft(text: str) -> str:
         raise _exception.ParseError("No JSON object found", data=text) from e
 
 
-def get_decoded_r(r):
-    return get_decoded(r._content)
-
-
-def get_decoded(content):
-    return content.decode("utf-8")
-
-
-def parse_json(content: str) -> Any:
+def parse_json(text: str) -> Any:
     try:
-        return json.loads(content)
+        return json.loads(text)
     except ValueError as e:
-        raise _exception.ParseError("Error while parsing JSON", data=content) from e
-
-
-def digit_to_char(digit):
-    if digit < 10:
-        return str(digit)
-    return chr(ord("a") + digit - 10)
-
-
-def str_base(number, base):
-    if number < 0:
-        return "-" + str_base(-number, base)
-    (d, m) = divmod(number, base)
-    if d > 0:
-        return str_base(d, base) + digit_to_char(m)
-    return digit_to_char(m)
-
-
-def generate_message_id(client_id=None):
-    k = now()
-    l = int(random.random() * 4294967295)
-    return "<{}:{}-{}@mail.projektitan.com>".format(k, l, client_id)
-
-
-def get_signature_id():
-    return hex(int(random.random() * 2147483648))
+        raise _exception.ParseError("Error while parsing JSON", data=text) from e
 
 
 def generate_offline_threading_id():
-    ret = now()
+    ret = _util.datetime_to_millis(datetime.datetime.utcnow())
     value = int(random.random() * 4294967295)
     string = ("0000000000000000000000" + format(value, "b"))[-22:]
     msgs = format(ret, "b") + string
     return str(int(msgs, 2))
-
-
-def check_request(r):
-    _exception.handle_http_error(r.status_code)
-    content = get_decoded_r(r)
-    check_content(content)
-    return content
-
-
-def check_content(content, as_json=True):
-    if content is None or len(content) == 0:
-        raise _exception.HTTPError("Error when sending request: Got empty response")
-
-
-def to_json(content):
-    content = strip_json_cruft(content)
-    j = parse_json(content)
-    log.debug(j)
-    return j
 
 
 def get_jsmods_require(j, index):
@@ -145,19 +89,11 @@ def mimetype_to_key(mimetype: str) -> str:
     return "file_id"
 
 
-def get_url_parameters(url: str, *args):
+def get_url_parameter(url: str, param: str) -> Optional[str]:
     params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
-    return [params[arg][0] for arg in args if params.get(arg)]
-
-
-def get_url_parameter(url: str, param: str) -> str:
-    return get_url_parameters(url, param)[0]
-
-
-def prefix_url(url: str) -> str:
-    if url.startswith("/"):
-        return "https://www.facebook.com" + url
-    return url
+    if not params.get(param):
+        return None
+    return params[param][0]
 
 
 def seconds_to_datetime(timestamp_in_seconds: float) -> datetime.datetime:

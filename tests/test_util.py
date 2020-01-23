@@ -4,13 +4,9 @@ import datetime
 from fbchat._util import (
     strip_json_cruft,
     parse_json,
-    str_base,
-    generate_message_id,
-    get_signature_id,
     get_jsmods_require,
     mimetype_to_key,
     get_url_parameter,
-    prefix_url,
     seconds_to_datetime,
     millis_to_datetime,
     datetime_to_seconds,
@@ -40,31 +36,6 @@ def test_parse_json():
 def test_parse_json_invalid():
     with pytest.raises(fbchat.ParseError, match="Error while parsing JSON"):
         parse_json("No JSON object here!")
-
-
-@pytest.mark.parametrize(
-    "number,base,expected",
-    [
-        (123, 10, "123"),
-        (1, 36, "1"),
-        (10, 36, "a"),
-        (123, 36, "3f"),
-        (1000, 36, "rs"),
-        (123456789, 36, "21i3v9"),
-    ],
-)
-def test_str_base(number, base, expected):
-    assert str_base(number, base) == expected
-
-
-def test_generate_message_id():
-    # Returns random output, so hard to test more thoroughly
-    generate_message_id("abc")
-
-
-def test_get_signature_id():
-    # Returns random output, so hard to test more thoroughly
-    get_signature_id()
 
 
 def test_get_jsmods_require_get_image_url():
@@ -118,15 +89,7 @@ def test_mimetype_to_key():
 def test_get_url_parameter():
     assert get_url_parameter("http://example.com?a=b&c=d", "c") == "d"
     assert get_url_parameter("http://example.com?a=b&a=c", "a") == "b"
-    with pytest.raises(IndexError):
-        get_url_parameter("http://example.com", "a")
-
-
-def test_prefix_url():
-    assert prefix_url("/") == "https://www.facebook.com/"
-    assert prefix_url("/abc") == "https://www.facebook.com/abc"
-    assert prefix_url("abc") == "abc"
-    assert prefix_url("https://m.facebook.com/abc") == "https://m.facebook.com/abc"
+    assert get_url_parameter("http://example.com", "a") is None
 
 
 DT_0 = datetime.datetime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)

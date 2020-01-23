@@ -1,7 +1,7 @@
 import attr
 from . import Image, Attachment
 from .._common import attrs_default
-from .. import _util
+from .. import _util, _exception
 
 
 @attrs_default
@@ -26,6 +26,8 @@ class LocationAttachment(Attachment):
     def _from_graphql(cls, data):
         url = data.get("url")
         address = _util.get_url_parameter(_util.get_url_parameter(url, "u"), "where1")
+        if not address:
+            raise _exception.ParseError("Could not find location address", data=data)
         try:
             latitude, longitude = [float(x) for x in address.split(", ")]
             address = None

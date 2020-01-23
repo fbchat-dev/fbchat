@@ -4,7 +4,7 @@ from fbchat._graphql import ConcatJSONDecoder, queries_to_json, response_to_json
 
 
 @pytest.mark.parametrize(
-    "content,result",
+    "text,result",
     [
         ("", []),
         ('{"a":"b"}', [{"a": "b"}]),
@@ -12,8 +12,8 @@ from fbchat._graphql import ConcatJSONDecoder, queries_to_json, response_to_json
         (' \n{"a":  "b"  }     \n {  "b" \n\n : "c" }', [{"a": "b"}, {"b": "c"}]),
     ],
 )
-def test_concat_json_decoder(content, result):
-    assert result == json.loads(content, cls=ConcatJSONDecoder)
+def test_concat_json_decoder(text, result):
+    assert result == json.loads(text, cls=ConcatJSONDecoder)
 
 
 def test_queries_to_json():
