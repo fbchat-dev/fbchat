@@ -18,6 +18,17 @@ class Event(metaclass=abc.ABCMeta):
     def _parse(cls, session, data):
         raise NotImplementedError
 
+    @staticmethod
+    def _get_thread(session, data):
+        # TODO: Handle pages? Is it even possible?
+        key = data["threadKey"]
+
+        if "threadFbId" in key:
+            return _threads.Group(session=session, id=str(key["threadFbId"]))
+        elif "otherUserFbId" in key:
+            return _threads.User(session=session, id=str(key["otherUserFbId"]))
+        raise _exception.ParseError("Could not find thread data", data=data)
+
 
 @attrs_event
 class UnknownEvent(Event):
@@ -42,21 +53,10 @@ class ThreadEvent(Event):
     #: Thread that the action was done in
     thread = attr.ib(type="_threads.ThreadABC")
 
-    @staticmethod
-    def _get_thread(session, data):
-        # TODO: Handle pages? Is it even possible?
-        key = data["threadKey"]
-
-        if "threadFbId" in key:
-            return _threads.Group(session=session, id=str(key["threadFbId"]))
-        elif "otherUserFbId" in key:
-            return _threads.User(session=session, id=str(key["otherUserFbId"]))
-        raise _exception.ParseError("Could not find thread data", data=data)
-
-    @staticmethod
-    def _parse_metadata(session, data):
+    @classmethod
+    def _parse_metadata(cls, session, data):
         metadata = data["messageMetadata"]
         author = _threads.User(session=session, id=metadata["actorFbId"])
-        thread = ThreadEvent._get_thread(session, metadata)
+        thread = cls._get_thread(session, metadata)
         at = _util.millis_to_datetime(int(metadata["timestamp"]))
         return author, thread, at

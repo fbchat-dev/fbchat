@@ -1,7 +1,6 @@
 import attr
 import datetime
 from ._common import attrs_event, Event, UnknownEvent, ThreadEvent
-from . import _client_payload, _delta_class, _delta_type
 from ._client_payload import *
 from ._delta_class import *
 from ._delta_type import *
@@ -69,23 +68,6 @@ class Presence(Event):
         return cls(statuses=statuses, full=data["list_type"] == "full")
 
 
-def parse_delta(session, data):
-    try:
-        class_ = data["class"]
-        if class_ == "ClientPayload":
-            yield from _client_payload.parse_client_payloads(session, data)
-        elif class_ == "AdminTextMessage":
-            yield _delta_type.parse_delta(session, data)
-        else:
-            event = _delta_class.parse_delta(session, data)
-            if event:  # Skip `None`
-                yield event
-    except _exception.ParseError:
-        raise
-    except Exception as e:
-        raise _exception.ParseError("Error parsing delta", data=data) from e
-
-
 def parse_events(session, topic, data):
     # See Mqtt._configure_connect_options for information about these topics
     try:
@@ -93,7 +75,19 @@ def parse_events(session, topic, data):
             # `deltas` will always be available, since we're filtering out the things
             # that don't have it earlier in the MQTT listener
             for delta in data["deltas"]:
-                yield from parse_delta(session, delta)
+                if delta["class"] == "ClientPayload":
+                    yield from parse_client_payloads(session, delta)
+                    continue
+                try:
+                    event = parse_delta(session, delta)
+                    if event:  # Skip `None`
+                        yield event
+                except _exception.ParseError:
+                    raise
+                except Exception as e:
+                    raise _exception.ParseError(
+                        "Error parsing delta", data=delta
+                    ) from e
 
         elif topic == "/thread_typing":
             yield Typing._parse(session, data)

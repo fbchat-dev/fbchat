@@ -29,7 +29,7 @@ from fbchat import (
     PlanDeleted,
     PlanResponded,
 )
-from fbchat._events._delta_type import parse_delta
+from fbchat._events import parse_admin_message
 
 
 def test_color_set(session):
@@ -65,7 +65,7 @@ def test_color_set(session):
         thread=Group(session=session, id="4321"),
         color="#ff7e29",
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_emoji_set(session):
@@ -99,7 +99,7 @@ def test_emoji_set(session):
         thread=User(session=session, id="1234"),
         emoji="🌟",
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_nickname_set(session):
@@ -132,7 +132,7 @@ def test_nickname_set(session):
         subject=User(session=session, id="2345"),
         nickname="abc",
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_nickname_clear(session):
@@ -164,7 +164,7 @@ def test_nickname_clear(session):
         subject=User(session=session, id="1234"),
         nickname=None,
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_admins_added(session):
@@ -201,7 +201,7 @@ def test_admins_added(session):
         thread=Group(session=session, id="4321"),
         added=[User(session=session, id="2345")],
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_admins_removed(session):
@@ -238,7 +238,7 @@ def test_admins_removed(session):
         thread=Group(session=session, id="4321"),
         removed=[User(session=session, id="1234")],
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_approvalmode_set(session):
@@ -270,7 +270,7 @@ def test_approvalmode_set(session):
         thread=Group(session=session, id="4321"),
         require_admin_approval=True,
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_approvalmode_unset(session):
@@ -302,7 +302,7 @@ def test_approvalmode_unset(session):
         thread=Group(session=session, id="4321"),
         require_admin_approval=False,
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_call_started(session):
@@ -360,7 +360,7 @@ def test_call_started(session):
         author=User(session=session, id="1234"),
         thread=Group(session=session, id="4321"),
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_group_call_ended(session):
@@ -418,7 +418,7 @@ def test_group_call_ended(session):
         thread=Group(session=session, id="4321"),
         duration=datetime.timedelta(seconds=31),
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_user_call_ended(session):
@@ -460,7 +460,7 @@ def test_user_call_ended(session):
         thread=User(session=session, id="1234"),
         duration=datetime.timedelta(seconds=3),
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_call_joined(session):
@@ -495,7 +495,7 @@ def test_call_joined(session):
         author=User(session=session, id="1234"),
         thread=Group(session=session, id="4321"),
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_poll_created(session):
@@ -572,7 +572,7 @@ def test_poll_created(session):
             options_count=2,
         ),
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_poll_answered(session):
@@ -665,7 +665,7 @@ def test_poll_answered(session):
         added_ids=["1002", "1003"],
         removed_ids=["1001"],
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_plan_created(session):
@@ -725,7 +725,7 @@ def test_plan_created(session):
             },
         ),
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 @pytest.mark.skip(reason="Need to gather test data")
@@ -749,7 +749,7 @@ def test_plan_ended(session):
             },
         ),
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_plan_edited(session):
@@ -815,7 +815,7 @@ def test_plan_edited(session):
             },
         ),
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_plan_deleted(session):
@@ -879,7 +879,7 @@ def test_plan_deleted(session):
             },
         ),
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
 def test_plan_participation(session):
@@ -948,9 +948,11 @@ def test_plan_participation(session):
         ),
         take_part=False,
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
+    ) == parse_admin_message(session, data)
 
 
-def test_parse_delta_unknown(session):
+def test_parse_admin_message_unknown(session):
     data = {"class": "AdminTextMessage", "type": "abc"}
-    assert UnknownEvent(source="Delta type", data=data) == parse_delta(session, data)
+    assert UnknownEvent(source="Delta type", data=data) == parse_admin_message(
+        session, data
+    )

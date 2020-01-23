@@ -1,9 +1,9 @@
 import pytest
 import datetime
-from fbchat import Group, User, ParseError, ThreadEvent
+from fbchat import Group, User, ParseError, Event, ThreadEvent
 
 
-def test_thread_event_get_thread_group1(session):
+def test_event_get_thread_group1(session):
     data = {
         "threadKey": {"threadFbId": 1234},
         "messageId": "mid.$gAAT4Sw1WSGh14A3MOFvrsiDvr3Yc",
@@ -18,10 +18,10 @@ def test_thread_event_get_thread_group1(session):
             "source:messenger:web",
         ],
     }
-    assert Group(session=session, id="1234") == ThreadEvent._get_thread(session, data)
+    assert Group(session=session, id="1234") == Event._get_thread(session, data)
 
 
-def test_thread_event_get_thread_group2(session):
+def test_event_get_thread_group2(session):
     data = {
         "actorFbId": "4321",
         "folderId": {"systemFolderId": "INBOX"},
@@ -33,10 +33,10 @@ def test_thread_event_get_thread_group2(session):
         "threadReadStateEffect": "KEEP_AS_IS",
         "timestamp": "1500000000000",
     }
-    assert Group(session=session, id="1234") == ThreadEvent._get_thread(session, data)
+    assert Group(session=session, id="1234") == Event._get_thread(session, data)
 
 
-def test_thread_event_get_thread_user(session):
+def test_event_get_thread_user(session):
     data = {
         "actorFbId": "4321",
         "folderId": {"systemFolderId": "INBOX"},
@@ -49,13 +49,13 @@ def test_thread_event_get_thread_user(session):
         "threadReadStateEffect": "KEEP_AS_IS",
         "timestamp": "1500000000000",
     }
-    assert User(session=session, id="1234") == ThreadEvent._get_thread(session, data)
+    assert User(session=session, id="1234") == Event._get_thread(session, data)
 
 
-def test_thread_event_get_thread_unknown(session):
+def test_event_get_thread_unknown(session):
     data = {"threadKey": {"abc": "1234"}}
     with pytest.raises(ParseError, match="Could not find thread data"):
-        ThreadEvent._get_thread(session, data)
+        Event._get_thread(session, data)
 
 
 def test_thread_event_parse_metadata(session):

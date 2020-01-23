@@ -13,7 +13,7 @@ from fbchat import (
     UnsendEvent,
     MessageReplyEvent,
 )
-from fbchat._events._client_payload import parse_client_delta, parse_client_payloads
+from fbchat._events import parse_client_delta, parse_client_payloads
 
 
 def test_reaction_event_added(session):

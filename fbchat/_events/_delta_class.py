@@ -1,6 +1,7 @@
 import attr
 import datetime
 from ._common import attrs_event, Event, UnknownEvent, ThreadEvent
+from . import _delta_type
 from .. import _util, _threads, _models
 
 from typing import Sequence, Optional
@@ -83,7 +84,7 @@ class UnfetchedThreadEvent(Event):
 
     @classmethod
     def _parse(cls, session, data):
-        thread = ThreadEvent._get_thread(session, data)
+        thread = cls._get_thread(session, data)
         message = None
         if "messageId" in data:
             message = _models.Message(thread=thread, id=data["messageId"])
@@ -125,7 +126,7 @@ class ThreadsRead(Event):
     @classmethod
     def _parse_read_receipt(cls, session, data):
         author = _threads.User(session=session, id=data["actorFbId"])
-        thread = ThreadEvent._get_thread(session, data)
+        thread = cls._get_thread(session, data)
         at = _util.millis_to_datetime(int(data["actionTimestampMs"]))
         return cls(author=author, threads=[thread], at=at)
 
@@ -133,8 +134,7 @@ class ThreadsRead(Event):
     def _parse(cls, session, data):
         author = _threads.User(session=session, id=session.user_id)
         threads = [
-            ThreadEvent._get_thread(session, {"threadKey": x})
-            for x in data["threadKeys"]
+            cls._get_thread(session, {"threadKey": x}) for x in data["threadKeys"]
         ]
         at = _util.millis_to_datetime(int(data["actionTimestamp"]))
         return cls(author=author, threads=threads, at=at)
@@ -175,14 +175,16 @@ class ThreadFolder(Event):
 
     @classmethod
     def _parse(cls, session, data):
-        thread = ThreadEvent._get_thread(session, data)
+        thread = cls._get_thread(session, data)
         folder = _threads.ThreadLocation._parse(data["folder"])
         return cls(thread=thread, folder=folder)
 
 
 def parse_delta(session, data):
     class_ = data["class"]
-    if class_ == "ParticipantsAddedToGroupThread":
+    if class_ == "AdminTextMessage":
+        return _delta_type.parse_admin_message(session, data)
+    elif class_ == "ParticipantsAddedToGroupThread":
         return PeopleAdded._parse(session, data)
     elif class_ == "ParticipantLeftGroupThread":
         return PersonRemoved._parse(session, data)
@@ -204,10 +206,10 @@ def parse_delta(session, data):
     elif class_ == "NoOp":
         # Skip "no operation" events
         return None
-    elif class_ == "ClientPayload":
-        return X._parse(session, data)
     elif class_ == "NewMessage":
         return MessageEvent._parse(session, data)
     elif class_ == "ThreadFolder":
         return ThreadFolder._parse(session, data)
+    elif class_ == "ClientPayload":
+        raise ValueError("This is implemented in `parse_events`")
     return UnknownEvent(source="Delta class", data=data)

@@ -280,7 +280,7 @@ class PlanResponded(ThreadEvent):
         return cls(author=author, thread=thread, plan=plan, take_part=take_part, at=at)
 
 
-def parse_delta(session, data):
+def parse_admin_message(session, data):
     type_ = data["type"]
     if type_ == "change_thread_theme":
         return ColorSet._parse(session, data)

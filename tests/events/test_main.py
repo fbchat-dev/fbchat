@@ -13,7 +13,7 @@ from fbchat import (
     UnfetchedThreadEvent,
     ActiveStatus,
 )
-from fbchat._events import parse_delta, parse_events
+from fbchat._events import parse_events
 
 
 def test_t_ms_full(session):
