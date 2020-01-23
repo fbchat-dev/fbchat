@@ -1,7 +1,7 @@
 import attr
 import datetime
 from ._common import attrs_event, Event, UnknownEvent, ThreadEvent
-from .. import _util, _threads, _poll, _plan
+from .. import _util, _threads, _models
 
 from typing import Sequence, Optional
 
@@ -155,7 +155,7 @@ class PollCreated(ThreadEvent):
     """Somebody created a group poll."""
 
     #: The new poll
-    poll = attr.ib(type=_poll.Poll)
+    poll = attr.ib(type="_models.Poll")
     #: When the poll was created
     at = attr.ib(type=datetime.datetime)
 
@@ -163,7 +163,7 @@ class PollCreated(ThreadEvent):
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
         poll_data = _util.parse_json(data["untypedData"]["question_json"])
-        poll = _poll.Poll._from_graphql(session, poll_data)
+        poll = _models.Poll._from_graphql(session, poll_data)
         return cls(author=author, thread=thread, poll=poll, at=at)
 
 
@@ -172,7 +172,7 @@ class PollVoted(ThreadEvent):
     """Somebody voted in a group poll."""
 
     #: The updated poll
-    poll = attr.ib(type=_poll.Poll)
+    poll = attr.ib(type="_models.Poll")
     #: Ids of the voted options
     added_ids = attr.ib(type=Sequence[str])
     #: Ids of the un-voted options
@@ -184,7 +184,7 @@ class PollVoted(ThreadEvent):
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
         poll_data = _util.parse_json(data["untypedData"]["question_json"])
-        poll = _poll.Poll._from_graphql(session, poll_data)
+        poll = _models.Poll._from_graphql(session, poll_data)
         added_ids = _util.parse_json(data["untypedData"]["added_option_ids"])
         removed_ids = _util.parse_json(data["untypedData"]["removed_option_ids"])
         return cls(
@@ -202,14 +202,14 @@ class PlanCreated(ThreadEvent):
     """Somebody created a plan in a group."""
 
     #: The new plan
-    plan = attr.ib(type=_plan.PlanData)
+    plan = attr.ib(type="_models.PlanData")
     #: When the plan was created
     at = attr.ib(type=datetime.datetime)
 
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        plan = _plan.PlanData._from_pull(session, data["untypedData"])
+        plan = _models.PlanData._from_pull(session, data["untypedData"])
         return cls(author=author, thread=thread, plan=plan, at=at)
 
 
@@ -218,14 +218,14 @@ class PlanEnded(ThreadEvent):
     """A plan ended."""
 
     #: The ended plan
-    plan = attr.ib(type=_plan.PlanData)
+    plan = attr.ib(type="_models.PlanData")
     #: When the plan ended
     at = attr.ib(type=datetime.datetime)
 
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        plan = _plan.PlanData._from_pull(session, data["untypedData"])
+        plan = _models.PlanData._from_pull(session, data["untypedData"])
         return cls(author=author, thread=thread, plan=plan, at=at)
 
 
@@ -234,14 +234,14 @@ class PlanEdited(ThreadEvent):
     """Somebody changed a plan in a group."""
 
     #: The updated plan
-    plan = attr.ib(type=_plan.PlanData)
+    plan = attr.ib(type="_models.PlanData")
     #: When the plan was updated
     at = attr.ib(type=datetime.datetime)
 
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        plan = _plan.PlanData._from_pull(session, data["untypedData"])
+        plan = _models.PlanData._from_pull(session, data["untypedData"])
         return cls(author=author, thread=thread, plan=plan, at=at)
 
 
@@ -250,14 +250,14 @@ class PlanDeleted(ThreadEvent):
     """Somebody removed a plan in a group."""
 
     #: The removed plan
-    plan = attr.ib(type=_plan.PlanData)
+    plan = attr.ib(type="_models.PlanData")
     #: When the plan was removed
     at = attr.ib(type=datetime.datetime)
 
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        plan = _plan.PlanData._from_pull(session, data["untypedData"])
+        plan = _models.PlanData._from_pull(session, data["untypedData"])
         return cls(author=author, thread=thread, plan=plan, at=at)
 
 
@@ -266,7 +266,7 @@ class PlanResponded(ThreadEvent):
     """Somebody responded to a plan in a group."""
 
     #: The plan that was responded to
-    plan = attr.ib(type=_plan.PlanData)
+    plan = attr.ib(type="_models.PlanData")
     #: Whether the author will go to the plan or not
     take_part = attr.ib(type=bool)
     #: When the plan was removed
@@ -275,7 +275,7 @@ class PlanResponded(ThreadEvent):
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        plan = _plan.PlanData._from_pull(session, data["untypedData"])
+        plan = _models.PlanData._from_pull(session, data["untypedData"])
         take_part = data["untypedData"]["guest_status"] == "GOING"
         return cls(author=author, thread=thread, plan=plan, take_part=take_part, at=at)
 

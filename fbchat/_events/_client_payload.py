@@ -1,7 +1,7 @@
 import attr
 import datetime
 from ._common import attrs_event, UnknownEvent, ThreadEvent
-from .. import _exception, _util, _threads, _message
+from .. import _exception, _util, _threads, _models
 
 from typing import Optional
 
@@ -11,7 +11,7 @@ class ReactionEvent(ThreadEvent):
     """Somebody reacted to a message."""
 
     #: Message that the user reacted to
-    message = attr.ib(type=_message.Message)
+    message = attr.ib(type="_models.Message")
 
     reaction = attr.ib(type=Optional[str])
     """The reaction.
@@ -27,7 +27,7 @@ class ReactionEvent(ThreadEvent):
         return cls(
             author=_threads.User(session=session, id=str(data["userId"])),
             thread=thread,
-            message=_message.Message(thread=thread, id=data["messageId"]),
+            message=_models.Message(thread=thread, id=data["messageId"]),
             reaction=data["reaction"] if data["action"] == 0 else None,
         )
 
@@ -58,7 +58,7 @@ class LiveLocationEvent(ThreadEvent):
 
         thread = cls._get_thread(session, data)
         for location_data in data["messageLiveLocations"]:
-            message = _message.Message(thread=thread, id=data["messageId"])
+            message = _models.Message(thread=thread, id=data["messageId"])
             author = _threads.User(session=session, id=str(location_data["senderId"]))
             location = _location.LiveLocationAttachment._from_pull(location_data)
 
@@ -70,7 +70,7 @@ class UnsendEvent(ThreadEvent):
     """Somebody unsent a message (which deletes it for everyone)."""
 
     #: The unsent message
-    message = attr.ib(type=_message.Message)
+    message = attr.ib(type="_models.Message")
     #: When the message was unsent
     at = attr.ib(type=datetime.datetime)
 
@@ -80,7 +80,7 @@ class UnsendEvent(ThreadEvent):
         return cls(
             author=_threads.User(session=session, id=str(data["senderID"])),
             thread=thread,
-            message=_message.Message(thread=thread, id=data["messageID"]),
+            message=_models.Message(thread=thread, id=data["messageID"]),
             at=_util.millis_to_datetime(data["deletionTimestamp"]),
         )
 
@@ -90,9 +90,9 @@ class MessageReplyEvent(ThreadEvent):
     """Somebody replied to a message."""
 
     #: The sent message
-    message = attr.ib(type=_message.MessageData)
+    message = attr.ib(type="_models.MessageData")
     #: The message that was replied to
-    replied_to = attr.ib(type=_message.MessageData)
+    replied_to = attr.ib(type="_models.MessageData")
 
     @classmethod
     def _parse(cls, session, data):
@@ -101,8 +101,8 @@ class MessageReplyEvent(ThreadEvent):
         return cls(
             author=_threads.User(session=session, id=str(metadata["actorFbId"])),
             thread=thread,
-            message=_message.MessageData._from_reply(thread, data["message"]),
-            replied_to=_message.MessageData._from_reply(
+            message=_models.MessageData._from_reply(thread, data["message"]),
+            replied_to=_models.MessageData._from_reply(
                 thread, data["repliedToMessage"]
             ),
         )

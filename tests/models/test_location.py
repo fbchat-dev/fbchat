@@ -1,7 +1,7 @@
 import pytest
 import datetime
 import fbchat
-from fbchat._location import LocationAttachment, LiveLocationAttachment
+from fbchat import LocationAttachment, LiveLocationAttachment
 
 
 def test_location_attachment_from_graphql():

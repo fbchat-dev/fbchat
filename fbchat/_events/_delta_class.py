@@ -1,7 +1,7 @@
 import attr
 import datetime
 from ._common import attrs_event, Event, UnknownEvent, ThreadEvent
-from .. import _util, _threads, _message
+from .. import _util, _threads, _models
 
 from typing import Sequence, Optional
 
@@ -37,7 +37,7 @@ class PersonRemoved(ThreadEvent):
 
     thread = attr.ib(type="_threads.Group")  # Set the correct type
     #: Person who got removed
-    removed = attr.ib(type=_message.Message)
+    removed = attr.ib(type="_models.Message")
     #: When the person were removed
     at = attr.ib(type=datetime.datetime)
 
@@ -79,14 +79,14 @@ class UnfetchedThreadEvent(Event):
     #: The thread the message was sent to
     thread = attr.ib(type="_threads.ThreadABC")
     #: The message
-    message = attr.ib(type=Optional[_message.Message])
+    message = attr.ib(type=Optional["_models.Message"])
 
     @classmethod
     def _parse(cls, session, data):
         thread = ThreadEvent._get_thread(session, data)
         message = None
         if "messageId" in data:
-            message = _message.Message(thread=thread, id=data["messageId"])
+            message = _models.Message(thread=thread, id=data["messageId"])
         return cls(thread=thread, message=message)
 
 
@@ -95,7 +95,7 @@ class MessagesDelivered(ThreadEvent):
     """Somebody marked messages as delivered in a thread."""
 
     #: The messages that were marked as delivered
-    messages = attr.ib(type=Sequence[_message.Message])
+    messages = attr.ib(type=Sequence["_models.Message"])
     #: When the messages were delivered
     at = attr.ib(type=datetime.datetime)
 
@@ -106,7 +106,7 @@ class MessagesDelivered(ThreadEvent):
             author = _threads.User(session=session, id=data["actorFbId"])
         else:
             author = thread
-        messages = [_message.Message(thread=thread, id=x) for x in data["messageIds"]]
+        messages = [_models.Message(thread=thread, id=x) for x in data["messageIds"]]
         at = _util.millis_to_datetime(int(data["deliveredWatermarkTimestampMs"]))
         return cls(author=author, thread=thread, messages=messages, at=at)
 
@@ -145,14 +145,14 @@ class MessageEvent(ThreadEvent):
     """Somebody sent a message to a thread."""
 
     #: The sent message
-    message = attr.ib(type=_message.Message)
+    message = attr.ib(type="_models.Message")
     #: When the threads were read
     at = attr.ib(type=datetime.datetime)
 
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        message = _message.MessageData._from_pull(
+        message = _models.MessageData._from_pull(
             thread, data, author=author.id, created_at=at,
         )
         return cls(author=author, thread=thread, message=message, at=at)

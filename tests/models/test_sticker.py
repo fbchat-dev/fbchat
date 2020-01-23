@@ -1,6 +1,6 @@
 import pytest
 import fbchat
-from fbchat._sticker import Sticker
+from fbchat import Sticker
 
 
 def test_from_graphql_none():

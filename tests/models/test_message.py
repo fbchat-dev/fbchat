@@ -1,7 +1,7 @@
 import pytest
 import fbchat
 from fbchat import EmojiSize, Mention, Message, MessageData
-from fbchat._message import graphql_to_extensible_attachment
+from fbchat._models._message import graphql_to_extensible_attachment
 
 
 @pytest.mark.parametrize(

@@ -2,18 +2,9 @@ import attr
 import datetime
 import enum
 from string import Formatter
-from ._common import log, attrs_default
-from . import (
-    _exception,
-    _util,
-    _session,
-    _attachment,
-    _location,
-    _file,
-    _quick_reply,
-    _sticker,
-    _threads,
-)
+from . import _attachment, _location, _file, _quick_reply, _sticker
+from .._common import log, attrs_default
+from .. import _exception, _util, _session, _threads
 from typing import Optional, Mapping, Sequence
 
 

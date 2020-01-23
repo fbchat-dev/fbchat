@@ -1,8 +1,8 @@
 import attr
 import datetime
-from ._common import attrs_default, Image
-from . import _util
 from ._attachment import Attachment
+from .._common import attrs_default, Image
+from .. import _util
 
 from typing import Set
 

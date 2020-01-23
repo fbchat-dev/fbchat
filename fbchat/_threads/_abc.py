@@ -4,16 +4,7 @@ import collections
 import datetime
 import enum
 from .._common import log, attrs_default, Image
-from .. import (
-    _util,
-    _exception,
-    _session,
-    _graphql,
-    _attachment,
-    _file,
-    _plan,
-    _message,
-)
+from .. import _util, _exception, _session, _graphql, _models
 from typing import MutableMapping, Mapping, Any, Iterable, Tuple, Optional
 
 
@@ -111,7 +102,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
     def send_text(
         self,
         text: str,
-        mentions: Iterable["_message.Mention"] = None,
+        mentions: Iterable["_models.Mention"] = None,
         files: Iterable[Tuple[str, str]] = None,
         reply_to_id: str = None,
     ) -> str:
@@ -149,7 +140,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
         return self.session._do_send_request(data)
 
-    def send_emoji(self, emoji: str, size: "_message.EmojiSize") -> str:
+    def send_emoji(self, emoji: str, size: "_models.EmojiSize") -> str:
         """Send an emoji to the thread.
 
         Args:
@@ -316,14 +307,14 @@ class ThreadABC(metaclass=abc.ABCMeta):
         # For now, we just create a new thread:
         thread = self.__class__(session=self.session, id=self.id)
         snippets = [
-            _message.MessageSnippet._parse(thread, snippet)
+            _models.MessageSnippet._parse(thread, snippet)
             for snippet in result["snippets"]
         ]
         return (result["num_total_snippets"], snippets)
 
     def search_messages(
         self, query: str, limit: int
-    ) -> Iterable["_message.MessageSnippet"]:
+    ) -> Iterable["_models.MessageSnippet"]:
         """Find and get message IDs by query.
 
         Warning! If someone send a message to the thread that matches the query, while
@@ -378,11 +369,11 @@ class ThreadABC(metaclass=abc.ABCMeta):
         # For now, we just create a new thread:
         thread = self.__class__(session=self.session, id=self.id)
         return [
-            _message.MessageData._from_graphql(thread, message, read_receipts)
+            _models.MessageData._from_graphql(thread, message, read_receipts)
             for message in j["message_thread"]["messages"]["nodes"]
         ]
 
-    def fetch_messages(self, limit: Optional[int]) -> Iterable["_message.Message"]:
+    def fetch_messages(self, limit: Optional[int]) -> Iterable["_models.Message"]:
         """Fetch messages in a thread.
 
         The returned messages are ordered by most recent first.
@@ -437,9 +428,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
             node = edge["node"]
             type_ = node["__typename"]
             if type_ == "MessageImage":
-                rtn.append(_file.ImageAttachment._from_list(node))
+                rtn.append(_models.ImageAttachment._from_list(node))
             elif type_ == "MessageVideo":
-                rtn.append(_file.VideoAttachment._from_list(node))
+                rtn.append(_models.VideoAttachment._from_list(node))
             else:
                 log.warning("Unknown image type %s, data: %s", type_, edge)
                 rtn.append(None)
@@ -447,7 +438,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         # result["page_info"]["has_next_page"] is not correct when limit > 12
         return (result["page_info"]["end_cursor"], rtn)
 
-    def fetch_images(self, limit: Optional[int]) -> Iterable[_attachment.Attachment]:
+    def fetch_images(self, limit: Optional[int]) -> Iterable["_models.Attachment"]:
         """Fetch images/videos posted in the thread.
 
         Args:
@@ -618,7 +609,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         Example:
             >>> thread.create_plan(...)
         """
-        return _plan.Plan._create(self, name, at, location_name, location_id)
+        return _models.Plan._create(self, name, at, location_name, location_id)
 
     def create_poll(self, question: str, options=Mapping[str, bool]):
         """Create poll in a thread.

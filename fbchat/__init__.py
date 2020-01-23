@@ -39,20 +39,34 @@ from ._threads import (
     Page,
     PageData,
 )
-from ._message import EmojiSize, Mention, Message, MessageData
-from ._attachment import Attachment, UnsentMessage, ShareAttachment
-from ._sticker import Sticker
-from ._location import LocationAttachment, LiveLocationAttachment
-from ._file import FileAttachment, AudioAttachment, ImageAttachment, VideoAttachment
-from ._quick_reply import (
+
+# Models
+from ._models import (
+    Attachment,
+    UnsentMessage,
+    ShareAttachment,
+    LocationAttachment,
+    LiveLocationAttachment,
+    Sticker,
+    FileAttachment,
+    AudioAttachment,
+    ImageAttachment,
+    VideoAttachment,
+    Poll,
+    PollOption,
+    GuestStatus,
+    Plan,
+    PlanData,
     QuickReply,
     QuickReplyText,
     QuickReplyLocation,
     QuickReplyPhoneNumber,
     QuickReplyEmail,
+    EmojiSize,
+    Mention,
+    Message,
+    MessageData,
 )
-from ._poll import Poll, PollOption
-from ._plan import GuestStatus, Plan, PlanData
 
 # Events
 from ._events import (

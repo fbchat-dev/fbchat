@@ -2,7 +2,7 @@ import attr
 import datetime
 from ._abc import ThreadABC
 from .._common import attrs_default, Image
-from .. import _session, _plan
+from .. import _session, _models
 
 
 @attrs_default
@@ -40,7 +40,7 @@ class PageData(Page):
     #: Number of messages in the thread
     message_count = attr.ib(None, type=int)
     #: Set `Plan`
-    plan = attr.ib(None, type=_plan.PlanData)
+    plan = attr.ib(None, type="_models.PlanData")
     #: The page's custom URL
     url = attr.ib(None, type=str)
     #: The name of the page's location city
@@ -60,7 +60,7 @@ class PageData(Page):
             data["city"] = {}
         plan = None
         if data.get("event_reminders") and data["event_reminders"].get("nodes"):
-            plan = _plan.PlanData._from_graphql(
+            plan = _models.PlanData._from_graphql(
                 session, data["event_reminders"]["nodes"][0]
             )
 

@@ -2,7 +2,7 @@ import attr
 import datetime
 from ._abc import ThreadABC
 from .._common import log, attrs_default, Image
-from .. import _util, _session, _plan
+from .. import _util, _session, _models
 
 
 GENDERS = {
@@ -114,7 +114,7 @@ class UserData(User):
     #: Number of messages in the thread
     message_count = attr.ib(None, type=int)
     #: Set `Plan`
-    plan = attr.ib(None, type=_plan.PlanData)
+    plan = attr.ib(None, type="_models.PlanData")
     #: The profile URL. ``None`` for Messenger-only users
     url = attr.ib(None, type=str)
     #: The user's gender
@@ -145,7 +145,7 @@ class UserData(User):
 
         plan = None
         if data.get("event_reminders") and data["event_reminders"].get("nodes"):
-            plan = _plan.PlanData._from_graphql(
+            plan = _models.PlanData._from_graphql(
                 session, data["event_reminders"]["nodes"][0]
             )
 
@@ -180,7 +180,7 @@ class UserData(User):
 
         plan = None
         if data["event_reminders"]["nodes"]:
-            plan = _plan.PlanData._from_graphql(
+            plan = _models.PlanData._from_graphql(
                 session, data["event_reminders"]["nodes"][0]
             )
 

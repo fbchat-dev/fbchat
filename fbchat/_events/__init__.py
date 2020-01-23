@@ -6,7 +6,7 @@ from ._client_payload import *
 from ._delta_class import *
 from ._delta_type import *
 
-from .. import _exception, _util, _threads
+from .. import _exception, _threads
 
 from typing import Mapping
 

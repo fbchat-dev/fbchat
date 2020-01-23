@@ -1,10 +1,10 @@
-from fbchat._quick_reply import (
+from fbchat import (
     QuickReplyText,
     QuickReplyLocation,
     QuickReplyPhoneNumber,
     QuickReplyEmail,
-    graphql_to_quick_reply,
 )
+from fbchat._models._quick_reply import graphql_to_quick_reply
 
 
 def test_parse_minimal():

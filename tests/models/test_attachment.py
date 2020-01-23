@@ -1,7 +1,8 @@
 import pytest
 import datetime
 import fbchat
-from fbchat._attachment import UnsentMessage, ShareAttachment
+from fbchat import UnsentMessage, ShareAttachment
+from fbchat._models._message import graphql_to_extensible_attachment
 
 
 def test_parse_unsent_message():
@@ -25,9 +26,7 @@ def test_parse_unsent_message():
         },
         "genie_attachment": {"genie_message": None},
     }
-    assert UnsentMessage(
-        id="ee.mid.$xyz"
-    ) == fbchat._message.graphql_to_extensible_attachment(data)
+    assert UnsentMessage(id="ee.mid.$xyz") == graphql_to_extensible_attachment(data)
 
 
 def test_share_from_graphql_minimal():

@@ -1,6 +1,6 @@
 import attr
-from ._common import attrs_default
 from ._attachment import Attachment
+from .._common import attrs_default
 
 from typing import Any
 

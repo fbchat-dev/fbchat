@@ -1,6 +1,6 @@
 import attr
-from ._common import attrs_default, Image
-from . import _util
+from .._common import attrs_default, Image
+from .. import _util
 
 from typing import Sequence
 

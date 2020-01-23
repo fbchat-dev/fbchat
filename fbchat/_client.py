@@ -2,7 +2,7 @@ import attr
 import datetime
 
 from ._common import log, attrs_default
-from . import _exception, _util, _graphql, _session, _threads, _message
+from . import _exception, _util, _graphql, _session, _threads, _models
 
 from typing import Sequence, Iterable, Tuple, Optional, Set
 
@@ -495,7 +495,7 @@ class Client:
         data = self._get_private_data()
         return [j["display_email"] for j in data["all_emails"]]
 
-    def mark_as_delivered(self, message: _message.Message):
+    def mark_as_delivered(self, message: _models.Message):
         """Mark a message as delivered.
 
         Warning:
@@ -605,7 +605,7 @@ class Client:
             "/ajax/mercury/delete_threads.php?dpr=1", data_delete
         )
 
-    def delete_messages(self, messages: Iterable[_message.Message]):
+    def delete_messages(self, messages: Iterable[_models.Message]):
         """Bulk delete specified messages.
 
         Args:

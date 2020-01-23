@@ -1,4 +1,4 @@
-from fbchat._poll import Poll, PollOption
+from fbchat import Poll, PollOption
 
 
 def test_poll_option_from_graphql_unvoted():

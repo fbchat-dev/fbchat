@@ -1,6 +1,6 @@
 import attr
-from ._common import attrs_default, Image
 from ._attachment import Attachment
+from .._common import attrs_default, Image
 
 
 @attrs_default

@@ -1,7 +1,7 @@
 import attr
 import abc
 from .._common import kw_only
-from .. import _exception, _util, _threads, _message
+from .. import _exception, _util, _threads
 
 from typing import Any
 

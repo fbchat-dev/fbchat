@@ -1,5 +1,5 @@
 import datetime
-from fbchat._plan import GuestStatus, PlanData
+from fbchat import GuestStatus, PlanData
 
 
 def test_plan_properties(session):

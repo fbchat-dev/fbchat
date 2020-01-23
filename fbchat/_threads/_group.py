@@ -3,7 +3,7 @@ import datetime
 from ._abc import ThreadABC
 from . import _user
 from .._common import attrs_default, Image
-from .. import _util, _session, _graphql, _plan
+from .. import _util, _session, _graphql, _models
 from typing import Sequence, Iterable, Set, Mapping
 
 
@@ -184,7 +184,7 @@ class GroupData(Group):
     #: Number of messages in the group
     message_count = attr.ib(None, type=int)
     #: Set `Plan`
-    plan = attr.ib(None, type=_plan.PlanData)
+    plan = attr.ib(None, type="_models.PlanData")
     #: The group thread's participant user ids
     participants = attr.ib(factory=set, type=Set[str])
     #: A dictionary, containing user nicknames mapped to their IDs
@@ -214,7 +214,7 @@ class GroupData(Group):
             )
         plan = None
         if data.get("event_reminders") and data["event_reminders"].get("nodes"):
-            plan = _plan.PlanData._from_graphql(
+            plan = _models.PlanData._from_graphql(
                 session, data["event_reminders"]["nodes"][0]
             )
 

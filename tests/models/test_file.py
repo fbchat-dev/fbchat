@@ -1,13 +1,7 @@
 import datetime
 import fbchat
-from fbchat._file import (
-    FileAttachment,
-    AudioAttachment,
-    ImageAttachment,
-    VideoAttachment,
-    graphql_to_attachment,
-    graphql_to_subattachment,
-)
+from fbchat import FileAttachment, AudioAttachment, ImageAttachment, VideoAttachment
+from fbchat._models._file import graphql_to_attachment, graphql_to_subattachment
 
 
 def test_imageattachment_from_list():
