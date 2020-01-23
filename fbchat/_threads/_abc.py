@@ -65,6 +65,16 @@ class ThreadABC(metaclass=abc.ABCMeta):
     # We won't support those use cases, it'll make for a confusing API!
     # If we absolutely need to in the future, we can always add extra functionality
 
+    @abc.abstractmethod
+    def _copy(self) -> "ThreadABC":
+        """It may or may not be a good idea to attach the current thread to new objects.
+
+        So for now, we use this method to create a new thread.
+
+        This should return the minimal representation of the thread (e.g. not UserData).
+        """
+        raise NotImplementedError
+
     def wave(self, first: bool = True) -> str:
         """Wave hello to the thread.
 
@@ -289,9 +299,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         if not result:
             return (0, [])
 
-        # TODO: May or may not be a good idea to attach the current thread?
-        # For now, we just create a new thread:
-        thread = self.__class__(session=self.session, id=self.id)
+        thread = self._copy()
         snippets = [
             _models.MessageSnippet._parse(thread, snippet)
             for snippet in result["snippets"]
@@ -351,9 +359,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
         read_receipts = j["message_thread"]["read_receipts"]["nodes"]
 
-        # TODO: May or may not be a good idea to attach the current thread?
-        # For now, we just create a new thread:
-        thread = self.__class__(session=self.session, id=self.id)
+        thread = self._copy()
         return [
             _models.MessageData._from_graphql(thread, message, read_receipts)
             for message in j["message_thread"]["messages"]["nodes"]
@@ -779,3 +785,6 @@ class Thread(ThreadABC):
             "The method you called is not supported on raw Thread objects."
             " Please use an appropriate User/Group/Page object instead!"
         )
+
+    def _copy(self) -> "Thread":
+        return Thread(session=self.session, id=self.id)

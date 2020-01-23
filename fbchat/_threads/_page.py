@@ -23,6 +23,9 @@ class Page(ThreadABC):
     def _to_send_data(self):
         return {"other_user_fbid": self.id}
 
+    def _copy(self) -> "Page":
+        return Page(session=self.session, id=self.id)
+
 
 @attrs_default
 class PageData(Page):

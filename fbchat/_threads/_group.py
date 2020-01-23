@@ -23,6 +23,9 @@ class Group(ThreadABC):
     def _to_send_data(self):
         return {"thread_fbid": self.id}
 
+    def _copy(self) -> "Group":
+        return Group(session=self.session, id=self.id)
+
     def add_participants(self, user_ids: Iterable[str]):
         """Add users to the group.
 

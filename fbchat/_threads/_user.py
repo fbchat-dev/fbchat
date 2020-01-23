@@ -55,6 +55,9 @@ class User(ThreadABC):
             "specific_to_list[0]": "fbid:{}".format(self.id),
         }
 
+    def _copy(self) -> "User":
+        return User(session=self.session, id=self.id)
+
     def confirm_friend_request(self):
         """Confirm a friend request, adding the user to your friend list.
 
