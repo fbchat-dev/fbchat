@@ -13,6 +13,12 @@ import os
 
 def fixup_module_metadata(namespace):
     def fix_one(qualname, name, obj):
+        # Custom extension, to handle classmethods, staticmethods and properties
+        if isinstance(obj, (classmethod, staticmethod)):
+            obj = obj.__func__
+        if isinstance(obj, property):
+            obj = obj.fget
+
         mod = getattr(obj, "__module__", None)
         if mod is not None and mod.startswith("fbchat."):
             obj.__module__ = "fbchat"
