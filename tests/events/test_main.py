@@ -6,7 +6,7 @@ from fbchat import (
     Message,
     ParseError,
     UnknownEvent,
-    Typing,
+    TypingStatus,
     FriendRequest,
     Presence,
     ReactionEvent,
@@ -68,7 +68,7 @@ def test_t_ms_full(session):
 def test_thread_typing(session):
     data = {"sender_fbid": 1234, "state": 0, "type": "typ", "thread": "4321"}
     (event,) = parse_events(session, "/thread_typing", data)
-    assert event == Typing(
+    assert event == TypingStatus(
         author=User(session=session, id="1234"),
         thread=Group(session=session, id="4321"),
         status=False,
@@ -78,7 +78,7 @@ def test_thread_typing(session):
 def test_orca_typing_notifications(session):
     data = {"type": "typ", "sender_fbid": 1234, "state": 1}
     (event,) = parse_events(session, "/orca_typing_notifications", data)
-    assert event == Typing(
+    assert event == TypingStatus(
         author=User(session=session, id="1234"),
         thread=User(session=session, id="1234"),
         status=True,

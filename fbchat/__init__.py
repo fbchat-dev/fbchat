@@ -107,7 +107,7 @@ from ._events import (
     PlanDeleted,
     PlanResponded,
     # __init__
-    Typing,
+    TypingStatus,
     FriendRequest,
     Presence,
 )

@@ -11,20 +11,20 @@ from typing import Mapping
 
 
 @attrs_event
-class Typing(ThreadEvent):
+class TypingStatus(ThreadEvent):
     """Somebody started/stopped typing in a thread."""
 
     #: ``True`` if the user started typing, ``False`` if they stopped
     status = attr.ib(type=bool)
 
     @classmethod
-    def _parse_orca(cls, session, data):
+    def _from_orca(cls, session, data):
         author = _threads.User(session=session, id=str(data["sender_fbid"]))
         status = data["state"] == 1
         return cls(author=author, thread=author, status=status)
 
     @classmethod
-    def _parse_thread_typing(cls, session, data):
+    def _from_thread_typing(cls, session, data):
         author = _threads.User(session=session, id=str(data["sender_fbid"]))
         thread = _threads.Group(session=session, id=str(data["thread"]))
         status = data["state"] == 1
@@ -89,10 +89,10 @@ def parse_events(session, topic, data):
                     ) from e
 
         elif topic == "/thread_typing":
-            yield Typing._parse_thread_typing(session, data)
+            yield TypingStatus._from_thread_typing(session, data)
 
         elif topic == "/orca_typing_notifications":
-            yield Typing._parse_orca(session, data)
+            yield TypingStatus._from_orca(session, data)
 
         elif topic == "/legacy_web":
             if data["type"] == "jewel_requests_add":

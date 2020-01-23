@@ -51,8 +51,8 @@ if isinstance(thread, fbchat.Group):
 # Will change the nickname of the user `<user id>` to `<new nickname>`
 thread.set_nickname(fbchat.User(session=session, id="<user id>"), "<new nickname>")
 
-# Will set the typing status of the thread
-thread.start_typing()
+# Will start typing in the thread
+thread.set_typing(True)
 
 # Will change the thread color to #0084ff
 thread.set_color("#0084ff")

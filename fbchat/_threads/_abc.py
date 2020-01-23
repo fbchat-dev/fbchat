@@ -3,7 +3,7 @@ import attr
 import collections
 import datetime
 from .._common import log, attrs_default
-from .. import _util, _exception, _session, _graphql, _models
+from .. import _util, _exception, _session, _graphql, _events, _models
 from typing import MutableMapping, Mapping, Any, Iterable, Tuple, Optional
 
 
@@ -563,31 +563,32 @@ class ThreadABC(metaclass=abc.ABCMeta):
         if not j.get("success"):
             raise _exception.ExternalError("Failed forwarding attachment", j["error"])
 
-    def _set_typing(self, typing):
+    def set_typing(self, status: bool) -> "_events.TypingStatus":
+        """Set the current user's typing status in the thread.
+
+        Examples:
+            Start typing.
+
+            >>> thread.set_typing(True)
+
+            Stop typing.
+
+            >>> thread.set_typing(False)
+        """
+        from . import _user
+
         data = {
-            "typ": "1" if typing else "0",
+            "typ": "1" if status else "0",
             "thread": self.id,
-            # TODO: This
-            # "to": self.id if isinstance(self, _user.User) else "",
+            # TODO: Do this in a better way
+            # Also not sure what to do about pages?
+            "to": self.id if isinstance(self, _user.User) else "",
             "source": "mercury-chat",
         }
         j = self.session._payload_post("/ajax/messaging/typ.php", data)
-
-    def start_typing(self):
-        """Set the current user to start typing in the thread.
-
-        Example:
-            >>> thread.start_typing()
-        """
-        self._set_typing(True)
-
-    def stop_typing(self):
-        """Set the current user to stop typing in the thread.
-
-        Example:
-            >>> thread.stop_typing()
-        """
-        self._set_typing(False)
+        return _events.TypingStatus(
+            author=self.session.user, thread=self._copy(), status=status
+        )
 
     def create_plan(
         self,
