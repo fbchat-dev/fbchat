@@ -3,8 +3,17 @@ import attr
 import collections
 import datetime
 import enum
-from ._common import log, attrs_default, Image
-from . import _util, _exception, _session, _graphql, _attachment, _file, _plan, _message
+from .._common import log, attrs_default, Image
+from .. import (
+    _util,
+    _exception,
+    _session,
+    _graphql,
+    _attachment,
+    _file,
+    _plan,
+    _message,
+)
 from typing import MutableMapping, Mapping, Any, Iterable, Tuple, Optional
 
 

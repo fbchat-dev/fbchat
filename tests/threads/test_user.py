@@ -1,7 +1,7 @@
 import pytest
 import datetime
 import fbchat
-from fbchat._user import UserData, ActiveStatus
+from fbchat import UserData, ActiveStatus
 
 
 def test_user_from_graphql(session):

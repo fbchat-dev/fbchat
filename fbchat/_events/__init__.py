@@ -6,7 +6,7 @@ from ._client_payload import *
 from ._delta_class import *
 from ._delta_type import *
 
-from .. import _exception, _util, _user, _group, _thread
+from .. import _exception, _util, _threads
 
 from typing import Mapping
 
@@ -20,15 +20,15 @@ class Typing(ThreadEvent):
 
     @classmethod
     def _parse_orca(cls, session, data):
-        author = _user.User(session=session, id=str(data["sender_fbid"]))
+        author = _threads.User(session=session, id=str(data["sender_fbid"]))
         status = data["state"] == 1
         return cls(author=author, thread=author, status=status)
 
     @classmethod
     def _parse(cls, session, data):
         # TODO: Rename this method
-        author = _user.User(session=session, id=str(data["sender_fbid"]))
-        thread = _group.Group(session=session, id=str(data["thread"]))
+        author = _threads.User(session=session, id=str(data["sender_fbid"]))
+        thread = _threads.Group(session=session, id=str(data["thread"]))
         status = data["state"] == 1
         return cls(author=author, thread=thread, status=status)
 
@@ -38,11 +38,11 @@ class FriendRequest(Event):
     """Somebody sent a friend request."""
 
     #: The user that sent the request
-    author = attr.ib(type=_user.User)
+    author = attr.ib(type="_threads.User")
 
     @classmethod
     def _parse(cls, session, data):
-        author = _user.User(session=session, id=str(data["from"]))
+        author = _threads.User(session=session, id=str(data["from"]))
         return cls(author=author)
 
 
@@ -56,14 +56,15 @@ class Presence(Event):
     # TODO: Document this better!
 
     #: User ids mapped to their active status
-    statuses = attr.ib(type=Mapping[str, _user.ActiveStatus])
+    statuses = attr.ib(type=Mapping[str, _threads.ActiveStatus])
     #: ``True`` if the list is fully updated and ``False`` if it's partially updated
     full = attr.ib(type=bool)
 
     @classmethod
     def _parse(cls, session, data):
         statuses = {
-            str(d["u"]): _user.ActiveStatus._from_orca_presence(d) for d in data["list"]
+            str(d["u"]): _threads.ActiveStatus._from_orca_presence(d)
+            for d in data["list"]
         }
         return cls(statuses=statuses, full=data["list_type"] == "full")
 

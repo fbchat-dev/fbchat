@@ -1,7 +1,7 @@
 import attr
 import abc
 from .._common import kw_only
-from .. import _exception, _util, _thread, _group, _user, _message
+from .. import _exception, _util, _threads, _message
 
 from typing import Any
 
@@ -38,9 +38,9 @@ class ThreadEvent(Event):
     """Represent an event that was done by a user/page in a thread."""
 
     #: The person who did the action
-    author = attr.ib(type=_user.User)  # Or Union[User, Page]?
+    author = attr.ib(type="_threads.User")  # Or Union[User, Page]?
     #: Thread that the action was done in
-    thread = attr.ib(type=_thread.ThreadABC)
+    thread = attr.ib(type="_threads.ThreadABC")
 
     @staticmethod
     def _get_thread(session, data):
@@ -48,15 +48,15 @@ class ThreadEvent(Event):
         key = data["threadKey"]
 
         if "threadFbId" in key:
-            return _group.Group(session=session, id=str(key["threadFbId"]))
+            return _threads.Group(session=session, id=str(key["threadFbId"]))
         elif "otherUserFbId" in key:
-            return _user.User(session=session, id=str(key["otherUserFbId"]))
+            return _threads.User(session=session, id=str(key["otherUserFbId"]))
         raise _exception.ParseError("Could not find thread data", data=data)
 
     @staticmethod
     def _parse_metadata(session, data):
         metadata = data["messageMetadata"]
-        author = _user.User(session=session, id=metadata["actorFbId"])
+        author = _threads.User(session=session, id=metadata["actorFbId"])
         thread = ThreadEvent._get_thread(session, metadata)
         at = _util.millis_to_datetime(int(metadata["timestamp"]))
         return author, thread, at

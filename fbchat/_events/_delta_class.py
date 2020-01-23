@@ -1,7 +1,7 @@
 import attr
 import datetime
 from ._common import attrs_event, Event, UnknownEvent, ThreadEvent
-from .. import _util, _user, _group, _thread, _message
+from .. import _util, _threads, _message
 
 from typing import Sequence, Optional
 
@@ -12,9 +12,9 @@ class PeopleAdded(ThreadEvent):
 
     # TODO: Add message id
 
-    thread = attr.ib(type=_group.Group)  # Set the correct type
+    thread = attr.ib(type="_threads.Group")  # Set the correct type
     #: The people who got added
-    added = attr.ib(type=Sequence[_user.User])
+    added = attr.ib(type=Sequence["_threads.User"])
     #: When the people were added
     at = attr.ib(type=datetime.datetime)
 
@@ -23,7 +23,7 @@ class PeopleAdded(ThreadEvent):
         author, thread, at = cls._parse_metadata(session, data)
         added = [
             # TODO: Parse user name
-            _user.User(session=session, id=x["userFbId"])
+            _threads.User(session=session, id=x["userFbId"])
             for x in data["addedParticipants"]
         ]
         return cls(author=author, thread=thread, added=added, at=at)
@@ -35,7 +35,7 @@ class PersonRemoved(ThreadEvent):
 
     # TODO: Add message id
 
-    thread = attr.ib(type=_group.Group)  # Set the correct type
+    thread = attr.ib(type="_threads.Group")  # Set the correct type
     #: Person who got removed
     removed = attr.ib(type=_message.Message)
     #: When the person were removed
@@ -44,7 +44,7 @@ class PersonRemoved(ThreadEvent):
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        removed = _user.User(session=session, id=data["leftParticipantFbId"])
+        removed = _threads.User(session=session, id=data["leftParticipantFbId"])
         return cls(author=author, thread=thread, removed=removed, at=at)
 
 
@@ -52,7 +52,7 @@ class PersonRemoved(ThreadEvent):
 class TitleSet(ThreadEvent):
     """Somebody changed a group's title."""
 
-    thread = attr.ib(type=_group.Group)  # Set the correct type
+    thread = attr.ib(type="_threads.Group")  # Set the correct type
     #: The new title
     title = attr.ib(type=str)
     #: When the title was set
@@ -77,7 +77,7 @@ class UnfetchedThreadEvent(Event):
     # TODO: Present this in a way that users can fetch the changed group photo easily
 
     #: The thread the message was sent to
-    thread = attr.ib(type=_thread.ThreadABC)
+    thread = attr.ib(type="_threads.ThreadABC")
     #: The message
     message = attr.ib(type=Optional[_message.Message])
 
@@ -103,7 +103,7 @@ class MessagesDelivered(ThreadEvent):
     def _parse(cls, session, data):
         thread = cls._get_thread(session, data)
         if "actorFbId" in data:
-            author = _user.User(session=session, id=data["actorFbId"])
+            author = _threads.User(session=session, id=data["actorFbId"])
         else:
             author = thread
         messages = [_message.Message(thread=thread, id=x) for x in data["messageIds"]]
@@ -116,22 +116,22 @@ class ThreadsRead(Event):
     """Somebody marked threads as read/seen."""
 
     #: The person who marked the threads as read
-    author = attr.ib(type=_thread.ThreadABC)
+    author = attr.ib(type="_threads.ThreadABC")
     #: The threads that were marked as read
-    threads = attr.ib(type=Sequence[_thread.ThreadABC])
+    threads = attr.ib(type=Sequence["_threads.ThreadABC"])
     #: When the threads were read
     at = attr.ib(type=datetime.datetime)
 
     @classmethod
     def _parse_read_receipt(cls, session, data):
-        author = _user.User(session=session, id=data["actorFbId"])
+        author = _threads.User(session=session, id=data["actorFbId"])
         thread = ThreadEvent._get_thread(session, data)
         at = _util.millis_to_datetime(int(data["actionTimestampMs"]))
         return cls(author=author, threads=[thread], at=at)
 
     @classmethod
     def _parse(cls, session, data):
-        author = _user.User(session=session, id=session.user_id)
+        author = _threads.User(session=session, id=session.user_id)
         threads = [
             ThreadEvent._get_thread(session, {"threadKey": x})
             for x in data["threadKeys"]
@@ -169,14 +169,14 @@ class ThreadFolder(Event):
     # TODO: Finish this
 
     #: The created thread
-    thread = attr.ib(type=_thread.ThreadABC)
+    thread = attr.ib(type="_threads.ThreadABC")
     #: The folder/location
-    folder = attr.ib(type=_thread.ThreadLocation)
+    folder = attr.ib(type=_threads.ThreadLocation)
 
     @classmethod
     def _parse(cls, session, data):
         thread = ThreadEvent._get_thread(session, data)
-        folder = _thread.ThreadLocation._parse(data["folder"])
+        folder = _threads.ThreadLocation._parse(data["folder"])
         return cls(thread=thread, folder=folder)
 
 
@@ -188,7 +188,7 @@ def parse_delta(session, data):
         return PersonRemoved._parse(session, data)
     elif class_ == "MarkFolderSeen":
         # TODO: Finish this
-        folders = [_thread.ThreadLocation._parse(folder) for folder in data["folders"]]
+        folders = [_threads.ThreadLocation._parse(folder) for folder in data["folders"]]
         at = _util.millis_to_datetime(int(data["timestamp"]))
         return None
     elif class_ == "ThreadName":

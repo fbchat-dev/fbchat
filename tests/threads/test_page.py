@@ -1,5 +1,5 @@
 import fbchat
-from fbchat._page import PageData
+from fbchat import PageData
 
 
 def test_page_from_graphql(session):

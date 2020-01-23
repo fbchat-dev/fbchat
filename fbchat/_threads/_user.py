@@ -1,7 +1,8 @@
 import attr
 import datetime
-from ._common import log, attrs_default, Image
-from . import _util, _session, _plan, _thread
+from ._abc import ThreadABC
+from .._common import log, attrs_default, Image
+from .. import _util, _session, _plan
 
 
 GENDERS = {
@@ -35,7 +36,7 @@ GENDERS = {
 
 
 @attrs_default
-class User(_thread.ThreadABC):
+class User(ThreadABC):
     """Represents a Facebook user. Implements `ThreadABC`.
 
     Example:

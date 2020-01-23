@@ -1,7 +1,7 @@
 import attr
 import datetime
 from ._common import attrs_event, UnknownEvent, ThreadEvent
-from .. import _exception, _util, _user, _message
+from .. import _exception, _util, _threads, _message
 
 from typing import Optional
 
@@ -25,7 +25,7 @@ class ReactionEvent(ThreadEvent):
     def _parse(cls, session, data):
         thread = cls._get_thread(session, data)
         return cls(
-            author=_user.User(session=session, id=str(data["userId"])),
+            author=_threads.User(session=session, id=str(data["userId"])),
             thread=thread,
             message=_message.Message(thread=thread, id=data["messageId"]),
             reaction=data["reaction"] if data["action"] == 0 else None,
@@ -40,7 +40,7 @@ class UserStatusEvent(ThreadEvent):
     @classmethod
     def _parse(cls, session, data):
         return cls(
-            author=_user.User(session=session, id=str(data["actorFbid"])),
+            author=_threads.User(session=session, id=str(data["actorFbid"])),
             thread=cls._get_thread(session, data),
             blocked=not data["canViewerReply"],
         )
@@ -59,7 +59,7 @@ class LiveLocationEvent(ThreadEvent):
         thread = cls._get_thread(session, data)
         for location_data in data["messageLiveLocations"]:
             message = _message.Message(thread=thread, id=data["messageId"])
-            author = _user.User(session=session, id=str(location_data["senderId"]))
+            author = _threads.User(session=session, id=str(location_data["senderId"]))
             location = _location.LiveLocationAttachment._from_pull(location_data)
 
         return None
@@ -78,7 +78,7 @@ class UnsendEvent(ThreadEvent):
     def _parse(cls, session, data):
         thread = cls._get_thread(session, data)
         return cls(
-            author=_user.User(session=session, id=str(data["senderID"])),
+            author=_threads.User(session=session, id=str(data["senderID"])),
             thread=thread,
             message=_message.Message(thread=thread, id=data["messageID"]),
             at=_util.millis_to_datetime(data["deletionTimestamp"]),
@@ -99,7 +99,7 @@ class MessageReplyEvent(ThreadEvent):
         metadata = data["message"]["messageMetadata"]
         thread = cls._get_thread(session, metadata)
         return cls(
-            author=_user.User(session=session, id=str(metadata["actorFbId"])),
+            author=_threads.User(session=session, id=str(metadata["actorFbId"])),
             thread=thread,
             message=_message.MessageData._from_reply(thread, data["message"]),
             replied_to=_message.MessageData._from_reply(

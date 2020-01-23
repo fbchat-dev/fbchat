@@ -1,11 +1,12 @@
 import attr
 import datetime
-from ._common import attrs_default, Image
-from . import _session, _plan, _thread
+from ._abc import ThreadABC
+from .._common import attrs_default, Image
+from .. import _session, _plan
 
 
 @attrs_default
-class Page(_thread.ThreadABC):
+class Page(ThreadABC):
     """Represents a Facebook page. Implements `ThreadABC`.
 
     Example:

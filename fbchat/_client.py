@@ -2,17 +2,7 @@ import attr
 import datetime
 
 from ._common import log, attrs_default
-from . import (
-    _exception,
-    _util,
-    _graphql,
-    _session,
-    _user,
-    _page,
-    _group,
-    _thread,
-    _message,
-)
+from . import _exception, _util, _graphql, _session, _threads, _message
 
 from typing import Sequence, Iterable, Tuple, Optional, Set
 
@@ -32,7 +22,7 @@ class Client:
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
 
-    def fetch_users(self) -> Sequence[_user.UserData]:
+    def fetch_users(self) -> Sequence[_threads.UserData]:
         """Fetch users the client is currently chatting with.
 
         This is very close to your friend list, with the follow differences:
@@ -60,10 +50,10 @@ class Client:
             if data["type"] not in ["user", "friend"] or data["id"] in ["0", 0]:
                 log.warning("Invalid user data %s", data)
                 continue  # Skip invalid users
-            users.append(_user.UserData._from_all_fetch(self.session, data))
+            users.append(_threads.UserData._from_all_fetch(self.session, data))
         return users
 
-    def search_for_users(self, name: str, limit: int) -> Iterable[_user.UserData]:
+    def search_for_users(self, name: str, limit: int) -> Iterable[_threads.UserData]:
         """Find and get users by their name.
 
         The returned users are ordered by relevance.
@@ -85,11 +75,11 @@ class Client:
         )
 
         return (
-            _user.UserData._from_graphql(self.session, node)
+            _threads.UserData._from_graphql(self.session, node)
             for node in j[name]["users"]["nodes"]
         )
 
-    def search_for_pages(self, name: str, limit: int) -> Iterable[_page.PageData]:
+    def search_for_pages(self, name: str, limit: int) -> Iterable[_threads.PageData]:
         """Find and get pages by their name.
 
         The returned pages are ordered by relevance.
@@ -111,11 +101,11 @@ class Client:
         )
 
         return (
-            _page.PageData._from_graphql(self.session, node)
+            _threads.PageData._from_graphql(self.session, node)
             for node in j[name]["pages"]["nodes"]
         )
 
-    def search_for_groups(self, name: str, limit: int) -> Iterable[_group.GroupData]:
+    def search_for_groups(self, name: str, limit: int) -> Iterable[_threads.GroupData]:
         """Find and get group threads by their name.
 
         The returned groups are ordered by relevance.
@@ -137,11 +127,11 @@ class Client:
         )
 
         return (
-            _group.GroupData._from_graphql(self.session, node)
+            _threads.GroupData._from_graphql(self.session, node)
             for node in j["viewer"]["groups"]["nodes"]
         )
 
-    def search_for_threads(self, name: str, limit: int) -> Iterable[_thread.ThreadABC]:
+    def search_for_threads(self, name: str, limit: int) -> Iterable[_threads.ThreadABC]:
         """Find and get threads by their name.
 
         The returned threads are ordered by relevance.
@@ -165,12 +155,12 @@ class Client:
 
         for node in j[name]["threads"]["nodes"]:
             if node["__typename"] == "User":
-                yield _user.UserData._from_graphql(self.session, node)
+                yield _threads.UserData._from_graphql(self.session, node)
             elif node["__typename"] == "MessageThread":
                 # MessageThread => Group thread
-                yield _group.GroupData._from_graphql(self.session, node)
+                yield _threads.GroupData._from_graphql(self.session, node)
             elif node["__typename"] == "Page":
-                yield _page.PageData._from_graphql(self.session, node)
+                yield _threads.PageData._from_graphql(self.session, node)
             elif node["__typename"] == "Group":
                 # We don't handle Facebook "Groups"
                 pass
@@ -189,17 +179,17 @@ class Client:
         for node in j["graphql_payload"]["message_threads"]:
             type_ = node["thread_type"]
             if type_ == "GROUP":
-                thread = _group.Group(
+                thread = _threads.Group(
                     session=self.session, id=node["thread_key"]["thread_fbid"]
                 )
             elif type_ == "ONE_TO_ONE":
-                thread = _thread.Thread(
+                thread = _threads.Thread(
                     session=self.session, id=node["thread_key"]["other_user_id"]
                 )
                 # if True:  # TODO: This check!
-                #     thread = _user.UserData._from_graphql(self.session, node)
+                #     thread = _threads.UserData._from_graphql(self.session, node)
                 # else:
-                #     thread = _page.PageData._from_graphql(self.session, node)
+                #     thread = _threads.PageData._from_graphql(self.session, node)
             else:
                 thread = None
                 log.warning("Unknown thread type %s, data: %s", type_, node)
@@ -213,7 +203,7 @@ class Client:
 
     def search_messages(
         self, query: str, limit: Optional[int]
-    ) -> Iterable[Tuple[_thread.ThreadABC, int]]:
+    ) -> Iterable[Tuple[_threads.ThreadABC, int]]:
         """Search for messages in all threads.
 
         Intended to be used alongside `ThreadABC.search_messages`
@@ -285,7 +275,7 @@ class Client:
         log.debug(entries)
         return entries
 
-    def fetch_thread_info(self, ids: Iterable[str]) -> Iterable[_thread.ThreadABC]:
+    def fetch_thread_info(self, ids: Iterable[str]) -> Iterable[_threads.ThreadABC]:
         """Fetch threads' info from IDs, unordered.
 
         Warning:
@@ -336,7 +326,7 @@ class Client:
             entry = entry["message_thread"]
             if entry.get("thread_type") == "GROUP":
                 _id = entry["thread_key"]["thread_fbid"]
-                yield _group.GroupData._from_graphql(self.session, entry)
+                yield _threads.GroupData._from_graphql(self.session, entry)
             elif entry.get("thread_type") == "ONE_TO_ONE":
                 _id = entry["thread_key"]["other_user_id"]
                 if pages_and_users.get(_id) is None:
@@ -345,9 +335,9 @@ class Client:
                     )
                 entry.update(pages_and_users[_id])
                 if "first_name" in entry:
-                    yield _user.UserData._from_graphql(self.session, entry)
+                    yield _threads.UserData._from_graphql(self.session, entry)
                 else:
-                    yield _page.PageData._from_graphql(self.session, entry)
+                    yield _threads.PageData._from_graphql(self.session, entry)
             else:
                 raise _exception.ParseError("Unknown thread type", data=entry)
 
@@ -367,9 +357,9 @@ class Client:
         for node in j["viewer"]["message_threads"]["nodes"]:
             _type = node.get("thread_type")
             if _type == "GROUP":
-                rtn.append(_group.GroupData._from_graphql(self.session, node))
+                rtn.append(_threads.GroupData._from_graphql(self.session, node))
             elif _type == "ONE_TO_ONE":
-                rtn.append(_user.UserData._from_thread_fetch(self.session, node))
+                rtn.append(_threads.UserData._from_thread_fetch(self.session, node))
             else:
                 rtn.append(None)
                 log.warning("Unknown thread type: %s, data: %s", _type, node)
@@ -378,8 +368,8 @@ class Client:
     def fetch_threads(
         self,
         limit: Optional[int],
-        location: _thread.ThreadLocation = _thread.ThreadLocation.INBOX,
-    ) -> Iterable[_thread.ThreadABC]:
+        location: _threads.ThreadLocation = _threads.ThreadLocation.INBOX,
+    ) -> Iterable[_threads.ThreadABC]:
         """Fetch the client's thread list.
 
         Args:
@@ -422,7 +412,7 @@ class Client:
             if not before:
                 raise ValueError("Too many unknown threads.")
 
-    def fetch_unread(self) -> Sequence[_thread.ThreadABC]:
+    def fetch_unread(self) -> Sequence[_threads.ThreadABC]:
         """Fetch unread threads.
 
         Warning:
@@ -439,13 +429,14 @@ class Client:
         result = j["unread_thread_fbids"][0]
         # TODO: Parse Pages?
         return [
-            _group.Group(session=self.session, id=id_) for id_ in result["thread_fbids"]
+            _threads.Group(session=self.session, id=id_)
+            for id_ in result["thread_fbids"]
         ] + [
-            _user.User(session=self.session, id=id_)
+            _threads.User(session=self.session, id=id_)
             for id_ in result["other_user_fbids"]
         ]
 
-    def fetch_unseen(self) -> Sequence[_thread.ThreadABC]:
+    def fetch_unseen(self) -> Sequence[_threads.ThreadABC]:
         """Fetch unseen / new threads.
 
         Warning:
@@ -456,9 +447,10 @@ class Client:
         result = j["unseen_thread_fbids"][0]
         # TODO: Parse Pages?
         return [
-            _group.Group(session=self.session, id=id_) for id_ in result["thread_fbids"]
+            _threads.Group(session=self.session, id=id_)
+            for id_ in result["thread_fbids"]
         ] + [
-            _user.User(session=self.session, id=id_)
+            _threads.User(session=self.session, id=id_)
             for id_ in result["other_user_fbids"]
         ]
 
@@ -529,7 +521,9 @@ class Client:
 
         j = self.session._payload_post("/ajax/mercury/change_read_status.php", data)
 
-    def mark_as_read(self, threads: Iterable[_thread.ThreadABC], at: datetime.datetime):
+    def mark_as_read(
+        self, threads: Iterable[_threads.ThreadABC], at: datetime.datetime
+    ):
         """Mark threads as read.
 
         All messages inside the specified threads will be marked as read.
@@ -541,7 +535,7 @@ class Client:
         return self._read_status(True, threads, at)
 
     def mark_as_unread(
-        self, threads: Iterable[_thread.ThreadABC], at: datetime.datetime
+        self, threads: Iterable[_threads.ThreadABC], at: datetime.datetime
     ):
         """Mark threads as unread.
 
@@ -560,7 +554,7 @@ class Client:
         )
 
     def move_threads(
-        self, location: _thread.ThreadLocation, threads: Iterable[_thread.ThreadABC]
+        self, location: _threads.ThreadLocation, threads: Iterable[_threads.ThreadABC]
     ):
         """Move threads to specified location.
 
@@ -568,10 +562,10 @@ class Client:
             location: INBOX, PENDING, ARCHIVED or OTHER
             threads: Threads to move
         """
-        if location == _thread.ThreadLocation.PENDING:
-            location = _thread.ThreadLocation.OTHER
+        if location == _threads.ThreadLocation.PENDING:
+            location = _threads.ThreadLocation.OTHER
 
-        if location == _thread.ThreadLocation.ARCHIVED:
+        if location == _threads.ThreadLocation.ARCHIVED:
             data_archive = {}
             data_unpin = {}
             for thread in threads:
@@ -587,9 +581,9 @@ class Client:
             data = {}
             for i, thread in enumerate(threads):
                 data["{}[{}]".format(location.name.lower(), i)] = thread.id
-            j = self.session._payload_post("/ajax/mercury/move_thread.php", data)
+            j = self.session._payload_post("/ajax/mercury/move_threads.php", data)
 
-    def delete_threads(self, threads: Iterable[_thread.ThreadABC]):
+    def delete_threads(self, threads: Iterable[_threads.ThreadABC]):
         """Bulk delete threads.
 
         Args:
@@ -608,7 +602,7 @@ class Client:
             "/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin
         )
         j_delete = self.session._payload_post(
-            "/ajax/mercury/delete_thread.php?dpr=1", data_delete
+            "/ajax/mercury/delete_threads.php?dpr=1", data_delete
         )
 
     def delete_messages(self, messages: Iterable[_message.Message]):

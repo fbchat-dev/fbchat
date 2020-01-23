@@ -12,7 +12,7 @@ from . import (
     _file,
     _quick_reply,
     _sticker,
-    _thread,
+    _threads,
 )
 from typing import Optional, Mapping, Sequence
 
@@ -94,7 +94,7 @@ class Message:
     """
 
     #: The thread that this message belongs to.
-    thread = attr.ib(type="_thread.ThreadABC")
+    thread = attr.ib(type="_threads.ThreadABC")
     #: The message ID.
     id = attr.ib(converter=str, type=str)
 

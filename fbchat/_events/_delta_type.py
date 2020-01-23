@@ -1,7 +1,7 @@
 import attr
 import datetime
 from ._common import attrs_event, Event, UnknownEvent, ThreadEvent
-from .. import _util, _user, _thread, _poll, _plan
+from .. import _util, _threads, _poll, _plan
 
 from typing import Sequence, Optional
 
@@ -18,7 +18,7 @@ class ColorSet(ThreadEvent):
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        color = _thread.ThreadABC._parse_color(data["untypedData"]["theme_color"])
+        color = _threads.ThreadABC._parse_color(data["untypedData"]["theme_color"])
         return cls(author=author, thread=thread, color=color, at=at)
 
 
@@ -52,7 +52,9 @@ class NicknameSet(ThreadEvent):
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        subject = _user.User(session=session, id=data["untypedData"]["participant_id"])
+        subject = _threads.User(
+            session=session, id=data["untypedData"]["participant_id"]
+        )
         nickname = data["untypedData"]["nickname"] or None  # None if ""
         return cls(
             author=author, thread=thread, subject=subject, nickname=nickname, at=at
@@ -64,14 +66,14 @@ class AdminsAdded(ThreadEvent):
     """Somebody added admins to a group."""
 
     #: The people that were set as admins
-    added = attr.ib(type=Sequence[_user.User])
+    added = attr.ib(type=Sequence["_threads.User"])
     #: When the admins were added
     at = attr.ib(type=datetime.datetime)
 
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        subject = _user.User(session=session, id=data["untypedData"]["TARGET_ID"])
+        subject = _threads.User(session=session, id=data["untypedData"]["TARGET_ID"])
         return cls(author=author, thread=thread, added=[subject], at=at)
 
 
@@ -80,14 +82,14 @@ class AdminsRemoved(ThreadEvent):
     """Somebody removed admins from a group."""
 
     #: The people that were removed as admins
-    removed = attr.ib(type=Sequence[_user.User])
+    removed = attr.ib(type=Sequence["_threads.User"])
     #: When the admins were removed
     at = attr.ib(type=datetime.datetime)
 
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        subject = _user.User(session=session, id=data["untypedData"]["TARGET_ID"])
+        subject = _threads.User(session=session, id=data["untypedData"]["TARGET_ID"])
         return cls(author=author, thread=thread, removed=[subject], at=at)
 
 

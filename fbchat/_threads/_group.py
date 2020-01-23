@@ -1,12 +1,14 @@
 import attr
 import datetime
-from ._common import attrs_default, Image
-from . import _util, _session, _graphql, _plan, _thread, _user
+from ._abc import ThreadABC
+from . import _user
+from .._common import attrs_default, Image
+from .. import _util, _session, _graphql, _plan
 from typing import Sequence, Iterable, Set, Mapping
 
 
 @attrs_default
-class Group(_thread.ThreadABC):
+class Group(ThreadABC):
     """Represents a Facebook group. Implements `ThreadABC`.
 
     Example:
@@ -245,7 +247,7 @@ class GroupData(Group):
 
 
 @attrs_default
-class NewGroup(_thread.ThreadABC):
+class NewGroup(ThreadABC):
     """Helper class to create new groups.
 
     TODO: Complete this!
@@ -256,7 +258,7 @@ class NewGroup(_thread.ThreadABC):
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
     #: The users that should be added to the group.
-    _users = attr.ib(type=Sequence[_user.User])
+    _users = attr.ib(type=Sequence["_user.User"])
 
     @property
     def id(self):
