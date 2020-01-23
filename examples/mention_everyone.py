@@ -20,17 +20,13 @@ def on_message(event):
         return
     if event.message.text.lower() == "@everyone":
         mentions = []
-        message = ''
+        message = ""
         # TODO: Get group's participants and add their mentions
         for user in participants:
-            username = ''  # TODO
-            message += username + ' '
+            username = ""  # TODO
+            message += username + " "
             mentions.append(
-                fbchat.Mention(
-                    thread.id,
-                    offset=len(message),
-                    lenght=len(username)
-                )
+                fbchat.Mention(thread.id, offset=len(message), lenght=len(username))
             )
         thread.send_text(message, mentions=mentions)
 
