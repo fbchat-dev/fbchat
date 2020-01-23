@@ -29,7 +29,7 @@ from fbchat import (
     PlanDeleted,
     PlanResponded,
 )
-from fbchat._delta_type import parse_delta
+from fbchat._events._delta_type import parse_delta
 
 
 def test_color_set(session):

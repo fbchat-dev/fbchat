@@ -17,7 +17,7 @@ from fbchat import (
     MessageEvent,
     ThreadFolder,
 )
-from fbchat._delta_class import parse_delta
+from fbchat._events._delta_class import parse_delta
 
 
 def test_people_added(session):

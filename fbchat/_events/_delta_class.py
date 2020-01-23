@@ -1,7 +1,7 @@
 import attr
 import datetime
-from ._event_common import attrs_event, Event, UnknownEvent, ThreadEvent
-from . import _util, _user, _group, _thread, _message
+from ._common import attrs_event, Event, UnknownEvent, ThreadEvent
+from .. import _util, _user, _group, _thread, _message
 
 from typing import Sequence, Optional
 

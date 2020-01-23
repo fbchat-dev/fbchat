@@ -3,7 +3,7 @@ import random
 import paho.mqtt.client
 import requests
 from ._core import log, kw_only
-from . import _util, _exception, _session, _graphql, _event_common, _event
+from . import _util, _exception, _session, _graphql, _events
 
 from typing import Iterable, Optional
 
@@ -31,7 +31,7 @@ class Listener:
     _foreground = attr.ib(type=bool)
     _sequence_id = attr.ib(type=int)
     _sync_token = attr.ib(None, type=str)
-    _events = attr.ib(None, type=Optional[Iterable[_event_common.Event]])
+    _tmp_events = attr.ib(None, type=Optional[Iterable[_events.Event]])
 
     _HOST = "edge-chat.facebook.com"
 
@@ -147,7 +147,9 @@ class Listener:
 
         try:
             # TODO: Don't handle this in a callback
-            self._events = list(_event.parse_events(self.session, message.topic, j))
+            self._tmp_events = list(
+                _events.parse_events(self.session, message.topic, j)
+            )
         except _exception.ParseError:
             log.exception("Failed parsing MQTT data")
 
@@ -340,7 +342,7 @@ class Listener:
 
         return True  # Keep listening
 
-    def listen(self) -> Iterable[_event_common.Event]:
+    def listen(self) -> Iterable[_events.Event]:
         """Run the listening loop continually.
 
         Yields events when they arrive.
@@ -354,9 +356,9 @@ class Listener:
             ...     print(event)
         """
         while self._loop_once():
-            if self._events:
-                yield from self._events
-            self._events = None
+            if self._tmp_events:
+                yield from self._tmp_events
+            self._tmp_events = None
 
     def disconnect(self) -> None:
         """Disconnect the MQTT listener.
