@@ -362,7 +362,7 @@ class Session:
             return _graphql.response_to_json(r.text)
         else:
             text = _util.strip_json_cruft(r.text)
-            j = parse_json(text)
+            j = _util.parse_json(text)
             log.debug(j)
             return j
 
