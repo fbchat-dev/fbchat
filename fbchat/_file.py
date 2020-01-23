@@ -1,6 +1,6 @@
 import attr
 import datetime
-from ._core import attrs_default, Image
+from ._common import attrs_default, Image
 from . import _util
 from ._attachment import Attachment
 

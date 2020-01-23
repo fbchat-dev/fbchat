@@ -14,8 +14,8 @@ import logging as _logging
 _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 
 # The order of these is somewhat significant, e.g. User has to be imported after Thread!
-from . import _core, _util
-from ._core import Image
+from . import _common, _util
+from ._common import Image
 from ._exception import (
     FacebookError,
     HTTPError,

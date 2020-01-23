@@ -1,5 +1,5 @@
 import attr
-from ._core import attrs_default
+from ._common import attrs_default
 from . import _exception, _session
 from typing import Iterable, Sequence
 

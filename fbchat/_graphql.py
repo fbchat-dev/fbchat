@@ -1,6 +1,6 @@
 import json
 import re
-from ._core import log
+from ._common import log
 from . import _util, _exception
 
 # Shameless copy from https://stackoverflow.com/a/8730674

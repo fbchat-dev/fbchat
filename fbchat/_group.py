@@ -1,6 +1,6 @@
 import attr
 import datetime
-from ._core import attrs_default, Image
+from ._common import attrs_default, Image
 from . import _util, _session, _graphql, _plan, _thread, _user
 from typing import Sequence, Iterable, Set, Mapping
 

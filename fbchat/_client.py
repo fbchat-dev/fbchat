@@ -1,7 +1,7 @@
 import attr
 import datetime
 
-from ._core import log, attrs_default
+from ._common import log, attrs_default
 from . import (
     _exception,
     _util,

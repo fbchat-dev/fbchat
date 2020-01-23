@@ -1,5 +1,5 @@
 import attr
-from ._core import attrs_default, Image
+from ._common import attrs_default, Image
 from ._attachment import Attachment
 
 

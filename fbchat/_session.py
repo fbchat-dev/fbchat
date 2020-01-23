@@ -5,7 +5,7 @@ import requests
 import random
 import urllib.parse
 
-from ._core import log, kw_only
+from ._common import log, kw_only
 from . import _graphql, _util, _exception
 
 from typing import Optional, Tuple, Mapping, BinaryIO, Sequence, Iterable, Callable

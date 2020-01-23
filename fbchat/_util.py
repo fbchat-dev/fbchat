@@ -4,7 +4,7 @@ import time
 import random
 import urllib.parse
 
-from ._core import log
+from ._common import log
 from . import _exception
 
 from typing import Iterable, Optional, Any

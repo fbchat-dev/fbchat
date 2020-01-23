@@ -2,7 +2,7 @@ import attr
 import random
 import paho.mqtt.client
 import requests
-from ._core import log, kw_only
+from ._common import log, kw_only
 from . import _util, _exception, _session, _graphql, _events
 
 from typing import Iterable, Optional
