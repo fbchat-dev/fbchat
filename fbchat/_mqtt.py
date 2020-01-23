@@ -2,7 +2,7 @@ import attr
 import random
 import paho.mqtt.client
 import requests
-from ._core import log, attrs_default
+from ._core import log, kw_only
 from . import _util, _exception, _session, _graphql, _event_common, _event
 
 from typing import Iterable, Optional
@@ -21,7 +21,7 @@ def generate_session_id() -> int:
     return random.randint(1, 2 ** 53)
 
 
-@attrs_default
+@attr.s(slots=True, kw_only=kw_only, repr=False, eq=False)
 class Listener:
     """Helper, to listen for incoming Facebook events."""
 
@@ -34,6 +34,12 @@ class Listener:
     _events = attr.ib(None, type=Optional[Iterable[_event_common.Event]])
 
     _HOST = "edge-chat.facebook.com"
+
+    def __repr__(self) -> str:
+        # An alternative repr, to illustrate that you can't create the class directly
+        return "<fbchat.Listener session={} chat_on={} foreground={}>".format(
+            self.session, self._chat_on, self._foreground
+        )
 
     @classmethod
     def connect(cls, session: _session.Session, chat_on: bool, foreground: bool):
