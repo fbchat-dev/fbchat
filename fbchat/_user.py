@@ -36,7 +36,11 @@ GENDERS = {
 
 @attrs_default
 class User(_thread.ThreadABC):
-    """Represents a Facebook user. Implements `ThreadABC`."""
+    """Represents a Facebook user. Implements `ThreadABC`.
+
+    Example:
+        >>> user = fbchat.User(session=session, id="1234")
+    """
 
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
@@ -51,22 +55,38 @@ class User(_thread.ThreadABC):
         }
 
     def confirm_friend_request(self):
-        """Confirm a friend request, adding the user to your friend list."""
+        """Confirm a friend request, adding the user to your friend list.
+
+        Example:
+            >>> user.confirm_friend_request()
+        """
         data = {"to_friend": self.id, "action": "confirm"}
         j = self.session._payload_post("/ajax/add_friend/action.php?dpr=1", data)
 
     def remove_friend(self):
-        """Remove the user from the client's friend list."""
+        """Remove the user from the client's friend list.
+
+        Example:
+            >>> user.remove_friend()
+        """
         data = {"uid": self.id}
         j = self.session._payload_post("/ajax/profile/removefriendconfirm.php", data)
 
     def block(self):
-        """Block messages from the user."""
+        """Block messages from the user.
+
+        Example:
+            >>> user.block()
+        """
         data = {"fbid": self.id}
         j = self.session._payload_post("/messaging/block_messages/?dpr=1", data)
 
     def unblock(self):
-        """Unblock a previously blocked user."""
+        """Unblock a previously blocked user.
+
+        Example:
+            >>> user.unblock()
+        """
         data = {"fbid": self.id}
         j = self.session._payload_post("/messaging/unblock_messages/?dpr=1", data)
 

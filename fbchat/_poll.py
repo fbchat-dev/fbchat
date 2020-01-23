@@ -70,7 +70,15 @@ class Poll:
         )
 
     def fetch_options(self) -> Sequence[PollOption]:
-        """Fetch full list of `PollOption` objects on the poll."""
+        """Fetch all `PollOption` objects on the poll.
+
+        The result is ordered with options with the most votes first.
+
+        Example:
+            >>> options = poll.fetch_options()
+            >>> options[0].text
+            "An option"
+        """
         data = {"question_id": self.id}
         j = self.session._payload_post("/ajax/mercury/get_poll_options", data)
         return [PollOption._from_graphql(m) for m in j]
@@ -83,11 +91,11 @@ class Poll:
             new_options: New options to add
 
         Example:
-            options = poll.fetch_options()
-            # Add option
-            poll.set_votes([o.id for o in options], new_options=["New option"])
-            # Remove vote from option
-            poll.set_votes([o.id for o in options if o.text != "Option 1"])
+            >>> options = poll.fetch_options()
+            >>> # Add option
+            >>> poll.set_votes([o.id for o in options], new_options=["New option"])
+            >>> # Remove vote from option
+            >>> poll.set_votes([o.id for o in options if o.text != "Option 1"])
         """
         data = {"question_id": self.id}
 

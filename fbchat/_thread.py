@@ -84,6 +84,11 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
         Args:
             first: Whether to wave first or wave back
+
+        Example:
+            Wave back to the thread.
+
+            >>> thread.wave(False)
         """
         data = self._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
@@ -108,6 +113,10 @@ class ThreadABC(metaclass=abc.ABCMeta):
             mentions: Optional mentions
             files: Optional tuples, each containing an uploaded file's ID and mimetype
             reply_to_id: Optional message to reply to
+
+        Example:
+            >>> mention = fbchat.Mention(thread_id="1234", offset=5, length=2)
+            >>> thread.send_text("A message", mentions=[mention])
 
         Returns:
             The sent message
@@ -138,6 +147,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
             emoji: The emoji to send
             size: The size of the emoji
 
+        Example:
+            >>> thread.send_emoji("😀", size=fbchat.EmojiSize.LARGE)
+
         Returns:
             The sent message
         """
@@ -152,6 +164,11 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
         Args:
             sticker_id: ID of the sticker to send
+
+        Example:
+            Send a sticker with the id "1889713947839631"
+
+            >>> thread.send_sticker("1889713947839631")
 
         Returns:
             The sent message
@@ -175,6 +192,11 @@ class ThreadABC(metaclass=abc.ABCMeta):
         Args:
             latitude: The location latitude
             longitude: The location longitude
+
+        Example:
+            Send a location in London, United Kingdom.
+
+            >>> thread.send_location(51.5287718, -0.2416815)
         """
         self._send_location(True, latitude=latitude, longitude=longitude)
 
@@ -184,6 +206,11 @@ class ThreadABC(metaclass=abc.ABCMeta):
         Args:
             latitude: The location latitude
             longitude: The location longitude
+
+        Example:
+            Send a pinned location in Beijing, China.
+
+            >>> thread.send_location(39.9390731, 116.117273)
         """
         self._send_location(False, latitude=latitude, longitude=longitude)
 
@@ -191,6 +218,14 @@ class ThreadABC(metaclass=abc.ABCMeta):
         """Send files from file IDs to a thread.
 
         `files` should be a list of tuples, with a file's ID and mimetype.
+
+        Example:
+            Upload and send a video to a thread.
+
+            >>> with open("video.mp4", "rb") as f:
+            ...     files = session._upload([("video.mp4", f, "video/mp4")])
+            >>>
+            >>> thread.send_files(files=files)
         """
         return self.send_text(text=None, files=files)
 
@@ -285,11 +320,20 @@ class ThreadABC(metaclass=abc.ABCMeta):
         Warning! If someone send a message to the thread that matches the query, while
         we're searching, some snippets will get returned twice.
 
-        Not sure if we should handle it, Facebook's implementation doesn't...
+        This is fundamentally unfixable, it's just how the endpoint is implemented.
+
+        The returned message snippets are ordered by last sent.
 
         Args:
             query: Text to search for
             limit: Max. number of message snippets to retrieve
+
+        Example:
+            Fetch the latest message in the thread that matches the query.
+
+            >>> (message,) = thread.search_messages("abc", limit=1)
+            >>> message.text
+            "Some text and abc"
         """
         offset = 0
         # The max limit is measured empirically to 420, safe default chosen below
@@ -330,11 +374,22 @@ class ThreadABC(metaclass=abc.ABCMeta):
         ]
 
     def fetch_messages(self, limit: Optional[int]) -> Iterable["_message.Message"]:
-        """Fetch messages in a thread, with most recent messages first.
+        """Fetch messages in a thread.
+
+        The returned messages are ordered by most recent first.
 
         Args:
             limit: Max. number of threads to retrieve. If ``None``, all threads will be
                 retrieved.
+
+        Example:
+            >>> for message in thread.fetch_messages(limit=5)
+            ...     print(message.text)
+            ...
+            A message
+            Another message
+            None
+            A fourth message
         """
         # This is measured empirically as 210 in extreme cases, fairly safe default
         # chosen below
@@ -389,6 +444,13 @@ class ThreadABC(metaclass=abc.ABCMeta):
         Args:
             limit: Max. number of images to retrieve. If ``None``, all images will be
                 retrieved.
+
+        Example:
+            >>> for image in thread.fetch_messages(limit=3)
+            ...     print(image.id)
+            ...
+            1234
+            2345
         """
         cursor = None
         # The max limit on this request is unknown, so we set it reasonably high
@@ -407,6 +469,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
         Args:
             user_id: User that will have their nickname changed
             nickname: New nickname
+
+        Example:
+            >>> thread.set_nickname("1234", "A nickname")
         """
         data = {
             "nickname": nickname,
@@ -422,16 +487,22 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
         The new color must be one of the following::
 
-            "#0084ff", "#44bec7", "#ffc300", "#fa3c4c", "#d696bb", "#6699cc", "#13cf13",
-            "#ff7e29", "#e68585", "#7646ff", "#20cef5", "#67b868", "#d4a88c", "#ff5ca1",
-            "#a695c7", "#ff7ca8", "#1adb5b", "#f01d6a", "#ff9c19" or "#0edcde".
-
-        The default is "#0084ff".
+            "#0084ff", "#44bec7", "#ffc300", "#fa3c4c", "#d696bb", "#6699cc",
+            "#13cf13", "#ff7e29", "#e68585", "#7646ff", "#20cef5", "#67b868",
+            "#d4a88c", "#ff5ca1", "#a695c7", "#ff7ca8", "#1adb5b", "#f01d6a",
+            "#ff9c19" or "#0edcde".
 
         This list is subject to change in the future!
 
+        The default when creating a new thread is ``"#0084ff"``.
+
         Args:
             color: New thread color
+
+        Example:
+            Set the thread color to "Coral Pink".
+
+            >>> thread.set_color("#e68585")
         """
         if color not in SETABLE_COLORS:
             raise ValueError(
@@ -459,11 +530,16 @@ class ThreadABC(metaclass=abc.ABCMeta):
     #         _graphql.from_doc_id("1768656253222505", {"data": data})
     #     )
 
-    def set_emoji(self, emoji: str):
+    def set_emoji(self, emoji: Optional[str]):
         """Change thread emoji.
 
         Args:
-            emoji: New thread emoji
+            emoji: New thread emoji. If ``None``, will be set to the default "LIKE" icon
+
+        Example:
+            Set the thread emoji to "😊".
+
+            >>> thread.set_emoji("😊")
         """
         data = {"emoji_choice": emoji, "thread_or_other_fbid": self.id}
         # While changing the emoji, the Facebook web client actually sends multiple
@@ -477,6 +553,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
         Args:
             attachment_id: Attachment ID to forward
+
+        Example:
+            >>> thread.forward_attachment("1234")
         """
         data = {
             "attachment_id": attachment_id,
@@ -497,11 +576,19 @@ class ThreadABC(metaclass=abc.ABCMeta):
         j = self.session._payload_post("/ajax/messaging/typ.php", data)
 
     def start_typing(self):
-        """Set the current user to start typing in the thread."""
+        """Set the current user to start typing in the thread.
+
+        Example:
+            >>> thread.start_typing()
+        """
         self._set_typing(True)
 
     def stop_typing(self):
-        """Set the current user to stop typing in the thread."""
+        """Set the current user to stop typing in the thread.
+
+        Example:
+            >>> thread.stop_typing()
+        """
         self._set_typing(False)
 
     def create_plan(
@@ -518,6 +605,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
         Args:
             name: Name of the new plan
             at: When the plan is for
+
+        Example:
+            >>> thread.create_plan(...)
         """
         return _plan.Plan._create(self, name, at, location_name, location_id)
 
@@ -529,7 +619,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
             options: Options and whether you want to select the option
 
         Example:
-            thread.create_poll("Test poll", {"Option 1": True, "Option 2": False})
+            >>> thread.create_poll("Test poll", {"Option 1": True, "Option 2": False})
         """
         # We're using ordered dictionaries, because the Facebook endpoint that parses
         # the POST parameters is badly implemented, and deals with ordering the options
@@ -557,6 +647,10 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
         Args:
             duration: Time to mute, use ``None`` to mute forever
+
+        Example:
+            >>> import datetime
+            >>> thread.mute(datetime.timedelta(days=2))
         """
         if duration is None:
             setting = "-1"
@@ -568,7 +662,11 @@ class ThreadABC(metaclass=abc.ABCMeta):
         )
 
     def unmute(self):
-        """Unmute the thread."""
+        """Unmute the thread.
+
+        Example:
+            >>> thread.unmute()
+        """
         return self.mute(datetime.timedelta(0))
 
     def _mute_reactions(self, mode: bool):

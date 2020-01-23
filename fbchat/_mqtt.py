@@ -49,6 +49,9 @@ class Listener:
             session: The session to use when making requests.
             chat_on: Whether ...
             foreground: Whether ...
+
+        Example:
+            >>> listener = fbchat.Listener.connect(session, chat_on=True, foreground=True)
         """
         mqtt = paho.mqtt.client.Client(
             client_id="mqttwsclient",
@@ -343,6 +346,12 @@ class Listener:
         Yields events when they arrive.
 
         This will automatically reconnect on errors.
+
+        Example:
+            Print events continually.
+
+            >>> for event in listener.listen():
+            ...     print(event)
         """
         while self._loop_once():
             if self._events:
@@ -355,6 +364,14 @@ class Listener:
         Can be called while listening, which will stop the listening loop.
 
         The `Listener` object should not be used after this is called!
+
+        Example:
+            Stop the listener when recieving a message with the text "/stop"
+
+            >>> for event in listener.listen():
+            ...     if isinstance(event, fbchat.MessageEvent):
+            ...         if event.message.text == "/stop":
+            ...             listener.disconnect()  # Almost the same "break"
         """
         self._mqtt.disconnect()
 

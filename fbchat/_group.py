@@ -7,7 +7,11 @@ from typing import Sequence, Iterable, Set, Mapping
 
 @attrs_default
 class Group(_thread.ThreadABC):
-    """Represents a Facebook group. Implements `ThreadABC`."""
+    """Represents a Facebook group. Implements `ThreadABC`.
+
+    Example:
+        >>> group = fbchat.Group(session=session, id="1234")
+    """
 
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
@@ -22,6 +26,9 @@ class Group(_thread.ThreadABC):
 
         Args:
             user_ids: One or more user IDs to add
+
+        Example:
+            >>> group.add_participants(["1234", "2345"])
         """
         data = self._to_send_data()
 
@@ -45,6 +52,9 @@ class Group(_thread.ThreadABC):
 
         Args:
             user_id: User ID to remove
+
+        Example:
+            >>> group.remove_participant("1234")
         """
         data = {"uid": user_id, "tid": self.id}
         j = self.session._payload_post("/chat/remove_participants/", data)
@@ -62,6 +72,9 @@ class Group(_thread.ThreadABC):
 
         Args:
             user_ids: One or more user IDs to set admin
+
+        Example:
+            >>> group.add_admins(["1234", "2345"])
         """
         self._admin_status(user_ids, True)
 
@@ -70,6 +83,9 @@ class Group(_thread.ThreadABC):
 
         Args:
             user_ids: One or more user IDs to remove admin
+
+        Example:
+            >>> group.remove_admins(["1234", "2345"])
         """
         self._admin_status(user_ids, False)
 
@@ -78,6 +94,9 @@ class Group(_thread.ThreadABC):
 
         Args:
             title: New title
+
+        Example:
+            >>> group.set_title("Abc")
         """
         data = {"thread_name": title, "thread_id": self.id}
         j = self.session._payload_post("/messaging/set_thread_name/?dpr=1", data)
@@ -87,6 +106,14 @@ class Group(_thread.ThreadABC):
 
         Args:
             image_id: ID of uploaded image
+
+        Example:
+            Upload an image, and use it as the group image.
+
+            >>> with open("image.png", "rb") as f:
+            ...     (file,) = session._upload([("image.png", f, "image/png")])
+            ...
+            >>> group.set_image(file[0])
         """
         data = {"thread_image_id": image_id, "thread_id": self.id}
         j = self.session._payload_post("/messaging/set_thread_image/?dpr=1", data)
@@ -96,6 +123,9 @@ class Group(_thread.ThreadABC):
 
         Args:
             require_admin_approval: True or False
+
+        Example:
+            >>> group.set_approval_mode(False)
         """
         data = {"set_mode": int(require_admin_approval), "thread_fbid": self.id}
         j = self.session._payload_post("/messaging/set_approval_mode/?dpr=1", data)
@@ -118,6 +148,9 @@ class Group(_thread.ThreadABC):
 
         Args:
             user_ids: One or more user IDs to accept
+
+        Example:
+            >>> group.accept_users(["1234", "2345"])
         """
         self._users_approval(user_ids, True)
 
@@ -126,6 +159,9 @@ class Group(_thread.ThreadABC):
 
         Args:
             user_ids: One or more user IDs to deny
+
+        Example:
+            >>> group.deny_users(["1234", "2345"])
         """
         self._users_approval(user_ids, False)
 

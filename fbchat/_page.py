@@ -6,7 +6,11 @@ from . import _session, _plan, _thread
 
 @attrs_default
 class Page(_thread.ThreadABC):
-    """Represents a Facebook page. Implements `ThreadABC`."""
+    """Represents a Facebook page. Implements `ThreadABC`.
+
+    Example:
+        >>> page = fbchat.Page(session=session, id="1234")
+    """
 
     # TODO: Implement pages properly, the implementation is lacking in a lot of places!
 

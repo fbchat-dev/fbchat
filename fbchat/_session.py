@@ -155,10 +155,17 @@ class Session:
         """Login the user, using ``email`` and ``password``.
 
         Args:
-            email: Facebook ``email`` or ``id`` or ``phone number``
+            email: Facebook ``email``, ``id`` or ``phone number``
             password: Facebook account password
             on_2fa_callback: Function that will be called, in case a 2FA code is needed.
                 This should return the requested 2FA code.
+
+        Example:
+            >>> import getpass
+            >>> import fbchat
+            >>> session = fbchat.Session.login("<email or phone>", getpass.getpass())
+            >>> session.user_id
+            "1234"
         """
         session = session_factory()
 
@@ -215,6 +222,9 @@ class Session:
 
         Returns:
             Whether the user is still logged in
+
+        Example:
+            >>> assert session.is_logged_in()
         """
         # Send a request to the login url, to see if we're directed to the home page
         url = "https://m.facebook.com/login.php?login_attempt=1"
@@ -228,6 +238,9 @@ class Session:
         """Safely log out the user.
 
         The session object must not be used after this action has been performed!
+
+        Example:
+            >>> session.logout()
         """
         logout_h = self._logout_h
         if not logout_h:
@@ -285,6 +298,9 @@ class Session:
 
         Returns:
             A dictionary containing session cookies
+
+        Example:
+            >>> cookies = session.get_cookies()
         """
         return self._session.cookies.get_dict()
 
@@ -294,6 +310,11 @@ class Session:
 
         Args:
             cookies: A dictionary containing session cookies
+
+        Example:
+            >>> cookies = session.get_cookies()
+            >>> # Store cookies somewhere, and then subsequently
+            >>> session = fbchat.Session.from_cookies(cookies)
         """
         session = session_factory()
         session.cookies = requests.cookies.merge_cookies(session.cookies, cookies)
@@ -346,7 +367,14 @@ class Session:
         `files` should be a list of files that requests can upload, see
         `requests.request <https://docs.python-requests.org/en/master/api/#requests.request>`_.
 
-        Return a list of tuples with a file's ID and mimetype.
+        Example:
+            >>> with open("file.txt", "rb") as f:
+            ...     (file,) = session._upload([("file.txt", f, "text/plain")])
+            ...
+            >>> file
+            ("1234", "text/plain")
+        Return:
+            Tuples with a file's ID and mimetype.
         """
         file_dict = {"upload_{}".format(i): f for i, f in enumerate(files)}
 

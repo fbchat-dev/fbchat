@@ -43,7 +43,11 @@ class EmojiSize(enum.Enum):
 
 @attrs_default
 class Mention:
-    """Represents a ``@mention``."""
+    """Represents a ``@mention``.
+
+    >>> fbchat.Mention(thread_id="1234", offset=5, length=2)
+    Mention(thread_id="1234", offset=5, length=2)
+    """
 
     #: The thread ID the mention is pointing at
     thread_id = attr.ib(type=str)
@@ -82,7 +86,12 @@ SENDABLE_REACTIONS = ("❤", "😍", "😆", "😮", "😢", "😠", "👍", "�
 
 @attrs_default
 class Message:
-    """Represents a Facebook message."""
+    """Represents a Facebook message.
+
+    Example:
+        >>> thread = fbchat.User(session=session, id="1234")
+        >>> message = fbchat.Message(thread=thread, id="mid.$XYZ")
+    """
 
     #: The thread that this message belongs to.
     thread = attr.ib(type="_thread.ThreadABC")
@@ -95,7 +104,11 @@ class Message:
         return self.thread.session
 
     def unsend(self):
-        """Unsend the message (removes it for everyone)."""
+        """Unsend the message (removes it for everyone).
+
+        Example:
+            >>> message.unsend()
+        """
         data = {"message_id": self.id}
         j = self.session._payload_post("/messaging/unsend_message/?dpr=1", data)
 
@@ -107,6 +120,9 @@ class Message:
 
         Args:
             reaction: Reaction emoji to use, or if ``None``, removes reaction.
+
+        Example:
+            >>> message.react("😍")
         """
         if reaction and reaction not in SENDABLE_REACTIONS:
             raise ValueError(
@@ -128,7 +144,13 @@ class Message:
         _exception.handle_graphql_errors(j)
 
     def fetch(self) -> "MessageData":
-        """Fetch fresh `MessageData` object."""
+        """Fetch fresh `MessageData` object.
+
+        Example:
+            >>> message = message.fetch()
+            >>> message.text
+            "The message text"
+        """
         message_info = self.thread._forced_fetch(self.id).get("message")
         return MessageData._from_graphql(self.thread, message_info)
 
@@ -139,10 +161,10 @@ class Message:
         Return a tuple, with the formatted string and relevant mentions.
 
         >>> Message.format_mentions("Hey {!r}! My name is {}", ("1234", "Peter"), ("4321", "Michael"))
-        ("Hey 'Peter'! My name is Michael", [<Mention 1234: offset=4 length=7>, <Mention 4321: offset=24 length=7>])
+        ("Hey 'Peter'! My name is Michael", [Mention(thread_id=1234, offset=4, length=7), Mention(thread_id=4321, offset=24, length=7)])
 
         >>> Message.format_mentions("Hey {p}! My name is {}", ("1234", "Michael"), p=("4321", "Peter"))
-        ('Hey Peter! My name is Michael', [<Mention 4321: offset=4 length=5>, <Mention 1234: offset=22 length=7>])
+        ('Hey Peter! My name is Michael', [Mention(thread_id=4321, offset=4, length=5), Mention(thread_id=1234, offset=22, length=7)])
         """
         result = ""
         mentions = list()

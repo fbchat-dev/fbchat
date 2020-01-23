@@ -22,7 +22,11 @@ ACONTEXT = {
 
 @attrs_default
 class Plan:
-    """Base model for plans."""
+    """Base model for plans.
+
+    Example:
+        >>> plan = fbchat.Plan(session=session, id="1234")
+    """
 
     #: The session to use when making requests.
     session = attr.ib(type=_session.Session)
@@ -30,7 +34,13 @@ class Plan:
     id = attr.ib(converter=str, type=str)
 
     def fetch(self) -> "PlanData":
-        """Fetch fresh `PlanData` object."""
+        """Fetch fresh `PlanData` object.
+
+        Example:
+            >>> plan = plan.fetch()
+            >>> plan.title
+            "A plan"
+        """
         data = {"event_reminder_id": self.id}
         j = self.session._payload_post("/ajax/eventreminder", data)
         return PlanData._from_fetch(self.session, j)
@@ -80,7 +90,11 @@ class Plan:
         j = self.session._payload_post("/ajax/eventreminder/submit", data)
 
     def delete(self):
-        """Delete the plan."""
+        """Delete the plan.
+
+        Example:
+            >>> plan.delete()
+        """
         data = {"event_reminder_id": self.id, "delete": "true", "acontext": ACONTEXT}
         j = self.session._payload_post("/ajax/eventreminder/submit", data)
 
@@ -93,11 +107,19 @@ class Plan:
         j = self.session._payload_post("/ajax/eventreminder/rsvp", data)
 
     def participate(self):
-        """Set yourself as GOING/participating to the plan."""
+        """Set yourself as GOING/participating to the plan.
+
+        Example:
+            >>> plan.participate()
+        """
         return self._change_participation(True)
 
     def decline(self):
-        """Set yourself as having DECLINED the plan."""
+        """Set yourself as having DECLINED the plan.
+
+        Example:
+            >>> plan.decline()
+        """
         return self._change_participation(False)
 
 

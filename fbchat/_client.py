@@ -19,11 +19,14 @@ from typing import Sequence, Iterable, Tuple, Optional, Set
 
 @attrs_default
 class Client:
-    """A client for the Facebook Chat (Messenger).
+    """A client for Facebook Messenger.
 
-    This contains all the methods you use to interact with Facebook. You can extend this
-    class, and overwrite the ``on`` methods, to provide custom event handling (mainly
-    useful while listening).
+    This contains methods that are generally needed to interact with Facebook.
+
+    Example:
+        Create a new client instance.
+
+        >>> client = fbchat.Client(session=session)
     """
 
     #: The session to use when making requests.
@@ -39,6 +42,15 @@ class Client:
 
         But does not include deactivated, deleted or memorialized users (logically,
         since you can't chat with those).
+
+        The order these are returned is arbitary.
+
+        Example:
+            Get the name of an arbitary user that you're currently chatting with.
+
+            >>> users = client.fetch_users()
+            >>> users[0].name
+            "A user"
         """
         data = {"viewer": self.session.user_id}
         j = self.session._payload_post("/chat/user_info_all", data)
@@ -54,12 +66,18 @@ class Client:
     def search_for_users(self, name: str, limit: int) -> Iterable[_user.UserData]:
         """Find and get users by their name.
 
+        The returned users are ordered by relevance.
+
         Args:
             name: Name of the user
             limit: The max. amount of users to fetch
 
-        Returns:
-            Users, ordered by relevance
+        Example:
+            Get the full name of the first found user.
+
+            >>> (user,) = client.search_for_users("user", limit=1)
+            >>> user.name
+            "A user"
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
@@ -74,9 +92,18 @@ class Client:
     def search_for_pages(self, name: str, limit: int) -> Iterable[_page.PageData]:
         """Find and get pages by their name.
 
+        The returned pages are ordered by relevance.
+
         Args:
             name: Name of the page
             limit: The max. amount of pages to fetch
+
+        Example:
+            Get the full name of the first found page.
+
+            >>> (page,) = client.search_for_pages("page", limit=1)
+            >>> page.name
+            "A page"
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
@@ -91,9 +118,18 @@ class Client:
     def search_for_groups(self, name: str, limit: int) -> Iterable[_group.GroupData]:
         """Find and get group threads by their name.
 
+        The returned groups are ordered by relevance.
+
         Args:
             name: Name of the group thread
             limit: The max. amount of groups to fetch
+
+        Example:
+            Get the full name of the first found group.
+
+            >>> (group,) = client.search_for_groups("group", limit=1)
+            >>> group.name
+            "A group"
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
@@ -108,9 +144,19 @@ class Client:
     def search_for_threads(self, name: str, limit: int) -> Iterable[_thread.ThreadABC]:
         """Find and get threads by their name.
 
+        The returned threads are ordered by relevance.
+
         Args:
             name: Name of the thread
             limit: The max. amount of threads to fetch
+
+        Example:
+            Search for a user, and get the full name of the first found result.
+
+            >>> (user,) = client.search_for_threads("user", limit=1)
+            >>> assert isinstance(user, fbchat.User)
+            >>> user.name
+            "A user"
         """
         params = {"search": name, "limit": limit}
         (j,) = self.session._graphql_requests(
@@ -173,16 +219,26 @@ class Client:
         Intended to be used alongside `ThreadABC.search_messages`
 
         Warning! If someone send a message to a thread that matches the query, while
-        we're searching, some snippets will get returned twice.
+        we're searching, some snippets will get returned twice, and some will be lost.
 
-        Not sure if we should handle it, Facebook's implementation doesn't...
+        This is fundamentally unfixable, it's just how the endpoint is implemented.
 
         Args:
             query: Text to search for
             limit: Max. number of threads to retrieve. If ``None``, all threads will be
-                retrieved.
+                retrieved
 
-        Returns:
+        Example:
+            Search for messages, and print the amount of snippets in each thread.
+
+            >>> for thread, count in client.search_messages("abc", limit=3):
+            ...     print(f"{thread.id} matched the search {count} time(s)")
+            ...
+            1234 matched the search 2 time(s)
+            2345 matched the search 1 time(s)
+            3456 matched the search 100 time(s)
+
+        Return:
             Iterable with tuples of threads, and the total amount of matches.
         """
         offset = 0
@@ -237,6 +293,13 @@ class Client:
 
         Args:
             ids: Thread ids to query
+
+        Example:
+            Get data about the user with id "4".
+
+            >>> (user,) = client.fetch_thread_info(["4"])
+            >>> user.name
+            "Mark Zuckerberg"
         """
         ids = list(ids)
         queries = []
@@ -323,6 +386,16 @@ class Client:
             limit: Max. number of threads to retrieve. If ``None``, all threads will be
                 retrieved.
             location: INBOX, PENDING, ARCHIVED or OTHER
+
+        Example:
+            Fetch the last three threads that the user chatted with.
+
+            >>> for thread in client.fetch_threads(limit=3):
+            ...     print(f"{thread.id}: {thread.name}")
+            ...
+            1234: A user
+            2345: A group
+            3456: A page
         """
         # This is measured empirically as 837, safe default chosen below
         MAX_BATCH_LIMIT = 100
@@ -394,6 +467,10 @@ class Client:
 
         Args:
             image_id: The image you want to fetch
+
+        Example:
+            >>> client.fetch_image_url("1234")
+            "https://scontent-arn1-1.xx.fbcdn.net/v/t1.123-4/1_23_45_n.png?..."
 
         Returns:
             An URL where you can download the original image
@@ -513,7 +590,15 @@ class Client:
             j = self.session._payload_post("/ajax/mercury/move_thread.php", data)
 
     def delete_threads(self, threads: Iterable[_thread.ThreadABC]):
-        """Delete threads."""
+        """Bulk delete threads.
+
+        Args:
+            threads: Threads to delete
+
+        Example:
+            >>> group = fbchat.Group(session=session, id="1234")
+            >>> client.delete_threads([group])
+        """
         data_unpin = {}
         data_delete = {}
         for i, thread in enumerate(threads):
@@ -527,10 +612,15 @@ class Client:
         )
 
     def delete_messages(self, messages: Iterable[_message.Message]):
-        """Delete specified messages.
+        """Bulk delete specified messages.
 
         Args:
             messages: Messages to delete
+
+        Example:
+            >>> message1 = fbchat.Message(thread=thread, id="1234")
+            >>> message2 = fbchat.Message(thread=thread, id="2345")
+            >>> client.delete_threads([message1, message2])
         """
         data = {}
         for i, message in enumerate(messages):
