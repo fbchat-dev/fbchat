@@ -27,12 +27,7 @@ class Client:
     """
 
     #: The session to use when making requests.
-    _session = attr.ib(type=_session.Session)
-
-    @property
-    def session(self):
-        """The session that's used when making requests."""
-        return self._session
+    session = attr.ib(type=_session.Session)
 
     def fetch_users(self) -> Sequence[_user.UserData]:
         """Fetch users the client is currently chatting with.

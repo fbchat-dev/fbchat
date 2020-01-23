@@ -8,11 +8,10 @@ log = logging.getLogger("fbchat")
 kw_only = sys.version_info[:2] > (3, 5)
 
 #: Default attrs settings for classes
-attrs_default = attr.s(slots=True, kw_only=kw_only)
+attrs_default = attr.s(frozen=True, slots=True, kw_only=kw_only)
 
 
-# Frozen, so that it can be used in sets
-@attr.s(frozen=True, slots=True, kw_only=kw_only)
+@attrs_default
 class Image:
     #: URL to the image
     url = attr.ib(type=str)

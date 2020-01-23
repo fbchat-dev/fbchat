@@ -115,7 +115,7 @@ def get_error_data(html: str, url: str) -> Tuple[Optional[int], Optional[str]]:
     return code, soup.get_text() or None
 
 
-@attr.s(slots=True, kw_only=kw_only, repr=False)
+@attr.s(slots=True, kw_only=kw_only, repr=False, eq=False)
 class Session:
     """Stores and manages state required for most Facebook requests.
 

@@ -4,10 +4,7 @@ import requests
 from typing import Any
 
 # Not frozen, since that doesn't work in PyPy
-attrs_exception = attr.s(slots=True, auto_exc=True)
-
-
-@attrs_exception
+@attr.s(slots=True, auto_exc=True)
 class FacebookError(Exception):
     """Base class for all custom exceptions raised by ``fbchat``.
 
@@ -18,7 +15,7 @@ class FacebookError(Exception):
     message = attr.ib(type=str)
 
 
-@attrs_exception
+@attr.s(slots=True, auto_exc=True)
 class HTTPError(FacebookError):
     """Base class for errors with the HTTP(s) connection to Facebook."""
 
@@ -31,7 +28,7 @@ class HTTPError(FacebookError):
         return "Got {} response: {}".format(self.status_code, self.message)
 
 
-@attrs_exception
+@attr.s(slots=True, auto_exc=True)
 class ParseError(FacebookError):
     """Raised when we fail parsing a response from Facebook.
 
@@ -49,7 +46,7 @@ class ParseError(FacebookError):
         return msg.format(self.message, self.data)
 
 
-@attrs_exception
+@attr.s(slots=True, auto_exc=True)
 class ExternalError(FacebookError):
     """Base class for errors that Facebook return."""
 
@@ -64,7 +61,7 @@ class ExternalError(FacebookError):
         return "{}: {}".format(self.message, self.description)
 
 
-@attrs_exception
+@attr.s(slots=True, auto_exc=True)
 class GraphQLError(ExternalError):
     """Raised by Facebook if there was an error in the GraphQL query."""
 
@@ -79,7 +76,7 @@ class GraphQLError(ExternalError):
         return super().__str__()
 
 
-@attrs_exception
+@attr.s(slots=True, auto_exc=True)
 class InvalidParameters(ExternalError):
     """Raised by Facebook if:
 
@@ -89,14 +86,14 @@ class InvalidParameters(ExternalError):
     """
 
 
-@attrs_exception
+@attr.s(slots=True, auto_exc=True)
 class NotLoggedIn(ExternalError):
     """Raised by Facebook if the client has been logged out."""
 
     code = attr.ib(1357001)
 
 
-@attrs_exception
+@attr.s(slots=True, auto_exc=True)
 class PleaseRefresh(ExternalError):
     """Raised by Facebook if the client has been inactive for too long.
 
