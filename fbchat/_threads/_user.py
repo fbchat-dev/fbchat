@@ -1,7 +1,7 @@
 import attr
 import datetime
 from ._abc import ThreadABC
-from .._common import log, attrs_default, Image
+from .._common import log, attrs_default
 from .. import _util, _session, _models
 
 
@@ -100,7 +100,7 @@ class UserData(User):
     """
 
     #: The user's picture
-    photo = attr.ib(type=Image)
+    photo = attr.ib(type="_models.Image")
     #: The name of the user
     name = attr.ib(type=str)
     #: Whether the user and the client are friends
@@ -162,7 +162,7 @@ class UserData(User):
             color=c_info["color"],
             emoji=c_info["emoji"],
             own_nickname=c_info.get("own_nickname"),
-            photo=Image._from_uri(data["profile_picture"]),
+            photo=_models.Image._from_uri(data["profile_picture"]),
             name=data["name"],
             message_count=data.get("messages_count"),
             plan=plan,
@@ -196,7 +196,7 @@ class UserData(User):
             color=c_info["color"],
             emoji=c_info["emoji"],
             own_nickname=c_info.get("own_nickname"),
-            photo=Image._from_uri(user["big_image_src"]),
+            photo=_models.Image._from_uri(user["big_image_src"]),
             message_count=data["messages_count"],
             last_active=_util.millis_to_datetime(int(data["updated_time_precise"])),
             plan=plan,
@@ -209,27 +209,8 @@ class UserData(User):
             id=data["id"],
             first_name=data["firstName"],
             url=data["uri"],
-            photo=Image(url=data["thumbSrc"]),
+            photo=_models.Image(url=data["thumbSrc"]),
             name=data["name"],
             is_friend=data["is_friend"],
             gender=GENDERS.get(data["gender"]),
-        )
-
-
-@attrs_default
-class ActiveStatus:
-    #: Whether the user is active now
-    active = attr.ib(None, type=bool)
-    #: Datetime when the user was last active
-    last_active = attr.ib(None, type=datetime.datetime)
-    #: Whether the user is playing Messenger game now
-    in_game = attr.ib(None, type=bool)
-
-    @classmethod
-    def _from_orca_presence(cls, data):
-        # TODO: Handle `c` and `vc` keys (Probably some binary data)
-        return cls(
-            active=data["p"] in [2, 3],
-            last_active=_util.seconds_to_datetime(data["l"]) if "l" in data else None,
-            in_game=None,
         )

@@ -2,23 +2,9 @@ import abc
 import attr
 import collections
 import datetime
-import enum
-from .._common import log, attrs_default, Image
+from .._common import log, attrs_default
 from .. import _util, _exception, _session, _graphql, _models
 from typing import MutableMapping, Mapping, Any, Iterable, Tuple, Optional
-
-
-class ThreadLocation(enum.Enum):
-    """Used to specify where a thread is located (inbox, pending, archived, other)."""
-
-    INBOX = "INBOX"
-    PENDING = "PENDING"
-    ARCHIVED = "ARCHIVED"
-    OTHER = "OTHER"
-
-    @classmethod
-    def _parse(cls, value: str):
-        return cls(value.lstrip("FOLDER_"))
 
 
 DEFAULT_COLOR = "#0084ff"

@@ -1,6 +1,6 @@
 import pytest
 import fbchat
-from fbchat import Sticker
+from fbchat import Image, Sticker
 
 
 def test_from_graphql_none():
@@ -20,7 +20,7 @@ def test_from_graphql_normal():
         frames_per_col=1,
         frame_count=1,
         frame_rate=83,
-        image=fbchat.Image(
+        image=Image(
             url="https://scontent-arn2-1.xx.fbcdn.net/v/redacted.png",
             width=274,
             height=274,
@@ -57,7 +57,7 @@ def test_from_graphql_animated():
         frames_per_col=2,
         frame_count=4,
         frame_rate=142,
-        image=fbchat.Image(
+        image=Image(
             url="https://scontent-arn2-1.fbcdn.net/v/redacted1.png",
             width=240,
             height=293,

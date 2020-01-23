@@ -368,7 +368,7 @@ class Client:
     def fetch_threads(
         self,
         limit: Optional[int],
-        location: _threads.ThreadLocation = _threads.ThreadLocation.INBOX,
+        location: _models.ThreadLocation = _models.ThreadLocation.INBOX,
     ) -> Iterable[_threads.ThreadABC]:
         """Fetch the client's thread list.
 
@@ -554,7 +554,7 @@ class Client:
         )
 
     def move_threads(
-        self, location: _threads.ThreadLocation, threads: Iterable[_threads.ThreadABC]
+        self, location: _models.ThreadLocation, threads: Iterable[_threads.ThreadABC]
     ):
         """Move threads to specified location.
 
@@ -562,10 +562,10 @@ class Client:
             location: INBOX, PENDING, ARCHIVED or OTHER
             threads: Threads to move
         """
-        if location == _threads.ThreadLocation.PENDING:
-            location = _threads.ThreadLocation.OTHER
+        if location == _models.ThreadLocation.PENDING:
+            location = _models.ThreadLocation.OTHER
 
-        if location == _threads.ThreadLocation.ARCHIVED:
+        if location == _models.ThreadLocation.ARCHIVED:
             data_archive = {}
             data_unpin = {}
             for thread in threads:

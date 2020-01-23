@@ -2,7 +2,7 @@ import attr
 import datetime
 from ._abc import ThreadABC
 from . import _user
-from .._common import attrs_default, Image
+from .._common import attrs_default
 from .. import _util, _session, _graphql, _models
 from typing import Sequence, Iterable, Set, Mapping
 
@@ -176,7 +176,7 @@ class GroupData(Group):
     """
 
     #: The group's picture
-    photo = attr.ib(None, type=Image)
+    photo = attr.ib(None, type="_models.Image")
     #: The name of the group
     name = attr.ib(None, type=str)
     #: When the group was last active / when the last message was sent
@@ -238,7 +238,7 @@ class GroupData(Group):
             if data.get("group_approval_queue")
             else None,
             join_link=data["joinable_mode"].get("link"),
-            photo=Image._from_uri_or_none(data["image"]),
+            photo=_models.Image._from_uri_or_none(data["image"]),
             name=data.get("name"),
             message_count=data.get("messages_count"),
             last_active=last_active,

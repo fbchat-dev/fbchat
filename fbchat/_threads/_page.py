@@ -1,7 +1,7 @@
 import attr
 import datetime
 from ._abc import ThreadABC
-from .._common import attrs_default, Image
+from .._common import attrs_default
 from .. import _session, _models
 
 
@@ -32,7 +32,7 @@ class PageData(Page):
     """
 
     #: The page's picture
-    photo = attr.ib(type=Image)
+    photo = attr.ib(type="_models.Image")
     #: The name of the page
     name = attr.ib(type=str)
     #: When the thread was last active / when the last message was sent
@@ -70,7 +70,7 @@ class PageData(Page):
             url=data.get("url"),
             city=data.get("city").get("name"),
             category=data.get("category_type"),
-            photo=Image._from_uri(data["profile_picture"]),
+            photo=_models.Image._from_uri(data["profile_picture"]),
             name=data["name"],
             message_count=data.get("messages_count"),
             plan=plan,

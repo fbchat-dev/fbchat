@@ -15,7 +15,6 @@ _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 
 # The order of these is somewhat significant, e.g. User has to be imported after Thread!
 from . import _common, _util
-from ._common import Image
 from ._exception import (
     FacebookError,
     HTTPError,
@@ -28,12 +27,10 @@ from ._exception import (
 )
 from ._session import Session
 from ._threads import (
-    ThreadLocation,
     ThreadABC,
     Thread,
     User,
     UserData,
-    ActiveStatus,
     Group,
     GroupData,
     Page,
@@ -42,6 +39,9 @@ from ._threads import (
 
 # Models
 from ._models import (
+    Image,
+    ThreadLocation,
+    ActiveStatus,
     Attachment,
     UnsentMessage,
     ShareAttachment,

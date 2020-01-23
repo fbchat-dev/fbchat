@@ -1,6 +1,12 @@
 import datetime
 import fbchat
-from fbchat import FileAttachment, AudioAttachment, ImageAttachment, VideoAttachment
+from fbchat import (
+    Image,
+    FileAttachment,
+    AudioAttachment,
+    ImageAttachment,
+    VideoAttachment,
+)
 from fbchat._models._file import graphql_to_attachment, graphql_to_subattachment
 
 
@@ -28,13 +34,13 @@ def test_imageattachment_from_list():
         width=2833,
         height=1367,
         previews={
-            fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/s261x260/1.jpg"),
-            fbchat.Image(
+            Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/s261x260/1.jpg"),
+            Image(
                 url="https://scontent-arn2-1.xx.fbcdn.net/v/2.jpg",
                 width=960,
                 height=463,
             ),
-            fbchat.Image(
+            Image(
                 url="https://scontent-arn2-1.xx.fbcdn.net/v/s2048x2048/3.jpg",
                 width=2048,
                 height=988,
@@ -68,15 +74,15 @@ def test_videoattachment_from_list():
         width=640,
         height=368,
         previews={
-            fbchat.Image(
+            Image(
                 url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.3394-10/p261x260/1.jpg"
             ),
-            fbchat.Image(
+            Image(
                 url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.3394-10/2.jpg",
                 width=640,
                 height=368,
             ),
-            fbchat.Image(
+            Image(
                 url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.3394-10/3.jpg",
                 width=640,
                 height=368,
@@ -169,8 +175,8 @@ def test_graphql_to_attachment_image1():
         height=None,
         is_animated=False,
         previews={
-            fbchat.Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/p50x50/2.png"),
-            fbchat.Image(
+            Image(url="https://scontent-arn2-1.xx.fbcdn.net/v/p50x50/2.png"),
+            Image(
                 url="https://scontent-arn2-1.xx.fbcdn.net/v/1.png",
                 width=128,
                 height=128,
@@ -204,9 +210,7 @@ def test_graphql_to_attachment_image2():
         width=None,
         height=None,
         is_animated=True,
-        previews={
-            fbchat.Image(url="https://cdn.fbsbx.com/v/1.gif", width=128, height=128)
-        },
+        previews={Image(url="https://cdn.fbsbx.com/v/1.gif", width=128, height=128)},
     ) == graphql_to_attachment(data)
 
 
@@ -244,17 +248,17 @@ def test_graphql_to_attachment_video():
         duration=datetime.timedelta(seconds=6),
         preview_url="https://video-arn2-1.xx.fbcdn.net/v/video-4321.mp4",
         previews={
-            fbchat.Image(
+            Image(
                 url="https://scontent-arn2-1.xx.fbcdn.net/v/s168x128/1.jpg",
                 width=168,
                 height=96,
             ),
-            fbchat.Image(
+            Image(
                 url="https://scontent-arn2-1.xx.fbcdn.net/v/p261x260/3.jpg",
                 width=452,
                 height=260,
             ),
-            fbchat.Image(
+            Image(
                 url="https://scontent-arn2-1.xx.fbcdn.net/v/2.jpg",
                 width=640,
                 height=368,
@@ -345,7 +349,7 @@ def test_graphql_to_subattachment_video():
         duration=datetime.timedelta(seconds=24, microseconds=469000),
         preview_url="https://video-arn2-1.xx.fbcdn.net/v/t42.9040-2/vid.mp4",
         previews={
-            fbchat.Image(
+            Image(
                 url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
                 width=960,
                 height=540,

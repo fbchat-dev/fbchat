@@ -5,7 +5,7 @@ from ._client_payload import *
 from ._delta_class import *
 from ._delta_type import *
 
-from .. import _exception, _threads
+from .. import _exception, _threads, _models
 
 from typing import Mapping
 
@@ -55,14 +55,14 @@ class Presence(Event):
     # TODO: Document this better!
 
     #: User ids mapped to their active status
-    statuses = attr.ib(type=Mapping[str, _threads.ActiveStatus])
+    statuses = attr.ib(type=Mapping[str, "_models.ActiveStatus"])
     #: ``True`` if the list is fully updated and ``False`` if it's partially updated
     full = attr.ib(type=bool)
 
     @classmethod
     def _parse(cls, session, data):
         statuses = {
-            str(d["u"]): _threads.ActiveStatus._from_orca_presence(d)
+            str(d["u"]): _models.ActiveStatus._from_orca_presence(d)
             for d in data["list"]
         }
         return cls(statuses=statuses, full=data["list_type"] == "full")

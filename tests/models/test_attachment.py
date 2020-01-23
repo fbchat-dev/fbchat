@@ -1,7 +1,7 @@
 import pytest
 import datetime
 import fbchat
-from fbchat import UnsentMessage, ShareAttachment
+from fbchat import Image, UnsentMessage, ShareAttachment
 from fbchat._models._message import graphql_to_extensible_attachment
 
 
@@ -122,7 +122,7 @@ def test_share_from_graphql_link_with_image():
             " Share photos and videos, send messages and get updates."
         ),
         source=None,
-        image=fbchat.Image(
+        image=Image(
             url="https://www.facebook.com/rsrc.php/v3/x.png", width=325, height=325
         ),
         original_image_url="https://www.facebook.com/rsrc.php/v3/x.png",
@@ -184,7 +184,7 @@ def test_share_from_graphql_video():
             " Subscribe to the official Rick As..."
         ),
         source="youtube.com",
-        image=fbchat.Image(
+        image=Image(
             url="https://external-arn2-1.xx.fbcdn.net/safe_image.php?d=xyz123"
             "&w=960&h=540&url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FdQw4w9WgXcQ"
             "%2Fmaxresdefault.jpg&sx=0&sy=0&sw=1280&sh=720&_nc_hash=abc123",
@@ -307,7 +307,7 @@ def test_share_with_image_subattachment():
         title="",
         description="Abc",
         source="Def",
-        image=fbchat.Image(
+        image=Image(
             url="https://scontent-arn2-1.xx.fbcdn.net/v/t1.0-9/1.jpg",
             width=720,
             height=960,
@@ -435,7 +435,7 @@ def test_share_with_video_subattachment():
         title="",
         description="Abc",
         source="Def",
-        image=fbchat.Image(
+        image=Image(
             url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
             width=960,
             height=540,
@@ -447,7 +447,7 @@ def test_share_with_video_subattachment():
                 duration=datetime.timedelta(seconds=24, microseconds=469000),
                 preview_url="https://video-arn2-1.xx.fbcdn.net/v/t42.9040-2/vid.mp4",
                 previews={
-                    fbchat.Image(
+                    Image(
                         url="https://scontent-arn2-1.xx.fbcdn.net/v/t15.5256-10/p180x540/1.jpg",
                         width=960,
                         height=540,

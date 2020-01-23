@@ -1,3 +1,4 @@
+from ._common import *
 from ._attachment import *
 from ._file import *
 from ._location import *

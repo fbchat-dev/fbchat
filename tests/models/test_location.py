@@ -1,7 +1,7 @@
 import pytest
 import datetime
 import fbchat
-from fbchat import LocationAttachment, LiveLocationAttachment
+from fbchat import Image, LocationAttachment, LiveLocationAttachment
 
 
 def test_location_attachment_from_graphql():
@@ -38,7 +38,7 @@ def test_location_attachment_from_graphql():
         id=400828513928715,
         latitude=55.4,
         longitude=12.4322,
-        image=fbchat.Image(
+        image=Image(
             url="https://external-arn2-1.xx.fbcdn.net/static_map.php?v=1020&osm_provider=2&size=545x280&zoom=15&markers=55.40000000%2C12.43220000&language=en",
             width=545,
             height=280,

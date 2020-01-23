@@ -171,12 +171,12 @@ class ThreadFolder(Event):
     #: The created thread
     thread = attr.ib(type="_threads.ThreadABC")
     #: The folder/location
-    folder = attr.ib(type=_threads.ThreadLocation)
+    folder = attr.ib(type="_models.ThreadLocation")
 
     @classmethod
     def _parse(cls, session, data):
         thread = cls._get_thread(session, data)
-        folder = _threads.ThreadLocation._parse(data["folder"])
+        folder = _models.ThreadLocation._parse(data["folder"])
         return cls(thread=thread, folder=folder)
 
 
@@ -190,7 +190,7 @@ def parse_delta(session, data):
         return PersonRemoved._parse(session, data)
     elif class_ == "MarkFolderSeen":
         # TODO: Finish this
-        folders = [_threads.ThreadLocation._parse(folder) for folder in data["folders"]]
+        folders = [_models.ThreadLocation._parse(folder) for folder in data["folders"]]
         at = _util.millis_to_datetime(int(data["timestamp"]))
         return None
     elif class_ == "ThreadName":
