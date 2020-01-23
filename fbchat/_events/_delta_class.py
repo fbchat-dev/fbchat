@@ -132,12 +132,11 @@ class ThreadsRead(Event):
 
     @classmethod
     def _parse(cls, session, data):
-        author = _threads.User(session=session, id=session.user_id)
         threads = [
             cls._get_thread(session, {"threadKey": x}) for x in data["threadKeys"]
         ]
         at = _util.millis_to_datetime(int(data["actionTimestamp"]))
-        return cls(author=author, threads=threads, at=at)
+        return cls(author=session.user, threads=threads, at=at)
 
 
 @attrs_event

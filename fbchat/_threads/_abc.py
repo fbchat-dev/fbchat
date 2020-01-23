@@ -513,7 +513,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
     # def set_theme(self, theme_id: str):
     #     data = {
     #         "client_mutation_id": "0",
-    #         "actor_id": self.session.user_id,
+    #         "actor_id": self.session.user.id,
     #         "thread_id": self.id,
     #         "theme_id": theme_id,
     #         "source": "SETTINGS",

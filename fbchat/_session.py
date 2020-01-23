@@ -158,9 +158,13 @@ class Session:
     _logout_h = attr.ib(None, type=str)
 
     @property
-    def user_id(self) -> str:
-        """The logged in user's ID."""
-        return self._user_id
+    def user(self):
+        """The logged in user."""
+        from . import _threads
+
+        # TODO: Consider caching the result
+
+        return _threads.User(session=self, id=self._user_id)
 
     def __repr__(self) -> str:
         # An alternative repr, to illustrate that you can't create the class directly
@@ -191,7 +195,7 @@ class Session:
             >>> import getpass
             >>> import fbchat
             >>> session = fbchat.Session.login("<email or phone>", getpass.getpass())
-            >>> session.user_id
+            >>> session.user.id
             "1234"
         """
         session = session_factory()

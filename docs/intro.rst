@@ -46,7 +46,7 @@ A thread basically just means "something I can chat with", but more precisely, i
 - The conversation between you and a single Facebook user (`User`)
 - The conversation between you and a Facebook Page (`Page`)
 
-You can get your own user ID with `Session.user_id`.
+You can get your own user ID with `Session.user.id`.
 
 Getting the ID of a specific group thread is fairly trivial, you only need to login to `<https://www.messenger.com/>`_, click on the group you want to find the ID of, and then read the id from the address bar.
 The URL will look something like this: ``https://www.messenger.com/t/1234567890``, where ``1234567890`` would be the ID of the group.

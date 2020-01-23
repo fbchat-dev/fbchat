@@ -224,7 +224,7 @@ def test_mark_read(session):
         "class": "MarkRead",
     }
     assert ThreadsRead(
-        author=User(session=session, id=session.user_id),
+        author=session.user,
         threads=[Group(session=session, id="1234"), User(session=session, id="2345")],
         at=datetime.datetime(2020, 9, 13, 12, 26, 40, tzinfo=datetime.timezone.utc),
     ) == parse_delta(session, data)

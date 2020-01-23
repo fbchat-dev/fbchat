@@ -5,7 +5,7 @@ session = fbchat.Session.login("<email>", "<password>")
 
 client = fbchat.Client(session)
 
-thread = fbchat.User(session=session, id=session.user_id)
+thread = session.user
 # thread = fbchat.User(session=session, id="0987654321")
 # thread = fbchat.Group(session=session, id="1234567890")
 
@@ -48,7 +48,7 @@ if isinstance(thread, fbchat.Group):
     thread.set_title("<title>")
 
 
-# Will change the nickname of the user `<user_id>` to `<new nickname>`
+# Will change the nickname of the user `<user id>` to `<new nickname>`
 thread.set_nickname(fbchat.User(session=session, id="<user id>"), "<new nickname>")
 
 # Will set the typing status of the thread

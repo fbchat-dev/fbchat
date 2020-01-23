@@ -41,7 +41,7 @@ class Group(ThreadABC):
         data["log_message_type"] = "log:subscribe"
 
         for i, user_id in enumerate(user_ids):
-            if user_id == self.session.user_id:
+            if user_id == self.session.user.id:
                 raise ValueError(
                     "Error when adding users: Cannot add self to group thread"
                 )
@@ -138,7 +138,7 @@ class Group(ThreadABC):
     def _users_approval(self, user_ids: Iterable[str], approve: bool):
         data = {
             "client_mutation_id": "0",
-            "actor_id": self.session.user_id,
+            "actor_id": self.session.user.id,
             "thread_fbid": self.id,
             "user_ids": list(user_ids),
             "response": "ACCEPT" if approve else "DENY",

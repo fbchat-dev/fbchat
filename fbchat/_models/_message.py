@@ -123,7 +123,7 @@ class Message:
         data = {
             "action": "ADD_REACTION" if reaction else "REMOVE_REACTION",
             "client_mutation_id": "1",
-            "actor_id": self.session.user_id,
+            "actor_id": self.session.user.id,
             "message_id": self.id,
             "reaction": reaction,
         }

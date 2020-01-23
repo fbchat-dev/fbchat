@@ -190,7 +190,7 @@ class Listener:
             "max_deltas_able_to_process": 1000,
             "delta_batch_size": 500,
             "encoding": "JSON",
-            "entity_fbid": self.session.user_id,
+            "entity_fbid": self.session.user.id,
         }
 
         # If we don't have a sync_token, create a new messenger queue
@@ -250,7 +250,7 @@ class Listener:
 
         username = {
             # The user ID
-            "u": self.session.user_id,
+            "u": self.session.user.id,
             # Session ID
             "s": session_id,
             # Active status setting

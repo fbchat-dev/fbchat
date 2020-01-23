@@ -42,7 +42,7 @@ class Client:
             >>> users[0].name
             "A user"
         """
-        data = {"viewer": self.session.user_id}
+        data = {"viewer": self.session.user.id}
         j = self.session._payload_post("/chat/user_info_all", data)
 
         users = []

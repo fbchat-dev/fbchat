@@ -58,7 +58,7 @@ def on_nickname_set(event: fbchat.NicknameSet):
 def on_people_added(event: fbchat.PeopleAdded):
     if old_thread_id != event.thread.id:
         return
-    if event.author.id != session.user_id:
+    if event.author.id != session.user.id:
         print(f"{', '.join(x.id for x in event.added)} got added. They will be removed")
         for added in event.added:
             event.thread.remove_participant(added.id)
@@ -68,9 +68,9 @@ def on_person_removed(event: fbchat.PersonRemoved):
     if old_thread_id != event.thread.id:
         return
     # No point in trying to add ourself
-    if event.removed.id == session.user_id:
+    if event.removed.id == session.user.id:
         return
-    if event.author.id != session.user_id:
+    if event.author.id != session.user.id:
         print(f"{event.removed.id} got removed. They will be re-added")
         event.thread.add_participants([removed.id])
 
