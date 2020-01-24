@@ -130,11 +130,10 @@ class Mqtt(object):
         log.debug("Fetching MQTT sequence ID")
         # Same request as in `Client.fetchThreadList`
         (j,) = state._graphql_requests(_graphql.from_doc_id("1349387578499440", params))
-        try:
-            return int(j["viewer"]["message_threads"]["sync_sequence_id"])
-        except (KeyError, ValueError):
-            # TODO: Proper exceptions
-            raise
+        sequence_id = j["viewer"]["message_threads"]["sync_sequence_id"]
+        if not sequence_id:
+            raise _exception.FBchatNotLoggedIn("Failed fetching sequence id")
+        return int(sequence_id)
 
     def _on_connect_handler(self, client, userdata, flags, rc):
         if rc == 21:
@@ -287,6 +286,8 @@ class Mqtt(object):
                 # This error is wrongly classified
                 # See https://github.com/eclipse/paho.mqtt.python/issues/340
                 log.warning("Connection error, retrying")
+            elif rc == paho.mqtt.client.MQTT_ERR_CONN_REFUSED:
+                raise _exception.FBchatNotLoggedIn("MQTT connection refused")
             else:
                 err = paho.mqtt.client.error_string(rc)
                 log.error("MQTT Error: %s", err)
