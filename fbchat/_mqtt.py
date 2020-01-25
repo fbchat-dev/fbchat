@@ -97,47 +97,33 @@ def fetch_sequence_id(session: _session.Session) -> int:
     return int(sequence_id)
 
 
-@attr.s(slots=True, kw_only=kw_only, repr=False, eq=False)
+@attr.s(slots=True, kw_only=kw_only, eq=False)
 class Listener:
-    """Helper, to listen for incoming Facebook events."""
+    """Helper, to listen for incoming Facebook events.
+
+    Initialize a connection to the Facebook MQTT service.
+
+    Args:
+        session: The session to use when making requests.
+        chat_on: Whether ...
+        foreground: Whether ...
+
+    Example:
+        >>> listener = fbchat.Listener(session, chat_on=True, foreground=True)
+    """
 
     session = attr.ib(type=_session.Session)
     _chat_on = attr.ib(type=bool)
     _foreground = attr.ib(type=bool)
-    _sequence_id = attr.ib(type=int)
     _mqtt = attr.ib(factory=mqtt_factory, type=paho.mqtt.client.Client)
-    _sync_token = attr.ib(None, type=str)
-    _tmp_events = attr.ib(None, type=Optional[Iterable[_events.Event]])
-
-    def __repr__(self) -> str:
-        # An alternative repr, to illustrate that you can't create the class directly
-        return "<fbchat.Listener session={} chat_on={} foreground={}>".format(
-            self.session, self._chat_on, self._foreground
-        )
+    _sync_token = attr.ib(None, type=Optional[str])
+    _sequence_id = attr.ib(None, type=Optional[int])
+    _tmp_events = attr.ib(factory=list, type=Iterable[_events.Event])
 
     def __attrs_post_init__(self):
         # Configure callbacks
         self._mqtt.on_message = self._on_message_handler
         self._mqtt.on_connect = self._on_connect_handler
-
-    @classmethod
-    def connect(cls, session: _session.Session, chat_on: bool, foreground: bool):
-        """Initialize a connection to the Facebook MQTT service.
-
-        Args:
-            session: The session to use when making requests.
-            chat_on: Whether ...
-            foreground: Whether ...
-
-        Example:
-            >>> listener = fbchat.Listener.connect(session, chat_on=True, foreground=True)
-        """
-        return cls(
-            session=session,
-            chat_on=chat_on,
-            foreground=foreground,
-            sequence_id=fetch_sequence_id(session),
-        )
 
     def _handle_ms(self, j):
         """Handle /t_ms special logic.
@@ -326,6 +312,9 @@ class Listener:
             >>> for event in listener.listen():
             ...     print(event)
         """
+        if not self._sequence_id:
+            self._sequence_id = fetch_sequence_id(self.session)
+
         # Make sure we're connected
         while True:
             # Beware, internal API, may have to change this to something more stable!
