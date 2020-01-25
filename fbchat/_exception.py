@@ -47,6 +47,11 @@ class ParseError(FacebookError):
 
 
 @attr.s(slots=True, auto_exc=True)
+class NotLoggedIn(FacebookError):
+    """Raised by Facebook if the client has been logged out."""
+
+
+@attr.s(slots=True, auto_exc=True)
 class ExternalError(FacebookError):
     """Base class for errors that Facebook return."""
 
@@ -87,13 +92,6 @@ class InvalidParameters(ExternalError):
 
 
 @attr.s(slots=True, auto_exc=True)
-class NotLoggedIn(ExternalError):
-    """Raised by Facebook if the client has been logged out."""
-
-    code = attr.ib()
-
-
-@attr.s(slots=True, auto_exc=True)
 class PleaseRefresh(ExternalError):
     """Raised by Facebook if the client has been inactive for too long.
 
@@ -108,7 +106,7 @@ def handle_payload_error(j):
         return
     code = j["error"]
     if code == 1357001:
-        error_cls = NotLoggedIn
+        raise NotLoggedIn(j["errorSummary"])
     elif code == 1357004:
         error_cls = PleaseRefresh
     elif code in (1357031, 1545010, 1545003):
