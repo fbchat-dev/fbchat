@@ -90,7 +90,7 @@ class InvalidParameters(ExternalError):
 class NotLoggedIn(ExternalError):
     """Raised by Facebook if the client has been logged out."""
 
-    code = attr.ib(1357001)
+    code = attr.ib()
 
 
 @attr.s(slots=True, auto_exc=True)
