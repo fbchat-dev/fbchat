@@ -24,8 +24,7 @@ class Typing(ThreadEvent):
         return cls(author=author, thread=author, status=status)
 
     @classmethod
-    def _parse(cls, session, data):
-        # TODO: Rename this method
+    def _parse_thread_typing(cls, session, data):
         author = _threads.User(session=session, id=str(data["sender_fbid"]))
         thread = _threads.Group(session=session, id=str(data["thread"]))
         status = data["state"] == 1
@@ -90,7 +89,7 @@ def parse_events(session, topic, data):
                     ) from e
 
         elif topic == "/thread_typing":
-            yield Typing._parse(session, data)
+            yield Typing._parse_thread_typing(session, data)
 
         elif topic == "/orca_typing_notifications":
             yield Typing._parse_orca(session, data)

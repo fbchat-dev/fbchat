@@ -1,5 +1,4 @@
 import attr
-import abc
 from .._common import kw_only
 from .. import _exception, _util, _threads
 
@@ -10,13 +9,8 @@ attrs_event = attr.s(slots=True, kw_only=kw_only, frozen=True)
 
 
 @attrs_event
-class Event(metaclass=abc.ABCMeta):
+class Event:
     """Base class for all events."""
-
-    @classmethod
-    @abc.abstractmethod
-    def _parse(cls, session, data):
-        raise NotImplementedError
 
     @staticmethod
     def _get_thread(session, data):
@@ -60,3 +54,9 @@ class ThreadEvent(Event):
         thread = cls._get_thread(session, metadata)
         at = _util.millis_to_datetime(int(metadata["timestamp"]))
         return author, thread, at
+
+    @classmethod
+    def _parse_fetch(cls, session, data):
+        author = _threads.User(session=session, id=data["message_sender"]["id"])
+        at = _util.millis_to_datetime(int(data["timestamp_precise"]))
+        return author, at
