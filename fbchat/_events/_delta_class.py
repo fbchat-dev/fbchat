@@ -8,10 +8,11 @@ from typing import Sequence, Optional
 
 
 @attrs_event
-class PeopleAdded(ThreadEvent):
-    """somebody added people to a group thread."""
+class ParticipantsAdded(ThreadEvent):
+    """People were added to a group thread."""
 
     # TODO: Add message id
+    # TODO: Add snippet/admin text
 
     thread = attr.ib(type="_threads.Group")  # Set the correct type
     #: The people who got added
@@ -29,9 +30,27 @@ class PeopleAdded(ThreadEvent):
         ]
         return cls(author=author, thread=thread, added=added, at=at)
 
+    @classmethod
+    def _from_send(cls, thread: "_threads.Group", added_ids: Sequence[str]):
+        return cls(
+            author=thread.session.user,
+            thread=thread,
+            added=[_threads.User(session=thread.session, id=id_) for id_ in added_ids],
+            at=None,
+        )
+
+    @classmethod
+    def _from_fetch(cls, thread: "_threads.Group", data):
+        author, at = cls._parse_fetch(thread.session, data)
+        added = [
+            _threads.User(session=thread.session, id=id_["id"])
+            for id_ in data["participants_added"]
+        ]
+        return cls(author=author, thread=thread, added=added, at=at)
+
 
 @attrs_event
-class PersonRemoved(ThreadEvent):
+class ParticipantRemoved(ThreadEvent):
     """Somebody removed a person from a group thread."""
 
     # TODO: Add message id
@@ -46,6 +65,23 @@ class PersonRemoved(ThreadEvent):
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
         removed = _threads.User(session=session, id=data["leftParticipantFbId"])
+        return cls(author=author, thread=thread, removed=removed, at=at)
+
+    @classmethod
+    def _from_send(cls, thread: "_threads.Group", removed_id: str):
+        return cls(
+            author=thread.session.user,
+            thread=thread,
+            removed=_threads.User(session=thread.session, id=removed_id),
+            at=None,
+        )
+
+    @classmethod
+    def _from_fetch(cls, thread: "_threads.Group", data):
+        author, at = cls._parse_fetch(thread.session, data)
+        removed = _threads.User(
+            session=thread.session, id=data["participants_removed"][0]["id"]
+        )
         return cls(author=author, thread=thread, removed=removed, at=at)
 
 
@@ -184,9 +220,9 @@ def parse_delta(session, data):
     if class_ == "AdminTextMessage":
         return _delta_type.parse_admin_message(session, data)
     elif class_ == "ParticipantsAddedToGroupThread":
-        return PeopleAdded._parse(session, data)
+        return ParticipantsAdded._parse(session, data)
     elif class_ == "ParticipantLeftGroupThread":
-        return PersonRemoved._parse(session, data)
+        return ParticipantRemoved._parse(session, data)
     elif class_ == "MarkFolderSeen":
         # TODO: Finish this
         folders = [_models.ThreadLocation._parse(folder) for folder in data["folders"]]

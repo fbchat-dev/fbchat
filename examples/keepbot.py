@@ -61,8 +61,8 @@ def on_nickname_set(sender, event: fbchat.NicknameSet):
         event.thread.set_nickname(event.subject.id, old_nickname)
 
 
-@events.connect_via(fbchat.PeopleAdded)
-def on_people_added(sender, event: fbchat.PeopleAdded):
+@events.connect_via(fbchat.ParticipantsAdded)
+def on_people_added(sender, event: fbchat.ParticipantsAdded):
     if old_thread_id != event.thread.id:
         return
     if event.author.id != session.user.id:
@@ -71,8 +71,8 @@ def on_people_added(sender, event: fbchat.PeopleAdded):
             event.thread.remove_participant(added.id)
 
 
-@events.connect_via(fbchat.PersonRemoved)
-def on_person_removed(sender, event: fbchat.PersonRemoved):
+@events.connect_via(fbchat.ParticipantRemoved)
+def on_person_removed(sender, event: fbchat.ParticipantRemoved):
     if old_thread_id != event.thread.id:
         return
     # No point in trying to add ourself

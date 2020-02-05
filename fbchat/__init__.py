@@ -81,8 +81,8 @@ from ._events import (
     UnsendEvent,
     MessageReplyEvent,
     # _delta_class
-    PeopleAdded,
-    PersonRemoved,
+    ParticipantsAdded,
+    ParticipantRemoved,
     TitleSet,
     UnfetchedThreadEvent,
     MessagesDelivered,

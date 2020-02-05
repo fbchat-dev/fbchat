@@ -8,8 +8,6 @@ from fbchat import (
     MessageData,
     ThreadLocation,
     UnknownEvent,
-    PeopleAdded,
-    PersonRemoved,
     TitleSet,
     UnfetchedThreadEvent,
     MessagesDelivered,
@@ -18,78 +16,6 @@ from fbchat import (
     ThreadFolder,
 )
 from fbchat._events import parse_delta
-
-
-def test_people_added(session):
-    data = {
-        "addedParticipants": [
-            {
-                "fanoutPolicy": "IRIS_MESSAGE_QUEUE",
-                "firstName": "Abc",
-                "fullName": "Abc Def",
-                "initialFolder": "FOLDER_INBOX",
-                "initialFolderId": {"systemFolderId": "INBOX"},
-                "isMessengerUser": False,
-                "userFbId": "1234",
-            }
-        ],
-        "irisSeqId": "11223344",
-        "irisTags": ["DeltaParticipantsAddedToGroupThread", "is_from_iris_fanout"],
-        "messageMetadata": {
-            "actorFbId": "3456",
-            "adminText": "You added Abc Def to the group.",
-            "folderId": {"systemFolderId": "INBOX"},
-            "messageId": "mid.$XYZ",
-            "offlineThreadingId": "1122334455",
-            "skipBumpThread": False,
-            "tags": [],
-            "threadKey": {"threadFbId": "4321"},
-            "threadReadStateEffect": "KEEP_AS_IS",
-            "timestamp": "1500000000000",
-            "unsendType": "deny_log_message",
-        },
-        "participants": ["1234", "2345", "3456", "4567"],
-        "requestContext": {"apiArgs": {}},
-        "tqSeqId": "1111",
-        "class": "ParticipantsAddedToGroupThread",
-    }
-    assert PeopleAdded(
-        author=User(session=session, id="3456"),
-        thread=Group(session=session, id="4321"),
-        added=[User(session=session, id="1234")],
-        at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
-
-
-def test_person_removed(session):
-    data = {
-        "irisSeqId": "11223344",
-        "irisTags": ["DeltaParticipantLeftGroupThread", "is_from_iris_fanout"],
-        "leftParticipantFbId": "1234",
-        "messageMetadata": {
-            "actorFbId": "3456",
-            "adminText": "You removed Abc Def from the group.",
-            "folderId": {"systemFolderId": "INBOX"},
-            "messageId": "mid.$XYZ",
-            "offlineThreadingId": "1122334455",
-            "skipBumpThread": True,
-            "tags": [],
-            "threadKey": {"threadFbId": "4321"},
-            "threadReadStateEffect": "KEEP_AS_IS",
-            "timestamp": "1500000000000",
-            "unsendType": "deny_log_message",
-        },
-        "participants": ["1234", "2345", "3456", "4567"],
-        "requestContext": {"apiArgs": {}},
-        "tqSeqId": "1111",
-        "class": "ParticipantLeftGroupThread",
-    }
-    assert PersonRemoved(
-        author=User(session=session, id="3456"),
-        thread=Group(session=session, id="4321"),
-        removed=User(session=session, id="1234"),
-        at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
 
 
 def test_title_set(session):

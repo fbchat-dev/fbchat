@@ -3,7 +3,7 @@ import datetime
 from ._abc import ThreadABC
 from . import _user
 from .._common import attrs_default
-from .. import _util, _session, _graphql, _models
+from .. import _util, _session, _graphql, _events, _models
 
 from typing import Sequence, Iterable, Set, Mapping, Optional
 
@@ -27,8 +27,13 @@ class Group(ThreadABC):
     def _copy(self) -> "Group":
         return Group(session=self.session, id=self.id)
 
-    def add_participants(self, user_ids: Iterable[str]):
+    def add_participants(self, user_ids: Iterable[str]) -> _events.ParticipantsAdded:
         """Add users to the group.
+
+        If the group's approval mode is set to require admin approval, and you're not an
+        admin, the participants won't actually be added, they will be set as pending.
+
+        In that case, the returned `ParticipantsAdded` event will not be correct.
 
         Args:
             user_ids: One or more user IDs to add
@@ -51,10 +56,14 @@ class Group(ThreadABC):
                     "log_message_data[added_participants][{}]".format(i)
                 ] = "fbid:{}".format(user_id)
 
-        return self.session._do_send_request(data)
+        message_id, thread_id = self.session._do_send_request(data)
+        return _events.ParticipantsAdded._from_send(thread=self, added_ids=user_ids)
 
-    def remove_participant(self, user_id: str):
+    def remove_participant(self, user_id: str) -> _events.ParticipantRemoved:
         """Remove user from the group.
+
+        If the group's approval mode is set to require admin approval, and you're not an
+        admin, this will fail.
 
         Args:
             user_id: User ID to remove
@@ -63,7 +72,18 @@ class Group(ThreadABC):
             >>> group.remove_participant("1234")
         """
         data = {"uid": user_id, "tid": self.id}
-        j = self.session._payload_post("/chat/remove_participants/", data)
+        self.session._payload_post("/chat/remove_participants/", data)
+        return _events.ParticipantRemoved._from_send(thread=self, removed_id=user_id)
+
+    def leave(self) -> _events.ParticipantRemoved:
+        """Leave the group.
+
+        This will succeed regardless of approval mode and admin status.
+
+        Example:
+            >>> group.leave()
+        """
+        return self.remove_participant(self.session.user.id)
 
     def _admin_status(self, user_ids: Iterable[str], status: bool):
         data = {"add": status, "thread_fbid": self.id}
