@@ -594,17 +594,7 @@ class Client:
             >>> group = fbchat.Group(session=session, id="1234")
             >>> client.delete_threads([group])
         """
-        data_unpin = {}
-        data_delete = {}
-        for i, thread in enumerate(threads):
-            data_unpin["ids[{}]".format(thread.id)] = "false"
-            data_delete["ids[{}]".format(i)] = thread.id
-        j_unpin = self.session._payload_post(
-            "/ajax/mercury/change_pinned_status.php?dpr=1", data_unpin
-        )
-        j_delete = self.session._payload_post(
-            "/ajax/mercury/delete_threads.php?dpr=1", data_delete
-        )
+        _threads.ThreadABC._delete_many(self.session, (t.id for t in threads))
 
     def delete_messages(self, messages: Iterable[_models.Message]):
         """Bulk delete specified messages.
@@ -617,7 +607,4 @@ class Client:
             >>> message2 = fbchat.Message(thread=thread, id="2345")
             >>> client.delete_threads([message1, message2])
         """
-        data = {}
-        for i, message in enumerate(messages):
-            data["message_ids[{}]".format(i)] = message.id
-        j = self.session._payload_post("/ajax/mercury/delete_messages.php?dpr=1", data)
+        _models.Message._delete_many(self.session, (m.id for m in messages))

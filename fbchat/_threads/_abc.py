@@ -75,6 +75,10 @@ class ThreadABC(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    def fetch(self):
+        # TODO: This
+        raise NotImplementedError
+
     def wave(self, first: bool = True) -> str:
         """Wave hello to the thread.
 
@@ -694,6 +698,26 @@ class ThreadABC(metaclass=abc.ABCMeta):
         """Mark the thread as spam, and delete it."""
         data = {"id": self.id}
         j = self.session._payload_post("/ajax/mercury/mark_spam.php?dpr=1", data)
+
+    @staticmethod
+    def _delete_many(session, thread_ids):
+        data = {}
+        for i, id_ in enumerate(thread_ids):
+            data["ids[{}]".format(i)] = id_
+        # Not needed any more
+        # j = session._payload_post("/ajax/mercury/change_pinned_status.php?dpr=1", ...)
+        # Both /ajax/mercury/delete_threads.php (with an s) doesn't work
+        j = session._payload_post("/ajax/mercury/delete_thread.php", data)
+
+    def delete(self):
+        """Delete the thread.
+
+        If you want to delete multiple threads, please use `Client.delete_threads`.
+
+        Example:
+            >>> message.delete()
+        """
+        self._delete_many(self.session, [self.id])
 
     def _forced_fetch(self, message_id: str) -> dict:
         params = {
