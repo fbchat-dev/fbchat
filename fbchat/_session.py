@@ -308,7 +308,7 @@ class Session:
             # Fall back to searching with a regex
             res = FB_DTSG_REGEX.search(r.text)
             if not res:
-                raise ValueError("Failed loading session, could not find fb_dtsg")
+                raise _exception.NotLoggedIn("Could not find fb_dtsg")
             fb_dtsg = res.group(1)
 
         revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])

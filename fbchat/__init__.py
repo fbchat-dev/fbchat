@@ -111,7 +111,7 @@ from ._events import (
     FriendRequest,
     Presence,
 )
-from ._mqtt import Listener
+from ._listen import Listener
 
 from ._client import Client
 
