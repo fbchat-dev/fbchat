@@ -1,11 +1,12 @@
 import attr
+import inspect
 import random
 import paho.mqtt.client
 import requests
 from ._common import log, kw_only
 from . import _util, _exception, _session, _graphql, _events
 
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Mapping, Callable
 
 
 HOST = "edge-chat.facebook.com"
@@ -97,6 +98,9 @@ def fetch_sequence_id(session: _session.Session) -> int:
     return int(sequence_id)
 
 
+HandlerT = Callable[[_events.Event], None]
+
+
 @attr.s(slots=True, kw_only=kw_only, eq=False)
 class Listener:
     """Helper, to listen for incoming Facebook events.
@@ -119,6 +123,7 @@ class Listener:
     _sync_token = attr.ib(None, type=Optional[str])
     _sequence_id = attr.ib(None, type=Optional[int])
     _tmp_events = attr.ib(factory=list, type=Iterable[_events.Event])
+    _handlers = attr.ib(factory=dict, type=Mapping[HandlerT, _events.Event])
 
     def __attrs_post_init__(self):
         # Configure callbacks
@@ -302,7 +307,8 @@ class Listener:
 
         Yields events when they arrive.
 
-        This will automatically reconnect on errors.
+        This will automatically reconnect on errors, except if the errors are one of
+        `PleaseRefresh` or `NotLoggedIn`.
 
         Example:
             Print events continually.
@@ -398,3 +404,57 @@ class Listener:
     #
     # def browser_close(self):
     #     info = self._mqtt.publish("/browser_close", payload=b"{}", qos=1)
+
+    def register(func: HandlerT) -> HandlerT:
+        """Register a function that will be called when .run is called.
+
+        The input function must take a single annotated argument.
+
+        Should be used as a function decorator.
+
+        Example:
+            >>> @listener.register
+            >>> def my_handler(event: fbchat.Event):
+            ...     print(f"New event: {event}")
+        """
+        try:
+            parameter = next(iter(inspect.signature(func).parameters.values()))
+        except Exception as e:  # TODO: More precise exceptions
+            raise ValueError("Invalid function. Must have at least an argument") from e
+
+        if parameter.annotation is parameter.empty:
+            raise ValueError("Invalid function. Must be annotated")
+
+        if not issubclass(parameter.annotation, _events.Event):
+            raise ValueError("Invalid function. Annotation must be an event class")
+
+        # TODO: More error checks, e.g. kw_only parameters
+
+        self._handlers[func] = parameter.annotation
+
+    def unregister(func: HandlerT):
+        """Unregister a previously registered function."""
+        try:
+            self._handlers.pop(func)
+        except KeyError:
+            raise ValueError("Tried to unregister a function that was not registered")
+
+    def run(self) -> None:
+        """Run the listening loop, and dispatch incoming events to registered handlers.
+
+        This uses `.listen`, which reconnect on errors, except if the errors are one of
+        `PleaseRefresh` or `NotLoggedIn`.
+
+        Example:
+            Print incoming messages.
+
+            >>> @listener.register
+            >>> def print_msg(event: fbchat.MessageEvent):
+            ...     print(event.message.text)
+            ...
+            >>> listener.run()
+        """
+        for event in self.listen():
+            for handler, event_cls in self._handlers.items():
+                if isinstance(event, event_cls):
+                    handler(event)

@@ -15,10 +15,10 @@ old_nicknames = {
 }
 
 session = fbchat.Session.login("<email>", "<password>")
+listener = fbchat.Listener(session=session, chat_on=False, foreground=False)
 
-listener = fbchat.Listener.connect(session, chat_on=False, foreground=False)
 
-
+@listener.register
 def on_color_set(event: fbchat.ColorSet):
     if old_thread_id != event.thread.id:
         return
@@ -27,6 +27,7 @@ def on_color_set(event: fbchat.ColorSet):
         event.thread.set_color(old_color)
 
 
+@listener.register
 def on_emoji_set(event: fbchat.EmojiSet):
     if old_thread_id != event.thread.id:
         return
@@ -35,6 +36,7 @@ def on_emoji_set(event: fbchat.EmojiSet):
         event.thread.set_emoji(old_emoji)
 
 
+@listener.register
 def on_title_set(event: fbchat.TitleSet):
     if old_thread_id != event.thread.id:
         return
@@ -43,6 +45,7 @@ def on_title_set(event: fbchat.TitleSet):
         event.thread.set_title(old_title)
 
 
+@listener.register
 def on_nickname_set(event: fbchat.NicknameSet):
     if old_thread_id != event.thread.id:
         return
@@ -55,6 +58,7 @@ def on_nickname_set(event: fbchat.NicknameSet):
         event.thread.set_nickname(event.subject.id, old_nickname)
 
 
+@listener.register
 def on_people_added(event: fbchat.PeopleAdded):
     if old_thread_id != event.thread.id:
         return
@@ -64,6 +68,7 @@ def on_people_added(event: fbchat.PeopleAdded):
             event.thread.remove_participant(added.id)
 
 
+@listener.register
 def on_person_removed(event: fbchat.PersonRemoved):
     if old_thread_id != event.thread.id:
         return
@@ -75,16 +80,4 @@ def on_person_removed(event: fbchat.PersonRemoved):
         event.thread.add_participants([removed.id])
 
 
-for event in listener.listen():
-    if isinstance(event, fbchat.ColorSet):
-        on_color_set(event)
-    elif isinstance(event, fbchat.EmojiSet):
-        on_emoji_set(event)
-    elif isinstance(event, fbchat.TitleSet):
-        on_title_set(event)
-    elif isinstance(event, fbchat.NicknameSet):
-        on_nickname_set(event)
-    elif isinstance(event, fbchat.PeopleAdded):
-        on_people_added(event)
-    elif isinstance(event, fbchat.PersonRemoved):
-        on_person_removed(event)
+listener.run()
