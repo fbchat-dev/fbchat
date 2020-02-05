@@ -21,6 +21,13 @@ class ColorSet(ThreadEvent):
         color = _threads.ThreadABC._parse_color(data["untypedData"]["theme_color"])
         return cls(author=author, thread=thread, color=color, at=at)
 
+    @classmethod
+    def _from_fetch(cls, thread: "_threads.ThreadABC", data):
+        author, at = cls._parse_fetch(thread.session, data)
+        color = data["extensible_message_admin_text"]["theme_color"]
+        color = _threads.ThreadABC._parse_color(color)
+        return cls(author=author, thread=thread, color=color, at=at)
+
 
 @attrs_event
 class EmojiSet(ThreadEvent):

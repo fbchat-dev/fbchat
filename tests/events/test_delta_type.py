@@ -12,7 +12,6 @@ from fbchat import (
     PlanData,
     GuestStatus,
     UnknownEvent,
-    ColorSet,
     NicknameSet,
     AdminsAdded,
     AdminsRemoved,
@@ -29,42 +28,6 @@ from fbchat import (
     PlanResponded,
 )
 from fbchat._events import parse_admin_message
-
-
-def test_color_set(session):
-    data = {
-        "irisSeqId": "1111111",
-        "irisTags": ["DeltaAdminTextMessage", "is_from_iris_fanout"],
-        "messageMetadata": {
-            "actorFbId": "1234",
-            "adminText": "You changed the chat theme to Orange.",
-            "folderId": {"systemFolderId": "INBOX"},
-            "messageId": "mid.$XYZ",
-            "offlineThreadingId": "11223344556677889900",
-            "skipBumpThread": False,
-            "tags": ["source:titan:web", "no_push"],
-            "threadKey": {"threadFbId": "4321"},
-            "threadReadStateEffect": "MARK_UNREAD",
-            "timestamp": "1500000000000",
-            "unsendType": "deny_log_message",
-        },
-        "participants": ["1234", "2345", "3456"],
-        "requestContext": {"apiArgs": {}},
-        "tqSeqId": "1111",
-        "type": "change_thread_theme",
-        "untypedData": {
-            "should_show_icon": "1",
-            "theme_color": "FFFF7E29",
-            "accessibility_label": "Orange",
-        },
-        "class": "AdminTextMessage",
-    }
-    assert ColorSet(
-        author=User(session=session, id="1234"),
-        thread=Group(session=session, id="4321"),
-        color="#ff7e29",
-        at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_admin_message(session, data)
 
 
 def test_nickname_set(session):

@@ -480,7 +480,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
             "/messaging/save_thread_nickname/?source=thread_settings&dpr=1", data
         )
 
-    def set_color(self, color: str):
+    def set_color(self, color: str) -> _events.ColorSet:
         """Change thread color.
 
         The new color must be one of the following::
@@ -514,6 +514,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
         data = {"color_choice": color, "thread_or_other_fbid": self.id}
         j = self.session._payload_post(
             "/messaging/save_thread_color/?source=thread_settings&dpr=1", data
+        )
+        return _events.ColorSet(
+            author=self.session.user, thread=self._copy(), color=color, at=None
         )
 
     # def set_theme(self, theme_id: str):
