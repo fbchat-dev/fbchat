@@ -90,15 +90,22 @@ class TitleSet(ThreadEvent):
     """Somebody changed a group's title."""
 
     thread = attr.ib(type="_threads.Group")  # Set the correct type
-    #: The new title
-    title = attr.ib(type=str)
+    #: The new title. If ``None``, the title is cleared
+    title = attr.ib(type=Optional[str])
     #: When the title was set
     at = attr.ib(type=datetime.datetime)
 
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        return cls(author=author, thread=thread, title=data["name"], at=at)
+        title = data["name"] or None
+        return cls(author=author, thread=thread, title=title, at=at)
+
+    @classmethod
+    def _from_fetch(cls, thread, data):
+        author, at = cls._parse_fetch(thread.session, data)
+        title = data["thread_name"] or None
+        return cls(author=author, thread=thread, title=title, at=at)
 
 
 @attrs_event

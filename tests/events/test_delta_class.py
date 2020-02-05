@@ -8,7 +8,6 @@ from fbchat import (
     MessageData,
     ThreadLocation,
     UnknownEvent,
-    TitleSet,
     UnfetchedThreadEvent,
     MessagesDelivered,
     ThreadsRead,
@@ -16,37 +15,6 @@ from fbchat import (
     ThreadFolder,
 )
 from fbchat._events import parse_delta
-
-
-def test_title_set(session):
-    data = {
-        "irisSeqId": "11223344",
-        "irisTags": ["DeltaThreadName", "is_from_iris_fanout"],
-        "messageMetadata": {
-            "actorFbId": "3456",
-            "adminText": "You named the group abc.",
-            "folderId": {"systemFolderId": "INBOX"},
-            "messageId": "mid.$XYZ",
-            "offlineThreadingId": "1122334455",
-            "skipBumpThread": False,
-            "tags": [],
-            "threadKey": {"threadFbId": "4321"},
-            "threadReadStateEffect": "KEEP_AS_IS",
-            "timestamp": "1500000000000",
-            "unsendType": "deny_log_message",
-        },
-        "name": "abc",
-        "participants": ["1234", "2345", "3456", "4567"],
-        "requestContext": {"apiArgs": {}},
-        "tqSeqId": "1111",
-        "class": "ThreadName",
-    }
-    assert TitleSet(
-        author=User(session=session, id="3456"),
-        thread=Group(session=session, id="4321"),
-        title="abc",
-        at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_delta(session, data)
 
 
 def test_forced_fetch(session):
