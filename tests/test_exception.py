@@ -19,7 +19,6 @@ from fbchat._exception import (
 
 
 ERROR_DATA = [
-    (NotLoggedIn, 1357001, "Not logged in", "Please log in to continue."),
     (
         PleaseRefresh,
         1357004,
@@ -68,6 +67,16 @@ ERROR_DATA = [
 def test_handle_payload_error(exception, code, summary, description):
     data = {"error": code, "errorSummary": summary, "errorDescription": description}
     with pytest.raises(exception, match=r"#\d+ .+:"):
+        handle_payload_error(data)
+
+
+def test_handle_not_logged_in_error():
+    data = {
+        "error": 1357001,
+        "errorSummary": "Not logged in",
+        "errorDescription": "Please log in to continue.",
+    }
+    with pytest.raises(NotLoggedIn, match="Not logged in"):
         handle_payload_error(data)
 
 
