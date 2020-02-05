@@ -206,7 +206,7 @@ class Client:
     ) -> Iterable[Tuple[_threads.ThreadABC, int]]:
         """Search for messages in all threads.
 
-        Intended to be used alongside `ThreadABC.search_messages`
+        Intended to be used alongside `ThreadABC.search_messages`.
 
         Warning! If someone send a message to a thread that matches the query, while
         we're searching, some snippets will get returned twice, and some will be lost.
@@ -215,8 +215,7 @@ class Client:
 
         Args:
             query: Text to search for
-            limit: Max. number of threads to retrieve. If ``None``, all threads will be
-                retrieved
+            limit: Max. number of items to retrieve. If ``None``, all will be retrieved
 
         Example:
             Search for messages, and print the amount of snippets in each thread.
@@ -371,6 +370,8 @@ class Client:
         location: _models.ThreadLocation = _models.ThreadLocation.INBOX,
     ) -> Iterable[_threads.ThreadABC]:
         """Fetch the client's thread list.
+
+        The returned threads are ordered by last active first.
 
         Args:
             limit: Max. number of threads to retrieve. If ``None``, all threads will be

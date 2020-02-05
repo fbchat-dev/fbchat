@@ -316,7 +316,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
         This is fundamentally unfixable, it's just how the endpoint is implemented.
 
-        The returned message snippets are ordered by last sent.
+        The returned message snippets are ordered by last sent first.
 
         Args:
             query: Text to search for
@@ -368,7 +368,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
     def fetch_messages(self, limit: Optional[int]) -> Iterable["_models.Message"]:
         """Fetch messages in a thread.
 
-        The returned messages are ordered by most recent first.
+        The returned messages are ordered by last sent first.
 
         Args:
             limit: Max. number of threads to retrieve. If ``None``, all threads will be
@@ -390,9 +390,10 @@ class ThreadABC(metaclass=abc.ABCMeta):
         before = None
         for limit in _util.get_limits(limit, MAX_BATCH_LIMIT):
             messages = self._fetch_messages(limit, before)
+            messages.reverse()
 
             if before:
-                # Strip the first thread
+                # Strip the first messages
                 yield from messages[1:]
             else:
                 yield from messages
@@ -413,8 +414,6 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
         result = j[self.id]["message_shared_media"]
 
-        print(len(result["edges"]))
-
         rtn = []
         for edge in result["edges"]:
             node = edge["node"]
@@ -432,6 +431,8 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
     def fetch_images(self, limit: Optional[int]) -> Iterable["_models.Attachment"]:
         """Fetch images/videos posted in the thread.
+
+        The returned images are ordered by last sent first.
 
         Args:
             limit: Max. number of images to retrieve. If ``None``, all images will be
