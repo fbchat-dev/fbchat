@@ -153,9 +153,7 @@ class Listener:
                     " events may have been lost"
                 )
                 self._sync_token = None
-                self._sequence_id = fetch_sequence_id(self.session)
-                self._messenger_queue_publish()
-                # TODO: Signal to the user that they should reload their data!
+                self._sequence_id = None
                 return False
             log.error("MQTT error code %s received", error)
             return False
@@ -312,7 +310,7 @@ class Listener:
             >>> for event in listener.listen():
             ...     print(event)
         """
-        if not self._sequence_id:
+        if self._sequence_id is None:
             self._sequence_id = fetch_sequence_id(self.session)
 
         # Make sure we're connected
@@ -325,6 +323,12 @@ class Listener:
 
         while True:
             rc = self._mqtt.loop(timeout=1.0)
+
+            # The sequence ID was reset in _handle_ms
+            # TODO: Signal to the user that they should reload their data!
+            if self._sequence_id is None:
+                self._sequence_id = fetch_sequence_id(self.session)
+                self._messenger_queue_publish()
 
             # If disconnect() has been called
             # Beware, internal API, may have to change this to something more stable!
@@ -349,7 +353,7 @@ class Listener:
 
             if self._tmp_events:
                 yield from self._tmp_events
-                self._tmp_events = None
+                self._tmp_events = []
 
     def disconnect(self) -> None:
         """Disconnect the MQTT listener.
