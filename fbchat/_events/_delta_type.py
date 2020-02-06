@@ -26,15 +26,21 @@ class ColorSet(ThreadEvent):
 class EmojiSet(ThreadEvent):
     """Somebody set the emoji in a thread."""
 
-    #: The new emoji
-    emoji = attr.ib(type=str)
+    #: The new emoji. If ``None``, the emoji was reset to the default "LIKE" icon
+    emoji = attr.ib(type=Optional[str])
     #: When the emoji was set
     at = attr.ib(type=datetime.datetime)
 
     @classmethod
     def _parse(cls, session, data):
         author, thread, at = cls._parse_metadata(session, data)
-        emoji = data["untypedData"]["thread_icon"]
+        emoji = data["untypedData"]["thread_icon"] or None
+        return cls(author=author, thread=thread, emoji=emoji, at=at)
+
+    @classmethod
+    def _from_fetch(cls, thread: "_threads.ThreadABC", data):
+        author, at = cls._parse_fetch(thread.session, data)
+        emoji = data["extensible_message_admin_text"]["thread_icon"]
         return cls(author=author, thread=thread, emoji=emoji, at=at)
 
 

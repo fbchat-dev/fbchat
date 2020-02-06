@@ -13,7 +13,6 @@ from fbchat import (
     GuestStatus,
     UnknownEvent,
     ColorSet,
-    EmojiSet,
     NicknameSet,
     AdminsAdded,
     AdminsRemoved,
@@ -64,40 +63,6 @@ def test_color_set(session):
         author=User(session=session, id="1234"),
         thread=Group(session=session, id="4321"),
         color="#ff7e29",
-        at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
-    ) == parse_admin_message(session, data)
-
-
-def test_emoji_set(session):
-    data = {
-        "irisSeqId": "1111111",
-        "irisTags": ["DeltaAdminTextMessage"],
-        "messageMetadata": {
-            "actorFbId": "1234",
-            "adminText": "You set the emoji to 🌟.",
-            "folderId": {"systemFolderId": "INBOX"},
-            "messageId": "mid.$XYZ",
-            "offlineThreadingId": "11223344556677889900",
-            "skipBumpThread": False,
-            "skipSnippetUpdate": False,
-            "tags": ["source:generic_admin_text"],
-            "threadKey": {"otherUserFbId": "1234"},
-            "threadReadStateEffect": "MARK_UNREAD",
-            "timestamp": "1500000000000",
-            "unsendType": "deny_log_message",
-        },
-        "requestContext": {"apiArgs": {}},
-        "type": "change_thread_icon",
-        "untypedData": {
-            "thread_icon_url": "https://www.facebook.com/images/emoji.php/v9/te0/1/16/1f31f.png",
-            "thread_icon": "🌟",
-        },
-        "class": "AdminTextMessage",
-    }
-    assert EmojiSet(
-        author=User(session=session, id="1234"),
-        thread=User(session=session, id="1234"),
-        emoji="🌟",
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
     ) == parse_admin_message(session, data)
 

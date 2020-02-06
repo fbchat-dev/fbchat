@@ -528,22 +528,34 @@ class ThreadABC(metaclass=abc.ABCMeta):
     #         _graphql.from_doc_id("1768656253222505", {"data": data})
     #     )
 
-    def set_emoji(self, emoji: Optional[str]):
+    def set_emoji(self, emoji: Optional[str]) -> _events.EmojiSet:
         """Change thread emoji.
 
         Args:
             emoji: New thread emoji. If ``None``, will be set to the default "LIKE" icon
+
+        Todo:
+            Currently, setting the default "LIKE" icon does not work!
 
         Example:
             Set the thread emoji to "😊".
 
             >>> thread.set_emoji("😊")
         """
-        data = {"emoji_choice": emoji, "thread_or_other_fbid": self.id}
+        emoji = emoji or None
+        data = {
+            "emoji_choice": emoji,
+            "thread_or_other_fbid": self.id,
+            # TODO: Do we need this?
+            # "request_user_id": self.session.user.id,
+        }
         # While changing the emoji, the Facebook web client actually sends multiple
         # different requests, though only this one is required to make the change.
         j = self.session._payload_post(
-            "/messaging/save_thread_emoji/?source=thread_settings&dpr=1", data
+            "/messaging/save_thread_emoji/?source=thread_settings", data
+        )
+        return _events.EmojiSet(
+            author=self.session.user, thread=self._copy(), emoji=emoji, at=None
         )
 
     def forward_attachment(self, attachment_id: str):
