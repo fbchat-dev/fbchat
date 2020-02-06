@@ -56,7 +56,7 @@ class NicknameSet(ThreadEvent):
     """Somebody set the nickname of a person in a thread."""
 
     #: The person whose nickname was set
-    subject = attr.ib(type=str)
+    subject = attr.ib(type="_threads.User")
     #: The new nickname. If ``None``, the nickname was cleared
     nickname = attr.ib(type=Optional[str])
     #: When the nickname was set
@@ -69,6 +69,16 @@ class NicknameSet(ThreadEvent):
             session=session, id=data["untypedData"]["participant_id"]
         )
         nickname = data["untypedData"]["nickname"] or None  # None if ""
+        return cls(
+            author=author, thread=thread, subject=subject, nickname=nickname, at=at
+        )
+
+    @classmethod
+    def _from_fetch(cls, thread, data):
+        author, at = cls._parse_fetch(thread.session, data)
+        extra = data["extensible_message_admin_text"]
+        subject = _threads.User(session=thread.session, id=extra["participant_id"])
+        nickname = extra["nickname"] or None
         return cls(
             author=author, thread=thread, subject=subject, nickname=nickname, at=at
         )

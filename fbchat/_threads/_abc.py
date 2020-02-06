@@ -461,23 +461,31 @@ class ThreadABC(metaclass=abc.ABCMeta):
                 if image:
                     yield image
 
-    def set_nickname(self, user_id: str, nickname: str):
+    def set_nickname(self, user_id: str, nickname: Optional[str]):
         """Change the nickname of a user in the thread.
 
         Args:
             user_id: User that will have their nickname changed
-            nickname: New nickname
+            nickname: New nickname. If ``None``, the nickname will be cleared
 
         Example:
             >>> thread.set_nickname("1234", "A nickname")
         """
+        nickname = nickname or None
         data = {
             "nickname": nickname,
             "participant_id": user_id,
             "thread_or_other_fbid": self.id,
         }
-        j = self.session._payload_post(
-            "/messaging/save_thread_nickname/?source=thread_settings&dpr=1", data
+        self.session._payload_post(
+            "/messaging/save_thread_nickname/?source=thread_settings", data
+        )
+        return _events.NicknameSet(
+            author=self.session.user,
+            thread=self._copy(),
+            subject=_threads.User(session=self.session, id=str(user_id)),
+            nickname=nickname,
+            at=None,
         )
 
     def set_color(self, color: str) -> _events.ColorSet:
