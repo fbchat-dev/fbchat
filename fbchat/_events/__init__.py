@@ -67,6 +67,25 @@ class Presence(Event):
         return cls(statuses=statuses, full=data["list_type"] == "full")
 
 
+@attrs_event
+class Connect(Event):
+    """The client was connected to Facebook.
+
+    This is not guaranteed to be triggered the same amount of times `Disconnect`!
+    """
+
+
+@attrs_event
+class Disconnect(Event):
+    """The client lost the connection to Facebook.
+
+    This is not guaranteed to be triggered the same amount of times `Connect`!
+    """
+
+    #: The reason / error string for the disconnect
+    reason = attr.ib(type=str)
+
+
 def parse_events(session, topic, data):
     # See Mqtt._configure_connect_options for information about these topics
     try:

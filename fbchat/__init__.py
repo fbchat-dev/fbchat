@@ -74,6 +74,8 @@ from ._events import (
     Event,
     UnknownEvent,
     ThreadEvent,
+    Connect,
+    Disconnect,
     # _client_payload
     ReactionEvent,
     UserStatusEvent,
