@@ -608,7 +608,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         """
         return _models.Plan._create(self, name, at, location_name, location_id)
 
-    def create_poll(self, question: str, options=Mapping[str, bool]):
+    def create_poll(self, question: str, options: Mapping[str, bool]):
         """Create poll in a thread.
 
         Args:
