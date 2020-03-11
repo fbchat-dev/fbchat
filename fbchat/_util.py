@@ -7,7 +7,7 @@ import urllib.parse
 from ._common import log
 from . import _exception
 
-from typing import Iterable, Optional, Any
+from typing import Iterable, Optional, Any, Mapping, Sequence
 
 #: Default list of user agents
 USER_AGENTS = [
@@ -66,16 +66,26 @@ def generate_offline_threading_id():
     return str(int(msgs, 2))
 
 
-def get_jsmods_require(j, index):
-    if j.get("jsmods") and j["jsmods"].get("require"):
-        try:
-            return j["jsmods"]["require"][0][index][0]
-        except (KeyError, IndexError) as e:
-            log.warning(
-                "Error when getting jsmods_require: "
-                "{}. Facebook might have changed protocol".format(j)
-            )
-    return None
+def get_jsmods_require(require) -> Mapping[str, Sequence[Any]]:
+    rtn = {}
+    for item in require:
+        if len(item) == 1:
+            (module,) = item
+            rtn[module] = []
+            continue
+        method = "{}.{}".format(item[0], item[1])
+        requirements = item[2]
+        arguments = item[3]
+        rtn[method] = arguments
+    return rtn
+
+
+def get_jsmods_define(define) -> Mapping[str, Mapping[str, Any]]:
+    rtn = {}
+    for item in define:
+        module, requirements, data, _ = item
+        rtn[module] = data
+    return rtn
 
 
 def mimetype_to_key(mimetype: str) -> str:

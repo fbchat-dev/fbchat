@@ -474,10 +474,13 @@ class Client:
         j = self.session._post("/mercury/attachments/photo/", data)
         _exception.handle_payload_error(j)
 
-        url = _util.get_jsmods_require(j, 3)
-        if url is None:
+        if "jsmods" not in j:
+            raise _exception.ParseError("No jsmods when fetching image URL", data=j)
+        require = _util.get_jsmods_require(j["jsmods"]["require"])
+        if "ServerRedirect.redirectPageTo" not in require:
             raise _exception.ParseError("Could not fetch image URL", data=j)
-        return url
+        # Return the first argument
+        return require["ServerRedirect.redirectPageTo"][0]
 
     def _get_private_data(self):
         (j,) = self.session._graphql_requests(

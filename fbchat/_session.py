@@ -373,6 +373,15 @@ class Session:
     def _payload_post(self, url, data, files=None):
         j = self._post(url, data, files=files)
         _exception.handle_payload_error(j)
+
+        # update fb_dtsg token if received in response
+        if "jsmods" in j:
+            define = _util.get_jsmods_define(j["jsmods"]["define"])
+            if "DTSGInitData" in define:
+                self._fb_dtsg = define["DTSGInitData"]["token"]
+            elif "DTSGInitialData" in define:
+                self._fb_dtsg = define["DTSGInitialData"]["token"]
+
         try:
             return j["payload"]
         except (KeyError, TypeError) as e:
@@ -435,11 +444,6 @@ class Session:
         j = self._post("/messaging/send/", data)
 
         _exception.handle_payload_error(j)
-
-        # update JS token if received in response
-        fb_dtsg = _util.get_jsmods_require(j, 2)
-        if fb_dtsg is not None:
-            self._fb_dtsg = fb_dtsg
 
         try:
             message_ids = [

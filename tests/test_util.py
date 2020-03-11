@@ -5,6 +5,7 @@ from fbchat._util import (
     strip_json_cruft,
     parse_json,
     get_jsmods_require,
+    get_jsmods_define,
     mimetype_to_key,
     get_url_parameter,
     seconds_to_datetime,
@@ -38,41 +39,134 @@ def test_parse_json_invalid():
         parse_json("No JSON object here!")
 
 
-def test_get_jsmods_require_get_image_url():
-    data = {
-        "__ar": 1,
-        "payload": None,
-        "jsmods": {
-            "require": [
-                [
-                    "ServerRedirect",
-                    "redirectPageTo",
-                    [],
-                    [
-                        "https://scontent-arn2-1.xx.fbcdn.net/v/image.png&dl=1",
-                        False,
-                        False,
-                    ],
-                ],
-                ["TuringClientSignalCollectionTrigger", ..., [], ...],
-                ["TuringClientSignalCollectionTrigger", "retrieveSignals", [], ...],
-                ["BanzaiODS"],
-                ["BanzaiScuba"],
-            ],
-            "define": ...,
-        },
-        "js": ...,
-        "css": ...,
-        "bootloadable": ...,
-        "resource_map": ...,
-        "ixData": {},
-        "bxData": {},
-        "gkxData": ...,
-        "qexData": {},
-        "lid": "123",
+def test_get_jsmods_require():
+    argument = {
+        "signalsToCollect": [
+            30000,
+            30001,
+            30003,
+            30004,
+            30005,
+            30002,
+            30007,
+            30008,
+            30009,
+        ]
     }
+    data = [
+        ["BanzaiODS"],
+        [
+            "TuringClientSignalCollectionTrigger",
+            "startStaticSignalCollection",
+            [],
+            [argument],
+        ],
+    ]
+    assert get_jsmods_require(data) == {
+        "BanzaiODS": [],
+        "TuringClientSignalCollectionTrigger.startStaticSignalCollection": [argument],
+    }
+
+
+def test_get_jsmods_require_get_image_url():
+    data = [
+        [
+            "ServerRedirect",
+            "redirectPageTo",
+            [],
+            ["https://scontent-arn2-1.xx.fbcdn.net/v/image.png&dl=1", False, False],
+        ],
+        ["TuringClientSignalCollectionTrigger", "...", [], [...]],
+        ["TuringClientSignalCollectionTrigger", "retrieveSignals", [], [...]],
+        ["BanzaiODS"],
+        ["BanzaiScuba"],
+    ]
     url = "https://scontent-arn2-1.xx.fbcdn.net/v/image.png&dl=1"
-    assert get_jsmods_require(data, 3) == url
+    assert get_jsmods_require(data)["ServerRedirect.redirectPageTo"][0] == url
+
+
+def test_get_jsmods_define():
+    data = [
+        [
+            "BootloaderConfig",
+            [],
+            {
+                "jsRetries": [200, 500],
+                "jsRetryAbortNum": 2,
+                "jsRetryAbortTime": 5,
+                "payloadEndpointURI": "https://www.facebook.com/ajax/bootloader-endpoint/",
+                "preloadBE": False,
+                "assumeNotNonblocking": True,
+                "shouldCoalesceModuleRequestsMadeInSameTick": True,
+                "staggerJsDownloads": False,
+                "preloader_num_preloads": 0,
+                "preloader_preload_after_dd": False,
+                "preloader_num_loads": 1,
+                "preloader_enabled": False,
+                "retryQueuedBootloads": False,
+                "silentDups": False,
+                "asyncPreloadBoost": True,
+            },
+            123,
+        ],
+        [
+            "CSSLoaderConfig",
+            [],
+            {"timeout": 5000, "modulePrefix": "BLCSS:", "loadEventSupported": True},
+            456,
+        ],
+        ["CurrentCommunityInitialData", [], {}, 789],
+        [
+            "CurrentEnvironment",
+            [],
+            {"facebookdotcom": True, "messengerdotcom": False},
+            987,
+        ],
+    ]
+    assert get_jsmods_define(data) == {
+        "BootloaderConfig": {
+            "jsRetries": [200, 500],
+            "jsRetryAbortNum": 2,
+            "jsRetryAbortTime": 5,
+            "payloadEndpointURI": "https://www.facebook.com/ajax/bootloader-endpoint/",
+            "preloadBE": False,
+            "assumeNotNonblocking": True,
+            "shouldCoalesceModuleRequestsMadeInSameTick": True,
+            "staggerJsDownloads": False,
+            "preloader_num_preloads": 0,
+            "preloader_preload_after_dd": False,
+            "preloader_num_loads": 1,
+            "preloader_enabled": False,
+            "retryQueuedBootloads": False,
+            "silentDups": False,
+            "asyncPreloadBoost": True,
+        },
+        "CSSLoaderConfig": {
+            "timeout": 5000,
+            "modulePrefix": "BLCSS:",
+            "loadEventSupported": True,
+        },
+        "CurrentCommunityInitialData": {},
+        "CurrentEnvironment": {"facebookdotcom": True, "messengerdotcom": False},
+    }
+
+
+def test_get_jsmods_define_get_fb_dtsg():
+    data = [
+        ["DTSGInitialData", [], {"token": "AQG-abcdefgh:AQGijklmnopq"}, 258],
+        [
+            "DTSGInitData",
+            [],
+            {"token": "AQG-abcdefgh:AQGijklmnopq", "async_get_token": "ABC123:DEF456"},
+            3515,
+        ],
+    ]
+    jsmods = get_jsmods_define(data)
+    assert (
+        jsmods["DTSGInitData"]["token"]
+        == jsmods["DTSGInitialData"]["token"]
+        == "AQG-abcdefgh:AQGijklmnopq"
+    )
 
 
 def test_mimetype_to_key():
