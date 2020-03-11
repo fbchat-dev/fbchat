@@ -1,4 +1,7 @@
+# This example uses the `blinker` library to dispatch events. See echobot.py for how
+# this could be done differenly. The decision is entirely up to you!
 import fbchat
+import blinker
 
 # Change this to your group id
 old_thread_id = "1234567890"
@@ -14,12 +17,12 @@ old_nicknames = {
     "12345678904": "User nr. 4's nickname",
 }
 
-session = fbchat.Session.login("<email>", "<password>")
-listener = fbchat.Listener(session=session, chat_on=False, foreground=False)
+# Create a blinker signal
+events = blinker.Signal()
 
-
-@listener.register
-def on_color_set(event: fbchat.ColorSet):
+# Register various event handlers on the signal
+@events.connect_via(fbchat.ColorSet)
+def on_color_set(sender, event: fbchat.ColorSet):
     if old_thread_id != event.thread.id:
         return
     if old_color != event.color:
@@ -27,8 +30,8 @@ def on_color_set(event: fbchat.ColorSet):
         event.thread.set_color(old_color)
 
 
-@listener.register
-def on_emoji_set(event: fbchat.EmojiSet):
+@events.connect_via(fbchat.EmojiSet)
+def on_emoji_set(sender, event: fbchat.EmojiSet):
     if old_thread_id != event.thread.id:
         return
     if old_emoji != event.emoji:
@@ -36,8 +39,8 @@ def on_emoji_set(event: fbchat.EmojiSet):
         event.thread.set_emoji(old_emoji)
 
 
-@listener.register
-def on_title_set(event: fbchat.TitleSet):
+@events.connect_via(fbchat.TitleSet)
+def on_title_set(sender, event: fbchat.TitleSet):
     if old_thread_id != event.thread.id:
         return
     if old_title != event.title:
@@ -45,8 +48,8 @@ def on_title_set(event: fbchat.TitleSet):
         event.thread.set_title(old_title)
 
 
-@listener.register
-def on_nickname_set(event: fbchat.NicknameSet):
+@events.connect_via(fbchat.NicknameSet)
+def on_nickname_set(sender, event: fbchat.NicknameSet):
     if old_thread_id != event.thread.id:
         return
     old_nickname = old_nicknames.get(event.subject.id)
@@ -58,8 +61,8 @@ def on_nickname_set(event: fbchat.NicknameSet):
         event.thread.set_nickname(event.subject.id, old_nickname)
 
 
-@listener.register
-def on_people_added(event: fbchat.PeopleAdded):
+@events.connect_via(fbchat.PeopleAdded)
+def on_people_added(sender, event: fbchat.PeopleAdded):
     if old_thread_id != event.thread.id:
         return
     if event.author.id != session.user.id:
@@ -68,8 +71,8 @@ def on_people_added(event: fbchat.PeopleAdded):
             event.thread.remove_participant(added.id)
 
 
-@listener.register
-def on_person_removed(event: fbchat.PersonRemoved):
+@events.connect_via(fbchat.PersonRemoved)
+def on_person_removed(sender, event: fbchat.PersonRemoved):
     if old_thread_id != event.thread.id:
         return
     # No point in trying to add ourself
@@ -80,4 +83,10 @@ def on_person_removed(event: fbchat.PersonRemoved):
         event.thread.add_participants([removed.id])
 
 
-listener.run()
+# Login, and start listening for events
+session = fbchat.Session.login("<email>", "<password>")
+listener = fbchat.Listener(session=session, chat_on=False, foreground=False)
+
+for event in listener.listen():
+    # Dispatch the event to the subscribed handlers
+    events.send(type(event), event=event)

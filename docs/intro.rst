@@ -134,18 +134,19 @@ Listening & Events
 
 Now, we are finally at the point we have all been waiting for: Creating an automatic Facebook bot!
 
-To get started, you create a listener object::
+To get started, you create the functions you want to call on certain events::
+
+    def my_function(event: fbchat.MessageEvent):
+        print(f"Message from {event.author.id}: {event.message.text}")
+
+Then you create a `fbchat.Listener` object::
 
     listener = fbchat.Listener(session=session, chat_on=False, foreground=False)
 
-The you use that to register methods that will handle your events::
+Which you can then use to receive events, and send them to your functions::
 
-    @listener.register
-    def on_message(event: fbchat.MessageEvent):
-        print(f"Message from {event.author.id}: {event.message.text}")
-
-And then you start handling the incoming events::
-
-    listener.run()
+    for event in listener.listen():
+        if isinstance(event, fbchat.MessageEvent):
+            my_function(event)
 
 View the :ref:`examples` to see some more examples illustrating the event system.

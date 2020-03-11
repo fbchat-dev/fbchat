@@ -1,10 +1,6 @@
 import fbchat
 
-session = fbchat.Session.login("<email>", "<password>")
-listener = fbchat.Listener(session=session, chat_on=False, foreground=False)
 
-
-@listener.register
 def on_message(event):
     # We can only kick people from group chats, so no need to try if it's a user chat
     if not isinstance(event.thread, fbchat.Group):
@@ -14,4 +10,8 @@ def on_message(event):
         event.thread.remove_participant(event.author.id)
 
 
-listener.run()
+session = fbchat.Session.login("<email>", "<password>")
+listener = fbchat.Listener(session=session, chat_on=False, foreground=False)
+for event in listener.listen():
+    if isinstance(event, fbchat.MessageEvent):
+        on_message(event)
