@@ -117,7 +117,7 @@ from ._listen import Listener
 
 from ._client import Client
 
-__version__ = "2.0.0a1"
+__version__ = "2.0.0a2"
 
 __all__ = ("Session", "Listener", "Client")
 
