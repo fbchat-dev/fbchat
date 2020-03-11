@@ -1,3 +1,4 @@
+.. highlight:: sh
 .. See README.rst for explanation of these markers
 
 .. include:: ../README.rst

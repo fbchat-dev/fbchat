@@ -39,7 +39,7 @@ class AudioAttachment(Attachment):
     filename = attr.ib(None, type=Optional[str])
     #: URL of the audio file
     url = attr.ib(None, type=Optional[str])
-    #: Duration of the audio clip as a timedelta
+    #: Duration of the audio clip
     duration = attr.ib(None, type=Optional[datetime.timedelta])
     #: Audio type
     audio_type = attr.ib(None, type=Optional[str])
@@ -118,7 +118,7 @@ class VideoAttachment(Attachment):
     width = attr.ib(None, type=Optional[int])
     #: Height of original video
     height = attr.ib(None, type=Optional[int])
-    #: Length of video as a timedelta
+    #: Length of video
     duration = attr.ib(None, type=Optional[datetime.timedelta])
     #: URL to very compressed preview video
     preview_url = attr.ib(None, type=Optional[str])

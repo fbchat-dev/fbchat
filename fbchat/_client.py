@@ -33,10 +33,10 @@ class Client:
         But does not include deactivated, deleted or memorialized users (logically,
         since you can't chat with those).
 
-        The order these are returned is arbitary.
+        The order these are returned is arbitrary.
 
         Example:
-            Get the name of an arbitary user that you're currently chatting with.
+            Get the name of an arbitrary user that you're currently chatting with.
 
             >>> users = client.fetch_users()
             >>> users[0].name
@@ -211,7 +211,7 @@ class Client:
         Warning! If someone send a message to a thread that matches the query, while
         we're searching, some snippets will get returned twice, and some will be lost.
 
-        This is fundamentally unfixable, it's just how the endpoint is implemented.
+        This is fundamentally not fixable, it's just how the endpoint is implemented.
 
         Args:
             query: Text to search for

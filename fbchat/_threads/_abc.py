@@ -319,7 +319,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         Warning! If someone send a message to the thread that matches the query, while
         we're searching, some snippets will get returned twice.
 
-        This is fundamentally unfixable, it's just how the endpoint is implemented.
+        This is fundamentally not fixable, it's just how the endpoint is implemented.
 
         The returned message snippets are ordered by last sent first.
 

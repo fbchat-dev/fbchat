@@ -24,7 +24,7 @@ class ThreadLocation(enum.Enum):
 class ActiveStatus:
     #: Whether the user is active now
     active = attr.ib(type=bool)
-    #: Datetime when the user was last active
+    #: When the user was last active
     last_active = attr.ib(None, type=Optional[datetime.datetime])
     #: Whether the user is playing Messenger game now
     in_game = attr.ib(None, type=Optional[bool])

@@ -114,7 +114,7 @@ class UserData(User):
     first_name = attr.ib(type=str)
     #: The users last name
     last_name = attr.ib(None, type=Optional[str])
-    #: Datetime when the thread was last active / when the last message was sent
+    #: When the thread was last active / when the last message was sent
     last_active = attr.ib(None, type=Optional[datetime.datetime])
     #: Number of messages in the thread
     message_count = attr.ib(None, type=Optional[int])

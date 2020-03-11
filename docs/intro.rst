@@ -46,7 +46,7 @@ A thread basically just means "something I can chat with", but more precisely, i
 - The conversation between you and a single Facebook user (`User`)
 - The conversation between you and a Facebook Page (`Page`)
 
-You can get your own user ID with `Session.user.id`.
+You can get your own user ID from `Session.user` with ``session.user.id``.
 
 Getting the ID of a specific group thread is fairly trivial, you only need to login to `<https://www.messenger.com/>`_, click on the group you want to find the ID of, and then read the id from the address bar.
 The URL will look something like this: ``https://www.messenger.com/t/1234567890``, where ``1234567890`` would be the ID of the group.
@@ -111,19 +111,19 @@ Some functionality, like adding users to a `Group`, or blocking a `User`, logica
 
 With that out of the way, let's see some examples!
 
-The simplest way of interracting with a thread is by sending a message::
+The simplest way of interacting with a thread is by sending a message::
 
     # Send a message to the user
     message = user.send_text("test message")
 
 There are many types of messages you can send, see the full API documentation for more.
 
-Notice how we held on to the sent message? The return type i a `Message` instance, so you can interract with it afterwards::
+Notice how we held on to the sent message? The return type i a `Message` instance, so you can interact with it afterwards::
 
     # React to the message with the 😍 emoji
     message.react("😍")
 
-Besides sending messages, you can also interract with threads in other ways. An example is to change the thread color::
+Besides sending messages, you can also interact with threads in other ways. An example is to change the thread color::
 
     # Will change the thread color to the default blue
     thread.set_color("#0084ff")

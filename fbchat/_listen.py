@@ -364,7 +364,7 @@ class Listener:
         The `Listener` object should not be used after this is called!
 
         Example:
-            Stop the listener when recieving a message with the text "/stop"
+            Stop the listener when receiving a message with the text "/stop"
 
             >>> for event in listener.listen():
             ...     if isinstance(event, fbchat.MessageEvent):
@@ -374,7 +374,7 @@ class Listener:
         self._mqtt.disconnect()
 
     def set_foreground(self, value: bool) -> None:
-        """Set the `foreground` value while listening."""
+        """Set the ``foreground`` value while listening."""
         # TODO: Document what this actually does!
         payload = _util.json_minimal({"foreground": value})
         info = self._mqtt.publish("/foreground_state", payload=payload, qos=1)
@@ -383,7 +383,7 @@ class Listener:
         # info.wait_for_publish()
 
     def set_chat_on(self, value: bool) -> None:
-        """Set the `chat_on` value while listening."""
+        """Set the ``chat_on`` value while listening."""
         # TODO: Document what this actually does!
         # TODO: Is this the right request to make?
         data = {"make_user_available_when_in_foreground": value}

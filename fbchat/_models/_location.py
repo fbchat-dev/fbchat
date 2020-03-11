@@ -55,7 +55,7 @@ class LiveLocationAttachment(LocationAttachment):
 
     #: Name of the location
     name = attr.ib(None, type=Optional[str])
-    #: Datetime when live location expires
+    #: When live location expires
     expires_at = attr.ib(None, type=Optional[datetime.datetime])
     #: True if live location is expired
     is_expired = attr.ib(None, type=Optional[bool])

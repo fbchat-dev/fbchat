@@ -224,7 +224,7 @@ class MessageSnippet(Message):
 
     #: ID of the sender
     author = attr.ib(type=str)
-    #: Datetime of when the message was sent
+    #: When the message was sent
     created_at = attr.ib(type=datetime.datetime)
     #: The actual message
     text = attr.ib(type=str)
@@ -252,7 +252,7 @@ class MessageData(Message):
 
     #: ID of the sender
     author = attr.ib(type=str)
-    #: Datetime of when the message was sent
+    #: When the message was sent
     created_at = attr.ib(type=datetime.datetime)
     #: The actual message
     text = attr.ib(None, type=Optional[str])
@@ -262,7 +262,7 @@ class MessageData(Message):
     emoji_size = attr.ib(None, type=Optional[EmojiSize])
     #: Whether the message is read
     is_read = attr.ib(None, type=Optional[bool])
-    #: A list of people IDs who read the message, works only with `Client.fetch_thread_messages`
+    #: People IDs who read the message, only works with `ThreadABC.fetch_messages`
     read_by = attr.ib(factory=list, type=bool)
     #: A dictionary with user's IDs as keys, and their reaction as values
     reactions = attr.ib(factory=dict, type=Mapping[str, str])
