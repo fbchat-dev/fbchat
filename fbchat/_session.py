@@ -56,10 +56,14 @@ def find_input_fields(html: str):
 
 
 def session_factory() -> requests.Session:
+    from . import __version__
+
     session = requests.session()
     session.headers["Referer"] = "https://www.facebook.com"
-    # TODO: Deprecate setting the user agent manually
-    session.headers["User-Agent"] = random.choice(_util.USER_AGENTS)
+    # We won't try to set a fake user agent to mask our presence!
+    # Facebook allows us access anyhow, and it makes our motives clearer:
+    # We're not trying to cheat Facebook, we simply want to access their service
+    session.headers["User-Agent"] = "fbchat/{}".format(__version__)
     return session
 
 
