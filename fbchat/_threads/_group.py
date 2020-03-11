@@ -116,7 +116,7 @@ class Group(ThreadABC):
             Upload an image, and use it as the group image.
 
             >>> with open("image.png", "rb") as f:
-            ...     (file,) = session._upload([("image.png", f, "image/png")])
+            ...     (file,) = client.upload([("image.png", f, "image/png")])
             ...
             >>> group.set_image(file[0])
         """

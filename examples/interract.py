@@ -29,12 +29,12 @@ thread.send_text(
 
 # Will send the image located at `<image path>`
 with open("<image path>", "rb") as f:
-    files = session._upload([("image_name.png", f, "image/png")])
+    files = client.upload([("image_name.png", f, "image/png")])
 thread.send_text(text="This is a local image", files=files)
 
 # Will download the image at the URL `<image url>`, and then send it
 r = requests.get("<image url>")
-files = session._upload([("image_name.png", r.content, "image/png")])
+files = client.upload([("image_name.png", r.content, "image/png")])
 thread.send_files(files)  # Alternative to .send_text
 
 

@@ -4,7 +4,7 @@ import datetime
 from ._common import log, attrs_default
 from . import _exception, _util, _graphql, _session, _threads, _models
 
-from typing import Sequence, Iterable, Tuple, Optional, Set
+from typing import Sequence, Iterable, Tuple, Optional, Set, BinaryIO
 
 
 @attrs_default
@@ -499,6 +499,41 @@ class Client:
         """Fetch the user's emails."""
         data = self._get_private_data()
         return [j["display_email"] for j in data["all_emails"]]
+
+    def upload(
+        self, files: Iterable[Tuple[str, BinaryIO, str]], voice_clip: bool = False
+    ) -> Sequence[Tuple[str, str]]:
+        """Upload files to Facebook.
+
+        `files` should be a list of files that requests can upload, see
+        `requests.request <https://docs.python-requests.org/en/master/api/#requests.request>`_.
+
+        Example:
+            >>> with open("file.txt", "rb") as f:
+            ...     (file,) = client.upload([("file.txt", f, "text/plain")])
+            ...
+            >>> file
+            ("1234", "text/plain")
+        Return:
+            Tuples with a file's ID and mimetype.
+            This result can be passed straight on to `ThreadABC.send_files`, or used in
+            `Group.set_image`.
+        """
+        file_dict = {"upload_{}".format(i): f for i, f in enumerate(files)}
+
+        data = {"voice_clip": voice_clip}
+
+        j = self.session._payload_post(
+            "https://upload.facebook.com/ajax/mercury/upload.php", data, files=file_dict
+        )
+
+        if len(j["metadata"]) != len(file_dict):
+            raise _exception.ParseError("Some files could not be uploaded", data=j)
+
+        return [
+            (str(item[_util.mimetype_to_key(item["filetype"])]), item["filetype"])
+            for item in j["metadata"]
+        ]
 
     def mark_as_delivered(self, message: _models.Message):
         """Mark a message as delivered.

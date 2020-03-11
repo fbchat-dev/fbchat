@@ -9,7 +9,7 @@ import urllib.parse
 from ._common import log, kw_only
 from . import _graphql, _util, _exception
 
-from typing import Optional, Tuple, Mapping, BinaryIO, Sequence, Iterable, Callable
+from typing import Optional, Tuple, Mapping, Callable
 
 FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
 
@@ -31,7 +31,9 @@ def base36encode(number: int) -> str:
 
 
 def prefix_url(url: str) -> str:
-    return "https://www.facebook.com" + url
+    if url.startswith("/"):
+        return "https://www.facebook.com" + url
+    return url
 
 
 def generate_message_id(now: datetime.datetime, client_id: str) -> str:
@@ -396,39 +398,6 @@ class Session:
             "queries": _graphql.queries_to_json(*queries),
         }
         return self._post("/api/graphqlbatch/", data, as_graphql=True)
-
-    def _upload(
-        self, files: Iterable[Tuple[str, BinaryIO, str]], voice_clip: bool = False
-    ) -> Sequence[Tuple[str, str]]:
-        """Upload files to Facebook.
-
-        `files` should be a list of files that requests can upload, see
-        `requests.request <https://docs.python-requests.org/en/master/api/#requests.request>`_.
-
-        Example:
-            >>> with open("file.txt", "rb") as f:
-            ...     (file,) = session._upload([("file.txt", f, "text/plain")])
-            ...
-            >>> file
-            ("1234", "text/plain")
-        Return:
-            Tuples with a file's ID and mimetype.
-        """
-        file_dict = {"upload_{}".format(i): f for i, f in enumerate(files)}
-
-        data = {"voice_clip": voice_clip}
-
-        j = self._payload_post(
-            "https://upload.facebook.com/ajax/mercury/upload.php", data, files=file_dict
-        )
-
-        if len(j["metadata"]) != len(file_dict):
-            raise _exception.ParseError("Some files could not be uploaded", data=j)
-
-        return [
-            (data[_util.mimetype_to_key(data["filetype"])], data["filetype"])
-            for data in j["metadata"]
-        ]
 
     def _do_send_request(self, data):
         now = datetime.datetime.utcnow()

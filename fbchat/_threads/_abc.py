@@ -111,7 +111,8 @@ class ThreadABC(metaclass=abc.ABCMeta):
         Args:
             text: Text to send
             mentions: Optional mentions
-            files: Optional tuples, each containing an uploaded file's ID and mimetype
+            files: Optional tuples, each containing an uploaded file's ID and mimetype.
+                See `ThreadABC.send_files` for an example.
             reply_to_id: Optional message to reply to
 
         Example:
@@ -223,9 +224,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
             Upload and send a video to a thread.
 
             >>> with open("video.mp4", "rb") as f:
-            ...     files = session._upload([("video.mp4", f, "video/mp4")])
+            ...     files = client.upload([("video.mp4", f, "video/mp4")])
             >>>
-            >>> thread.send_files(files=files)
+            >>> thread.send_files(files)
         """
         return self.send_text(text=None, files=files)
 
