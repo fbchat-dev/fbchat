@@ -4,6 +4,8 @@ from ._abc import ThreadABC
 from .._common import attrs_default
 from .. import _session, _models
 
+from typing import Optional
+
 
 @attrs_default
 class Page(ThreadABC):
@@ -39,21 +41,21 @@ class PageData(Page):
     #: The name of the page
     name = attr.ib(type=str)
     #: When the thread was last active / when the last message was sent
-    last_active = attr.ib(None, type=datetime.datetime)
+    last_active = attr.ib(None, type=Optional[datetime.datetime])
     #: Number of messages in the thread
-    message_count = attr.ib(None, type=int)
+    message_count = attr.ib(None, type=Optional[int])
     #: Set `Plan`
-    plan = attr.ib(None, type="_models.PlanData")
+    plan = attr.ib(None, type=Optional["_models.PlanData"])
     #: The page's custom URL
-    url = attr.ib(None, type=str)
+    url = attr.ib(None, type=Optional[str])
     #: The name of the page's location city
-    city = attr.ib(None, type=str)
+    city = attr.ib(None, type=Optional[str])
     #: Amount of likes the page has
-    likes = attr.ib(None, type=int)
+    likes = attr.ib(None, type=Optional[int])
     #: Some extra information about the page
-    sub_title = attr.ib(None, type=str)
+    sub_title = attr.ib(None, type=Optional[str])
     #: The page's category
-    category = attr.ib(None, type=str)
+    category = attr.ib(None, type=Optional[str])
 
     @classmethod
     def _from_graphql(cls, session, data):

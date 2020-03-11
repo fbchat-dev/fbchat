@@ -5,7 +5,7 @@ import requests
 from ._common import log, kw_only
 from . import _util, _exception, _session, _graphql, _events
 
-from typing import Iterable, Optional, Mapping
+from typing import Iterable, Optional, Mapping, List
 
 
 HOST = "edge-chat.facebook.com"
@@ -118,7 +118,7 @@ class Listener:
     _mqtt = attr.ib(factory=mqtt_factory, type=paho.mqtt.client.Client)
     _sync_token = attr.ib(None, type=Optional[str])
     _sequence_id = attr.ib(None, type=Optional[int])
-    _tmp_events = attr.ib(factory=list, type=Iterable[_events.Event])
+    _tmp_events = attr.ib(factory=list, type=List[_events.Event])
 
     def __attrs_post_init__(self):
         # Configure callbacks

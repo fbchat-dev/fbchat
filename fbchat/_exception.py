@@ -1,7 +1,7 @@
 import attr
 import requests
 
-from typing import Any
+from typing import Any, Optional
 
 # Not frozen, since that doesn't work in PyPy
 @attr.s(slots=True, auto_exc=True)
@@ -20,7 +20,7 @@ class HTTPError(FacebookError):
     """Base class for errors with the HTTP(s) connection to Facebook."""
 
     #: The returned HTTP status code, if relevant
-    status_code = attr.ib(None, type=int)
+    status_code = attr.ib(None, type=Optional[int])
 
     def __str__(self):
         if not self.status_code:
@@ -58,7 +58,7 @@ class ExternalError(FacebookError):
     #: The error message that Facebook returned (Possibly in the user's own language)
     description = attr.ib(type=str)
     #: The error code that Facebook returned
-    code = attr.ib(None, type=int)
+    code = attr.ib(None, type=Optional[int])
 
     def __str__(self):
         if self.code:
@@ -73,7 +73,7 @@ class GraphQLError(ExternalError):
     # TODO: Handle multiple errors
 
     #: Query debug information
-    debug_info = attr.ib(None, type=str)
+    debug_info = attr.ib(None, type=Optional[str])
 
     def __str__(self):
         if self.debug_info:

@@ -255,31 +255,31 @@ class MessageData(Message):
     #: Datetime of when the message was sent
     created_at = attr.ib(type=datetime.datetime)
     #: The actual message
-    text = attr.ib(None, type=str)
+    text = attr.ib(None, type=Optional[str])
     #: A list of `Mention` objects
     mentions = attr.ib(factory=list, type=Sequence[Mention])
     #: Size of a sent emoji
-    emoji_size = attr.ib(None, type=EmojiSize)
+    emoji_size = attr.ib(None, type=Optional[EmojiSize])
     #: Whether the message is read
-    is_read = attr.ib(None, type=bool)
+    is_read = attr.ib(None, type=Optional[bool])
     #: A list of people IDs who read the message, works only with `Client.fetch_thread_messages`
     read_by = attr.ib(factory=list, type=bool)
     #: A dictionary with user's IDs as keys, and their reaction as values
     reactions = attr.ib(factory=dict, type=Mapping[str, str])
     #: A `Sticker`
-    sticker = attr.ib(None, type=_sticker.Sticker)
+    sticker = attr.ib(None, type=Optional[_sticker.Sticker])
     #: A list of attachments
     attachments = attr.ib(factory=list, type=Sequence[_attachment.Attachment])
     #: A list of `QuickReply`
     quick_replies = attr.ib(factory=list, type=Sequence[_quick_reply.QuickReply])
     #: Whether the message is unsent (deleted for everyone)
-    unsent = attr.ib(False, type=bool)
+    unsent = attr.ib(False, type=Optional[bool])
     #: Message ID you want to reply to
-    reply_to_id = attr.ib(None, type=str)
+    reply_to_id = attr.ib(None, type=Optional[str])
     #: Replied message
-    replied_to = attr.ib(None, type="MessageData")
+    replied_to = attr.ib(None, type=Optional["MessageData"])
     #: Whether the message was forwarded
-    forwarded = attr.ib(False, type=bool)
+    forwarded = attr.ib(False, type=Optional[bool])
 
     @staticmethod
     def _get_forwarded_from_tags(tags):

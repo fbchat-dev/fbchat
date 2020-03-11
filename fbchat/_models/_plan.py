@@ -4,7 +4,7 @@ import enum
 from .._common import attrs_default
 from .. import _exception, _util, _session
 
-from typing import Mapping, Sequence
+from typing import Mapping, Sequence, Optional
 
 
 class GuestStatus(enum.Enum):
@@ -132,13 +132,13 @@ class PlanData(Plan):
     #: Plan title
     title = attr.ib(type=str)
     #: Plan location name
-    location = attr.ib(None, converter=lambda x: x or "", type=str)
+    location = attr.ib(None, converter=lambda x: x or "", type=Optional[str])
     #: Plan location ID
-    location_id = attr.ib(None, converter=lambda x: x or "", type=str)
+    location_id = attr.ib(None, converter=lambda x: x or "", type=Optional[str])
     #: ID of the plan creator
-    author_id = attr.ib(None, type=str)
+    author_id = attr.ib(None, type=Optional[str])
     #: `User` ids mapped to their `GuestStatus`
-    guests = attr.ib(None, type=Mapping[str, GuestStatus])
+    guests = attr.ib(None, type=Optional[Mapping[str, GuestStatus]])
 
     @property
     def going(self) -> Sequence[str]:

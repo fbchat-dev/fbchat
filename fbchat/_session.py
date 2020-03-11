@@ -157,7 +157,7 @@ class Session:
     _session = attr.ib(factory=session_factory, type=requests.Session)
     _counter = attr.ib(0, type=int)
     _client_id = attr.ib(factory=client_id_factory, type=str)
-    _logout_h = attr.ib(None, type=str)
+    _logout_h = attr.ib(None, type=Optional[str])
 
     @property
     def user(self):

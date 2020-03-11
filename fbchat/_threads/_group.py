@@ -4,7 +4,8 @@ from ._abc import ThreadABC
 from . import _user
 from .._common import attrs_default
 from .. import _util, _session, _graphql, _models
-from typing import Sequence, Iterable, Set, Mapping
+
+from typing import Sequence, Iterable, Set, Mapping, Optional
 
 
 @attrs_default
@@ -179,31 +180,31 @@ class GroupData(Group):
     """
 
     #: The group's picture
-    photo = attr.ib(None, type="_models.Image")
+    photo = attr.ib(None, type=Optional["_models.Image"])
     #: The name of the group
-    name = attr.ib(None, type=str)
+    name = attr.ib(None, type=Optional[str])
     #: When the group was last active / when the last message was sent
-    last_active = attr.ib(None, type=datetime.datetime)
+    last_active = attr.ib(None, type=Optional[datetime.datetime])
     #: Number of messages in the group
-    message_count = attr.ib(None, type=int)
+    message_count = attr.ib(None, type=Optional[int])
     #: Set `Plan`
-    plan = attr.ib(None, type="_models.PlanData")
+    plan = attr.ib(None, type=Optional["_models.PlanData"])
     #: The group thread's participant user ids
     participants = attr.ib(factory=set, type=Set[str])
     #: A dictionary, containing user nicknames mapped to their IDs
     nicknames = attr.ib(factory=dict, type=Mapping[str, str])
     #: The groups's message color
-    color = attr.ib(None, type=str)
+    color = attr.ib(None, type=Optional[str])
     #: The groups's default emoji
-    emoji = attr.ib(None, type=str)
+    emoji = attr.ib(None, type=Optional[str])
     # User ids of thread admins
     admins = attr.ib(factory=set, type=Set[str])
     # True if users need approval to join
-    approval_mode = attr.ib(None, type=bool)
+    approval_mode = attr.ib(None, type=Optional[bool])
     # Set containing user IDs requesting to join
     approval_requests = attr.ib(factory=set, type=Set[str])
     # Link for joining group
-    join_link = attr.ib(None, type=str)
+    join_link = attr.ib(None, type=Optional[str])
 
     @classmethod
     def _from_graphql(cls, session, data):

@@ -2,7 +2,7 @@ import attr
 from . import Attachment
 from .._common import attrs_default
 
-from typing import Any
+from typing import Any, Optional
 
 
 @attrs_default
@@ -24,9 +24,9 @@ class QuickReplyText(QuickReply):
     """Represents a text quick reply."""
 
     #: Title of the quick reply
-    title = attr.ib(None, type=str)
-    #: URL of the quick reply image (optional)
-    image_url = attr.ib(None, type=str)
+    title = attr.ib(None, type=Optional[str])
+    #: URL of the quick reply image
+    image_url = attr.ib(None, type=Optional[str])
     #: Type of the quick reply
     _type = "text"
 
@@ -43,8 +43,8 @@ class QuickReplyLocation(QuickReply):
 class QuickReplyPhoneNumber(QuickReply):
     """Represents a phone number quick reply (Doesn't work on mobile)."""
 
-    #: URL of the quick reply image (optional)
-    image_url = attr.ib(None, type=str)
+    #: URL of the quick reply image
+    image_url = attr.ib(None, type=Optional[str])
     #: Type of the quick reply
     _type = "user_phone_number"
 
@@ -53,8 +53,8 @@ class QuickReplyPhoneNumber(QuickReply):
 class QuickReplyEmail(QuickReply):
     """Represents an email quick reply (Doesn't work on mobile)."""
 
-    #: URL of the quick reply image (optional)
-    image_url = attr.ib(None, type=str)
+    #: URL of the quick reply image
+    image_url = attr.ib(None, type=Optional[str])
     #: Type of the quick reply
     _type = "user_email"
 

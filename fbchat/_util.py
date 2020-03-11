@@ -20,6 +20,13 @@ USER_AGENTS = [
 ]
 
 
+def int_or_none(inp: Any) -> Optional[int]:
+    try:
+        return int(inp)
+    except Exception:
+        return None
+
+
 def get_limits(limit: Optional[int], max_limit: int) -> Iterable[int]:
     """Helper that generates limits based on a max limit."""
     if limit is None:

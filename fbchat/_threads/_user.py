@@ -4,6 +4,8 @@ from ._abc import ThreadABC
 from .._common import log, attrs_default
 from .. import _util, _session, _models
 
+from typing import Optional
+
 
 GENDERS = {
     # For standard requests
@@ -111,27 +113,27 @@ class UserData(User):
     #: The users first name
     first_name = attr.ib(type=str)
     #: The users last name
-    last_name = attr.ib(None, type=str)
+    last_name = attr.ib(None, type=Optional[str])
     #: Datetime when the thread was last active / when the last message was sent
-    last_active = attr.ib(None, type=datetime.datetime)
+    last_active = attr.ib(None, type=Optional[datetime.datetime])
     #: Number of messages in the thread
-    message_count = attr.ib(None, type=int)
+    message_count = attr.ib(None, type=Optional[int])
     #: Set `Plan`
-    plan = attr.ib(None, type="_models.PlanData")
+    plan = attr.ib(None, type=Optional["_models.PlanData"])
     #: The profile URL. ``None`` for Messenger-only users
-    url = attr.ib(None, type=str)
+    url = attr.ib(None, type=Optional[str])
     #: The user's gender
-    gender = attr.ib(None, type=str)
+    gender = attr.ib(None, type=Optional[str])
     #: From 0 to 1. How close the client is to the user
-    affinity = attr.ib(None, type=float)
+    affinity = attr.ib(None, type=Optional[float])
     #: The user's nickname
-    nickname = attr.ib(None, type=str)
+    nickname = attr.ib(None, type=Optional[str])
     #: The clients nickname, as seen by the user
-    own_nickname = attr.ib(None, type=str)
+    own_nickname = attr.ib(None, type=Optional[str])
     #: The message color
-    color = attr.ib(None, type=str)
+    color = attr.ib(None, type=Optional[str])
     #: The default emoji
-    emoji = attr.ib(None, type=str)
+    emoji = attr.ib(None, type=Optional[str])
 
     @staticmethod
     def _get_other_user(data):

@@ -3,7 +3,7 @@ from . import Image
 from .._common import attrs_default
 from .. import _util
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 
 @attrs_default
@@ -11,7 +11,7 @@ class Attachment:
     """Represents a Facebook attachment."""
 
     #: The attachment ID
-    id = attr.ib(None, type=str)
+    id = attr.ib(None, type=Optional[str])
 
 
 @attrs_default
@@ -24,21 +24,21 @@ class ShareAttachment(Attachment):
     """Represents a shared item (e.g. URL) attachment."""
 
     #: ID of the author of the shared post
-    author = attr.ib(None, type=str)
+    author = attr.ib(None, type=Optional[str])
     #: Target URL
-    url = attr.ib(None, type=str)
+    url = attr.ib(None, type=Optional[str])
     #: Original URL if Facebook redirects the URL
-    original_url = attr.ib(None, type=str)
+    original_url = attr.ib(None, type=Optional[str])
     #: Title of the attachment
-    title = attr.ib(None, type=str)
+    title = attr.ib(None, type=Optional[str])
     #: Description of the attachment
-    description = attr.ib(None, type=str)
+    description = attr.ib(None, type=Optional[str])
     #: Name of the source
-    source = attr.ib(None, type=str)
+    source = attr.ib(None, type=Optional[str])
     #: The attached image
-    image = attr.ib(None, type=Image)
+    image = attr.ib(None, type=Optional[Image])
     #: URL of the original image if Facebook uses ``safe_image``
-    original_image_url = attr.ib(None, type=str)
+    original_image_url = attr.ib(None, type=Optional[str])
     #: List of additional attachments
     attachments = attr.ib(factory=list, type=Sequence[Attachment])
 

@@ -4,6 +4,8 @@ import enum
 from .._common import attrs_default
 from .. import _util
 
+from typing import Optional
+
 
 class ThreadLocation(enum.Enum):
     """Used to specify where a thread is located (inbox, pending, archived, other)."""
@@ -21,11 +23,11 @@ class ThreadLocation(enum.Enum):
 @attrs_default
 class ActiveStatus:
     #: Whether the user is active now
-    active = attr.ib(None, type=bool)
+    active = attr.ib(type=bool)
     #: Datetime when the user was last active
-    last_active = attr.ib(None, type=datetime.datetime)
+    last_active = attr.ib(None, type=Optional[datetime.datetime])
     #: Whether the user is playing Messenger game now
-    in_game = attr.ib(None, type=bool)
+    in_game = attr.ib(None, type=Optional[bool])
 
     @classmethod
     def _from_orca_presence(cls, data):
@@ -42,9 +44,9 @@ class Image:
     #: URL to the image
     url = attr.ib(type=str)
     #: Width of the image
-    width = attr.ib(None, type=int)
+    width = attr.ib(None, type=Optional[int])
     #: Height of the image
-    height = attr.ib(None, type=int)
+    height = attr.ib(None, type=Optional[int])
 
     @classmethod
     def _from_uri(cls, data):
