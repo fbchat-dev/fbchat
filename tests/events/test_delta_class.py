@@ -123,6 +123,37 @@ def test_title_set(session):
     ) == parse_delta(session, data)
 
 
+def test_title_removed(session):
+    data = {
+        "irisSeqId": "11223344",
+        "irisTags": ["DeltaThreadName", "is_from_iris_fanout"],
+        "messageMetadata": {
+            "actorFbId": "3456",
+            "adminText": "You removed the group name.",
+            "folderId": {"systemFolderId": "INBOX"},
+            "messageId": "mid.$XYZ",
+            "offlineThreadingId": "1122334455",
+            "skipBumpThread": False,
+            "tags": [],
+            "threadKey": {"threadFbId": "4321"},
+            "threadReadStateEffect": "KEEP_AS_IS",
+            "timestamp": "1500000000000",
+            "unsendType": "deny_log_message",
+        },
+        "name": "",
+        "participants": ["1234", "2345", "3456", "4567"],
+        "requestContext": {"apiArgs": {}},
+        "tqSeqId": "1111",
+        "class": "ThreadName",
+    }
+    assert TitleSet(
+        author=User(session=session, id="3456"),
+        thread=Group(session=session, id="4321"),
+        title=None,
+        at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
+    ) == parse_delta(session, data)
+
+
 def test_forced_fetch(session):
     data = {
         "forceInsert": False,
