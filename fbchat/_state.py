@@ -329,3 +329,10 @@ class State(object):
                 "Error when sending message: "
                 "No message IDs could be found: {}".format(j)
             )
+
+    def _uri_share_data(self, data):
+        data["image_height"] = 960
+        data["image_width"] = 960
+        data["__user"] = self.user_id
+        j = self._post("/message_share_attachment/fromURI/", data)
+        return j["payload"]["share_data"]
