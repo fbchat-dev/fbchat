@@ -65,6 +65,7 @@ from ._models import (
     EmojiSize,
     Mention,
     Message,
+    MessageSnippet,
     MessageData,
 )
 

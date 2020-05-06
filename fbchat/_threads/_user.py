@@ -105,7 +105,7 @@ class UserData(User):
     """
 
     #: The user's picture
-    photo = attr.ib(type="_models.Image")
+    photo = attr.ib(type=_models.Image)
     #: The name of the user
     name = attr.ib(type=str)
     #: Whether the user and the client are friends
@@ -119,7 +119,7 @@ class UserData(User):
     #: Number of messages in the thread
     message_count = attr.ib(None, type=Optional[int])
     #: Set `Plan`
-    plan = attr.ib(None, type=Optional["_models.PlanData"])
+    plan = attr.ib(None, type=Optional[_models.PlanData])
     #: The profile URL. ``None`` for Messenger-only users
     url = attr.ib(None, type=Optional[str])
     #: The user's gender

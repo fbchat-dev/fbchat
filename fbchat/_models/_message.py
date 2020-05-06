@@ -4,8 +4,8 @@ import enum
 from string import Formatter
 from . import _attachment, _location, _file, _quick_reply, _sticker
 from .._common import log, attrs_default
-from .. import _exception, _util, _session, _threads
-from typing import Optional, Mapping, Sequence
+from .. import _exception, _util
+from typing import Optional, Mapping, Sequence, Any
 
 
 class EmojiSize(enum.Enum):
@@ -85,7 +85,7 @@ class Message:
     """
 
     #: The thread that this message belongs to.
-    thread = attr.ib(type="_threads.ThreadABC")
+    thread = attr.ib()
     #: The message ID.
     id = attr.ib(converter=str, type=str)
 
@@ -277,7 +277,7 @@ class MessageData(Message):
     #: Message ID you want to reply to
     reply_to_id = attr.ib(None, type=Optional[str])
     #: Replied message
-    replied_to = attr.ib(None, type=Optional["MessageData"])
+    replied_to = attr.ib(None, type=Optional[Any])
     #: Whether the message was forwarded
     forwarded = attr.ib(False, type=Optional[bool])
 

@@ -37,7 +37,7 @@ class PageData(Page):
     """
 
     #: The page's picture
-    photo = attr.ib(type="_models.Image")
+    photo = attr.ib(type=_models.Image)
     #: The name of the page
     name = attr.ib(type=str)
     #: When the thread was last active / when the last message was sent
@@ -45,7 +45,7 @@ class PageData(Page):
     #: Number of messages in the thread
     message_count = attr.ib(None, type=Optional[int])
     #: Set `Plan`
-    plan = attr.ib(None, type=Optional["_models.PlanData"])
+    plan = attr.ib(None, type=Optional[_models.PlanData])
     #: The page's custom URL
     url = attr.ib(None, type=Optional[str])
     #: The name of the page's location city

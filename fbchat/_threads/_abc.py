@@ -313,7 +313,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
 
     def search_messages(
         self, query: str, limit: int
-    ) -> Iterable["_models.MessageSnippet"]:
+    ) -> Iterable[_models.MessageSnippet]:
         """Find and get message IDs by query.
 
         Warning! If someone send a message to the thread that matches the query, while

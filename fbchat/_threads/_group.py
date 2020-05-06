@@ -180,7 +180,7 @@ class GroupData(Group):
     """
 
     #: The group's picture
-    photo = attr.ib(None, type=Optional["_models.Image"])
+    photo = attr.ib(None, type=Optional[_models.Image])
     #: The name of the group
     name = attr.ib(None, type=Optional[str])
     #: When the group was last active / when the last message was sent
@@ -188,7 +188,7 @@ class GroupData(Group):
     #: Number of messages in the group
     message_count = attr.ib(None, type=Optional[int])
     #: Set `Plan`
-    plan = attr.ib(None, type=Optional["_models.PlanData"])
+    plan = attr.ib(None, type=Optional[_models.PlanData])
     #: The group thread's participant user ids
     participants = attr.ib(factory=set, type=Set[str])
     #: A dictionary, containing user nicknames mapped to their IDs
