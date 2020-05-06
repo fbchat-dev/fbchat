@@ -65,5 +65,5 @@ print("thread's name: {}".format(thread.name))
 images = list(thread.fetch_images(limit=20))
 for image in images:
     if isinstance(image, fbchat.ImageAttachment):
-        url = c.fetch_image_url(image.id)
+        url = client.fetch_image_url(image.id)
         print(url)

@@ -80,7 +80,7 @@ def on_person_removed(sender, event: fbchat.PersonRemoved):
         return
     if event.author.id != session.user.id:
         print(f"{event.removed.id} got removed. They will be re-added")
-        event.thread.add_participants([removed.id])
+        event.thread.add_participants([event.removed.id])
 
 
 # Login, and start listening for events
