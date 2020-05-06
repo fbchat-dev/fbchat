@@ -524,7 +524,9 @@ class Client:
         data = {"voice_clip": voice_clip}
 
         j = self.session._payload_post(
-            "https://upload.facebook.com/ajax/mercury/upload.php", data, files=file_dict
+            "https://upload.messenger.com/ajax/mercury/upload.php",
+            data,
+            files=file_dict,
         )
 
         if len(j["metadata"]) != len(file_dict):

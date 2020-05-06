@@ -8,7 +8,7 @@ from . import _util, _exception, _session, _graphql, _events
 from typing import Iterable, Optional, Mapping, List
 
 
-HOST = "edge-chat.facebook.com"
+HOST = "edge-chat.messenger.com"
 
 TOPICS = [
     # Things that happen in chats (e.g. messages)
@@ -271,10 +271,10 @@ class Listener:
 
         headers = {
             "Cookie": get_cookie_header(
-                self.session._session, "https://edge-chat.facebook.com/chat"
+                self.session._session, "https://edge-chat.messenger.com/chat"
             ),
             "User-Agent": self.session._session.headers["User-Agent"],
-            "Origin": "https://www.facebook.com",
+            "Origin": "https://www.messenger.com",
             "Host": HOST,
         }
 
