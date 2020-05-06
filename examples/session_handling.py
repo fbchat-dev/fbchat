@@ -18,7 +18,7 @@ def load_cookies(filename):
 
 def save_cookies(filename, cookies):
     with open(filename, "w") as f:
-        json.dump(f, cookies)
+        json.dump(cookies, f)
 
 
 def load_session(cookies):
