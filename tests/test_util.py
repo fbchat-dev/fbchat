@@ -68,6 +68,17 @@ def test_get_jsmods_require():
     }
 
 
+def test_get_jsmods_require_version_specifier():
+    data = [
+        ["DimensionTracking@1234"],
+        ["CavalryLoggerImpl@2345", "startInstrumentation", [], []],
+    ]
+    assert get_jsmods_require(data) == {
+        "DimensionTracking": [],
+        "CavalryLoggerImpl.startInstrumentation": [],
+    }
+
+
 def test_get_jsmods_require_get_image_url():
     data = [
         [

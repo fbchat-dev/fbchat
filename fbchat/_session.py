@@ -24,6 +24,8 @@ def parse_server_js_define(html: str) -> Mapping[str, Any]:
     # Find points where we should start parsing
     define_splits = SERVER_JS_DEFINE_REGEX.split(html)
 
+    # TODO: Extract jsmods "require" and "define" from `bigPipe.onPageletArrive`?
+
     # Skip leading entry
     _, *define_splits = define_splits
 

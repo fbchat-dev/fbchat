@@ -63,16 +63,19 @@ def generate_offline_threading_id():
     return str(int(msgs, 2))
 
 
+def remove_version_from_module(module):
+    return module.split("@", 1)[0]
+
+
 def get_jsmods_require(require) -> Mapping[str, Sequence[Any]]:
     rtn = {}
     for item in require:
         if len(item) == 1:
             (module,) = item
-            rtn[module] = []
+            rtn[remove_version_from_module(module)] = []
             continue
-        method = "{}.{}".format(item[0], item[1])
-        requirements = item[2]
-        arguments = item[3]
+        module, method, requirements, arguments = item
+        method = "{}.{}".format(remove_version_from_module(module), method)
         rtn[method] = arguments
     return rtn
 

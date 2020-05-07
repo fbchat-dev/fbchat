@@ -46,11 +46,6 @@ def test_undocumented(client):
     client.fetch_unseen()
 
 
-@pytest.mark.skip(reason="need a way to get an image id")
-def test_fetch_image_url(client):
-    client.fetch_image_url("TODO")
-
-
 @pytest.fixture
 def open_resource(pytestconfig):
     def get_resource_inner(filename):
@@ -58,6 +53,14 @@ def open_resource(pytestconfig):
         return open(path, "rb")
 
     return get_resource_inner
+
+
+def test_upload_and_fetch_image_url(client, open_resource):
+    with open_resource("image.png") as f:
+        ((id, mimetype),) = client.upload([("image.png", f, "image/png")])
+    assert mimetype == "image/png"
+
+    assert client.fetch_image_url(id).startswith("http")
 
 
 def test_upload_image(client, open_resource):
