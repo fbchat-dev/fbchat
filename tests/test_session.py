@@ -110,6 +110,15 @@ def test_find_form_request():
     </div>
     """
     url, data = find_form_request(html)
+    assert url.startswith("https://www.facebook.com/checkpoint/")
+    assert {
+        "jazoest": "some-number",
+        "fb_dtsg": "some-base64",
+        "nh": "some-hex",
+        "no_fido": "true",
+        "approvals_code": "[missing]",
+        "submit[Continue]": "Continue",
+    } == data
 
 
 def test_find_form_request_error():

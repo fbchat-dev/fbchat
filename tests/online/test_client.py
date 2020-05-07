@@ -54,7 +54,8 @@ def test_fetch_image_url(client):
 @pytest.fixture
 def open_resource(pytestconfig):
     def get_resource_inner(filename):
-        return open(os.path.join(pytestconfig.root, "resources", filename), "rb")
+        path = os.path.join(pytestconfig.rootdir, "tests", "resources", filename)
+        return open(path, "rb")
 
     return get_resource_inner
 
@@ -76,7 +77,7 @@ def test_upload_many(client, open_resource):
     ) as f_mp3, open_resource(
         "video.mp4"
     ) as f_mp4:
-        files = client.upload(
+        _ = client.upload(
             [
                 ("image.png", f_png, "image/png"),
                 ("image.jpg", f_jpg, "image/jpeg"),
@@ -87,10 +88,6 @@ def test_upload_many(client, open_resource):
                 ("video.mp4", f_mp4, "video/mp4"),
             ]
         )
-
-        print(files)
-
-        raise 2
 
 
 # def test_mark_as_read(client):
