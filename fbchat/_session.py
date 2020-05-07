@@ -4,7 +4,10 @@ import requests
 import random
 import re
 import json
-import urllib.parse
+
+# TODO: Only import when required
+# Or maybe just replace usage with `html.parser`?
+import bs4
 
 from ._common import log, kw_only
 from . import _graphql, _util, _exception
@@ -27,6 +30,10 @@ def parse_server_js_define(html: str) -> Mapping[str, Any]:
     rtn = []
     if not define_splits:
         raise _exception.ParseError("Could not find any ServerJSDefine", data=html)
+    if len(define_splits) < 2:
+        raise _exception.ParseError("Could not find enough ServerJSDefine", data=html)
+    if len(define_splits) > 2:
+        raise _exception.ParseError("Found too many ServerJSDefine", data=define_splits)
     # Parse entries (should be two)
     for entry in define_splits:
         try:
@@ -94,16 +101,7 @@ def client_id_factory() -> str:
     return hex(int(random.random() * 2 ** 31))[2:]
 
 
-def get_next_url(url: str) -> Optional[str]:
-    parsed_url = urllib.parse.urlparse(url)
-    query = urllib.parse.parse_qs(parsed_url.query)
-    return query.get("next", [None])[0]
-
-
 def find_form_request(html: str):
-    # Only import when required
-    import bs4
-
     soup = bs4.BeautifulSoup(html, "html.parser", parse_only=bs4.SoupStrainer("form"))
 
     form = soup.form
@@ -114,6 +112,7 @@ def find_form_request(html: str):
     if not url:
         raise _exception.ParseError("Could not find url to submit to", data=form)
 
+    # From what I've seen, it'll always do this!
     if url.startswith("/"):
         url = "https://www.facebook.com" + url
 
@@ -168,15 +167,12 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
 
 def get_error_data(html: str) -> Optional[str]:
     """Get error message from a request."""
-    # Only import when required
-    import bs4
-
     soup = bs4.BeautifulSoup(
         html, "html.parser", parse_only=bs4.SoupStrainer("form", id="login_form")
     )
     # Attempt to extract and format the error string
     # The error message is in the user's own language!
-    return ". ".join(list(soup.stripped_strings)[:2]) or None
+    return " ".join(list(soup.stripped_strings)[1:3]) or None
 
 
 def get_fb_dtsg(define) -> Optional[str]:
@@ -298,7 +294,7 @@ class Session:
                 )
             # Get a facebook.com url that handles the 2FA flow
             # This probably works differently for Messenger-only accounts
-            url = get_next_url(url)
+            url = _util.get_url_parameter(url, "next")
             # Explicitly allow redirects
             r = session.get(url, allow_redirects=True)
             url = two_factor_helper(session, r, on_2fa_callback)
