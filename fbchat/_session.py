@@ -260,12 +260,12 @@ class Session:
             # "timezone": "-120",
             # "lgndim": "eyJ3IjoxNDQwLCJoIjo5MDAsImF3IjoxNDQwLCJhaCI6ODc3LCJjIjoyNH0=",
             # "lgnrnd": "044039_RGm9",
-            # "lgnjs": "n",
+            "lgnjs": "n",
             "email": email,
             "pass": password,
-            # "login": "1",
-            # "persistent": "1",
-            # "default_persistent": "0",
+            "login": "1",
+            "persistent": "1",  # Changes the cookie type to have a long "expires"
+            "default_persistent": "0",
         }
 
         try:
