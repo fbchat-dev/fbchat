@@ -100,3 +100,18 @@ def test_mark_as_read(client, user, group):
 
 def test_mark_as_unread(client, user, group):
     client.mark_as_unread([user, group], datetime.datetime.now())
+
+
+def test_move_threads(client, user, group):
+    client.move_threads(fbchat.ThreadLocation.PENDING, [user, group])
+    client.move_threads(fbchat.ThreadLocation.INBOX, [user, group])
+
+
+@pytest.mark.skip(reason="need to have threads to delete")
+def test_delete_threads():
+    pass
+
+
+@pytest.mark.skip(reason="need to have messages to delete")
+def test_delete_messages():
+    pass
