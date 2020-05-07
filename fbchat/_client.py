@@ -558,7 +558,7 @@ class Client:
             "shouldSendReadReceipt": "true",
         }
 
-        for threads in threads:
+        for thread in threads:
             data["ids[{}]".format(thread.id)] = "true" if read else "false"
 
         j = self.session._payload_post("/ajax/mercury/change_read_status.php", data)

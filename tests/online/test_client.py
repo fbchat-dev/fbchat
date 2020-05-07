@@ -1,5 +1,6 @@
 import pytest
 import fbchat
+import datetime
 import os
 
 pytestmark = pytest.mark.online
@@ -93,5 +94,9 @@ def test_upload_many(client, open_resource):
         )
 
 
-# def test_mark_as_read(client):
-#     client.mark_as_read([thread1, thread2])
+def test_mark_as_read(client, user, group):
+    client.mark_as_read([user, group], datetime.datetime.now())
+
+
+def test_mark_as_unread(client, user, group):
+    client.mark_as_unread([user, group], datetime.datetime.now())
