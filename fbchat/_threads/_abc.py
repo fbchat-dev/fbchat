@@ -211,7 +211,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
         Example:
             Send a pinned location in Beijing, China.
 
-            >>> thread.send_location(39.9390731, 116.117273)
+            >>> thread.send_pinned_location(39.9390731, 116.117273)
         """
         self._send_location(False, latitude=latitude, longitude=longitude)
 

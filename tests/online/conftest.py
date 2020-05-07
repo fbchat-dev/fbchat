@@ -44,6 +44,24 @@ def group(pytestconfig, session):
     return fbchat.Group(session=session, id=group_id)
 
 
+@pytest.fixture(
+    scope="session",
+    params=[
+        "user",
+        "group",
+        "self",
+        pytest.param("invalid", marks=[pytest.mark.xfail()]),
+    ],
+)
+def any_thread(request, session, user, group):
+    return {
+        "user": user,
+        "group": group,
+        "self": session.user,
+        "invalid": fbchat.Thread(session=session, id="0"),
+    }[request.param]
+
+
 @pytest.fixture
 def listener(session):
     return fbchat.Listener(session=session, chat_on=False, foreground=False)
