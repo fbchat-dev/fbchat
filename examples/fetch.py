@@ -2,7 +2,7 @@ import fbchat
 
 session = fbchat.Session.login("<email>", "<password>")
 
-client = fbchat.Client(session)
+client = fbchat.Client(session=session)
 
 # Fetches a list of all users you're currently chatting with, as `User` objects
 users = client.fetch_all_users()
