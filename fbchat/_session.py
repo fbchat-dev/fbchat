@@ -132,7 +132,7 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
 
     # You don't have to type a code if your device is already saved
     # Repeats if you get the code wrong
-    while "approvals_code" not in data:
+    while "approvals_code" in data:
         data["approvals_code"] = on_2fa_callback()
         log.info("Submitting 2FA code")
         r = session.post(url, data=data, allow_redirects=False)
@@ -234,7 +234,7 @@ class Session:
             on_2fa_callback: Function that will be called, in case a two factor
                 authentication code is needed. This should return the requested code.
 
-                Only tested with SMS codes, might not work with authentication apps.
+                Only tested using SMS, might not work with authentication applications.
 
                 Note: Facebook limits the amount of codes they will give you, so if you
                 don't receive a code, be patient, and try again later!
