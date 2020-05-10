@@ -60,7 +60,7 @@ thread.set_color("#0084ff")
 # Will change the thread emoji to `👍`
 thread.set_emoji("👍")
 
-message = fbchat.Message(session=session, id="<message id>")
+message = fbchat.Message(thread=thread, id="<message id>")
 
 # Will react to a message with a 😍 emoji
 message.react("😍")
