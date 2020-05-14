@@ -31,7 +31,7 @@ class ReactionEvent(ThreadEvent):
             thread=thread,
             message=_models.Message(thread=thread, id=data["messageId"]),
             reaction=data["reaction"] if data["action"] == 0 else None,
-            sender_id=str(data['senderId']),
+            sender_id=str(data["senderId"]),
         )
 
 
