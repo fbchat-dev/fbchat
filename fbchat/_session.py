@@ -108,7 +108,7 @@ def find_form_request(html: str):
 
     form = soup.form
     if not form:
-        raise _exception.ParseError("Could not find form to submit", data=soup)
+        raise _exception.ParseError("Could not find form to submit", data=html)
 
     url = form.get("action")
     if not url:
@@ -136,6 +136,7 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
         data["approvals_code"] = on_2fa_callback()
         log.info("Submitting 2FA code")
         r = session.post(url, data=data, allow_redirects=False)
+        log.debug("2FA location: %s", r.headers.get("Location"))
         url, data = find_form_request(r.content.decode("utf-8"))
 
     # TODO: Can be missing if checkup flow was done on another device in the meantime?
@@ -143,10 +144,12 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
         data["name_action_selected"] = "save_device"
         log.info("Saving browser")
         r = session.post(url, data=data, allow_redirects=False)
+        log.debug("2FA location: %s", r.headers.get("Location"))
         url, data = find_form_request(r.content.decode("utf-8"))
 
     log.info("Starting Facebook checkup flow")
     r = session.post(url, data=data, allow_redirects=False)
+    log.debug("2FA location: %s", r.headers.get("Location"))
 
     url, data = find_form_request(r.content.decode("utf-8"))
     if "submit[This was me]" not in data or "submit[This wasn't me]" not in data:
@@ -155,6 +158,7 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
     del data["submit[This wasn't me]"]
     log.info("Verifying login attempt")
     r = session.post(url, data=data, allow_redirects=False)
+    log.debug("2FA location: %s", r.headers.get("Location"))
 
     url, data = find_form_request(r.content.decode("utf-8"))
     if "name_action_selected" not in data:
@@ -162,8 +166,7 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
     data["name_action_selected"] = "save_device"
     log.info("Saving device again")
     r = session.post(url, data=data, allow_redirects=False)
-
-    print(r.status_code, r.url, r.headers)
+    log.debug("2FA location: %s", r.headers.get("Location"))
     return r.headers.get("Location")
 
 
@@ -294,15 +297,22 @@ class Session:
                 raise _exception.NotLoggedIn(
                     "2FA code required! Please supply `on_2fa_callback` to .login"
                 )
-            # Get a facebook.com url that handles the 2FA flow
+            # Get a facebook.com/checkpoint/start url that handles the 2FA flow
             # This probably works differently for Messenger-only accounts
             url = _util.get_url_parameter(url, "next")
-            # Explicitly allow redirects
-            r = session.get(url, allow_redirects=True)
+            if not url.startswith("https://www.facebook.com/checkpoint/start/"):
+                raise _exception.ParseError("Failed 2fa flow (1)", data=url)
+
+            r = session.get(url, allow_redirects=False)
+            url = r.headers.get("Location")
+            if not url or not url.startswith("https://www.facebook.com/checkpoint/"):
+                raise _exception.ParseError("Failed 2fa flow (2)", data=url)
+
+            r = session.get(url, allow_redirects=False)
             url = two_factor_helper(session, r, on_2fa_callback)
 
             if not url.startswith("https://www.messenger.com/login/auth_token/"):
-                raise _exception.ParseError("Failed 2fa flow", data=url)
+                raise _exception.ParseError("Failed 2fa flow (3)", data=url)
 
             r = session.get(url, allow_redirects=False)
             url = r.headers.get("Location")
