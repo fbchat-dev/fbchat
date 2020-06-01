@@ -1,16 +1,15 @@
-.. highlight:: python
 .. _examples:
 
 Examples
 ========
 
-These are a few examples on how to use `fbchat`. Remember to swap out `<email>` and `<password>` for your email and password
+These are a few examples on how to use ``fbchat``. Remember to swap out ``<email>`` and ``<password>`` for your email and password
 
 
 Basic example
 -------------
 
-This will show basic usage of `fbchat`
+This will show basic usage of ``fbchat``
 
 .. literalinclude:: ../examples/basic_usage.py
 
@@ -18,7 +17,7 @@ This will show basic usage of `fbchat`
 Interacting with Threads
 ------------------------
 
-This will interact with the thread in every way `fbchat` supports
+This will interact with the thread in every way ``fbchat`` supports
 
 .. literalinclude:: ../examples/interract.py
 
@@ -31,8 +30,8 @@ This will show the different ways of fetching information about users and thread
 .. literalinclude:: ../examples/fetch.py
 
 
-Echobot
--------
+``Echobot``
+-----------
 
 This will reply to any message with the same message
 
@@ -42,7 +41,7 @@ This will reply to any message with the same message
 Remove Bot
 ----------
 
-This will remove a user from a group if they write the message `Remove me!`
+This will remove a user from a group if they write the message ``Remove me!``
 
 .. literalinclude:: ../examples/removebot.py
 

@@ -1,90 +1,53 @@
 sudo: false
 language: python
-conditions: v1
+python: 3.6
 
-# There are two accounts made specifically for Travis, and the passwords are really only encrypted for obscurity
-# The global env variables `client1_email`, `client1_password`, `client2_email`, `client2_password` and `group_id`
-# are set on the Travis Settings page
+cache: pip
 
-# The tests are run with `Limit concurrent jobs = 1`, since the tests can't use the clients simultaneously
-
-install:
-  - pip install -U -r requirements.txt
-  - pip install -U -r dev-requirements.txt
-
-cache:
-  pip: true
-  # Pytest caching is disabled, since TravisCI instances have different public IPs. Facebook  doesn't like that,
-  # and redirects you to the url `/checkpoint/block`, where you have to change the account's password
-  # directories:
-  #   - .pytest_cache
+before_install: pip install flit
+# Use `--deps production` so that we don't install unnecessary dependencies
+install: flit install --deps production --extras test
+script: pytest
 
 jobs:
   include:
-    # The tests are split into online and offline versions.
-    # The online tests are only run against the master branch.
-    # Because:
-    # Travis caching is per-branch and per-job, so even though we cache the Facebook sessions via. `.pytest_cache`
-    # and in `tests.utils.load_client`, we need 6 new sessions per branch. This is usually the point where Facebook
-    # starts complaining, and we have to manually fix it
+  - python: 3.5
+  - python: 3.6
+  - python: 3.7
+  - python: pypy3.5
 
-    - &test-online
-      if: (branch = master OR tag IS present) AND type != pull_request
-      stage: online tests
-      script: scripts/travis-online
+  - name: Lint
+    before_install: skip
+    install: pip install black
+    script: black --check --verbose .
 
-    # Run online tests in all the supported python versions
-      python: 2.7
-    - <<: *test-online
-      python: 3.4
-    - <<: *test-online
-      python: 3.5
-    - <<: *test-online
-      python: 3.6
-    - <<: *test-online
-      python: pypy
+  - stage: deploy
+    name: GitHub Releases
+    if: tag IS present
+    install: skip
+    script: flit build
+    deploy:
+      provider: releases
+      api_key: $GITHUB_OAUTH_TOKEN
+      file_glob: true
+      file: dist/*
+      skip_cleanup: true
+      draft: false
+      on:
+        tags: true
 
-    # Run the expensive tests, with the python version most likely to break, aka. 2
-    - <<: *test-online
-      # Only run if the commit message includes [ci all] or [all ci]
-      if: commit_message =~ /\[ci\s+all\]|\[all\s+ci\]/
-      python: 2.7
-      env: PYTEST_ADDOPTS='-m expensive'
+  - stage: deploy
+    name: PyPI
+    if: tag IS present
+    install: skip
+    script: skip
+    deploy:
+      provider: script
+      script: flit publish
+      on:
+        tags: true
 
-    - &test-offline
-      # Ideally, it'd be nice to run the offline tests in every build, but since we can't run jobs concurrently (yet),
-      # we'll disable them when they're not needed, and include them inside the online tests instead
-      if: not ((branch = master OR tag IS present) AND type != pull_request)
-      stage: offline tests
-      script: scripts/travis-offline
-
-    # Run offline tests in all the supported python versions
-      python: 2.7
-    - <<: *test-offline
-      python: 3.4
-    - <<: *test-offline
-      python: 3.5
-    - <<: *test-offline
-      python: 3.6
-    - <<: *test-offline
-      python: 3.6
-    - <<: *test-offline
-      python: pypy
-
-    # Deploy to PyPI
-    - &deploy
-      stage: deploy
-      if: branch = master AND tag IS present
-      install: skip
-      deploy:
-        provider: pypi
-        user: madsmtm
-        password:
-          secure: "VA0MLSrwIW/T2KjMwjLZCzrLHw8pJT6tAvb48t7qpBdm8x192hax61pz1TaBZoJvlzyBPFKvluftuclTc7yEFwzXe7Gjqgd/ODKZl/wXDr36hQ7BBOLPZujdwmWLvTzMh3eJZlvkgcLCzrvK3j2oW8cM/+FZeVi/5/FhVuJ4ofs="
-        distributions: sdist bdist_wheel
-        skip_existing: true
-
-    # We need the bdist_wheels from both Python 2 and 3
-      python: 3.6
-    - <<: *deploy
-      python: 2.7
+notifications:
+  email:
+    on_success: never
+    on_failure: change

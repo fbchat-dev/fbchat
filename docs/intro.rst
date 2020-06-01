@@ -1,200 +1,152 @@
-.. highlight:: python
-.. module:: fbchat
-.. _intro:
-
 Introduction
 ============
 
-`fbchat` uses your email and password to communicate with the Facebook server.
-That means that you should always store your password in a separate file, in case e.g. someone looks over your shoulder while you're writing code.
-You should also make sure that the file's access control is appropriately restrictive
+Welcome, this page will guide you through the basic concepts of using ``fbchat``.
 
+The hardest, and most error prone part is logging in, and managing your login session, so that is what we will look at first.
 
-.. _intro_logging_in:
 
 Logging In
 ----------
 
-Simply create an instance of :class:`Client`. If you have two factor authentication enabled, type the code in the terminal prompt
-(If you want to supply the code in another fashion, overwrite :func:`Client.on2FACode`)::
+Everything in ``fbchat`` starts with getting an instance of `Session`. Currently there are two ways of doing that, `Session.login` and `Session.from_cookies`.
 
-    from fbchat import Client
-    from fbchat.models import *
-    client = Client('<email>', '<password>')
+The follow example will prompt you for you password, and use it to login::
 
-Replace ``<email>`` and ``<password>`` with your email and password respectively
+    import getpass
+    import fbchat
+    session = fbchat.Session.login("<email/phone number>", getpass.getpass())
+    # If your account requires a two factor authentication code:
+    session = fbchat.Session.login(
+        "<your email/phone number>",
+        getpass.getpass(),
+        lambda: getpass.getpass("2FA code"),
+    )
 
-.. note::
-    For ease of use then most of the code snippets in this document will assume you've already completed the login process
-    Though the second line, ``from fbchat.models import *``, is not strictly neccesary here, later code snippets will assume you've done this
+However, **this is not something you should do often!** Logging in/out all the time *will* get your Facebook account locked!
 
-If you want to change how verbose `fbchat` is, change the logging level (in :class:`Client`)
+Instead, you should start by using `Session.login`, and then store the cookies with `Session.get_cookies`, so that they can be used instead the next time your application starts.
 
-Throughout your code, if you want to check whether you are still logged in, use :func:`Client.isLoggedIn`.
-An example would be to login again if you've been logged out, using :func:`Client.login`::
+Usability-wise, this is also better, since you won't have to re-type your password every time you want to login.
 
-    if not client.isLoggedIn():
-        client.login('<email>', '<password>')
+The following, quite lengthy, yet very import example, illustrates a way to do this:
 
-When you're done using the client, and want to securely logout, use :func:`Client.logout`::
+.. literalinclude:: ../examples/session_handling.py
 
-    client.logout()
+Assuming you have successfully completed the above, congratulations! Using ``fbchat`` should be mostly trouble free from now on!
 
 
-.. _intro_threads:
+Understanding Thread Ids
+------------------------
 
-Threads
--------
+At the core of any thread is its unique identifier, its ID.
 
-A thread can refer to two things: A Messenger group chat or a single Facebook user
+A thread basically just means "something I can chat with", but more precisely, it can refer to a few things:
+- A Messenger group thread (`Group`)
+- The conversation between you and a single Facebook user (`User`)
+- The conversation between you and a Facebook Page (`Page`)
 
-:class:`models.ThreadType` is an enumerator with two values: ``USER`` and ``GROUP``.
-These will specify whether the thread is a single user chat or a group chat.
-This is required for many of `fbchat`'s functions, since Facebook differentiates between these two internally
+You can get your own user ID from `Session.user` with ``session.user.id``.
 
-Searching for group chats and finding their ID can be done via. :func:`Client.searchForGroups`,
-and searching for users is possible via. :func:`Client.searchForUsers`. See :ref:`intro_fetching`
+Getting the ID of a specific group thread is fairly trivial, you only need to login to `<https://www.messenger.com/>`_, click on the group you want to find the ID of, and then read the id from the address bar.
+The URL will look something like this: ``https://www.messenger.com/t/1234567890``, where ``1234567890`` would be the ID of the group.
 
-You can get your own user ID by using :any:`Client.uid`
+The same method can be applied to some user accounts, though if they have set a custom URL, then you will have to use a different method.
 
-Getting the ID of a group chat is fairly trivial otherwise, since you only need to navigate to `<https://www.facebook.com/messages/>`_,
-click on the group you want to find the ID of, and then read the id from the address bar.
-The URL will look something like this: ``https://www.facebook.com/messages/t/1234567890``, where ``1234567890`` would be the ID of the group.
-An image to illustrate this is shown below:
+An image to illustrate the process is shown below:
 
 .. image:: /_static/find-group-id.png
     :alt: An image illustrating how to find the ID of a group
 
-The same method can be applied to some user accounts, though if they've set a custom URL, then you'll just see that URL instead
+Once you have an ID, you can use it to create a `Group` or a `User` instance, which will allow you to do all sorts of things. To do this, you need a valid, logged in session::
 
-Here's an snippet showing the usage of thread IDs and thread types, where ``<user id>`` and ``<group id>``
-corresponds to the ID of a single user, and the ID of a group respectively::
+    group = fbchat.Group(session=session, id="<The id you found>")
+    # Or for user threads
+    user = fbchat.User(session=session, id="<The id you found>")
 
-    client.send(Message(text='<message>'), thread_id='<user id>', thread_type=ThreadType.USER)
-    client.send(Message(text='<message>'), thread_id='<group id>', thread_type=ThreadType.GROUP)
+Just like threads, every message, poll, plan, attachment, action etc. you send or do on Facebook has a unique ID.
 
-Some functions (e.g. :func:`Client.changeThreadColor`) don't require a thread type, so in these cases you just provide the thread ID::
+Below is an example of using such a message ID to get a `Message` instance::
 
-    client.changeThreadColor(ThreadColor.BILOBA_FLOWER, thread_id='<user id>')
-    client.changeThreadColor(ThreadColor.MESSENGER_BLUE, thread_id='<group id>')
+    # Provide the thread the message was created in, and it's ID
+    message = fbchat.Message(thread=user, id="<The message id>")
 
-
-.. _intro_message_ids:
-
-Message IDs
------------
-
-Every message you send on Facebook has a unique ID, and every action you do in a thread,
-like changing a nickname or adding a person, has a unique ID too.
-
-Some of `fbchat`'s functions require these ID's, like :func:`Client.reactToMessage`,
-and some of then provide this ID, like :func:`Client.sendMessage`.
-This snippet shows how to send a message, and then use the returned ID to react to that message with a 😍 emoji::
-
-    message_id = client.send(Message(text='message'), thread_id=thread_id, thread_type=thread_type)
-    client.reactToMessage(message_id, MessageReaction.LOVE)
-
-
-.. _intro_interacting:
-
-Interacting with Threads
-------------------------
-
-`fbchat` provides multiple functions for interacting with threads
-
-Most functionality works on all threads, though some things,
-like adding users to and removing users from a group chat, logically only works on group chats
-
-The simplest way of using `fbchat` is to send a message.
-The following snippet will, as you've probably already figured out, send the message `test message` to your account::
-
-    message_id = client.send(Message(text='test message'), thread_id=client.uid, thread_type=ThreadType.USER)
-
-You can see a full example showing all the possible thread interactions with `fbchat` by going to :ref:`examples`
-
-
-.. _intro_fetching:
 
 Fetching Information
 --------------------
 
-You can use `fbchat` to fetch basic information like user names, profile pictures, thread names and user IDs
+Managing these ids yourself quickly becomes very cumbersome! Luckily, there are other, easier ways of getting `Group`/`User` instances.
 
-You can retrieve a user's ID with :func:`Client.searchForUsers`.
-The following snippet will search for users by their name, take the first (and most likely) user, and then get their user ID from the result::
+You would start by creating a `Client` instance, which is basically just a helper on top of `Session`, that will allow you to do various things::
 
-    users = client.searchForUsers('<name of user>')
-    user = users[0]
-    print("User's ID: {}".format(user.uid))
-    print("User's name: {}".format(user.name))
-    print("User's profile picture url: {}".format(user.photo))
-    print("User's main url: {}".format(user.url))
+    client = fbchat.Client(session=session)
 
-Since this uses Facebook's search functions, you don't have to specify the whole name, first names will usually be enough
+Now, you could search for threads using `Client.search_for_threads`, or fetch a list of them using `Client.fetch_threads`::
 
-You can see a full example showing all the possible ways to fetch information with `fbchat` by going to :ref:`examples`
+    # Fetch the 5 most likely search results
+    # Uses Facebook's search functions, you don't have to specify the whole name, first names will usually be enough
+    threads = list(client.search_for_threads("<name of the thread to search for>", limit=5))
+    # Fetch the 5 most recent threads in your account
+    threads = list(client.fetch_threads(limit=5))
 
+Note the `list` statements; this is because the methods actually return `generators <https://wiki.python.org/moin/Generators>`__. If you don't know what that means, don't worry, it is just something you can use to make your code faster later.
 
-.. _intro_sessions:
+The examples above will actually fetch `UserData`/`GroupData`, which are subclasses of `User`/`Group`. These model have extra properties, so you could for example print the names and ids of the fetched threads like this::
 
-Sessions
---------
+    for thread in threads:
+        print(f"{thread.id}: {thread.name}")
 
-`fbchat` provides functions to retrieve and set the session cookies.
-This will enable you to store the session cookies in a separate file, so that you don't have to login each time you start your script.
-Use :func:`Client.getSession` to retrieve the cookies::
+Once you have a thread, you can use that to fetch the messages therein::
 
-    session_cookies = client.getSession()
-
-Then you can use :func:`Client.setSession`::
-
-    client.setSession(session_cookies)
-
-Or you can set the ``session_cookies`` on your initial login.
-(If the session cookies are invalid, your email and password will be used to login instead)::
-
-    client = Client('<email>', '<password>', session_cookies=session_cookies)
-
-.. warning::
-    You session cookies can be just as valueable as you password, so store them with equal care
+    for message in thread.fetch_messages(limit=20):
+        print(message.text)
 
 
-.. _intro_events:
+Interacting with Threads
+------------------------
+
+Once you have a `User`/`Group` instance, you can do things on them as described in `ThreadABC`, since they are subclasses of that.
+
+Some functionality, like adding users to a `Group`, or blocking a `User`, logically only works the relevant threads, so see the full API documentation for that.
+
+With that out of the way, let's see some examples!
+
+The simplest way of interacting with a thread is by sending a message::
+
+    # Send a message to the user
+    message = user.send_text("test message")
+
+There are many types of messages you can send, see the full API documentation for more.
+
+Notice how we held on to the sent message? The return type i a `Message` instance, so you can interact with it afterwards::
+
+    # React to the message with the 😍 emoji
+    message.react("😍")
+
+Besides sending messages, you can also interact with threads in other ways. An example is to change the thread color::
+
+    # Will change the thread color to the default blue
+    thread.set_color("#0084ff")
+
 
 Listening & Events
 ------------------
 
-To use the listening functions `fbchat` offers (like :func:`Client.listen`),
-you have to define what should be executed when certain events happen.
-By default, (most) events will just be a `logging.info` statement,
-meaning it will simply print information to the console when an event happens
+Now, we are finally at the point we have all been waiting for: Creating an automatic Facebook bot!
 
-.. note::
-    You can identify the event methods by their `on` prefix, e.g. `onMessage`
+To get started, you create the functions you want to call on certain events::
 
-The event actions can be changed by subclassing the :class:`Client`, and then overwriting the event methods::
+    def my_function(event: fbchat.MessageEvent):
+        print(f"Message from {event.author.id}: {event.message.text}")
 
-    class CustomClient(Client):
-        def onMessage(self, mid, author_id, message_object, thread_id, thread_type, ts, metadata, msg, **kwargs):
-            # Do something with message_object here
-            pass
+Then you create a `fbchat.Listener` object::
 
-    client = CustomClient('<email>', '<password>')
+    listener = fbchat.Listener(session=session, chat_on=False, foreground=False)
 
-**Notice:** The following snippet is as equally valid as the previous one::
+Which you can then use to receive events, and send them to your functions::
 
-    class CustomClient(Client):
-        def onMessage(self, message_object, author_id, thread_id, thread_type, **kwargs):
-            # Do something with message_object here
-            pass
+    for event in listener.listen():
+        if isinstance(event, fbchat.MessageEvent):
+            my_function(event)
 
-    client = CustomClient('<email>', '<password>')
-
-The change was in the parameters that our `onMessage` method took: ``message_object`` and ``author_id`` got swapped,
-and ``mid``, ``ts``, ``metadata`` and ``msg`` got removed, but the function still works, since we included ``**kwargs``
-
-.. note::
-    Therefore, for both backwards and forwards compatability,
-    the API actually requires that you include ``**kwargs`` as your final argument.
-
-View the :ref:`examples` to see some more examples illustrating the event system
+View the :ref:`examples` to see some more examples illustrating the event system.

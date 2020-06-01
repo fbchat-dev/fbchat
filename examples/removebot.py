@@ -1,17 +1,17 @@
-# -*- coding: UTF-8 -*-
+import fbchat
 
-from fbchat import log, Client
-from fbchat.models import *
 
-class RemoveBot(Client):
-    def onMessage(self, author_id, message_object, thread_id, thread_type, **kwargs):
-        # We can only kick people from group chats, so no need to try if it's a user chat
-        if message_object.text == 'Remove me!' and thread_type == ThreadType.GROUP:
-            log.info('{} will be removed from {}'.format(author_id, thread_id))
-            self.removeUserFromGroup(author_id, thread_id=thread_id)
-        else:
-            # Sends the data to the inherited onMessage, so that we can still see when a message is recieved
-            super(RemoveBot, self).onMessage(author_id=author_id, message_object=message_object, thread_id=thread_id, thread_type=thread_type, **kwargs)
+def on_message(event):
+    # We can only kick people from group chats, so no need to try if it's a user chat
+    if not isinstance(event.thread, fbchat.Group):
+        return
+    if event.message.text == "Remove me!":
+        print(f"{event.author.id} will be removed from {event.thread.id}")
+        event.thread.remove_participant(event.author.id)
 
-client = RemoveBot("<email>", "<password>")
-client.listen()
+
+session = fbchat.Session.login("<email>", "<password>")
+listener = fbchat.Listener(session=session, chat_on=False, foreground=False)
+for event in listener.listen():
+    if isinstance(event, fbchat.MessageEvent):
+        on_message(event)

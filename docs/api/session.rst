@@ -1,0 +1,4 @@
+Session
+=======
+
+.. autoclass:: Session()

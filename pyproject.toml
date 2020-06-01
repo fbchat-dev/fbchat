@@ -1,0 +1,64 @@
+[tool.black]
+line-length = 88
+target-version = ['py36', 'py37', 'py38']
+
+[build-system]
+requires = ["flit"]
+build-backend = "flit.buildapi"
+
+[tool.flit.metadata]
+module = "fbchat"
+author = "Taehoon Kim"
+author-email = "carpedm20@gmail.com"
+maintainer = "Mads Marquart"
+maintainer-email = "madsmtm@gmail.com"
+home-page = "https://github.com/carpedm20/fbchat/"
+requires = [
+    "attrs>=19.1",
+    "requests~=2.19",
+    "beautifulsoup4~=4.0",
+    "paho-mqtt~=1.5",
+]
+description-file = "README.rst"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Natural Language :: English",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Communications :: Chat",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.5, <4.0"
+keywords = "Facebook FB Messenger Library Chat Api Bot"
+license = "BSD 3-Clause"
+
+[tool.flit.metadata.urls]
+Documentation = "https://fbchat.readthedocs.io/"
+Repository = "https://github.com/carpedm20/fbchat/"
+
+[tool.flit.metadata.requires-extra]
+test = [
+    "pytest>=4.3,<6.0",
+]
+docs = [
+    "sphinx~=2.0",
+    "sphinxcontrib-spelling~=4.0",
+    "sphinx-autodoc-typehints~=1.10",
+]
+lint = [
+    "black",
+]
