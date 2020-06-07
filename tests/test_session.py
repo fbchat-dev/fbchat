@@ -13,7 +13,7 @@ from fbchat._session import (
 )
 
 
-def test_parse_server_js_define():
+def test_parse_server_js_define_old():
     html = """
     some data;require("TimeSliceImpl").guard(function(){(require("ServerJSDefine")).handleDefines([["DTSGInitialData",[],{"token":"123"},100]])
 
@@ -26,6 +26,20 @@ def test_parse_server_js_define():
     assert define == {
         "DTSGInitialData": {"token": "123"},
         "DTSGInitData": {"async_get_token": "12345", "token": "123"},
+    }
+
+
+def test_parse_server_js_define_new():
+    html = """
+    some data;require("TimeSliceImpl").guard(function(){new (require("ServerJS"))().handle({"define":[["DTSGInitialData",[],{"token":""},100]],"require":[...]});}, "ServerJS define", {"root":true})();
+    more data
+    <script><script>require("TimeSliceImpl").guard(function(){var s=new (require("ServerJS"))();s.handle({"define":[["DTSGInitData",[],{"token":"","async_get_token":""},3333]],"require":[...]});require("Run").onAfterLoad(function(){s.cleanup(require("TimeSliceImpl"))});}, "ServerJS define", {"root":true})();</script>
+    other irrelevant data
+    """
+    define = parse_server_js_define(html)
+    assert define == {
+        "DTSGInitialData": {"token": ""},
+        "DTSGInitData": {"async_get_token": "", "token": ""},
     }
 
 
