@@ -246,7 +246,9 @@ class Session:
             on_2fa_callback: Function that will be called, in case a two factor
                 authentication code is needed. This should return the requested code.
 
-                Only tested using SMS, might not work with authentication applications.
+                Tested using SMS and authentication applications. If you have both
+                enabled, you might not receive an SMS code, and you'll have to use the
+                authentication application.
 
                 Note: Facebook limits the amount of codes they will give you, so if you
                 don't receive a code, be patient, and try again later!
