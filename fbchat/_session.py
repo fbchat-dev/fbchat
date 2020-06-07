@@ -93,6 +93,12 @@ def session_factory() -> requests.Session:
     from . import __version__
 
     session = requests.session()
+    # Override Facebook's locale detection during the login process.
+    # The locale is only used when giving errors back to the user, so giving the errors
+    # back in English makes it easier for users to report.
+    session.cookies = session.cookies = requests.cookies.merge_cookies(
+        session.cookies, {"locale": "en_US"}
+    )
     session.headers["Referer"] = "https://www.messenger.com/"
     # We won't try to set a fake user agent to mask our presence!
     # Facebook allows us access anyhow, and it makes our motives clearer:
@@ -185,7 +191,6 @@ def get_error_data(html: str) -> Optional[str]:
         html, "html.parser", parse_only=bs4.SoupStrainer("form", id="login_form")
     )
     # Attempt to extract and format the error string
-    # The error message is in the user's own language!
     return " ".join(list(soup.stripped_strings)[1:3]) or None
 
 
