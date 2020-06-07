@@ -147,6 +147,9 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
         log.info("Saving browser")
         r = session.post(url, data=data, allow_redirects=False)
         log.debug("2FA location: %s", r.headers.get("Location"))
+        url = r.headers.get("Location")
+        if url and url.startswith("https://www.messenger.com/login/auth_token/"):
+            return url
         url, data = find_form_request(r.content.decode("utf-8"))
 
     log.info("Starting Facebook checkup flow")
