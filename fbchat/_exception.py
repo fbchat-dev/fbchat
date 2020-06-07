@@ -124,11 +124,11 @@ def handle_graphql_errors(j):
         errors = j["errors"]
     if errors:
         error = errors[0]  # TODO: Handle multiple errors
-        # TODO: Use `severity` and `description`
+        # TODO: Use `severity`
         raise GraphQLError(
             # TODO: What data is always available?
             message=error.get("summary", "Unknown error"),
-            description=error.get("message", ""),
+            description=error.get("message") or error.get("description") or "",
             code=error.get("code"),
             debug_info=error.get("debug_info"),
         )
