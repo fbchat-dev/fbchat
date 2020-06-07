@@ -116,8 +116,14 @@ class ThreadABC(metaclass=abc.ABCMeta):
             reply_to_id: Optional message to reply to
 
         Example:
+            Send a message with a mention to a thread.
+
             >>> mention = fbchat.Mention(thread_id="1234", offset=5, length=2)
-            >>> thread.send_text("A message", mentions=[mention])
+            >>> message_id = thread.send_text("A message", mentions=[mention])
+
+            Reply to the message.
+
+            >>> thread.send_text("A reply", reply_to_id=message_id)
 
         Returns:
             The sent message
