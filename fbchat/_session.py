@@ -154,6 +154,10 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
     log.debug("2FA location: %s", r.headers.get("Location"))
 
     url, data = find_form_request(r.content.decode("utf-8"))
+    if "verification_method" in data:
+        raise _exception.NotLoggedIn(
+            "Your account is locked, and you need to log in using a browser, and verify it there!"
+        )
     if "submit[This was me]" not in data or "submit[This wasn't me]" not in data:
         raise _exception.ParseError("Could not fill out form properly (2)", data=data)
     data["submit[This was me]"] = "[any value]"
