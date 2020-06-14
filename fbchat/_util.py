@@ -56,7 +56,7 @@ def parse_json(text: str) -> Any:
 
 
 def generate_offline_threading_id():
-    ret = datetime_to_millis(datetime.datetime.utcnow())
+    ret = datetime_to_millis(now())
     value = int(random.random() * 4294967295)
     string = ("0000000000000000000000" + format(value, "b"))[-22:]
     msgs = format(ret, "b") + string
@@ -158,3 +158,11 @@ def timedelta_to_seconds(td: datetime.timedelta) -> int:
     The returned seconds will be rounded to the nearest whole number.
     """
     return round(td.total_seconds())
+
+
+def now() -> datetime.datetime:
+    """The current time.
+
+    Similar to datetime.datetime.now(), but returns a non-naive datetime.
+    """
+    return datetime.datetime.now(tz=datetime.timezone.utc)

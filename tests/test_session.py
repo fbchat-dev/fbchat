@@ -1,6 +1,6 @@
 import datetime
 import pytest
-from fbchat import ParseError
+from fbchat import ParseError, _util
 from fbchat._session import (
     parse_server_js_define,
     base36encode,
@@ -73,7 +73,7 @@ def test_prefix_url():
 
 def test_generate_message_id():
     # Returns random output, so hard to test more thoroughly
-    assert generate_message_id(datetime.datetime.utcnow(), "def")
+    assert generate_message_id(_util.now(), "def")
 
 
 def test_session_factory():

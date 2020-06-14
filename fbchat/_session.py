@@ -486,7 +486,7 @@ class Session:
         return self._post("/api/graphqlbatch/", data, as_graphql=True)
 
     def _do_send_request(self, data):
-        now = datetime.datetime.utcnow()
+        now = _util.now()
         offline_threading_id = _util.generate_offline_threading_id()
         data["client"] = "mercury"
         data["author"] = "fbid:{}".format(self._user_id)
