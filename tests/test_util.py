@@ -15,7 +15,6 @@ from fbchat._util import (
     seconds_to_timedelta,
     millis_to_timedelta,
     timedelta_to_seconds,
-    now,
 )
 
 
@@ -246,7 +245,3 @@ def test_timedelta_to_seconds():
     assert timedelta_to_seconds(datetime.timedelta(seconds=1)) == 1
     assert timedelta_to_seconds(datetime.timedelta(hours=1)) == 3600
     assert timedelta_to_seconds(datetime.timedelta(days=1)) == 86400
-
-
-def test_now():
-    assert datetime_to_millis(now()) == datetime_to_millis(datetime.datetime.now())
