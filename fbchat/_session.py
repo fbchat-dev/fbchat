@@ -107,6 +107,10 @@ def session_factory() -> requests.Session:
     return session
 
 
+def login_cookies(at: datetime.datetime):
+    return {"act": "{}/0".format(_util.datetime_to_millis(at))}
+
+
 def client_id_factory() -> str:
     return hex(int(random.random() * 2 ** 31))[2:]
 
@@ -143,7 +147,9 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
     while "approvals_code" in data:
         data["approvals_code"] = on_2fa_callback()
         log.info("Submitting 2FA code")
-        r = session.post(url, data=data, allow_redirects=False)
+        r = session.post(
+            url, data=data, allow_redirects=False, cookies=login_cookies(_util.now())
+        )
         log.debug("2FA location: %s", r.headers.get("Location"))
         url, data = find_form_request(r.content.decode("utf-8"))
 
@@ -151,7 +157,9 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
     if "name_action_selected" in data:
         data["name_action_selected"] = "save_device"
         log.info("Saving browser")
-        r = session.post(url, data=data, allow_redirects=False)
+        r = session.post(
+            url, data=data, allow_redirects=False, cookies=login_cookies(_util.now())
+        )
         log.debug("2FA location: %s", r.headers.get("Location"))
         url = r.headers.get("Location")
         if url and url.startswith("https://www.messenger.com/login/auth_token/"):
@@ -159,7 +167,9 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
         url, data = find_form_request(r.content.decode("utf-8"))
 
     log.info("Starting Facebook checkup flow")
-    r = session.post(url, data=data, allow_redirects=False)
+    r = session.post(
+        url, data=data, allow_redirects=False, cookies=login_cookies(_util.now())
+    )
     log.debug("2FA location: %s", r.headers.get("Location"))
 
     url, data = find_form_request(r.content.decode("utf-8"))
@@ -172,7 +182,9 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
     data["submit[This was me]"] = "[any value]"
     del data["submit[This wasn't me]"]
     log.info("Verifying login attempt")
-    r = session.post(url, data=data, allow_redirects=False)
+    r = session.post(
+        url, data=data, allow_redirects=False, cookies=login_cookies(_util.now())
+    )
     log.debug("2FA location: %s", r.headers.get("Location"))
 
     url, data = find_form_request(r.content.decode("utf-8"))
@@ -180,7 +192,9 @@ def two_factor_helper(session: requests.Session, r, on_2fa_callback):
         raise _exception.ParseError("Could not fill out form properly (3)", data=data)
     data["name_action_selected"] = "save_device"
     log.info("Saving device again")
-    r = session.post(url, data=data, allow_redirects=False)
+    r = session.post(
+        url, data=data, allow_redirects=False, cookies=login_cookies(_util.now())
+    )
     log.debug("2FA location: %s", r.headers.get("Location"))
     return r.headers.get("Location")
 
@@ -296,6 +310,7 @@ class Session:
                 "https://www.messenger.com/login/password/",
                 data=data,
                 allow_redirects=False,
+                cookies=login_cookies(_util.now()),
             )
         except requests.RequestException as e:
             _exception.handle_requests_error(e)
@@ -319,18 +334,24 @@ class Session:
             if not url.startswith("https://www.facebook.com/checkpoint/start/"):
                 raise _exception.ParseError("Failed 2fa flow (1)", data=url)
 
-            r = session.get(url, allow_redirects=False)
+            r = session.get(
+                url, allow_redirects=False, cookies=login_cookies(_util.now())
+            )
             url = r.headers.get("Location")
             if not url or not url.startswith("https://www.facebook.com/checkpoint/"):
                 raise _exception.ParseError("Failed 2fa flow (2)", data=url)
 
-            r = session.get(url, allow_redirects=False)
+            r = session.get(
+                url, allow_redirects=False, cookies=login_cookies(_util.now())
+            )
             url = two_factor_helper(session, r, on_2fa_callback)
 
             if not url.startswith("https://www.messenger.com/login/auth_token/"):
                 raise _exception.ParseError("Failed 2fa flow (3)", data=url)
 
-            r = session.get(url, allow_redirects=False)
+            r = session.get(
+                url, allow_redirects=False, cookies=login_cookies(_util.now())
+            )
             url = r.headers.get("Location")
 
         if url != "https://www.messenger.com/":
