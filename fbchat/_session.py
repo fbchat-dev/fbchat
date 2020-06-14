@@ -16,7 +16,7 @@ from typing import Optional, Mapping, Callable, Any
 
 
 SERVER_JS_DEFINE_REGEX = re.compile(
-    r'require(?:\("ServerJS"\).{,100}\.handle\({.*"define":)|(?:\("ServerJSDefine"\)\)?\.handleDefines\()'
+    r'(?:"ServerJS".{,100}\.handle\({.*"define":)|(?:require\("ServerJSDefine"\)\)?\.handleDefines\()'
 )
 SERVER_JS_DEFINE_JSON_DECODER = json.JSONDecoder()
 
