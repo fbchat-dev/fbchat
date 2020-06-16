@@ -67,5 +67,5 @@ print("thread's type: {}".format(thread.type))
 
 # Print image url for 20 last images from thread.
 images = client.fetchThreadImages("<thread id>")
-for image in islice(image, 20):
+for image in islice(images, 20):
     print(image.large_preview_url)
