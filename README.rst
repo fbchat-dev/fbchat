@@ -1,3 +1,21 @@
+This project is unmaintained
+============================
+
+This project is officially marked as unmaintained, since my life is somewhere where I just do not have the time and energy to lead this project.
+
+If there is someone out there willing to take the lead, please get in contact, but even if there is, I can't get in contact with the original author `@carpedm20 <https://github.com/carpedm20>`__ and get the ability to add others as maintainers, see `issue 390 <https://github.com/carpedm20/fbchat/issues/390>`__. So a fork might be preferable.
+
+I have opened for further discussion `in issue 613 <https://github.com/carpedm20/fbchat/issues/613>`__.
+
+Thanks for serving you all these years.
+
+\- Mads Marquart / `@madsmtm <https://github.com/madsmtm>`__.
+
+
+Original project description below
+----------------------------------
+
+
 ``fbchat`` - Facebook Messenger for Python
 ==========================================
 
@@ -103,8 +121,7 @@ More examples are available `here <https://github.com/carpedm20/fbchat/tree/mast
 Maintainer
 ----------
 
-- Mads Marquart / `@madsmtm <https://github.com/madsmtm>`__
-
+No one, see notice at the top.
 
 Acknowledgements
 ----------------
