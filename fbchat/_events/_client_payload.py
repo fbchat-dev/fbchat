@@ -12,6 +12,8 @@ class ReactionEvent(ThreadEvent):
 
     #: Message that the user reacted to
     message = attr.ib(type="_models.Message")
+    #: Author of the reacted message
+    sender_id = attr.ib(type=Optional[str])
 
     reaction = attr.ib(type=Optional[str])
     """The reaction.
@@ -29,6 +31,7 @@ class ReactionEvent(ThreadEvent):
             thread=thread,
             message=_models.Message(thread=thread, id=data["messageId"]),
             reaction=data["reaction"] if data["action"] == 0 else None,
+            sender_id=str(data["senderId"]),
         )
 
 
