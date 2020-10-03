@@ -288,13 +288,28 @@ class Session:
         """
         session = session_factory()
 
+        # If we're starting a new session, we need to get the right cookies.
+        # 
+        #
+        r = session.get("https://www.messenger.com/", allow_redirects=True, cookies=session.cookies)
+        try:
+            js_datr_val = re.search(r'_js_datr","\w{24}\"', r.text).group()[11:-1]
+            session.cookies = session.cookies = requests.cookies.merge_cookies(
+                session.cookies, {"_js_datr": js_datr_val}
+            )
+        except:
+            log.warning("Couldn't find _js_datr cookie, high chance login will fail")
+        
+        loginform = bs4.BeautifulSoup(
+            r.text, "html.parser", parse_only=bs4.SoupStrainer("form", id="login_form")
+        )
         data = {
-            # "jazoest": "2754",
-            # "lsd": "AVqqqRUa",
-            "initial_request_id": "x",  # any, just has to be present
+            "jazoest": loginform.find('input', {'name': 'jazoest'}).get('value'),
+            "lsd": loginform.find('input', {'name': 'lsd'}).get('value'),
+            "initial_request_id": loginform.find('input', {'name': 'initial_request_id'}).get('value'),
             # "timezone": "-120",
             # "lgndim": "eyJ3IjoxNDQwLCJoIjo5MDAsImF3IjoxNDQwLCJhaCI6ODc3LCJjIjoyNH0=",
-            # "lgnrnd": "044039_RGm9",
+            "lgnrnd": loginform.find('input', {'name': 'lgnrnd'}).get('value'),
             "lgnjs": "n",
             "email": email,
             "pass": password,
