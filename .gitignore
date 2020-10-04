@@ -39,3 +39,6 @@ tests.data
 # Virtual environment
 venv/
 .venv*/
+
+#VSCode
+.vscode/

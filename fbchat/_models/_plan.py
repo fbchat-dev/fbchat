@@ -98,7 +98,7 @@ class Plan:
         data = {"event_reminder_id": self.id, "delete": "true", "acontext": ACONTEXT}
         j = self.session._payload_post("/ajax/eventreminder/submit", data)
 
-    def _change_participation(self):
+    def _change_participation(self, take_part):
         data = {
             "event_reminder_id": self.id,
             "guest_state": "GOING" if take_part else "DECLINED",

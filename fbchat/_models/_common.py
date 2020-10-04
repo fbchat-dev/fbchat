@@ -38,6 +38,15 @@ class ActiveStatus:
             in_game=None,
         )
 
+    @classmethod
+    def _from_chatproxy_presence(cls, data):
+        # TODO
+        return NotImplemented
+
+    @classmethod
+    def _from_buddylist_overlay(cls, data):
+        # TODO
+        return NotImplemented
 
 @attrs_default
 class Image:

@@ -191,9 +191,11 @@ def test_user_from_all_fetch(session):
 
 @pytest.mark.skip(reason="can't gather test data, the pulling is broken")
 def test_active_status_from_chatproxy_presence():
+    data = {}
     assert ActiveStatus() == ActiveStatus._from_chatproxy_presence(data)
 
 
 @pytest.mark.skip(reason="can't gather test data, the pulling is broken")
 def test_active_status_from_buddylist_overlay():
+    data = {}
     assert ActiveStatus() == ActiveStatus._from_buddylist_overlay(data)
