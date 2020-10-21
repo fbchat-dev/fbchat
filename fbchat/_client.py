@@ -3431,7 +3431,6 @@ class Client(object):
         Args:
             mid: Message ID, that user reacted to
             reaction (MessageReaction): Reaction
-            add_reaction: Whether user added or removed reaction
             author_id: The ID of the person who reacted to the message
             thread_id: Thread ID that the action was sent to. See :ref:`intro_threads`
             thread_type (ThreadType): Type of thread that the action was sent to. See :ref:`intro_threads`
