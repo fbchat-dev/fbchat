@@ -9,7 +9,7 @@ import random
 
 from . import _graphql, _util, _exception
 
-FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
+FB_DTSG_REGEX = re.compile(r'"fb_dtsg","value":"(.*?)"')
 
 
 def get_user_id(session):
