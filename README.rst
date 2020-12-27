@@ -1,15 +1,18 @@
-This project is unmaintained
-============================
+This project is semi-maintained
+==========================================
 
-This project is officially marked as unmaintained, since my life is somewhere where I just do not have the time and energy to lead this project.
+This project is was previously maintained by `@madsmtm <https://github.com/madsmtm>`__ and `@carpedm20 <https://github.com/carpedm20>`__, but they both no longer have the time to continue to maintain the project. Therefore, this fork will try to maintain a workable solution until there is a proper maintainer available to add/modify functionality. Follow the discussion `in issue 613 <https://github.com/carpedm20/fbchat/issues/613>`__ for updates on if/when a maintainer has been found.
 
-If there is someone out there willing to take the lead, please get in contact, but even if there is, I can't get in contact with the original author `@carpedm20 <https://github.com/carpedm20>`__ and get the ability to add others as maintainers, see `issue 390 <https://github.com/carpedm20/fbchat/issues/390>`__. So a fork might be preferable.
+Most importantly, this code has been maintained in a *works for me* approach, meaning that any issues that arise from the code fits into two buckets:
 
-I have opened for further discussion `in issue 613 <https://github.com/carpedm20/fbchat/issues/613>`__.
+1.  It affects me and I'll try fix it
+2.  It doesn't affect me and I probably won't look at it
 
-Thanks for serving you all these years.
+If you've read through all that and still want to use the code, you can do the following:
 
-\- Mads Marquart / `@madsmtm <https://github.com/madsmtm>`__.
+.. code-block::
+
+    $ python -m pip install git+https://github.com/TimLChan/fbchat.git
 
 
 Original project description below
