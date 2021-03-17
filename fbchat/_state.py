@@ -151,7 +151,8 @@ class State(object):
             r = _2fa_helper(session, code, r)
 
         # Sometimes Facebook tries to show the user a "Save Device" dialog
-        if "save-device" in r.url:
+        # was getting a different url for 'same device' page; not sure if this applies to everyone
+        if "checkpoint" in r.url:
             r = session.get("https://m.facebook.com/login/save-device/cancel/")
 
         if is_home(r.url):
