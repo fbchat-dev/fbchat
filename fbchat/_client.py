@@ -1066,6 +1066,52 @@ class Client(object):
             Message(text=message), thread_id=thread_id, thread_type=thread_type
         )
 
+    def sendUri(self, uri, message=None, thread_id=None, thread_type=ThreadType.USER):
+        """Send a uri preview to a thread.
+
+        Args:
+            uri: uri to preview
+            message (Message): Message to send
+            thread_id: User/Group ID to send to. See :ref:`intro_threads`
+            thread_type (ThreadType): See :ref:`intro_threads`
+
+        Returns:
+            :ref:`Message ID <intro_message_ids>` of the sent message
+
+        Raises:
+            FBchatException: If request failed
+        """
+
+        urlData = self._state._uri_share_data({"uri": uri})
+        thread_id, thread_type = self._getThread(thread_id, thread_type)
+        thread = thread_type._to_class()(thread_id)
+        data = thread._to_send_data()
+        if message is not None:
+            data.update(message._to_send_data())
+        data["action_type"] = "ma-type:user-generated-message"
+        data["shareable_attachment[share_type]"] = urlData["share_type"]
+        # most uri params will come back as dict
+        if isinstance(urlData["share_params"], dict):
+            data["has_attachment"] = True
+            for key in urlData["share_params"]:
+                if isinstance(urlData["share_params"][key], dict):
+                    for key2 in urlData["share_params"][key]:
+                        data[
+                            "shareable_attachment[share_params][{}][{}]".format(
+                                key, key2
+                            )
+                        ] = urlData["share_params"][key][key2]
+                else:
+                    data[
+                        "shareable_attachment[share_params][{}]".format(key)
+                    ] = urlData["share_params"][key]
+        # some (such as facebook profile pages) will just be a list
+        else:
+            data["has_attachment"] = False
+            for index, val in enumerate(urlData["share_params"]):
+                data["shareable_attachment[share_params][{}]".format(index)] = val
+        return self._doSendRequest(data)
+
     def sendEmoji(
         self,
         emoji=None,

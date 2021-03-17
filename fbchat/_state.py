@@ -9,7 +9,7 @@ import random
 
 from . import _graphql, _util, _exception
 
-FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
+FB_DTSG_REGEX = re.compile(r'"token":"(.*?)"')
 
 
 def get_user_id(session):
@@ -138,13 +138,21 @@ class State(object):
 
         r = session.post("https://m.facebook.com/login.php?login_attempt=1", data=data)
 
+         if "cookie" in r.url:
+            beg = r.text.find("action=") + 8
+            end = r.text.find("\"", beg)
+            urlCookies = "https://m.facebook.com" + r.text[beg:end]
+            payload = {i["name"]: i["value"] for i in find_input_fields(r.text).find_all('input')}
+            r = session.post(urlCookies, data=payload)
+
         # Usually, 'Checkpoint' will refer to 2FA
         if "checkpoint" in r.url and ('id="approvals_code"' in r.text.lower()):
             code = on_2fa_callback()
             r = _2fa_helper(session, code, r)
 
         # Sometimes Facebook tries to show the user a "Save Device" dialog
-        if "save-device" in r.url:
+        # was getting a different url for 'same device' page; not sure if this applies to everyone
+        if "checkpoint" in r.url:
             r = session.get("https://m.facebook.com/login/save-device/cancel/")
 
         if is_home(r.url):
@@ -187,7 +195,7 @@ class State(object):
             # Fall back to searching with a regex
             fb_dtsg = FB_DTSG_REGEX.search(r.text).group(1)
 
-        revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])
+        revision = 1
 
         logout_h_element = soup.find("input", {"name": "h"})
         logout_h = logout_h_element["value"] if logout_h_element else None
@@ -331,3 +339,10 @@ class State(object):
                 "Error when sending message: "
                 "No message IDs could be found: {}".format(j)
             )
+
+    def _uri_share_data(self, data):
+        data["image_height"] = 960
+        data["image_width"] = 960
+        data["__user"] = self.user_id
+        j = self._post("/message_share_attachment/fromURI/", data)
+        return j["payload"]["share_data"]
