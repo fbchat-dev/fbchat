@@ -2614,14 +2614,18 @@ class Client(object):
                     thread_id, thread_type = getThreadIdAndThreadType(i)
                     mid = i["messageId"]
                     author_id = str(i["userId"])
-                    reaction = (
-                        MessageReaction(i["reaction"]) if i.get("reaction") else None
-                    )
+                    
+                    # Commented as the statement below invalidates other reaction emoji
+                    
+                    # reaction = (reaction = (
+                    #     MessageReaction(i["reaction"]) if i.get("reaction") else None
+                    # )
+                    
                     add_reaction = not bool(i["action"])
                     if add_reaction:
                         self.onReactionAdded(
                             mid=mid,
-                            reaction=reaction,
+                            reaction=i.get("reaction"),
                             author_id=author_id,
                             thread_id=thread_id,
                             thread_type=thread_type,

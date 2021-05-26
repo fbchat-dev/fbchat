@@ -15,6 +15,9 @@ FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
 def get_user_id(session):
     # TODO: Optimize this `.get_dict()` call!
     rtn = session.cookies.get_dict().get("c_user")
+    # Sometimes c_user is missing if logged in from another location
+    if rtn is None:
+        rtn = str(input("c_user is blank, enter manually from browser cookies: "))
     if rtn is None:
         raise _exception.FBchatException("Could not find user id")
     return str(rtn)
@@ -147,6 +150,10 @@ class State(object):
         if "save-device" in r.url:
             r = session.get("https://m.facebook.com/login/save-device/cancel/")
 
+        # Sometimes facebook redirects to facebook.com/cookie/consent-page/*[...more directories]. So, go to homepage 
+        if "cookie" in r.url:
+            r = session.get("https://m.facebook.com/", allow_redirects=False)
+
         if is_home(r.url):
             return cls.from_session(session=session)
         else:
@@ -177,7 +184,6 @@ class State(object):
         user_id = get_user_id(session)
 
         r = session.get(_util.prefix_url("/"))
-
         soup = find_input_fields(r.text)
 
         fb_dtsg_element = soup.find("input", {"name": "fb_dtsg"})
@@ -185,9 +191,19 @@ class State(object):
             fb_dtsg = fb_dtsg_element["value"]
         else:
             # Fall back to searching with a regex
+            fb_dtsg = ''
             fb_dtsg = FB_DTSG_REGEX.search(r.text).group(1)
+            
+            if fb_dtsg == "":
+                FB_DTSG_REGEX = re.compile(r'"name":"fb_dtsg","value":"(.*?)"')
 
-        revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])
+            if fb_dtsg == '':
+                FB_DTSG_REGEX = re.compile(r'"[a-zA-Z0-9_.-]*:[a-zA-Z0-9_.-]*"\)') # I'm not good at regex
+                fb_dtsg = FB_DTSG_REGEX.search(r.text).group(0)
+                fb_dtsg = fb_dtsg.replace(")", "")
+                fb_dtsg = fb_dtsg.replace('"', '')
+        
+        revision = int(r.text.split('"client_revision":')[1].split(",", 1)[0])
 
         logout_h_element = soup.find("input", {"name": "h"})
         logout_h = logout_h_element["value"] if logout_h_element else None
