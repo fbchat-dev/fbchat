@@ -196,6 +196,7 @@ class State(object):
             
             if fb_dtsg == "":
                 FB_DTSG_REGEX = re.compile(r'"name":"fb_dtsg","value":"(.*?)"')
+                fb_dtsg = FB_DTSG_REGEX.search(r.text).group(1)
 
             if fb_dtsg == '':
                 FB_DTSG_REGEX = re.compile(r'"[a-zA-Z0-9_.-]*:[a-zA-Z0-9_.-]*"\)') # I'm not good at regex
