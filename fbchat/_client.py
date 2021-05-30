@@ -1714,7 +1714,7 @@ class Client(object):
             "client_mutation_id": "1",
             "actor_id": self._uid,
             "message_id": str(message_id),
-            "reaction": reaction.value if reaction else None,
+            "reaction": reaction if reaction else None
         }
         data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
         j = self._payload_post("/webgraphql/mutation", data)
