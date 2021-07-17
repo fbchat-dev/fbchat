@@ -186,23 +186,44 @@ class State(object):
         r = session.get(_util.prefix_url("/"))
         soup = find_input_fields(r.text)
 
-        fb_dtsg_element = soup.find("input", {"name": "fb_dtsg"})
-        if fb_dtsg_element:
-            fb_dtsg = fb_dtsg_element["value"]
-        else:
+        fb_dtsg = ''
+        
+        if fb_dtsg == None or fb_dtsg == "":
+            FB_DTSG_REGEX = re.compile(r'"[a-zA-Z0-9-_:]+:+[a-zA-Z0-9-_:]*"')
+            fb_dtsg = FB_DTSG_REGEX.search(r.text).group(0)
+            fb_dtsg = fb_dtsg.replace('"', "")
+            fb_dtsg = fb_dtsg.replace("'", '')
+            # print("\n\n[latest] fb_dtsg:\n")
+            # print(fb_dtsg)
+        
+
+        if fb_dtsg == None or fb_dtsg == "":
+            fb_dtsg_element = soup.find("input", {"name": "fb_dtsg"})
+            print("\n\n[1]fb_dtsg_element:\n")
+            print(fb_dtsg_element)
+            if fb_dtsg_element:
+                fb_dtsg = fb_dtsg_element["value"]
+                # print("\n\n[1.1]fb_dtsg_element:\n")
+                # print(fb_dtsg)
+
+        if fb_dtsg == None or fb_dtsg == "":
             # Fall back to searching with a regex
             fb_dtsg = ''
-            fb_dtsg = FB_DTSG_REGEX.search(r.text).group(1)
-            
-            if fb_dtsg == "":
-                FB_DTSG_REGEX = re.compile(r'"name":"fb_dtsg","value":"(.*?)"')
+            try:
                 fb_dtsg = FB_DTSG_REGEX.search(r.text).group(1)
-
-            if fb_dtsg == '':
-                FB_DTSG_REGEX = re.compile(r'"[a-zA-Z0-9_.-]*:[a-zA-Z0-9_.-]*"\)') # I'm not good at regex
-                fb_dtsg = FB_DTSG_REGEX.search(r.text).group(0)
-                fb_dtsg = fb_dtsg.replace(")", "")
-                fb_dtsg = fb_dtsg.replace('"', '')
+                # print("\n\n[2]fb_dtsg_element:\n")
+                # print(fb_dtsg)
+            except:
+                pass
+            
+            
+        if fb_dtsg == None or fb_dtsg == "":
+            FB_DTSG_REGEX = re.compile(r'"[a-zA-Z0-9_.-]*:[a-zA-Z0-9_.-]*"\)')
+            fb_dtsg = FB_DTSG_REGEX.search(r.text).group(0)
+            fb_dtsg = fb_dtsg.replace(")", "")
+            fb_dtsg = fb_dtsg.replace('"', '')
+            # print("\n\n[3]fb_dtsg_element:\n")
+            # print(fb_dtsg)
         
         revision = int(r.text.split('"client_revision":')[1].split(",", 1)[0])
 
