@@ -68,7 +68,7 @@ class Client(object):
         self,
         email,
         password,
-        user_agent=None,
+        user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.61 Safari/537.36",
         max_tries=5,
         session_cookies=None,
         logging_level=logging.INFO,
