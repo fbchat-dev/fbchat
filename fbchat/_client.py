@@ -312,7 +312,9 @@ class Client(object):
                 before=last_thread_timestamp, thread_location=thread_location
             )
 
-            if len(candidates) > 1:
+            if last_thread_timestamp == None and len(candidates) >= 1:
+                threads += candidates
+            elif len(candidates) > 1:
                 threads += candidates[1:]
             else:  # End of threads
                 break
