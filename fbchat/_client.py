@@ -68,7 +68,7 @@ class Client(object):
         self,
         email,
         password,
-        user_agent=None,
+        user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.61 Safari/537.36",
         max_tries=5,
         session_cookies=None,
         logging_level=logging.INFO,
@@ -312,7 +312,9 @@ class Client(object):
                 before=last_thread_timestamp, thread_location=thread_location
             )
 
-            if len(candidates) > 1:
+            if last_thread_timestamp == None and len(candidates) >= 1:
+                threads += candidates
+            elif len(candidates) > 1:
                 threads += candidates[1:]
             else:  # End of threads
                 break
@@ -1714,7 +1716,7 @@ class Client(object):
             "client_mutation_id": "1",
             "actor_id": self._uid,
             "message_id": str(message_id),
-            "reaction": reaction.value if reaction else None,
+            "reaction": reaction if reaction else None
         }
         data = {"doc_id": 1491398900900362, "variables": json.dumps({"data": data})}
         j = self._payload_post("/webgraphql/mutation", data)
@@ -2614,14 +2616,18 @@ class Client(object):
                     thread_id, thread_type = getThreadIdAndThreadType(i)
                     mid = i["messageId"]
                     author_id = str(i["userId"])
-                    reaction = (
-                        MessageReaction(i["reaction"]) if i.get("reaction") else None
-                    )
+                    
+                    # Commented as the statement below invalidates other reaction emoji
+                    
+                    # reaction = (reaction = (
+                    #     MessageReaction(i["reaction"]) if i.get("reaction") else None
+                    # )
+                    
                     add_reaction = not bool(i["action"])
                     if add_reaction:
                         self.onReactionAdded(
                             mid=mid,
-                            reaction=reaction,
+                            reaction=i.get("reaction"),
                             author_id=author_id,
                             thread_id=thread_id,
                             thread_type=thread_type,

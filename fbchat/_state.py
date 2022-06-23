@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
+from pprint import pprint
 
 import attr
 import bs4
@@ -15,22 +16,26 @@ FB_DTSG_REGEX = re.compile(r'name="fb_dtsg" value="(.*?)"')
 def get_user_id(session):
     # TODO: Optimize this `.get_dict()` call!
     rtn = session.cookies.get_dict().get("c_user")
+    # Sometimes c_user is missing if logged in from another location
+    if rtn is None:
+        rtn = str(input("c_user is blank, enter manually from browser cookies: "))
     if rtn is None:
         raise _exception.FBchatException("Could not find user id")
     return str(rtn)
 
 
 def find_input_fields(html):
-    return bs4.BeautifulSoup(html, "html.parser", parse_only=bs4.SoupStrainer("input"))
+    # return bs4.BeautifulSoup(html, "html.parser", parse_only=bs4.SoupStrainer("input"))
+    return bs4.BeautifulSoup(html, "html.parser")
 
 
 def session_factory(user_agent=None):
-    session = requests.session()
-    session.headers["Referer"] = "https://www.facebook.com"
-    session.headers["Accept"] = "text/html"
+    session = requests.Session()
+    # session.headers["Referer"] = "https://www.facebook.com"
+    # session.headers["Accept"] = "text/html"
 
     # TODO: Deprecate setting the user agent manually
-    session.headers["User-Agent"] = user_agent or random.choice(_util.USER_AGENTS)
+    # session.headers["User-Agent"] = user_agent or random.choice(_util.USER_AGENTS)
     return session
 
 
@@ -123,20 +128,29 @@ class State(object):
         }
 
     @classmethod
-    def login(cls, email, password, on_2fa_callback, user_agent=None):
+    def login(cls, email, password, on_2fa_callback, user_agent=_util.USER_AGENTS):
         session = session_factory(user_agent=user_agent)
 
         soup = find_input_fields(session.get("https://m.facebook.com/").text)
+        
+        soup = soup.find_all("input")
+
         data = dict(
             (elem["name"], elem["value"])
             for elem in soup
             if elem.has_attr("value") and elem.has_attr("name")
         )
+
         data["email"] = email
         data["pass"] = password
         data["login"] = "Log In"
 
-        r = session.post("https://m.facebook.com/login.php?login_attempt=1", data=data)
+        # pprint(data)
+        r = session.post("https://m.facebook.com/login/device-based/regular/login/?refsrc=deprecated&lwv=100&refid=8", data=data)
+
+        # print(r.status_code)
+        # print(r.url)
+        # print(r.content)
 
         # Usually, 'Checkpoint' will refer to 2FA
         if "checkpoint" in r.url and ('id="approvals_code"' in r.text.lower()):
@@ -146,6 +160,10 @@ class State(object):
         # Sometimes Facebook tries to show the user a "Save Device" dialog
         if "save-device" in r.url:
             r = session.get("https://m.facebook.com/login/save-device/cancel/")
+
+        # Sometimes facebook redirects to facebook.com/cookie/consent-page/*[...more directories]. So, go to homepage 
+        if "cookie" in r.url:
+            r = session.get("https://m.facebook.com/", allow_redirects=False)
 
         if is_home(r.url):
             return cls.from_session(session=session)
@@ -177,20 +195,53 @@ class State(object):
         user_id = get_user_id(session)
 
         r = session.get(_util.prefix_url("/"))
-
         soup = find_input_fields(r.text)
 
-        fb_dtsg_element = soup.find("input", {"name": "fb_dtsg"})
-        if fb_dtsg_element:
-            fb_dtsg = fb_dtsg_element["value"]
-        else:
-            # Fall back to searching with a regex
-            fb_dtsg = FB_DTSG_REGEX.search(r.text).group(1)
+        fb_dtsg = ''
+        
+        if fb_dtsg == None or fb_dtsg == "":
+            FB_DTSG_REGEX = re.compile(r'"[a-zA-Z0-9-_:]+:+[a-zA-Z0-9-_:]*"')
+            fb_dtsg = FB_DTSG_REGEX.search(r.text).group(0)
+            fb_dtsg = fb_dtsg.replace('"', "")
+            fb_dtsg = fb_dtsg.replace("'", '')
+            # print("\n\n[latest] fb_dtsg:\n")
+            # print(fb_dtsg)
+        
 
-        revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])
+        if fb_dtsg == None or fb_dtsg == "":
+            fb_dtsg_element = soup.find("input", {"name": "fb_dtsg"})
+            print("\n\n[1]fb_dtsg_element:\n")
+            print(fb_dtsg_element)
+            if fb_dtsg_element:
+                fb_dtsg = fb_dtsg_element["value"]
+                # print("\n\n[1.1]fb_dtsg_element:\n")
+                # print(fb_dtsg)
+
+        if fb_dtsg == None or fb_dtsg == "":
+            # Fall back to searching with a regex
+            fb_dtsg = ''
+            try:
+                fb_dtsg = FB_DTSG_REGEX.search(r.text).group(1)
+                # print("\n\n[2]fb_dtsg_element:\n")
+                # print(fb_dtsg)
+            except:
+                pass
+            
+            
+        if fb_dtsg == None or fb_dtsg == "":
+            FB_DTSG_REGEX = re.compile(r'"[a-zA-Z0-9_.-]*:[a-zA-Z0-9_.-]*"\)')
+            fb_dtsg = FB_DTSG_REGEX.search(r.text).group(0)
+            fb_dtsg = fb_dtsg.replace(")", "")
+            fb_dtsg = fb_dtsg.replace('"', '')
+            # print("\n\n[3]fb_dtsg_element:\n")
+            # print(fb_dtsg)
+        
+        revision = int(r.text.split('"client_revision":')[1].split(",", 1)[0])
 
         logout_h_element = soup.find("input", {"name": "h"})
         logout_h = logout_h_element["value"] if logout_h_element else None
+        
+        print(user_id, fb_dtsg, revision, logout_h)
 
         return cls(
             user_id=user_id,
