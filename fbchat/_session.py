@@ -313,7 +313,7 @@ class Session:
                 raise _exception.NotLoggedIn("Could not find fb_dtsg")
             fb_dtsg = res.group(1)
 
-        revision = int(r.text.split('"client_revision":', 1)[1].split(",", 1)[0])
+        revision = int(user_id)
 
         logout_h_element = soup.find("input", {"name": "h"})
         logout_h = logout_h_element["value"] if logout_h_element else None
