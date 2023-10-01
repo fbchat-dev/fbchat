@@ -307,7 +307,7 @@ class Session:
             # Should hit a redirect to https://www.messenger.com/
             # If this does happen, the session is logged in!
             r = session.post(
-                "https://www.messenger.com/login/password/",
+                "https://www.messenger.com/login/",
                 data=data,
                 allow_redirects=False,
                 cookies=login_cookies(_util.now()),
